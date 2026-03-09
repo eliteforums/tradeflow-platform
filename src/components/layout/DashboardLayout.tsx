@@ -14,6 +14,7 @@ import {
   X,
   ChevronLeft,
 } from "lucide-react";
+import EterniaLogo from "@/components/EterniaLogo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";

@@ -17,9 +17,7 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-6 py-3 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-eternia flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-primary-foreground" />
-          </div>
+          <EterniaLogo size={32} />
           <span className="text-base font-bold font-display text-foreground">Eternia</span>
         </Link>
 
