@@ -25,35 +25,24 @@ const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) =
     }
 
     if (!isDeleting && displayedText.length === text.length) {
-      const pause = setTimeout(() => setIsDeleting(true), 2000);
+      const pause = setTimeout(() => setIsDeleting(true), 3000);
       return () => clearTimeout(pause);
     }
 
     if (isDeleting && displayedText.length > 0) {
       const timeout = setTimeout(() => {
         setDisplayedText(text.slice(0, displayedText.length - 1));
-      }, 40);
+      }, 100);
       return () => clearTimeout(timeout);
     }
 
     if (isDeleting && displayedText.length === 0) {
-      const pause = setTimeout(() => setIsDeleting(false), 500);
+      const pause = setTimeout(() => setIsDeleting(false), 800);
       return () => clearTimeout(pause);
     }
   }, [displayedText, text, started, isDeleting]);
 
-  return (
-    <>
-      {displayedText}
-      {started && (
-        <motion.span
-          animate={{ opacity: [1, 0] }}
-          transition={{ duration: 0.5, repeat: Infinity }}
-          className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle"
-        />
-      )}
-    </>
-  );
+  return <>{displayedText}</>;
 };
 
 const HeroSection = () => (
@@ -105,20 +94,14 @@ const HeroSection = () => (
         className="text-center text-5xl md:text-7xl lg:text-[80px] font-bold font-display leading-[1.05] tracking-tight mb-6 max-w-5xl mx-auto"
       >
         The Platform That Makes{" "}
-        <span className="relative">
-          <span className="text-gradient">
-            <TypewriterText text="Student Wellbeing" delay={800} />
-          </span>
-          <motion.div
-            className="absolute -bottom-1 left-0 right-0 h-[3px] bg-gradient-eternia rounded-full"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 3, duration: 0.8 }}
-          />
-        </span>{" "}
-        <span className="text-gradient-violet">
-          <TypewriterText text="Anonymous" delay={2400} />
+        <span className="text-gradient">
+          <TypewriterText text="Student Wellbeing Anonymous" delay={800} />
         </span>
+        <motion.span
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 0.5, repeat: Infinity }}
+          className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle"
+        />
       </motion.h1>
 
       {/* Subtitle */}
