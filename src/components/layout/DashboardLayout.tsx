@@ -14,6 +14,7 @@ import {
   X,
   ChevronLeft,
 } from "lucide-react";
+import EterniaLogo from "@/components/EterniaLogo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -57,9 +58,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
           <Link to="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-eternia flex items-center justify-center shrink-0">
-              <Sparkles className="w-5 h-5 text-background" />
-            </div>
+            <EterniaLogo size={40} />
             {sidebarOpen && (
               <span className="text-xl font-bold font-display text-sidebar-foreground">
                 Eternia
@@ -115,9 +114,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-16 glass-strong flex items-center justify-between px-4">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-gradient-eternia flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-background" />
-          </div>
+          <EterniaLogo size={40} />
           <span className="text-xl font-bold font-display">Eternia</span>
         </Link>
         <Button

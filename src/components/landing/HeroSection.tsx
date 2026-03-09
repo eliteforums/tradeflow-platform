@@ -2,6 +2,40 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Play, Shield, Star, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+
+const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const startTimeout = setTimeout(() => setStarted(true), delay);
+    return () => clearTimeout(startTimeout);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!started) return;
+    if (displayedText.length < text.length) {
+      const timeout = setTimeout(() => {
+        setDisplayedText(text.slice(0, displayedText.length + 1));
+      }, 80);
+      return () => clearTimeout(timeout);
+    }
+  }, [displayedText, text, started]);
+
+  return (
+    <>
+      {displayedText}
+      {started && displayedText.length < text.length && (
+        <motion.span
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 0.5, repeat: Infinity }}
+          className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle"
+        />
+      )}
+    </>
+  );
+};
 
 const HeroSection = () => (
   <section className="relative pt-24 pb-8 px-6 overflow-hidden">
@@ -53,15 +87,19 @@ const HeroSection = () => (
       >
         The Platform That Makes{" "}
         <span className="relative">
-          <span className="text-gradient">Student Wellbeing</span>
+          <span className="text-gradient">
+            <TypewriterText text="Student Wellbeing" delay={800} />
+          </span>
           <motion.div
             className="absolute -bottom-1 left-0 right-0 h-[3px] bg-gradient-eternia rounded-full"
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ delay: 1, duration: 0.8 }}
+            transition={{ delay: 3, duration: 0.8 }}
           />
         </span>{" "}
-        Anonymous
+        <span className="text-gradient-violet">
+          <TypewriterText text="Anonymous" delay={2400} />
+        </span>
       </motion.h1>
 
       {/* Subtitle */}

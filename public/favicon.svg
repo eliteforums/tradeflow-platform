@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2dd4a8"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2dd4a8" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#0a0a12"/>
+  <!-- Spark/flame shape -->
+  <path d="M256 96 C256 96 310 180 310 240 C310 280 286 310 256 310 C226 310 202 280 202 240 C202 180 256 96 256 96Z" fill="url(#g1)" opacity="0.9"/>
+  <path d="M256 170 C256 170 290 220 290 256 C290 280 275 298 256 298 C237 298 222 280 222 256 C222 220 256 170 256 170Z" fill="#0a0a12" opacity="0.5"/>
+  <!-- Orbiting dots -->
+  <circle cx="256" cy="350" r="8" fill="url(#g1)"/>
+  <circle cx="200" cy="330" r="5" fill="#2dd4a8" opacity="0.5"/>
+  <circle cx="312" cy="330" r="5" fill="#a78bfa" opacity="0.5"/>
+  <!-- Bottom arc -->
+  <path d="M180 360 Q256 400 332 360" stroke="url(#g1)" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>
