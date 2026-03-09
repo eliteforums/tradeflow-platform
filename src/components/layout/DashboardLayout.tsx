@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -11,6 +11,7 @@ import {
   User,
   LogOut,
   ChevronLeft,
+  Shield,
 } from "lucide-react";
 import EterniaLogo from "@/components/EterniaLogo";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
+const studentNavItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: Calendar, label: "Appointments", path: "/dashboard/appointments" },
   { icon: MessageCircle, label: "Peer Connect", path: "/dashboard/peer-connect" },
@@ -32,8 +33,25 @@ const navItems = [
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
+const adminNavItems = [
+  { icon: Shield, label: "Admin Panel", path: "/admin" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const expertNavItems = [
+  { icon: Home, label: "Dashboard", path: "/dashboard/expert" },
+  { icon: Calendar, label: "Appointments", path: "/dashboard/appointments" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const internNavItems = [
+  { icon: Home, label: "Dashboard", path: "/dashboard/intern" },
+  { icon: MessageCircle, label: "Peer Connect", path: "/dashboard/peer-connect" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
 // Instagram-style bottom nav items (mobile only — 5 max)
-const bottomNavItems = [
+const studentBottomNavItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: MessageCircle, label: "Connect", path: "/dashboard/peer-connect" },
   { icon: Sparkles, label: "Tools", path: "/dashboard/self-help" },
@@ -41,11 +59,43 @@ const bottomNavItems = [
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
+const adminBottomNavItems = [
+  { icon: Shield, label: "Admin", path: "/admin" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const expertBottomNavItems = [
+  { icon: Home, label: "Dashboard", path: "/dashboard/expert" },
+  { icon: Calendar, label: "Schedule", path: "/dashboard/appointments" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const internBottomNavItems = [
+  { icon: Home, label: "Dashboard", path: "/dashboard/intern" },
+  { icon: MessageCircle, label: "Connect", path: "/dashboard/peer-connect" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const role = profile?.role || "student";
+  const navItems = useMemo(() => {
+    if (role === "admin" || role === "spoc") return adminNavItems;
+    if (role === "expert") return expertNavItems;
+    if (role === "intern") return internNavItems;
+    return studentNavItems;
+  }, [role]);
+
+  const bottomNavItems = useMemo(() => {
+    if (role === "admin" || role === "spoc") return adminBottomNavItems;
+    if (role === "expert") return expertBottomNavItems;
+    if (role === "intern") return internBottomNavItems;
+    return studentBottomNavItems;
+  }, [role]);
 
   const handleLogout = async () => {
     await signOut();
@@ -92,13 +142,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all text-[13px] ${
-                  active
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-sm                active
                     ? "bg-primary/12 text-primary font-semibold"
                     : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                 }`}
               >
-                <item.icon className={`w-[18px] h-[18px] shrink-0 ${active ? "text-primary" : ""}`} />
+                <item.icon className={`w-[15 5 5 h-5-primary" : ""}`} />
                 {sidebarOpen && <span className="truncate">{item.label}</span>}
               </Link>
             );
@@ -109,21 +158,21 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <Button
             variant="ghost"
             onClick={handleLogout}
-            className={`w-full justify-start gap-2.5 text-[13px] text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-destructive h-9 ${
+            className={`w-full justify-start gap-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-destructive h-10 ${
               !sidebarOpen ? "justify-center px-0" : ""
             }`}
           >
-            <LogOut className="w-[18px] h-[18px] shrink-0" />
+            <LogOut className="w-5 h-5 shrink-0" />
             {sidebarOpen && <span>Logout</span>}
           </Button>
         </div>
       </aside>
 
       {/* Mobile Top Bar — minimal like WhatsApp */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-12 bg-background border-b border-border/50 flex items-center justify-between px-4">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-13 bg-background border-b border-border/50 flex items-center justify-between px-4">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <EterniaLogo size={24} />
-          <span className="text-sm font-bold font-display">Eternia</span>
+          <EterniaLogo size={26} />
+          <span className="text-base font-bold font-display">Eternia</span>
         </Link>
         <div className="flex items-center gap-1">
           <Link to="/dashboard/credits">
@@ -158,8 +207,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                <item.icon className={`w-[22px] h-[22px] ${active ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
-                <span className={`text-[10px] leading-none ${active ? "font-semibold" : "font-normal"}`}>
+                <item.icon className={`w-6 h-6 ${active ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
+                <span className={`text-[11px] leading-none ${active ? "font-semibold" : "font-normal"}`}>
                   {item.label}
                 </span>
               </Link>
