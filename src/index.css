@@ -72,6 +72,10 @@
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
@@ -231,4 +235,13 @@
 .animate-gradient {
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
+}
+
+.mask-gradient {
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.h-13 {
+  height: 3.25rem;
 }

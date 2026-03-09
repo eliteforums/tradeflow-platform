@@ -1,24 +1,77 @@
 import { Link } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 
+const footerLinks = {
+  Product: [
+    { label: "Features", href: "#features" },
+    { label: "Security", href: "#security" },
+    { label: "Pricing", href: "#" },
+    { label: "Changelog", href: "#" },
+  ],
+  Company: [
+    { label: "About", href: "#" },
+    { label: "Blog", href: "#" },
+    { label: "Careers", href: "#" },
+    { label: "Contact", href: "#" },
+  ],
+  Legal: [
+    { label: "Privacy Policy", href: "#" },
+    { label: "Terms of Service", href: "#" },
+    { label: "DPDP Compliance", href: "#" },
+  ],
+};
+
 const Footer = () => (
-  <footer className="py-10 px-6 border-t border-border/30">
-    <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-      <Link to="/" className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-md bg-gradient-eternia flex items-center justify-center">
-          <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
+  <footer className="border-t border-border/30 bg-card/20">
+    <div className="container mx-auto px-6 py-16">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
+        {/* Brand */}
+        <div className="col-span-2">
+          <Link to="/" className="flex items-center gap-2.5 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-gradient-eternia flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <span className="text-base font-bold font-display text-foreground">Eternia</span>
+          </Link>
+          <p className="text-sm text-muted-foreground/70 leading-relaxed max-w-xs mb-6">
+            The anonymous student wellbeing platform built for institutions that care about mental health.
+          </p>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-eternia-success animate-pulse" />
+            <span className="text-xs text-muted-foreground/60">All systems operational</span>
+          </div>
         </div>
-        <span className="text-sm font-bold font-display text-foreground">Eternia</span>
-      </Link>
 
-      <p className="text-xs text-muted-foreground">
-        © 2024 Eternia. Institutional Student Wellbeing Platform. All rights reserved.
-      </p>
+        {/* Link columns */}
+        {Object.entries(footerLinks).map(([title, links]) => (
+          <div key={title}>
+            <h4 className="text-xs font-semibold text-foreground uppercase tracking-widest mb-4">{title}</h4>
+            <ul className="space-y-2.5">
+              {links.map((link) => (
+                <li key={link.label}>
+                  <a
+                    href={link.href}
+                    className="text-sm text-muted-foreground/60 hover:text-foreground transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
 
-      <div className="flex items-center gap-6">
-        <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
-        <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms</a>
-        <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Support</a>
+    {/* Bottom bar */}
+    <div className="border-t border-border/20">
+      <div className="container mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground/40">
+          © 2024 Eternia. All rights reserved.
+        </p>
+        <p className="text-xs text-muted-foreground/40">
+          Built with ❤️ for student wellbeing
+        </p>
       </div>
     </div>
   </footer>
