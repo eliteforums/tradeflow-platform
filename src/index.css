@@ -2,68 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
-    /* VideoSDK-inspired dark theme for Eternia */
-    --background: 240 10% 4%;
-    --foreground: 0 0% 95%;
+    --background: 220 14% 6%;
+    --foreground: 210 20% 96%;
 
-    --card: 240 10% 6%;
-    --card-foreground: 0 0% 95%;
+    --card: 220 13% 9%;
+    --card-foreground: 210 20% 96%;
 
-    --popover: 240 10% 6%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 220 13% 9%;
+    --popover-foreground: 210 20% 96%;
 
-    --primary: 174 62% 47%;
-    --primary-foreground: 240 10% 4%;
+    --primary: 166 72% 46%;
+    --primary-foreground: 220 14% 6%;
 
-    --secondary: 270 60% 65%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 262 52% 60%;
+    --secondary-foreground: 210 20% 96%;
 
-    --muted: 240 8% 12%;
-    --muted-foreground: 240 5% 55%;
+    --muted: 220 12% 14%;
+    --muted-foreground: 220 10% 50%;
 
-    --accent: 270 60% 65%;
-    --accent-foreground: 0 0% 95%;
+    --accent: 262 52% 60%;
+    --accent-foreground: 210 20% 96%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 95%;
+    --destructive: 0 68% 55%;
+    --destructive-foreground: 210 20% 96%;
 
-    --border: 240 8% 15%;
-    --input: 240 8% 12%;
-    --ring: 174 62% 47%;
+    --border: 220 12% 16%;
+    --input: 220 12% 14%;
+    --ring: 166 72% 46%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    /* Custom Eternia tokens */
-    --eternia-teal: 174 62% 47%;
-    --eternia-teal-glow: 174 70% 55%;
-    --eternia-lavender: 270 60% 65%;
-    --eternia-lavender-glow: 270 70% 75%;
-    --eternia-violet: 270 80% 60%;
-    --eternia-violet-glow: 270 90% 75%;
-    --eternia-dark: 240 10% 4%;
-    --eternia-dark-card: 240 10% 6%;
-    --eternia-dark-elevated: 240 10% 10%;
-    --eternia-success: 160 84% 39%;
-    --eternia-warning: 38 92% 50%;
-    --eternia-gradient-start: 174 62% 47%;
-    --eternia-gradient-end: 270 60% 65%;
+    /* Eternia brand tokens */
+    --eternia-teal: 166 72% 46%;
+    --eternia-teal-glow: 166 80% 56%;
+    --eternia-lavender: 262 52% 60%;
+    --eternia-lavender-glow: 262 62% 72%;
+    --eternia-violet: 275 70% 58%;
+    --eternia-violet-glow: 275 80% 72%;
+    --eternia-dark: 220 14% 6%;
+    --eternia-dark-card: 220 13% 9%;
+    --eternia-dark-elevated: 220 13% 12%;
+    --eternia-success: 158 64% 46%;
+    --eternia-warning: 36 90% 56%;
+    --eternia-gradient-start: 166 72% 46%;
+    --eternia-gradient-end: 262 52% 60%;
 
-    --sidebar-background: 240 10% 3%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 174 62% 47%;
-    --sidebar-primary-foreground: 240 10% 4%;
-    --sidebar-accent: 240 10% 10%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 240 8% 12%;
-    --sidebar-ring: 174 62% 47%;
+    --sidebar-background: 220 14% 5%;
+    --sidebar-foreground: 210 20% 96%;
+    --sidebar-primary: 166 72% 46%;
+    --sidebar-primary-foreground: 220 14% 6%;
+    --sidebar-accent: 220 13% 12%;
+    --sidebar-accent-foreground: 210 20% 96%;
+    --sidebar-border: 220 12% 14%;
+    --sidebar-ring: 166 72% 46%;
   }
 
   .dark {
-    /* Same as root - already dark */
+    /* Same as root — dark-first design */
   }
 }
 
@@ -74,15 +73,18 @@
 
   html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
   }
 }
 
@@ -101,11 +103,11 @@
   }
 
   .bg-gradient-eternia-subtle {
-    background: linear-gradient(135deg, hsl(var(--eternia-teal) / 0.1), hsl(var(--eternia-lavender) / 0.1));
+    background: linear-gradient(135deg, hsl(var(--eternia-teal) / 0.08), hsl(var(--eternia-lavender) / 0.08));
   }
 
   .bg-gradient-violet {
-    background: linear-gradient(135deg, hsl(var(--eternia-lavender) / 0.15), hsl(var(--eternia-violet) / 0.05));
+    background: linear-gradient(135deg, hsl(var(--eternia-lavender) / 0.12), hsl(var(--eternia-violet) / 0.04));
   }
 
   .border-gradient-eternia {
@@ -115,87 +117,72 @@
   }
 
   .glow-teal {
-    box-shadow: 0 0 40px hsl(var(--eternia-teal) / 0.3), 0 0 80px hsl(var(--eternia-teal) / 0.1);
+    box-shadow: 0 0 30px hsl(var(--eternia-teal) / 0.25), 0 0 60px hsl(var(--eternia-teal) / 0.08);
   }
 
   .glow-lavender {
-    box-shadow: 0 0 40px hsl(var(--eternia-lavender) / 0.3), 0 0 80px hsl(var(--eternia-lavender) / 0.1);
-  }
-
-  .glow-violet {
-    box-shadow: 0 0 60px hsl(var(--eternia-violet) / 0.4), 0 0 120px hsl(var(--eternia-violet) / 0.15);
+    box-shadow: 0 0 30px hsl(var(--eternia-lavender) / 0.25), 0 0 60px hsl(var(--eternia-lavender) / 0.08);
   }
 
   .glass {
-    @apply bg-card/50 backdrop-blur-xl border border-border/50;
+    @apply bg-card/60 backdrop-blur-2xl border border-border/40;
   }
 
   .glass-strong {
-    @apply bg-card/80 backdrop-blur-2xl border border-border/50;
-  }
-
-  .glass-violet {
-    background: hsl(var(--eternia-lavender) / 0.08);
-    backdrop-filter: blur(20px);
-    border: 1px solid hsl(var(--eternia-lavender) / 0.15);
+    @apply bg-card/85 backdrop-blur-2xl border border-border/40;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-eternia text-primary-foreground font-semibold px-6 py-3 rounded-lg 
-           hover:opacity-90 transition-all duration-200 shadow-lg shadow-primary/20;
+    @apply bg-gradient-eternia text-primary-foreground font-semibold px-6 py-3 rounded-xl
+           hover:opacity-90 transition-all duration-200 shadow-lg shadow-primary/15;
   }
 
   .btn-secondary {
-    @apply border border-border bg-muted/50 text-foreground font-medium px-6 py-3 rounded-lg 
+    @apply border border-border bg-muted/50 text-foreground font-medium px-6 py-3 rounded-xl
            hover:bg-muted transition-all duration-200;
   }
 
-  .btn-ghost {
-    @apply text-muted-foreground hover:text-foreground hover:bg-muted/50 px-4 py-2 rounded-lg transition-all duration-200;
-  }
-
-  .card-interactive {
-    @apply bg-card border border-border rounded-2xl p-6 transition-all duration-300
-           hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1;
-  }
-
   .input-eternia {
-    @apply bg-muted/50 border border-border rounded-lg px-4 py-3 w-full
-           focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary
+    @apply bg-muted/50 border border-border rounded-xl px-4 py-3 w-full
+           focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary
            placeholder:text-muted-foreground transition-all duration-200;
   }
 
   .portal-card {
-    @apply relative overflow-hidden rounded-2xl p-6 transition-all duration-300
-           hover:shadow-2xl hover:-translate-y-2 cursor-pointer;
+    @apply relative overflow-hidden rounded-2xl p-5 sm:p-6 transition-all duration-300
+           hover:shadow-xl hover:-translate-y-1 cursor-pointer active:scale-[0.98];
   }
 
   .section-title {
-    @apply text-3xl md:text-4xl font-bold tracking-tight;
-    font-family: 'Space Grotesk', sans-serif;
+    @apply text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight;
+    font-family: 'Outfit', sans-serif;
   }
 
   .section-subtitle {
-    @apply text-muted-foreground text-lg max-w-2xl;
+    @apply text-muted-foreground text-base sm:text-lg max-w-2xl;
+  }
+
+  /* Safe area for mobile bottom nav */
+  .pb-safe {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
-/* Custom scrollbar */
+/* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
-  border-radius: 4px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {

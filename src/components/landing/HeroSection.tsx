@@ -46,203 +46,189 @@ const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) =
 };
 
 const HeroSection = () => (
-  <section className="relative pt-16 sm:pt-24 pb-8 px-4 sm:px-6 overflow-hidden">
-    {/* Animated grid background */}
-    <div className="absolute inset-0 overflow-hidden">
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
-        }}
+  <section className="relative pt-12 sm:pt-20 pb-6 sm:pb-8 px-4 sm:px-6 overflow-hidden">
+    {/* Ambient glow — subtle, warm */}
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <motion.div
+        animate={{ scale: [1, 1.15, 1], opacity: [0.12, 0.2, 0.12] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute -top-32 left-1/2 -translate-x-1/2 w-[320px] sm:w-[600px] h-[280px] sm:h-[500px] rounded-full"
+        style={{ background: "radial-gradient(ellipse, hsl(262 52% 60% / 0.25), transparent 70%)" }}
       />
       <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -top-40 left-1/2 -translate-x-1/2 w-[400px] sm:w-[800px] h-[300px] sm:h-[600px] rounded-full"
-        style={{ background: "radial-gradient(ellipse, hsl(270 60% 65% / 0.3), transparent 70%)" }}
-      />
-      <motion.div
-        animate={{ scale: [1, 1.15, 1], opacity: [0.1, 0.2, 0.1] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-        className="absolute -bottom-20 left-1/4 w-[300px] sm:w-[500px] h-[200px] sm:h-[400px] rounded-full"
-        style={{ background: "radial-gradient(ellipse, hsl(174 62% 47% / 0.2), transparent 70%)" }}
+        animate={{ scale: [1, 1.1, 1], opacity: [0.08, 0.15, 0.08] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 3 }}
+        className="absolute bottom-0 left-1/3 w-[250px] sm:w-[450px] h-[200px] sm:h-[350px] rounded-full"
+        style={{ background: "radial-gradient(ellipse, hsl(166 72% 46% / 0.15), transparent 70%)" }}
       />
     </div>
 
     <div className="container mx-auto relative z-10">
       {/* Badge */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex justify-center mb-6 sm:mb-8"
+        transition={{ duration: 0.4 }}
+        className="flex justify-center mb-5 sm:mb-7"
       >
-        <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full border border-border/50 bg-card/50 backdrop-blur-sm">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/60 border border-border/40 backdrop-blur-sm">
           <div className="w-1.5 h-1.5 rounded-full bg-eternia-success animate-pulse" />
-          <span className="text-[11px] sm:text-xs text-muted-foreground">Now serving 50+ institutions across India</span>
-          <ArrowRight className="w-3 h-3 text-muted-foreground hidden sm:block" />
+          <span className="text-[11px] sm:text-xs text-muted-foreground">Trusted by 50+ institutions</span>
         </div>
       </motion.div>
 
       {/* Headline */}
       <motion.h1
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.1 }}
-        className="text-center text-3xl sm:text-5xl md:text-7xl lg:text-[80px] font-bold font-display leading-[1.1] sm:leading-[1.05] tracking-tight mb-4 sm:mb-6 max-w-5xl mx-auto"
+        transition={{ duration: 0.6, delay: 0.1 }}
+        className="text-center text-[28px] leading-[1.15] sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display tracking-tight mb-4 sm:mb-5 max-w-4xl mx-auto"
       >
-        The Platform That Makes{" "}
+        Mental wellness, made{" "}
         <span className="text-gradient">
-          <TypewriterText text="Student Wellbeing Anonymous" delay={800} />
+          <TypewriterText text="anonymous" delay={700} />
         </span>
         <motion.span
           animate={{ opacity: [1, 0] }}
           transition={{ duration: 0.5, repeat: Infinity }}
-          className="inline-block w-[2px] sm:w-[3px] h-[0.85em] bg-primary ml-1 align-middle"
+          className="inline-block w-[2px] h-[0.8em] bg-primary ml-0.5 align-middle"
         />
       </motion.h1>
 
       {/* Subtitle */}
       <motion.p
-        initial={{ opacity: 0, y: 15 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.6 }}
-        className="text-center text-base sm:text-lg md:text-xl text-muted-foreground mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed px-2"
+        transition={{ delay: 0.25, duration: 0.5 }}
+        className="text-center text-[15px] sm:text-lg text-muted-foreground mb-7 sm:mb-9 max-w-lg sm:max-w-2xl mx-auto leading-relaxed"
       >
-        Counselling, peer support, emotional tools & sound therapy — all anonymous, 
-        institution-controlled, and DPDP-compliant.
+        Counselling, peer support, emotional tools & sound therapy — all anonymous, institution-controlled, and DPDP-compliant.
       </motion.p>
 
       {/* CTAs */}
       <motion.div
-        initial={{ opacity: 0, y: 15 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5, duration: 0.6 }}
-        className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6"
+        transition={{ delay: 0.4, duration: 0.5 }}
+        className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3 mb-6"
       >
         <Link to="/institution-code" className="w-full sm:w-auto">
-          <Button size="lg" className="w-full sm:w-auto rounded-full bg-foreground text-background hover:bg-foreground/90 text-sm sm:text-base px-6 sm:px-8 h-12 sm:h-13 gap-2 shadow-lg shadow-foreground/10">
-            Start Free Trial
+          <Button size="lg" className="w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm sm:text-base px-7 sm:px-8 h-12 gap-2 font-semibold shadow-lg shadow-primary/20">
+            Get Started Free
             <ArrowRight className="w-4 h-4" />
           </Button>
         </Link>
         <Link to="/login" className="w-full sm:w-auto">
-          <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-border/50 text-foreground hover:bg-card text-sm sm:text-base px-6 sm:px-8 h-12 sm:h-13 gap-2">
+          <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-border/60 text-foreground hover:bg-card text-sm sm:text-base px-7 sm:px-8 h-12 gap-2">
             <Play className="w-4 h-4" />
             Watch Demo
           </Button>
         </Link>
       </motion.div>
 
-      {/* Social proof mini */}
+      {/* Trust signals */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.7 }}
-        className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs sm:text-sm text-muted-foreground mb-10 sm:mb-16"
+        transition={{ delay: 0.6 }}
+        className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[12px] sm:text-sm text-muted-foreground mb-10 sm:mb-14"
       >
         <div className="flex items-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+          <Shield className="w-3.5 h-3.5 text-primary" />
           <span>DPDP Compliant</span>
         </div>
-        <div className="w-1 h-1 rounded-full bg-border hidden sm:block" />
         <div className="flex items-center gap-1.5">
-          <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-eternia-warning" />
+          <Star className="w-3.5 h-3.5 text-eternia-warning" />
           <span>4.9/5 Rating</span>
         </div>
-        <div className="w-1 h-1 rounded-full bg-border hidden sm:block" />
         <div className="flex items-center gap-1.5">
-          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+          <Zap className="w-3.5 h-3.5 text-primary" />
           <span>5 min setup</span>
         </div>
       </motion.div>
 
-      {/* Dashboard Preview Mockup — hidden on small mobile for cleanliness */}
+      {/* Dashboard Preview — desktop only */}
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9, duration: 0.8 }}
-        className="relative max-w-5xl mx-auto hidden sm:block"
+        transition={{ delay: 0.8, duration: 0.7 }}
+        className="relative max-w-4xl mx-auto hidden md:block"
       >
-        <div className="absolute -inset-4 bg-gradient-to-t from-transparent via-eternia-lavender/5 to-eternia-teal/5 rounded-3xl blur-2xl" />
+        <div className="absolute -inset-6 bg-gradient-to-t from-transparent via-eternia-lavender/5 to-eternia-teal/5 rounded-3xl blur-2xl" />
         
-        <div className="relative rounded-2xl border border-border/50 bg-card/80 backdrop-blur-xl overflow-hidden shadow-2xl shadow-background/50">
-          {/* Browser chrome */}
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50 bg-muted/30">
+        <div className="relative rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl overflow-hidden shadow-2xl">
+          {/* Browser bar */}
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40 bg-muted/20">
             <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-destructive/40" />
-              <div className="w-3 h-3 rounded-full bg-eternia-warning/40" />
-              <div className="w-3 h-3 rounded-full bg-eternia-success/40" />
+              <div className="w-2.5 h-2.5 rounded-full bg-destructive/30" />
+              <div className="w-2.5 h-2.5 rounded-full bg-eternia-warning/30" />
+              <div className="w-2.5 h-2.5 rounded-full bg-eternia-success/30" />
             </div>
             <div className="flex-1 flex justify-center">
-              <div className="px-4 py-1 rounded-md bg-muted/50 text-xs text-muted-foreground">
+              <div className="px-4 py-0.5 rounded bg-muted/40 text-[11px] text-muted-foreground">
                 eternia.app/dashboard
               </div>
             </div>
           </div>
 
-          {/* Dashboard mock */}
-          <div className="p-4 md:p-6 grid grid-cols-12 gap-3 md:gap-4 min-h-[280px] md:min-h-[350px]">
-            {/* Sidebar mock */}
-            <div className="col-span-2 space-y-3">
-              <div className="h-8 rounded-lg bg-gradient-eternia opacity-80" />
+          {/* Mock content */}
+          <div className="p-5 grid grid-cols-12 gap-4 min-h-[300px]">
+            <div className="col-span-2 space-y-2">
+              <div className="h-7 rounded-lg bg-gradient-eternia opacity-70" />
               {[...Array(5)].map((_, i) => (
-                <div key={i} className={`h-7 rounded-md ${i === 0 ? 'bg-primary/15 border border-primary/20' : 'bg-muted/30'}`} />
+                <div key={i} className={`h-6 rounded-md ${i === 0 ? 'bg-primary/10 border border-primary/15' : 'bg-muted/20'}`} />
               ))}
             </div>
 
-            {/* Main content mock */}
-            <div className="col-span-7 space-y-4">
+            <div className="col-span-7 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="space-y-1.5">
-                  <div className="h-5 w-32 md:w-48 rounded bg-foreground/10" />
-                  <div className="h-3 w-20 md:w-32 rounded bg-muted-foreground/10" />
+                  <div className="h-4 w-44 rounded bg-foreground/8" />
+                  <div className="h-3 w-28 rounded bg-muted-foreground/8" />
                 </div>
-                <div className="h-8 w-16 md:w-24 rounded-lg bg-gradient-eternia opacity-70" />
+                <div className="h-7 w-20 rounded-lg bg-gradient-eternia opacity-60" />
               </div>
               
-              <div className="grid grid-cols-3 gap-2 md:gap-3">
+              <div className="grid grid-cols-3 gap-2.5">
                 {[
-                  { color: "from-emerald-500/20 to-teal-500/20", border: "border-emerald-500/20" },
-                  { color: "from-pink-500/20 to-rose-500/20", border: "border-pink-500/20" },
-                  { color: "from-violet-500/20 to-purple-500/20", border: "border-violet-500/20" },
+                  { color: "from-emerald-500/15 to-teal-500/15", border: "border-emerald-500/15" },
+                  { color: "from-pink-500/15 to-rose-500/15", border: "border-pink-500/15" },
+                  { color: "from-violet-500/15 to-purple-500/15", border: "border-violet-500/15" },
                 ].map((card, i) => (
-                  <div key={i} className={`rounded-xl bg-gradient-to-br ${card.color} border ${card.border} p-3 md:p-4 space-y-2`}>
-                    <div className="w-6 md:w-8 h-6 md:h-8 rounded-lg bg-foreground/5" />
-                    <div className="h-3 w-14 md:w-20 rounded bg-foreground/10" />
-                    <div className="h-2 w-10 md:w-16 rounded bg-muted-foreground/10" />
+                  <div key={i} className={`rounded-xl bg-gradient-to-br ${card.color} border ${card.border} p-3 space-y-1.5`}>
+                    <div className="w-7 h-7 rounded-lg bg-foreground/4" />
+                    <div className="h-2.5 w-16 rounded bg-foreground/8" />
+                    <div className="h-2 w-12 rounded bg-muted-foreground/8" />
                   </div>
                 ))}
               </div>
 
-              <div className="rounded-xl border border-border/30 bg-muted/10 p-3 md:p-4 h-24 md:h-32 flex items-end gap-1">
+              <div className="rounded-xl border border-border/20 bg-muted/8 p-3 h-28 flex items-end gap-0.5">
                 {[40, 65, 45, 80, 55, 70, 90, 60, 75, 85, 50, 95].map((h, i) => (
                   <motion.div
                     key={i}
-                    className="flex-1 rounded-t bg-gradient-to-t from-primary/40 to-primary/10"
+                    className="flex-1 rounded-t bg-gradient-to-t from-primary/30 to-primary/8"
                     initial={{ height: 0 }}
                     animate={{ height: `${h}%` }}
-                    transition={{ delay: 1.2 + i * 0.05, duration: 0.5 }}
+                    transition={{ delay: 1 + i * 0.04, duration: 0.4 }}
                   />
                 ))}
               </div>
             </div>
 
-            {/* Right panel mock */}
-            <div className="col-span-3 space-y-3">
-              <div className="rounded-xl border border-border/30 bg-muted/10 p-3 md:p-4 space-y-3">
-                <div className="h-4 w-16 md:w-20 rounded bg-foreground/10" />
-                <div className="text-2xl md:text-3xl font-bold font-display text-gradient">100</div>
-                <div className="h-2 w-16 md:w-24 rounded bg-muted-foreground/10" />
+            <div className="col-span-3 space-y-2.5">
+              <div className="rounded-xl border border-border/20 bg-muted/8 p-3 space-y-2">
+                <div className="h-3 w-16 rounded bg-foreground/8" />
+                <div className="text-2xl font-bold font-display text-gradient">100</div>
+                <div className="h-2 w-20 rounded bg-muted-foreground/6" />
               </div>
-              <div className="rounded-xl border border-border/30 bg-muted/10 p-3 md:p-4 space-y-2">
+              <div className="rounded-xl border border-border/20 bg-muted/8 p-3 space-y-2">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="flex items-center gap-2">
-                    <div className="w-5 md:w-6 h-5 md:h-6 rounded-full bg-primary/10" />
+                    <div className="w-5 h-5 rounded-full bg-primary/8" />
                     <div className="flex-1 space-y-1">
-                      <div className="h-2.5 w-full rounded bg-foreground/5" />
-                      <div className="h-2 w-2/3 rounded bg-muted-foreground/5" />
+                      <div className="h-2 w-full rounded bg-foreground/4" />
+                      <div className="h-1.5 w-2/3 rounded bg-muted-foreground/4" />
                     </div>
                   </div>
                 ))}
@@ -251,7 +237,7 @@ const HeroSection = () => (
           </div>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" />
       </motion.div>
     </div>
   </section>
