@@ -30,7 +30,7 @@ import SoundManager from "@/components/admin/SoundManager";
 import InstitutionManager from "@/components/admin/InstitutionManager";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile } = useAuth();
   const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
