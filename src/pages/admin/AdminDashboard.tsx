@@ -43,7 +43,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit" | "roles" | "experts">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile } = useAuth();
-  const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
+  const { isAdmin, isSuperAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
 
   if (!isAdmin) {
     return (
