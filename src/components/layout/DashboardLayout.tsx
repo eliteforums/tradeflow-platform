@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -11,6 +11,7 @@ import {
   User,
   LogOut,
   ChevronLeft,
+  Shield,
 } from "lucide-react";
 import EterniaLogo from "@/components/EterniaLogo";
 import { Button } from "@/components/ui/button";
