@@ -93,11 +93,12 @@ const AdminDashboard = () => {
         {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {([
-            { id: "overview", label: "Overview", icon: BarChart3 },
-            { id: "members", label: `Members (${members.length})`, icon: Users },
-            { id: "sessions", label: "Sessions", icon: Calendar },
-            { id: "flags", label: `Flags (${flaggedEntries.length})`, icon: AlertTriangle },
-          ] as const).map((tab) => (
+            { id: "overview" as const, label: "Overview", icon: BarChart3 },
+            { id: "members" as const, label: `Members (${members.length})`, icon: Users },
+            { id: "sessions" as const, label: "Sessions", icon: Calendar },
+            { id: "flags" as const, label: `Flags (${flaggedEntries.length})`, icon: AlertTriangle },
+            { id: "sounds" as const, label: "Sounds", icon: Music },
+          ]).map((tab) => (
             <Button
               key={tab.id}
               variant={activeTab === tab.id ? "default" : "ghost"}
