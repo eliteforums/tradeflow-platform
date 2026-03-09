@@ -22,8 +22,7 @@ const steps = [
 ];
 
 const HowItWorksSection = () => (
-  <section id="how-it-works" className="py-28 px-6 relative">
-    {/* Subtle bg */}
+  <section id="how-it-works" className="py-16 sm:py-28 px-4 sm:px-6 relative">
     <div className="absolute inset-0 bg-muted/10" />
 
     <div className="container mx-auto relative z-10">
@@ -31,15 +30,15 @@ const HowItWorksSection = () => (
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="text-center mb-16"
+        className="text-center mb-10 sm:mb-16"
       >
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 mb-4 sm:mb-6">
           <span className="text-xs font-medium text-primary uppercase tracking-wider">Getting Started</span>
         </div>
         <h2 className="section-title">
           <span className="text-gradient">Three steps</span> to anonymous support
         </h2>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto mt-4">
+        <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto mt-3 sm:mt-4">
           Institution-controlled onboarding ensures privacy from day one.
         </p>
       </motion.div>
@@ -52,22 +51,21 @@ const HowItWorksSection = () => (
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.12 }}
-            className="relative flex gap-6 mb-1 last:mb-0"
+            className="relative flex gap-4 sm:gap-6 mb-1 last:mb-0"
           >
-            {/* Vertical line connector */}
             {index < steps.length - 1 && (
-              <div className="absolute left-7 top-[72px] w-px h-[calc(100%-40px)] bg-gradient-to-b from-primary/20 to-transparent" />
+              <div className="absolute left-5 sm:left-7 top-[60px] sm:top-[72px] w-px h-[calc(100%-32px)] sm:h-[calc(100%-40px)] bg-gradient-to-b from-primary/20 to-transparent" />
             )}
 
             <div className="relative z-10 shrink-0">
-              <div className="w-14 h-14 rounded-xl bg-gradient-eternia flex items-center justify-center shadow-lg shadow-primary/10">
-                <span className="text-lg font-bold font-display text-primary-foreground">{item.step}</span>
+              <div className="w-10 sm:w-14 h-10 sm:h-14 rounded-xl bg-gradient-eternia flex items-center justify-center shadow-lg shadow-primary/10">
+                <span className="text-sm sm:text-lg font-bold font-display text-primary-foreground">{item.step}</span>
               </div>
             </div>
 
-            <div className="pb-10">
-              <h3 className="text-lg font-semibold font-display mb-1 text-foreground">{item.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-1.5">{item.description}</p>
+            <div className="pb-8 sm:pb-10">
+              <h3 className="text-base sm:text-lg font-semibold font-display mb-1 text-foreground">{item.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-1">{item.description}</p>
               <p className="text-xs text-muted-foreground/50 italic">{item.detail}</p>
             </div>
           </motion.div>
