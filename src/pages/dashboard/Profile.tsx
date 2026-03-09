@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AccountDeletion from "@/components/admin/AccountDeletion";
 
 const Profile = () => {
   const { user, profile, refreshProfile } = useAuth();
