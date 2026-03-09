@@ -1,28 +1,16 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
-  Building2,
-  Plus,
-  Copy,
-  Check,
-  Loader2,
-  Users,
-  Coins,
-  ToggleLeft,
-  ToggleRight,
-  Trash2,
+  Building2, Plus, Copy, Check, Loader2, Coins,
+  ToggleLeft, ToggleRight,
 } from "lucide-react";
 
 function generateEterniaCode(name: string): string {
-  const prefix = name
-    .replace(/[^a-zA-Z]/g, "")
-    .toUpperCase()
-    .slice(0, 4);
+  const prefix = name.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 4);
   const year = new Date().getFullYear();
   const rand = Math.random().toString(36).substring(2, 5).toUpperCase();
   return `${prefix}${year}${rand}`;
@@ -97,187 +85,119 @@ const InstitutionManager = () => {
   const copyCode = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
     setCopiedId(id);
-    toast.success("Code copied to clipboard!");
+    toast.success("Code copied!");
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Building2 className="w-5 h-5 text-primary" />
+        <h2 className="text-sm font-semibold flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-primary" />
           Institutions ({institutions.length})
         </h2>
-        <Button
-          onClick={() => setShowForm(!showForm)}
-          className="gap-2"
-          size="sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Institution
+        <Button onClick={() => setShowForm(!showForm)} className="gap-1.5 h-8 text-xs" size="sm">
+          <Plus className="w-3.5 h-3.5" />
+          Add
         </Button>
       </div>
 
       {showForm && (
-        <Card className="border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Create New Institution</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="p-3 rounded-xl bg-card border border-primary/20 space-y-3">
+          <p className="font-medium text-sm">New Institution</p>
+          <Input
+            placeholder="Institution Name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            className="h-9"
+          />
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                Institution Name
-              </label>
-              <Input
-                placeholder="e.g. IIT Bombay"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                className="h-10"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                  Plan Type
-                </label>
-                <select
-                  value={newPlan}
-                  onChange={(e) => setNewPlan(e.target.value)}
-                  className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm"
-                >
-                  <option value="basic">Basic</option>
-                  <option value="premium">Premium</option>
-                  <option value="enterprise">Enterprise</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                  Credit Pool
-                </label>
-                <Input
-                  type="number"
-                  value={newCredits}
-                  onChange={(e) => setNewCredits(e.target.value)}
-                  className="h-10"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => createMutation.mutate()}
-                disabled={!newName.trim() || createMutation.isPending}
-                className="gap-2"
+              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Plan</label>
+              <select
+                value={newPlan}
+                onChange={(e) => setNewPlan(e.target.value)}
+                className="w-full h-9 rounded-md border border-border bg-background px-2 text-xs"
               >
-                {createMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Plus className="w-4 h-4" />
-                )}
-                Generate Code & Create
-              </Button>
-              <Button variant="ghost" onClick={() => setShowForm(false)}>
-                Cancel
-              </Button>
+                <option value="basic">Basic</option>
+                <option value="premium">Premium</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Credits</label>
+              <Input type="number" value={newCredits} onChange={(e) => setNewCredits(e.target.value)} className="h-9" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => createMutation.mutate()}
+              disabled={!newName.trim() || createMutation.isPending}
+              className="gap-1.5 h-8 text-xs"
+              size="sm"
+            >
+              {createMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              Create
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowForm(false)}>Cancel</Button>
+          </div>
+        </div>
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
+        <div className="flex justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : institutions.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <Building2 className="w-12 h-12 mx-auto mb-3 opacity-40" />
-            <p className="font-medium">No institutions yet</p>
-            <p className="text-sm">Create your first institution to generate an Eternia code.</p>
-          </CardContent>
-        </Card>
+        <div className="text-center py-10 text-muted-foreground bg-card rounded-xl border border-border/50">
+          <Building2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
+          <p className="text-sm font-medium">No institutions yet</p>
+          <p className="text-xs">Create one to generate an Eternia code.</p>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {institutions.map((inst) => (
-            <Card
+            <div
               key={inst.id}
-              className={`transition-all ${
-                !inst.is_active ? "opacity-60" : ""
-              }`}
+              className={`p-3 rounded-xl bg-card border border-border/50 transition-all ${!inst.is_active ? "opacity-60" : ""}`}
             >
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-sm truncate">
-                        {inst.name}
-                      </h3>
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${
-                          inst.is_active
-                            ? "bg-eternia-success/10 text-eternia-success"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {inst.is_active ? "Active" : "Inactive"}
-                      </span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-primary/10 text-primary">
-                        {inst.plan_type}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Coins className="w-3 h-3" />
-                        {inst.credits_pool} credits
-                      </span>
-                      <span>
-                        Created{" "}
-                        {new Date(inst.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* Eternia Code display */}
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/50">
-                      <code className="text-xs font-mono font-semibold tracking-widest text-foreground">
-                        {inst.eternia_code_hash}
-                      </code>
-                      <button
-                        onClick={() =>
-                          copyCode(inst.eternia_code_hash, inst.id)
-                        }
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {copiedId === inst.id ? (
-                          <Check className="w-3.5 h-3.5 text-eternia-success" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
-
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        toggleMutation.mutate({
-                          id: inst.id,
-                          is_active: inst.is_active,
-                        })
-                      }
-                      className="gap-1 text-xs"
-                    >
-                      {inst.is_active ? (
-                        <ToggleRight className="w-4 h-4 text-eternia-success" />
-                      ) : (
-                        <ToggleLeft className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <h3 className="font-semibold text-sm truncate">{inst.name}</h3>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                    inst.is_active ? "bg-emerald-500/10 text-emerald-500" : "bg-muted text-muted-foreground"
+                  }`}>
+                    {inst.is_active ? "Active" : "Off"}
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary uppercase">
+                    {inst.plan_type}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-0.5"><Coins className="w-2.5 h-2.5" />{inst.credits_pool}</span>
+                  <span>{new Date(inst.created_at).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 border border-border/50">
+                    <code className="text-[10px] font-mono font-semibold tracking-wider">{inst.eternia_code_hash}</code>
+                    <button onClick={() => copyCode(inst.eternia_code_hash, inst.id)} className="text-muted-foreground">
+                      {copiedId === inst.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                    </button>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => toggleMutation.mutate({ id: inst.id, is_active: inst.is_active })}
+                  >
+                    {inst.is_active ? <ToggleRight className="w-4 h-4 text-emerald-500" /> : <ToggleLeft className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}

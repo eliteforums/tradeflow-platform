@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX,
-  Clock, Headphones, Loader2, ChevronUp, ChevronDown, X,
+  Clock, Headphones, Loader2, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -89,11 +90,10 @@ const SoundTherapy = () => {
 
   const hasPlayer = !!currentTrackData;
 
-  /* ─── MOBILE FULL-SCREEN PLAYER ─── */
-  if (isMobile && showExpanded && currentTrackData) {
-    return (
-      <DashboardLayout>
-        <div className="fixed inset-0 z-50 bg-background flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+  /* ─── MOBILE FULL-SCREEN PLAYER (rendered via portal to escape layout) ─── */
+  const expandedPlayer = isMobile && showExpanded && currentTrackData
+    ? createPortal(
+        <div className="fixed inset-0 z-[100] bg-background flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
           {/* Close bar */}
           <div className="flex items-center justify-between px-4 py-3">
             <button onClick={() => setShowExpanded(false)} className="text-muted-foreground">
@@ -111,7 +111,7 @@ const SoundTherapy = () => {
           </div>
 
           {/* Info + Controls */}
-          <div className="px-6 pb-6 space-y-5">
+          <div className="px-6 pb-8 space-y-5">
             <div className="text-center">
               <h2 className="text-lg font-bold font-display truncate">{currentTrackData.title}</h2>
               <p className="text-sm text-muted-foreground">{currentTrackData.artist || "Unknown"}</p>
@@ -150,13 +150,14 @@ const SoundTherapy = () => {
               <Slider value={isMuted ? [0] : volume} onValueChange={setVolume} max={100} step={1} className="flex-1" />
             </div>
           </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+        </div>,
+        document.body
+      )
+    : null;
 
   return (
     <DashboardLayout>
+      {expandedPlayer}
       <div className="max-w-4xl mx-auto space-y-3 sm:space-y-5">
         {/* Header */}
         <div>
@@ -193,7 +194,7 @@ const SoundTherapy = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-5">
           {/* Track List */}
-          <div className={`lg:col-span-2 space-y-1.5 sm:space-y-2 ${hasPlayer ? "pb-24 lg:pb-0" : ""}`}>
+          <div className={`lg:col-span-2 space-y-1.5 sm:space-y-2 ${hasPlayer ? "pb-28 lg:pb-0" : ""}`}>
             {filteredTracks.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <Music className="w-8 h-8 mx-auto mb-2 opacity-50" />

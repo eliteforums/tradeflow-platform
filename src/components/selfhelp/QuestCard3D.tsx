@@ -17,10 +17,10 @@ interface QuestCard3DProps {
   onComplete: (id: string) => void;
 }
 
-/* ── Mobile 2D cards ── */
+/* ── Mobile 2D cards — full-width grid ── */
 function QuestCards2D({ quests, completedIds, onComplete }: QuestCard3DProps) {
   return (
-    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2.5">
+    <div className="grid grid-cols-3 gap-2">
       {quests.slice(0, 3).map((quest) => {
         const done = completedIds.includes(quest.id);
         return (
@@ -28,29 +28,29 @@ function QuestCards2D({ quests, completedIds, onComplete }: QuestCard3DProps) {
             key={quest.id}
             onClick={() => !done && onComplete(quest.id)}
             disabled={done}
-            className={`relative p-4 rounded-xl border text-left transition-all active:scale-[0.97] ${
+            className={`relative p-3 rounded-xl border text-left transition-all active:scale-[0.97] ${
               done
                 ? "bg-emerald-500/10 border-emerald-500/30"
                 : "bg-card border-border hover:border-primary/40"
             }`}
           >
             <div
-              className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2.5 ${
+              className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${
                 done
                   ? "bg-emerald-500/20"
                   : "bg-gradient-to-br from-amber-500 to-orange-500"
               }`}
             >
               {done ? (
-                <CheckCircle className="w-5 h-5 text-emerald-500" />
+                <CheckCircle className="w-4 h-4 text-emerald-500" />
               ) : (
-                <Award className="w-5 h-5 text-white" />
+                <Award className="w-4 h-4 text-white" />
               )}
             </div>
-            <p className="text-sm font-semibold line-clamp-2 leading-snug mb-1.5">
+            <p className="text-[11px] font-semibold line-clamp-2 leading-snug mb-1">
               {quest.title}
             </p>
-            <span className={`text-xs font-medium ${done ? "text-emerald-500" : "text-primary"}`}>
+            <span className={`text-[10px] font-medium ${done ? "text-emerald-500" : "text-primary"}`}>
               {done ? "✓ Done" : `+${quest.xp_reward} XP`}
             </span>
           </button>
