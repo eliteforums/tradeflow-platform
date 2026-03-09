@@ -14,7 +14,139 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      institutions: {
+        Row: {
+          created_at: string
+          credits_pool: number
+          eternia_code_hash: string
+          id: string
+          is_active: boolean
+          name: string
+          plan_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          credits_pool?: number
+          eternia_code_hash: string
+          id?: string
+          is_active?: boolean
+          name: string
+          plan_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          credits_pool?: number
+          eternia_code_hash?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          plan_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          id: string
+          institution_id: string | null
+          is_active: boolean
+          is_verified: boolean
+          last_login: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          specialty: string | null
+          streak_days: number
+          total_sessions: number
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          id: string
+          institution_id?: string | null
+          is_active?: boolean
+          is_verified?: boolean
+          last_login?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          specialty?: string | null
+          streak_days?: number
+          total_sessions?: number
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          id?: string
+          institution_id?: string | null
+          is_active?: boolean
+          is_verified?: boolean
+          last_login?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          specialty?: string | null
+          streak_days?: number
+          total_sessions?: number
+          updated_at?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_private: {
+        Row: {
+          created_at: string
+          device_id_encrypted: string | null
+          emergency_name_encrypted: string | null
+          emergency_phone_encrypted: string | null
+          emergency_relation: string | null
+          student_id_encrypted: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id_encrypted?: string | null
+          emergency_name_encrypted?: string | null
+          emergency_phone_encrypted?: string | null
+          emergency_relation?: string | null
+          student_id_encrypted?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id_encrypted?: string | null
+          emergency_name_encrypted?: string | null
+          emergency_phone_encrypted?: string | null
+          emergency_relation?: string | null
+          student_id_encrypted?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_private_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +155,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      app_role: "student" | "intern" | "expert" | "spoc" | "admin"
+      appointment_status: "pending" | "confirmed" | "completed" | "cancelled"
+      content_type: "text" | "voice"
+      credit_type: "earn" | "spend" | "grant" | "purchase"
+      peer_session_status: "pending" | "active" | "completed" | "flagged"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +286,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["student", "intern", "expert", "spoc", "admin"],
+      appointment_status: ["pending", "confirmed", "completed", "cancelled"],
+      content_type: ["text", "voice"],
+      credit_type: ["earn", "spend", "grant", "purchase"],
+      peer_session_status: ["pending", "active", "completed", "flagged"],
+    },
   },
 } as const
