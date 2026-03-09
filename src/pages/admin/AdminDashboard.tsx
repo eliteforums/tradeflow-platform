@@ -34,6 +34,7 @@ import InstitutionManager from "@/components/admin/InstitutionManager";
 import EscalationManager from "@/components/admin/EscalationManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import SPOCTools from "@/components/admin/SPOCTools";
+import RoleManager from "@/components/admin/RoleManager";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit">("overview");
