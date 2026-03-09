@@ -12,12 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { UserPlus, Loader2, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 const ROLES = [
   { value: "student", label: "Student" },
-  { value: "intern", label: "Intern" },
-  { value: "expert", label: "Expert (Therapist)" },
+  { value: "intern", label: "Intern (Peer Counselor)" },
+  { value: "expert", label: "Expert (Therapist / Psychologist)" },
   { value: "spoc", label: "SPOC / Grievance Officer" },
 ] as const;
 
@@ -67,6 +67,16 @@ export default function MemberManager() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  const getRoleDescription = (role: string) => {
+    switch (role) {
+      case "student": return "Can access all student features (BlackBox, Peer Connect, Expert Appointments, Self-Help)";
+      case "intern": return "Can accept peer session queue, conduct moderated chat sessions, flag for escalation";
+      case "expert": return "Can view appointment calendar, conduct sessions, add encrypted session notes";
+      case "spoc": return "Can onboard students via QR, allocate credits, view analytics, receive crisis alerts";
+      default: return "";
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -77,8 +87,8 @@ export default function MemberManager() {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Create a new user account and assign them to an institution with a specific role.
-          Login credentials will be: <code className="text-xs bg-muted px-1.5 py-0.5 rounded">username</code> + password you set.
+          Create a new user account with a specific role. Students can also self-register via the Eternia Code flow.
+          For Interns, Experts, and SPOCs, use this tool to create their accounts directly.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -87,11 +97,14 @@ export default function MemberManager() {
               Username *
             </label>
             <Input
-              placeholder="e.g. john_doe"
+              placeholder="e.g. dr_sharma"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="h-10"
             />
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Login: <code className="bg-muted px-1 rounded">{username.toLowerCase().replace(/\s+/g, '_') || 'username'}</code>
+            </p>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">
@@ -151,6 +164,15 @@ export default function MemberManager() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        {/* Role info */}
+        <div className="p-3 rounded-lg bg-muted/30 border border-border flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground capitalize">{selectedRole}:</span>{" "}
+            {getRoleDescription(selectedRole)}
+          </p>
         </div>
 
         <Button

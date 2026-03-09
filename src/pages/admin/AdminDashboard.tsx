@@ -37,12 +37,13 @@ import SPOCTools from "@/components/admin/SPOCTools";
 import RoleManager from "@/components/admin/RoleManager";
 import MemberManager from "@/components/admin/MemberManager";
 import ExpertManager from "@/components/admin/ExpertManager";
+import CreditGrantTool from "@/components/admin/CreditGrantTool";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit" | "roles" | "experts">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile } = useAuth();
-  const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
+  const { isAdmin, isSuperAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
 
   if (!isAdmin) {
     return (
@@ -246,16 +247,24 @@ const AdminDashboard = () => {
             {activeTab === "members" && (
               <Card>
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Institution Members</CardTitle>
-                    <div className="relative w-48">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 h-9 bg-muted/30"
-                      />
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <CardTitle className="text-base">
+                      {isSuperAdmin ? "All Platform Members" : "Institution Members"} ({members.length})
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setActiveTab("roles")}>
+                        <UserPlus className="w-4 h-4" />
+                        Add Member
+                      </Button>
+                      <div className="relative w-48">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-9 h-9 bg-muted/30"
+                        />
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
@@ -275,7 +284,17 @@ const AdminDashboard = () => {
                         {filteredMembers.length === 0 ? (
                           <tr>
                             <td colSpan={5} className="text-center py-8 text-muted-foreground">
-                              No members found
+                              {members.length === 0 ? (
+                                <div className="space-y-2">
+                                  <p>No members found</p>
+                                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setActiveTab("roles")}>
+                                    <UserPlus className="w-4 h-4" />
+                                    Add your first member
+                                  </Button>
+                                </div>
+                              ) : (
+                                "No members match your search"
+                              )}
                             </td>
                           </tr>
                         ) : (
@@ -291,7 +310,8 @@ const AdminDashboard = () => {
                               </td>
                               <td className="p-4">
                                 <span className={`px-2 py-1 rounded text-xs capitalize ${
-                                  member.role === "admin" || member.role === "spoc" ? "bg-primary/10 text-primary" :
+                                  member.role === "admin" ? "bg-destructive/10 text-destructive" :
+                                  member.role === "spoc" ? "bg-primary/10 text-primary" :
                                   member.role === "expert" ? "bg-eternia-success/10 text-eternia-success" :
                                   member.role === "intern" ? "bg-eternia-warning/10 text-eternia-warning" :
                                   "bg-muted text-muted-foreground"
@@ -469,6 +489,7 @@ const AdminDashboard = () => {
               <div className="space-y-6">
                 <MemberManager />
                 <RoleManager />
+                <CreditGrantTool />
               </div>
             )}
 
