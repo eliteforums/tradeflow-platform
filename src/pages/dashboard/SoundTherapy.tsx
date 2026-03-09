@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Music,
   Play,
@@ -6,86 +6,83 @@ import {
   SkipForward,
   SkipBack,
   Volume2,
-  Repeat,
-  Shuffle,
+  VolumeX,
   Heart,
   Clock,
   Headphones,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useSoundTherapy } from "@/hooks/useSoundTherapy";
 
 const SoundTherapy = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(0);
   const [volume, setVolume] = useState([75]);
-
-  const categories = [
-    { id: "meditation", name: "Meditation", count: 12 },
-    { id: "nature", name: "Nature Sounds", count: 18 },
-    { id: "focus", name: "Focus", count: 8 },
-    { id: "sleep", name: "Sleep", count: 15 },
-    { id: "stress", name: "Stress Relief", count: 10 },
-  ];
-
-  const tracks = [
-    {
-      id: 1,
-      title: "Calm Ocean Waves",
-      artist: "Nature Collection",
-      duration: "15:00",
-      category: "nature",
-      cover: "🌊",
-    },
-    {
-      id: 2,
-      title: "Guided Mindfulness",
-      artist: "Dr. Peace",
-      duration: "10:30",
-      category: "meditation",
-      cover: "🧘",
-    },
-    {
-      id: 3,
-      title: "Forest Rain",
-      artist: "Nature Collection",
-      duration: "20:00",
-      category: "nature",
-      cover: "🌲",
-    },
-    {
-      id: 4,
-      title: "Deep Focus Beats",
-      artist: "Study Sounds",
-      duration: "45:00",
-      category: "focus",
-      cover: "🎯",
-    },
-    {
-      id: 5,
-      title: "Sleep Stories",
-      artist: "Dreamland",
-      duration: "30:00",
-      category: "sleep",
-      cover: "🌙",
-    },
-    {
-      id: 6,
-      title: "Tibetan Singing Bowl",
-      artist: "Ancient Sounds",
-      duration: "12:00",
-      category: "meditation",
-      cover: "🔔",
-    },
-  ];
-
+  const [progress, setProgress] = useState([0]);
+  const [isMuted, setIsMuted] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
 
+  const { tracks, categories, isLoading, formatDuration } = useSoundTherapy();
+
   const filteredTracks =
-    activeCategory === "all"
-      ? tracks
-      : tracks.filter((t) => t.category === activeCategory);
+    activeCategory === "all" ? tracks : tracks.filter((t) => t.category === activeCategory);
+
+  const handleTrackSelect = (index: number) => {
+    setCurrentTrack(index);
+    setIsPlaying(true);
+    setProgress([0]);
+  };
+
+  const handleNext = () => {
+    if (currentTrack < filteredTracks.length - 1) {
+      setCurrentTrack((prev) => prev + 1);
+      setProgress([0]);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentTrack > 0) {
+      setCurrentTrack((prev) => prev - 1);
+      setProgress([0]);
+    }
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
+
+  // Simulate progress (in production, use actual audio element)
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        const newProgress = prev[0] + 0.5;
+        if (newProgress >= 100) {
+          handleNext();
+          return [0];
+        }
+        return [newProgress];
+      });
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, currentTrack]);
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const currentTrackData = filteredTracks[currentTrack];
 
   return (
     <DashboardLayout>
@@ -109,13 +106,15 @@ const SoundTherapy = () => {
           </Button>
           {categories.map((cat) => (
             <Button
-              key={cat.id}
-              variant={activeCategory === cat.id ? "default" : "outline"}
-              onClick={() => setActiveCategory(cat.id)}
-              className={activeCategory === cat.id ? "bg-primary" : ""}
+              key={cat}
+              variant={activeCategory === cat ? "default" : "outline"}
+              onClick={() => setActiveCategory(cat)}
+              className={activeCategory === cat ? "bg-primary" : ""}
             >
-              {cat.name}
-              <span className="ml-2 text-xs opacity-70">{cat.count}</span>
+              {cat.charAt(0).toUpperCase() + cat.slice(1)}
+              <span className="ml-2 text-xs opacity-70">
+                {tracks.filter((t) => t.category === cat).length}
+              </span>
             </Button>
           ))}
         </div>
@@ -123,46 +122,58 @@ const SoundTherapy = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Track List */}
           <div className="lg:col-span-2 space-y-3">
-            {filteredTracks.map((track, index) => (
-              <button
-                key={track.id}
-                onClick={() => {
-                  setCurrentTrack(index);
-                  setIsPlaying(true);
-                }}
-                className={`w-full p-4 rounded-xl text-left transition-all flex items-center gap-4 ${
-                  currentTrack === index
-                    ? "bg-primary/10 border-primary"
-                    : "bg-card hover:bg-muted/50"
-                } border border-border`}
-              >
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-2xl">
-                  {track.cover}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold truncate">{track.title}</h3>
-                  <p className="text-sm text-muted-foreground">{track.artist}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {track.duration}
-                  </span>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                    <Heart className="w-5 h-5" />
-                  </Button>
-                  {currentTrack === index && isPlaying ? (
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                      <Pause className="w-4 h-4 text-primary-foreground" />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                      <Play className="w-4 h-4" />
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
+            {filteredTracks.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Music className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No tracks in this category yet</p>
+              </div>
+            ) : (
+              filteredTracks.map((track, index) => (
+                <button
+                  key={track.id}
+                  onClick={() => handleTrackSelect(index)}
+                  className={`w-full p-4 rounded-xl text-left transition-all flex items-center gap-4 ${
+                    currentTrack === index && isPlaying
+                      ? "bg-primary/10 border-primary"
+                      : "bg-card hover:bg-muted/50"
+                  } border border-border`}
+                >
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-2xl">
+                    {track.cover_emoji || "🎵"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold truncate">{track.title}</h3>
+                    <p className="text-sm text-muted-foreground">{track.artist || "Unknown"}</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-muted-foreground flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {formatDuration(track.duration_sec)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Toggle favorite
+                      }}
+                    >
+                      <Heart className="w-5 h-5" />
+                    </Button>
+                    {currentTrack === index && isPlaying ? (
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                        <Pause className="w-4 h-4 text-primary-foreground" />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                        <Play className="w-4 h-4" />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
           </div>
 
           {/* Now Playing */}
@@ -170,31 +181,38 @@ const SoundTherapy = () => {
             <div className="sticky top-6 p-6 rounded-2xl bg-card border border-border">
               <div className="text-center mb-6">
                 <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-5xl mx-auto mb-4">
-                  {filteredTracks[currentTrack]?.cover || "🎵"}
+                  {currentTrackData?.cover_emoji || "🎵"}
                 </div>
                 <h3 className="font-semibold text-lg">
-                  {filteredTracks[currentTrack]?.title || "Select a track"}
+                  {currentTrackData?.title || "Select a track"}
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  {filteredTracks[currentTrack]?.artist || ""}
-                </p>
+                <p className="text-sm text-muted-foreground">{currentTrackData?.artist || ""}</p>
               </div>
 
               {/* Progress */}
               <div className="mb-4">
-                <Slider defaultValue={[33]} max={100} step={1} className="mb-2" />
+                <Slider
+                  value={progress}
+                  onValueChange={setProgress}
+                  max={100}
+                  step={1}
+                  className="mb-2"
+                />
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>3:15</span>
-                  <span>{filteredTracks[currentTrack]?.duration || "0:00"}</span>
+                  <span>
+                    {currentTrackData
+                      ? formatDuration(
+                          Math.floor((progress[0] / 100) * (currentTrackData.duration_sec || 0))
+                        )
+                      : "0:00"}
+                  </span>
+                  <span>{currentTrackData ? formatDuration(currentTrackData.duration_sec) : "0:00"}</span>
                 </div>
               </div>
 
               {/* Controls */}
               <div className="flex items-center justify-center gap-4 mb-6">
-                <Button variant="ghost" size="icon" className="text-muted-foreground">
-                  <Shuffle className="w-5 h-5" />
-                </Button>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" onClick={handlePrev}>
                   <SkipBack className="w-6 h-6" />
                 </Button>
                 <Button
@@ -202,25 +220,24 @@ const SoundTherapy = () => {
                   className="w-14 h-14 rounded-full bg-primary text-primary-foreground"
                   onClick={() => setIsPlaying(!isPlaying)}
                 >
-                  {isPlaying ? (
-                    <Pause className="w-7 h-7" />
-                  ) : (
-                    <Play className="w-7 h-7 ml-1" />
-                  )}
+                  {isPlaying ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-1" />}
                 </Button>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" onClick={handleNext}>
                   <SkipForward className="w-6 h-6" />
-                </Button>
-                <Button variant="ghost" size="icon" className="text-muted-foreground">
-                  <Repeat className="w-5 h-5" />
                 </Button>
               </div>
 
               {/* Volume */}
               <div className="flex items-center gap-3">
-                <Volume2 className="w-5 h-5 text-muted-foreground" />
+                <Button variant="ghost" size="icon" onClick={toggleMute}>
+                  {isMuted ? (
+                    <VolumeX className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <Volume2 className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </Button>
                 <Slider
-                  value={volume}
+                  value={isMuted ? [0] : volume}
                   onValueChange={setVolume}
                   max={100}
                   step={1}
