@@ -36,66 +36,53 @@ const Register = () => {
 
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.username || formData.username.length < 4) {
       toast.error("Username must be at least 4 characters");
       return;
     }
-    
     if (!formData.password || formData.password.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
     }
-    
     if (formData.password !== formData.confirmPassword) {
       toast.error("Passwords do not match");
       return;
     }
-    
     setStep(2);
   };
 
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.emergencyName) {
       toast.error("Emergency contact name is required");
       return;
     }
-
     if (!formData.emergencyContact) {
       toast.error("Emergency contact number is required");
       return;
     }
-
     if (!formData.contactIsSelf && !formData.emergencyRelation) {
       toast.error("Please specify the relationship to the contact person");
       return;
     }
-    
     if (!formData.studentId) {
       toast.error("Student verification ID is required");
       return;
     }
-    
     if (!acceptedConsent) {
       toast.error("Please accept the emergency escalation consent");
       return;
     }
 
     setIsLoading(true);
-
     try {
       const institutionCode = sessionStorage.getItem("eternia_institution_code");
       const institutionId = sessionStorage.getItem("eternia_institution_id");
-      
       const { error } = await signUp(formData.username, formData.password, {
         institution_code: institutionCode,
       });
-
       if (error) throw error;
 
-      // Store private data after signup
       setTimeout(async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -107,8 +94,6 @@ const Register = () => {
             student_id_encrypted: formData.studentId,
             contact_is_self: formData.contactIsSelf,
           });
-
-          // Link to institution
           if (institutionId) {
             await supabase
               .from("profiles")
@@ -131,151 +116,150 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-6 sm:p-6 relative overflow-hidden">
+    <div className="min-h-screen min-h-dvh bg-background flex items-start sm:items-center justify-center px-4 py-6 sm:p-6 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-eternia-teal/20 rounded-full blur-3xl animate-pulse-glow" />
         <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-eternia-lavender/20 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        <button 
+        <button
           onClick={() => step === 1 ? navigate("/qr-scan") : setStep(1)}
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-5 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          {step === 1 ? "Back to SPOC Verification" : "Back to Credentials"}
+          {step === 1 ? "Back" : "Back to Credentials"}
         </button>
 
-        <div className="flex items-center gap-3 mb-8">
-          <EterniaLogo size={48} />
-          <span className="text-2xl font-bold font-display">Eternia</span>
+        <div className="flex items-center gap-2.5 mb-5">
+          <EterniaLogo size={36} />
+          <span className="text-lg font-bold font-display">Eternia</span>
         </div>
 
-        {/* Progress Steps - 3 step progress with step 1 & 2 complete */}
-        <div className="flex items-center gap-3 mb-8">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-eternia-success text-background font-semibold text-sm">
-            <CheckCircle className="w-5 h-5" />
+        {/* Progress Steps */}
+        <div className="flex items-center gap-2 mb-5">
+          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-eternia-success text-background text-xs">
+            <CheckCircle className="w-4 h-4" />
           </div>
           <div className="flex-1 h-1 rounded bg-eternia-success" />
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-eternia-success text-background font-semibold text-sm">
-            <CheckCircle className="w-5 h-5" />
+          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-eternia-success text-background text-xs">
+            <CheckCircle className="w-4 h-4" />
           </div>
           <div className={`flex-1 h-1 rounded ${step >= 2 ? "bg-gradient-eternia" : "bg-muted"}`} />
-          <div className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-sm ${
+          <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
             step >= 2 ? "bg-gradient-eternia text-background" : "bg-muted text-muted-foreground"
           }`}>
-            3{step === 1 ? "a" : "b"}
+            3
           </div>
         </div>
 
-        <div className="glass rounded-2xl p-5 sm:p-8">
+        <div className="glass rounded-2xl p-4 sm:p-6">
           {step === 1 ? (
             <>
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold font-display mb-2">Create Your Identity</h1>
-                <p className="text-muted-foreground">
+              <div className="mb-5">
+                <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">Create Your Identity</h1>
+                <p className="text-sm text-muted-foreground">
                   Choose a username and password. Your real name is never required.
                 </p>
               </div>
 
-              <form onSubmit={handleStep1Submit} className="space-y-5">
+              <form onSubmit={handleStep1Submit} className="space-y-4">
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Username</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Username</label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       type="text"
                       name="username"
                       placeholder="Choose a unique username"
                       value={formData.username}
                       onChange={handleChange}
-                      className="input-eternia pl-12"
+                      className="pl-10 h-11 rounded-xl bg-card/50 border-border/40 text-sm"
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">This will be your identity on the platform</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">This will be your identity</p>
                 </div>
 
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Password</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       type={showPassword ? "text" : "password"}
                       name="password"
-                      placeholder="Create a strong password (8+ chars)"
+                      placeholder="8+ characters"
                       value={formData.password}
                       onChange={handleChange}
-                      className="input-eternia pl-12 pr-12"
+                      className="pl-10 pr-10 h-11 rounded-xl bg-card/50 border-border/40 text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Confirm Password</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Confirm Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       type={showPassword ? "text" : "password"}
                       name="confirmPassword"
                       placeholder="Confirm your password"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      className="input-eternia pl-12"
+                      className="pl-10 h-11 rounded-xl bg-card/50 border-border/40 text-sm"
                     />
                   </div>
                 </div>
 
-                <Button type="submit" className="btn-primary w-full py-6 text-lg mt-6">
-                  Continue to Profile
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                <Button type="submit" className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 shadow-lg shadow-primary/15 active:scale-[0.98] transition-all mt-2">
+                  Continue
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
               </form>
             </>
           ) : (
             <>
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold font-display mb-2">Private Profile</h1>
-                <p className="text-muted-foreground">
-                  This information is encrypted and only accessed during emergencies.
+              <div className="mb-5">
+                <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">Private Profile</h1>
+                <p className="text-sm text-muted-foreground">
+                  Encrypted and only accessed during emergencies.
                 </p>
               </div>
 
-              <form onSubmit={handleStep2Submit} className="space-y-5">
+              <form onSubmit={handleStep2Submit} className="space-y-4">
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Emergency Contact Name</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Emergency Contact Name</label>
                   <Input
                     type="text"
                     name="emergencyName"
-                    placeholder="Full name of the contact person"
+                    placeholder="Full name"
                     value={formData.emergencyName}
                     onChange={handleChange}
-                    className="input-eternia"
+                    className="h-11 rounded-xl bg-card/50 border-border/40 text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Emergency Contact Number</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Emergency Contact Number</label>
                   <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       type="tel"
                       name="emergencyContact"
                       placeholder="+91 XXXXX XXXXX"
                       value={formData.emergencyContact}
                       onChange={handleChange}
-                      className="input-eternia pl-12"
+                      className="pl-10 h-11 rounded-xl bg-card/50 border-border/40 text-sm"
                     />
                   </div>
                 </div>
 
-                {/* Self or Other contact */}
                 <div className="p-3 rounded-lg bg-muted/30 border border-border">
                   <div className="flex items-center gap-3">
                     <Checkbox
@@ -293,78 +277,74 @@ const Register = () => {
 
                 {!formData.contactIsSelf && (
                   <div>
-                    <label className="text-sm text-muted-foreground mb-2 block">Relation to Contact</label>
+                    <label className="text-xs text-muted-foreground mb-1.5 block">Relation to Contact</label>
                     <Input
                       type="text"
                       name="emergencyRelation"
-                      placeholder="e.g., Parent, Guardian, Sibling"
+                      placeholder="e.g., Parent, Guardian"
                       value={formData.emergencyRelation}
                       onChange={handleChange}
-                      className="input-eternia"
+                      className="h-11 rounded-xl bg-card/50 border-border/40 text-sm"
                     />
                   </div>
                 )}
 
                 <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Student ID (APAAR / ABC ID / ERP ID)</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Student ID (APAAR / ABC / ERP)</label>
                   <Input
                     type="text"
                     name="studentId"
-                    placeholder="Your institutional verification ID"
+                    placeholder="Your institutional ID"
                     value={formData.studentId}
                     onChange={handleChange}
-                    className="input-eternia"
+                    className="h-11 rounded-xl bg-card/50 border-border/40 text-sm"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    University students: use APAAR / ABC ID · School students: use ERP ID
-                  </p>
                 </div>
 
                 {/* Consent */}
-                <div className="p-4 rounded-xl bg-muted/30 border border-border">
-                  <div className="flex items-start gap-3">
+                <div className="p-3 rounded-xl bg-muted/30 border border-border">
+                  <div className="flex items-start gap-2.5">
                     <Checkbox
                       id="consent"
                       checked={acceptedConsent}
                       onCheckedChange={(checked) => setAcceptedConsent(checked as boolean)}
+                      className="mt-0.5"
                     />
-                    <label htmlFor="consent" className="text-sm text-muted-foreground cursor-pointer">
-                      <span className="flex items-center gap-2 font-medium text-foreground mb-1">
-                        <AlertTriangle className="w-4 h-4 text-eternia-warning" />
+                    <label htmlFor="consent" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
+                      <span className="flex items-center gap-1.5 font-medium text-foreground text-sm mb-1">
+                        <AlertTriangle className="w-3.5 h-3.5 text-eternia-warning" />
                         Emergency Escalation Consent
                       </span>
-                      If the platform detects a high-risk situation requiring intervention, the system may 
-                      notify your institution's designated SPOC. Your username and emergency contact may be 
-                      shared to enable immediate support action.
+                      If the platform detects a high-risk situation, the system may notify your institution's SPOC and share your username and emergency contact.
                     </label>
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="btn-primary w-full py-6 text-lg"
+                <Button
+                  type="submit"
+                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 shadow-lg shadow-primary/15 active:scale-[0.98] transition-all"
                   disabled={isLoading}
                 >
                   {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                       Creating Account...
-                    </div>
+                    </>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-5 h-5" />
+                    <>
+                      <Shield className="w-4 h-4" />
                       Complete Registration
-                    </div>
+                    </>
                   )}
                 </Button>
               </form>
             </>
           )}
 
-          <div className="mt-6 pt-6 border-t border-border text-center">
+          <div className="mt-5 pt-4 border-t border-border/30 text-center">
             <p className="text-muted-foreground text-sm">
               Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:underline">
+              <Link to="/login" className="text-primary font-medium hover:underline">
                 Sign in
               </Link>
             </p>
