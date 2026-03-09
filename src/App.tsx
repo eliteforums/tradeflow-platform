@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 // Pages
 import Landing from "./pages/Landing";
 import InstitutionCode from "./pages/auth/InstitutionCode";
+import QRScan from "./pages/auth/QRScan";
 import Register from "./pages/auth/Register";
 import Login from "./pages/auth/Login";
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -19,6 +20,9 @@ import SoundTherapy from "./pages/dashboard/SoundTherapy";
 import SelfHelp from "./pages/dashboard/SelfHelp";
 import Credits from "./pages/dashboard/Credits";
 import Profile from "./pages/dashboard/Profile";
+import RecoverySetup from "./pages/dashboard/RecoverySetup";
+import ExpertDashboard from "./pages/dashboard/ExpertDashboard";
+import InternDashboard from "./pages/dashboard/InternDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -35,6 +39,7 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/institution-code" element={<InstitutionCode />} />
+            <Route path="/qr-scan" element={<QRScan />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             
@@ -47,6 +52,11 @@ const App = () => (
             <Route path="/dashboard/self-help" element={<ProtectedRoute><SelfHelp /></ProtectedRoute>} />
             <Route path="/dashboard/credits" element={<ProtectedRoute><Credits /></ProtectedRoute>} />
             <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/dashboard/recovery-setup" element={<ProtectedRoute><RecoverySetup /></ProtectedRoute>} />
+            
+            {/* Role-Based Dashboards */}
+            <Route path="/dashboard/expert" element={<ProtectedRoute allowedRoles={["expert"]}><ExpertDashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/intern" element={<ProtectedRoute allowedRoles={["intern"]}><InternDashboard /></ProtectedRoute>} />
             
             {/* Admin Routes */}
             <Route path="/admin" element={<ProtectedRoute allowedRoles={["spoc", "admin"]}><AdminDashboard /></ProtectedRoute>} />
