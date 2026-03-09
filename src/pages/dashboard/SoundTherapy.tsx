@@ -7,7 +7,6 @@ import {
   SkipBack,
   Volume2,
   VolumeX,
-  Heart,
   Clock,
   Headphones,
   Loader2,
@@ -97,161 +96,175 @@ const SoundTherapy = () => {
     );
   }
 
+  const hasPlayer = !!currentTrackData;
+
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
+      <div className="max-w-4xl mx-auto space-y-3 sm:space-y-5">
         {/* Header */}
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-display mb-1">Sound Therapy</h1>
-          <p className="text-sm text-muted-foreground">
-            Curated audio for meditation, relaxation, and focus
+          <h1 className="text-lg sm:text-2xl font-bold font-display">Sound Therapy</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Curated audio for meditation & focus
           </p>
         </div>
 
-        {/* Categories — horizontal scroll */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
-          <Button
-            variant={activeCategory === "all" ? "default" : "outline"}
+        {/* Categories — pill bar */}
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
+          <button
             onClick={() => setActiveCategory("all")}
-            size="sm"
-            className={`shrink-0 ${activeCategory === "all" ? "bg-primary" : ""}`}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              activeCategory === "all"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/50 text-muted-foreground hover:text-foreground"
+            }`}
           >
             All
-          </Button>
+          </button>
           {categories.map((cat) => (
-            <Button
+            <button
               key={cat}
-              variant={activeCategory === cat ? "default" : "outline"}
               onClick={() => setActiveCategory(cat)}
-              size="sm"
-              className={`shrink-0 ${activeCategory === cat ? "bg-primary" : ""}`}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                activeCategory === cat
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground"
+              }`}
             >
               {cat.charAt(0).toUpperCase() + cat.slice(1)}
-              <span className="ml-1.5 text-[10px] opacity-70">
+              <span className="ml-1 opacity-60">
                 {tracks.filter((t) => t.category === cat).length}
               </span>
-            </Button>
+            </button>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Track List */}
-          <div className="lg:col-span-2 space-y-2 sm:space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-5">
+          {/* Track List — extra bottom padding on mobile when player is showing */}
+          <div className={`lg:col-span-2 space-y-1.5 sm:space-y-2 ${hasPlayer ? "pb-20 lg:pb-0" : ""}`}>
             {filteredTracks.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <Music className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">No tracks in this category yet</p>
+                <Music className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-xs">No tracks in this category</p>
               </div>
             ) : (
-              filteredTracks.map((track, index) => (
-                <button
-                  key={track.id}
-                  onClick={() => handleTrackSelect(index)}
-                  className={`w-full p-3 sm:p-4 rounded-xl text-left transition-all flex items-center gap-3 ${
-                    currentTrack === index && isPlaying
-                      ? "bg-primary/10 border-primary"
-                      : "bg-card hover:bg-muted/50"
-                  } border border-border`}
-                >
-                  <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-xl sm:text-2xl shrink-0">
-                    {track.cover_emoji || "🎵"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm sm:text-base truncate">{track.title}</h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground truncate">{track.artist || "Unknown"}</p>
-                  </div>
-                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                    <span className="text-[11px] sm:text-sm text-muted-foreground hidden sm:flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {formatDuration(track.duration_sec)}
-                    </span>
-                    {currentTrack === index && isPlaying ? (
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                        <Pause className="w-3.5 h-3.5 text-primary-foreground" />
+              filteredTracks.map((track, index) => {
+                const isActive = currentTrack === index && isPlaying;
+                return (
+                  <button
+                    key={track.id}
+                    onClick={() => handleTrackSelect(index)}
+                    className={`w-full p-2.5 sm:p-3.5 rounded-xl text-left transition-all flex items-center gap-2.5 sm:gap-3 active:scale-[0.98] ${
+                      isActive
+                        ? "bg-primary/10 border-primary/50"
+                        : "bg-card hover:bg-muted/40"
+                    } border border-border/50`}
+                  >
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-lg sm:text-xl shrink-0">
+                      {track.cover_emoji || "🎵"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-[13px] sm:text-sm truncate">{track.title}</h3>
+                      <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground">
+                        <span className="truncate">{track.artist || "Unknown"}</span>
+                        <span className="shrink-0">·</span>
+                        <span className="shrink-0 flex items-center gap-0.5">
+                          <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          {formatDuration(track.duration_sec)}
+                        </span>
                       </div>
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                        <Play className="w-3.5 h-3.5" />
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))
+                    </div>
+                    <div className="shrink-0">
+                      {isActive ? (
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center">
+                          <Pause className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary-foreground" />
+                        </div>
+                      ) : (
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-muted/60 flex items-center justify-center">
+                          <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-0.5" />
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })
             )}
           </div>
 
           {/* Desktop Now Playing Panel */}
           <div className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-6 p-6 rounded-2xl bg-card border border-border">
-              <div className="text-center mb-6">
-                <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-5xl mx-auto mb-4">
+            <div className="sticky top-6 p-5 rounded-2xl bg-card border border-border/50">
+              <div className="text-center mb-5">
+                <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-4xl mx-auto mb-3">
                   {currentTrackData?.cover_emoji || "🎵"}
                 </div>
-                <h3 className="font-semibold text-lg">{currentTrackData?.title || "Select a track"}</h3>
-                <p className="text-sm text-muted-foreground">{currentTrackData?.artist || ""}</p>
+                <h3 className="font-semibold text-sm">{currentTrackData?.title || "Select a track"}</h3>
+                <p className="text-xs text-muted-foreground">{currentTrackData?.artist || ""}</p>
               </div>
               <div className="mb-4">
-                <Slider value={progress} onValueChange={setProgress} max={100} step={1} className="mb-2" />
-                <div className="flex justify-between text-xs text-muted-foreground">
+                <Slider value={progress} onValueChange={setProgress} max={100} step={1} className="mb-1.5" />
+                <div className="flex justify-between text-[10px] text-muted-foreground">
                   <span>{currentTrackData ? formatDuration(Math.floor((progress[0] / 100) * (currentTrackData.duration_sec || 0))) : "0:00"}</span>
                   <span>{currentTrackData ? formatDuration(currentTrackData.duration_sec) : "0:00"}</span>
                 </div>
               </div>
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <Button variant="ghost" size="icon" onClick={handlePrev}><SkipBack className="w-5 h-5" /></Button>
-                <Button size="icon" className="w-14 h-14 rounded-full bg-primary text-primary-foreground" onClick={() => setIsPlaying(!isPlaying)}>
-                  {isPlaying ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-1" />}
+              <div className="flex items-center justify-center gap-3 mb-5">
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handlePrev}><SkipBack className="w-4 h-4" /></Button>
+                <Button size="icon" className="w-12 h-12 rounded-full bg-primary text-primary-foreground" onClick={() => setIsPlaying(!isPlaying)}>
+                  {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
                 </Button>
-                <Button variant="ghost" size="icon" onClick={handleNext}><SkipForward className="w-5 h-5" /></Button>
+                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleNext}><SkipForward className="w-4 h-4" /></Button>
               </div>
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={toggleMute}>
-                  {isMuted ? <VolumeX className="w-5 h-5 text-muted-foreground" /> : <Volume2 className="w-5 h-5 text-muted-foreground" />}
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleMute}>
+                  {isMuted ? <VolumeX className="w-4 h-4 text-muted-foreground" /> : <Volume2 className="w-4 h-4 text-muted-foreground" />}
                 </Button>
                 <Slider value={isMuted ? [0] : volume} onValueChange={setVolume} max={100} step={1} className="flex-1" />
               </div>
-              <div className="mt-6 p-3 rounded-lg bg-muted/30">
-                <p className="text-xs text-muted-foreground flex items-center gap-2">
-                  <Headphones className="w-4 h-4" />
-                  Use headphones for the best experience
+              <div className="mt-4 p-2.5 rounded-lg bg-muted/30">
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                  <Headphones className="w-3.5 h-3.5" />
+                  Use headphones for best experience
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mobile Fixed Bottom Player — sits above bottom nav (h-16) */}
-        {currentTrackData && (
-          <div className="lg:hidden fixed bottom-16 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border">
+        {/* Mobile Fixed Bottom Player */}
+        {hasPlayer && (
+          <div className="lg:hidden fixed bottom-16 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border/40">
+            {/* Expanded view */}
             {showPlayer && (
-              <div className="px-3 pt-2.5 pb-0.5">
+              <div className="px-3 pt-2 pb-0.5">
                 <Slider value={progress} onValueChange={setProgress} max={100} step={1} className="mb-0.5" />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
+                <div className="flex justify-between text-[9px] text-muted-foreground">
                   <span>{formatDuration(Math.floor((progress[0] / 100) * (currentTrackData.duration_sec || 0)))}</span>
                   <span>{formatDuration(currentTrackData.duration_sec)}</span>
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-2.5 px-3 py-2">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-base shrink-0">
+            {/* Mini player bar */}
+            <div className="flex items-center gap-2 px-3 py-1.5">
+              <div className="w-8 h-8 rounded-md bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-sm shrink-0">
                 {currentTrackData.cover_emoji || "🎵"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold truncate">{currentTrackData.title}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{currentTrackData.artist || "Unknown"}</p>
+                <p className="text-[12px] font-medium truncate leading-tight">{currentTrackData.title}</p>
+                <p className="text-[9px] text-muted-foreground truncate">{currentTrackData.artist || "Unknown"}</p>
               </div>
-              <div className="flex items-center gap-0.5">
+              <div className="flex items-center">
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrev}>
-                  <SkipBack className="w-3.5 h-3.5" />
+                  <SkipBack className="w-3 h-3" />
                 </Button>
                 <Button size="icon" className="h-8 w-8 rounded-full bg-primary text-primary-foreground" onClick={() => setIsPlaying(!isPlaying)}>
                   {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                 </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNext}>
-                  <SkipForward className="w-3.5 h-3.5" />
+                  <SkipForward className="w-3 h-3" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowPlayer(!showPlayer)}>
-                  {showPlayer ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowPlayer(!showPlayer)}>
+                  {showPlayer ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
                 </Button>
               </div>
             </div>
