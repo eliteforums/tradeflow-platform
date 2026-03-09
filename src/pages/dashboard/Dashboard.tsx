@@ -14,6 +14,7 @@ import {
   Moon,
   Sunrise,
   Heart,
+  AlertCircle,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -100,6 +101,21 @@ const Dashboard = () => {
           <Heart className="w-5 h-5 text-primary mb-2" />
           <p className="text-sm text-foreground/90 leading-relaxed relative z-10">{quote}</p>
         </div>
+
+        {/* Low Balance Prompt (PRD: show when balance < 5 ECC) */}
+        {balance < 5 && (
+          <Link
+            to="/dashboard/credits"
+            className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-400/40 transition-all"
+          >
+            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground">Your care energy is low.</p>
+              <p className="text-xs text-muted-foreground">Refill gently — earn credits through self-help activities.</p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-amber-500 shrink-0" />
+          </Link>
+        )}
 
         {/* Quick Stats Row */}
         <div className="grid grid-cols-3 gap-2.5">

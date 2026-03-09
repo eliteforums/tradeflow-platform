@@ -34,9 +34,10 @@ import InstitutionManager from "@/components/admin/InstitutionManager";
 import EscalationManager from "@/components/admin/EscalationManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import SPOCTools from "@/components/admin/SPOCTools";
+import RoleManager from "@/components/admin/RoleManager";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit" | "roles">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile } = useAuth();
   const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
@@ -107,6 +108,7 @@ const AdminDashboard = () => {
             { id: "escalations" as const, label: "Escalations", icon: Shield },
             { id: "spoc" as const, label: "SPOC Tools", icon: QrCode },
             { id: "sounds" as const, label: "Sounds", icon: Music },
+            { id: "roles" as const, label: "Roles", icon: UserPlus },
             { id: "institutions" as const, label: "Institutions", icon: Building2 },
             { id: "audit" as const, label: "Audit Log", icon: FileText },
           ]).map((tab) => (
@@ -456,6 +458,9 @@ const AdminDashboard = () => {
 
             {/* SPOC Tools Tab */}
             {activeTab === "spoc" && <SPOCTools />}
+
+            {/* Roles Tab */}
+            {activeTab === "roles" && <RoleManager />}
 
             {/* Audit Log Tab */}
             {activeTab === "audit" && <AuditLogViewer />}

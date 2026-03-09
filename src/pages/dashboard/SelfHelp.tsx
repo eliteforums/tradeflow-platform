@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useEccEarn } from "@/hooks/useEccEarn";
 import {
   Award,
@@ -19,15 +19,9 @@ import { useQuests } from "@/hooks/useQuests";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
-const WreckBuddy3D = lazy(() => import("@/components/selfhelp/WreckBuddy3D"));
-const TibetanBowl3D = lazy(() => import("@/components/selfhelp/TibetanBowl3D"));
-const QuestCard3D = lazy(() => import("@/components/selfhelp/QuestCard3D"));
-
-const ThreeDLoader = () => (
-  <div className="w-full h-[250px] sm:h-[300px] rounded-2xl bg-card border border-border flex items-center justify-center">
-    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-  </div>
-);
+import WreckBuddy3D from "@/components/selfhelp/WreckBuddy3D";
+import TibetanBowl3D from "@/components/selfhelp/TibetanBowl3D";
+import QuestCard3D from "@/components/selfhelp/QuestCard3D";
 
 const SelfHelp = () => {
   const [activeTab, setActiveTab] = useState("quest");
@@ -177,18 +171,16 @@ const SelfHelp = () => {
         {/* Content */}
         {activeTab === "quest" && (
           <div className="space-y-5 sm:space-y-6">
-            <Suspense fallback={<ThreeDLoader />}>
-              <QuestCard3D
-                quests={quests.map((q) => ({ id: q.id, title: q.title, xp_reward: q.xp_reward }))}
-                completedIds={completedIds}
-                onComplete={(id) => {
-                  const quest = quests.find((q) => q.id === id);
-                  if (quest && !getQuestStatus(quest.id)) {
-                    completeQuest(quest);
-                  }
-                }}
-              />
-            </Suspense>
+            <QuestCard3D
+              quests={quests.map((q) => ({ id: q.id, title: q.title, xp_reward: q.xp_reward }))}
+              completedIds={completedIds}
+              onComplete={(id) => {
+                const quest = quests.find((q) => q.id === id);
+                if (quest && !getQuestStatus(quest.id)) {
+                  completeQuest(quest);
+                }
+              }}
+            />
 
             {/* Daily Progress */}
             <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border">
@@ -294,9 +286,7 @@ const SelfHelp = () => {
 
         {activeTab === "wreck" && (
           <div className="space-y-5 sm:space-y-6">
-            <Suspense fallback={<ThreeDLoader />}>
-              <WreckBuddy3D hitCount={wreckClicks} onHit={handleWreckClick} />
-            </Suspense>
+            <WreckBuddy3D hitCount={wreckClicks} onHit={handleWreckClick} />
 
             <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border text-center">
               <h2 className="text-xl sm:text-2xl font-bold font-display mb-1.5 sm:mb-2">Wreck the Buddy</h2>
@@ -330,9 +320,7 @@ const SelfHelp = () => {
 
         {activeTab === "tibetan" && (
           <div className="space-y-5 sm:space-y-6">
-            <Suspense fallback={<ThreeDLoader />}>
-              <TibetanBowl3D phase={breathPhase} />
-            </Suspense>
+            <TibetanBowl3D phase={breathPhase} />
 
             <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border text-center">
               <h2 className="text-xl sm:text-2xl font-bold font-display mb-1.5 sm:mb-2">Tibetan Bowl Breathing</h2>
