@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Music,
   Play,
@@ -30,31 +30,38 @@ const SoundTherapy = () => {
   const filteredTracks =
     activeCategory === "all" ? tracks : tracks.filter((t) => t.category === activeCategory);
 
-  const handleTrackSelect = (index: number) => {
+  const handleTrackSelect = useCallback((index: number) => {
     setCurrentTrack(index);
     setIsPlaying(true);
     setProgress([0]);
-  };
+  }, []);
 
-  const handleNext = () => {
-    if (currentTrack < filteredTracks.length - 1) {
-      setCurrentTrack((prev) => prev + 1);
-      setProgress([0]);
-    }
-  };
+  const handleNext = useCallback(() => {
+    setCurrentTrack((prev) => {
+      const next = prev + 1;
+      if (next < filteredTracks.length) {
+        setProgress([0]);
+        return next;
+      }
+      return prev;
+    });
+  }, [filteredTracks.length]);
 
-  const handlePrev = () => {
-    if (currentTrack > 0) {
-      setCurrentTrack((prev) => prev - 1);
-      setProgress([0]);
-    }
-  };
+  const handlePrev = useCallback(() => {
+    setCurrentTrack((prev) => {
+      if (prev > 0) {
+        setProgress([0]);
+        return prev - 1;
+      }
+      return prev;
+    });
+  }, []);
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
+  const toggleMute = useCallback(() => {
+    setIsMuted((prev) => !prev);
+  }, []);
 
-  // Simulate progress (in production, use actual audio element)
+  // Simulate progress
   useEffect(() => {
     if (!isPlaying) return;
 
@@ -70,7 +77,7 @@ const SoundTherapy = () => {
     }, 500);
 
     return () => clearInterval(interval);
-  }, [isPlaying, currentTrack]);
+  }, [isPlaying, handleNext]);
 
   if (isLoading) {
     return (
@@ -138,14 +145,14 @@ const SoundTherapy = () => {
                       : "bg-card hover:bg-muted/50"
                   } border border-border`}
                 >
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-2xl">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-2xl shrink-0">
                     {track.cover_emoji || "🎵"}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold truncate">{track.title}</h3>
                     <p className="text-sm text-muted-foreground">{track.artist || "Unknown"}</p>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 shrink-0">
                     <span className="text-sm text-muted-foreground flex items-center gap-1">
                       <Clock className="w-4 h-4" />
                       {formatDuration(track.duration_sec)}
@@ -156,7 +163,6 @@ const SoundTherapy = () => {
                       className="text-muted-foreground hover:text-primary"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Toggle favorite
                       }}
                     >
                       <Heart className="w-5 h-5" />

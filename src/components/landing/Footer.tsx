@@ -67,7 +67,7 @@ const Footer = () => (
     <div className="border-t border-border/20">
       <div className="container mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground/40">
-          © 2024 Eternia. All rights reserved.
+          © {new Date().getFullYear()} Eternia. All rights reserved.
         </p>
         <p className="text-xs text-muted-foreground/40">
           Built with ❤️ for student wellbeing
