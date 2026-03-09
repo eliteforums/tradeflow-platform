@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 
 const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) => {
   const [displayedText, setDisplayedText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const [started, setStarted] = useState(false);
 
   useEffect(() => {
@@ -15,18 +16,36 @@ const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) =
 
   useEffect(() => {
     if (!started) return;
-    if (displayedText.length < text.length) {
+
+    if (!isDeleting && displayedText.length < text.length) {
       const timeout = setTimeout(() => {
         setDisplayedText(text.slice(0, displayedText.length + 1));
       }, 80);
       return () => clearTimeout(timeout);
     }
-  }, [displayedText, text, started]);
+
+    if (!isDeleting && displayedText.length === text.length) {
+      const pause = setTimeout(() => setIsDeleting(true), 2000);
+      return () => clearTimeout(pause);
+    }
+
+    if (isDeleting && displayedText.length > 0) {
+      const timeout = setTimeout(() => {
+        setDisplayedText(text.slice(0, displayedText.length - 1));
+      }, 40);
+      return () => clearTimeout(timeout);
+    }
+
+    if (isDeleting && displayedText.length === 0) {
+      const pause = setTimeout(() => setIsDeleting(false), 500);
+      return () => clearTimeout(pause);
+    }
+  }, [displayedText, text, started, isDeleting]);
 
   return (
     <>
       {displayedText}
-      {started && displayedText.length < text.length && (
+      {started && (
         <motion.span
           animate={{ opacity: [1, 0] }}
           transition={{ duration: 0.5, repeat: Infinity }}
