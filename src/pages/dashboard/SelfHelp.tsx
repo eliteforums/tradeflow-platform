@@ -77,6 +77,12 @@ const SelfHelp = () => {
     setBreathPhase("inhale");
   };
 
+  const handleBreathingComplete = () => {
+    if (canEarn) {
+      earnFromActivity({ amount: 1, activity: "Tibetan Bowl breathing exercise" });
+    }
+  };
+
   const handleWreckClick = () => {
     setWreckClicks((prev) => prev + 1);
     if (wreckClicks >= 29) {
