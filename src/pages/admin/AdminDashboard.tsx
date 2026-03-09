@@ -18,6 +18,8 @@ import {
   Settings,
   Music,
   Building2,
+  FileText,
+  QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
