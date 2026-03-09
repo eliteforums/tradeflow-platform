@@ -225,7 +225,9 @@ const AdminDashboard = () => {
                           className="p-4 rounded-xl bg-muted/30 border border-border text-left hover:border-primary/50 transition-all"
                           onClick={() => {
                             if (action.label === "View Flags") setActiveTab("flags");
-                            if (action.label === "Add Member") setActiveTab("members");
+                            if (action.label === "Add Member") setActiveTab("roles");
+                            if (action.label === "Grant Credits") setActiveTab("spoc");
+                            if (action.label === "Manage Experts") setActiveTab("experts");
                           }}
                         >
                           <action.icon className="w-5 h-5 text-primary mb-2" />
