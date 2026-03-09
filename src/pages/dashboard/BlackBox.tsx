@@ -115,8 +115,8 @@ const BlackBox = () => {
                 <Type className="w-5 h-5" />
               </Button>
             </div>
-            <Button className="btn-primary" disabled={!newEntry.trim()}>
-              <Send className="w-5 h-5 mr-2" />
+            <Button className="btn-primary" disabled={!newEntry.trim() || isCreating} onClick={handleSaveEntry}>
+              {isCreating ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Send className="w-5 h-5 mr-2" />}
               Save Entry
             </Button>
           </div>
