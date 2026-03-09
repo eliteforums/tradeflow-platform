@@ -16,6 +16,7 @@ import {
   Loader2,
   UserPlus,
   Settings,
+  Music,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,8 +26,10 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
+import SoundManager from "@/components/admin/SoundManager";
+
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile } = useAuth();
   const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
@@ -90,11 +93,12 @@ const AdminDashboard = () => {
         {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {([
-            { id: "overview", label: "Overview", icon: BarChart3 },
-            { id: "members", label: `Members (${members.length})`, icon: Users },
-            { id: "sessions", label: "Sessions", icon: Calendar },
-            { id: "flags", label: `Flags (${flaggedEntries.length})`, icon: AlertTriangle },
-          ] as const).map((tab) => (
+            { id: "overview" as const, label: "Overview", icon: BarChart3 },
+            { id: "members" as const, label: `Members (${members.length})`, icon: Users },
+            { id: "sessions" as const, label: "Sessions", icon: Calendar },
+            { id: "flags" as const, label: `Flags (${flaggedEntries.length})`, icon: AlertTriangle },
+            { id: "sounds" as const, label: "Sounds", icon: Music },
+          ]).map((tab) => (
             <Button
               key={tab.id}
               variant={activeTab === tab.id ? "default" : "ghost"}
@@ -429,6 +433,9 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Sounds Tab */}
+            {activeTab === "sounds" && <SoundManager />}
           </>
         )}
       </div>
