@@ -111,7 +111,7 @@ const SoundTherapy = () => {
     );
   }
 
-  const currentTrackData = filteredTracks[currentTrack];
+  // currentTrackData already defined above
 
   return (
     <DashboardLayout>
