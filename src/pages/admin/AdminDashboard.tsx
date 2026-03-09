@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 import SoundManager from "@/components/admin/SoundManager";
+import InstitutionManager from "@/components/admin/InstitutionManager";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds">("overview");
