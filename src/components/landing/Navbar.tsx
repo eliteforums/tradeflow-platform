@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { Sparkles, ChevronDown, Menu } from "lucide-react";
+import { ChevronDown, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import EterniaLogo from "@/components/EterniaLogo";
 import { useState } from "react";
 
 const Navbar = () => {
