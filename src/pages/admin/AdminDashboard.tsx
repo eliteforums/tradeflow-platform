@@ -16,6 +16,7 @@ import {
   Loader2,
   UserPlus,
   Settings,
+  Music,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
