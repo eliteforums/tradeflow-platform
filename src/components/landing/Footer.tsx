@@ -6,53 +6,47 @@ const footerLinks = {
     { label: "Features", href: "#features" },
     { label: "Security", href: "#security" },
     { label: "Pricing", href: "#" },
-    { label: "Changelog", href: "#" },
   ],
   Company: [
     { label: "About", href: "#" },
     { label: "Blog", href: "#" },
-    { label: "Careers", href: "#" },
     { label: "Contact", href: "#" },
   ],
   Legal: [
-    { label: "Privacy Policy", href: "#" },
-    { label: "Terms of Service", href: "#" },
-    { label: "DPDP Compliance", href: "#" },
+    { label: "Privacy", href: "#" },
+    { label: "Terms", href: "#" },
+    { label: "DPDP", href: "#" },
   ],
 };
 
 const Footer = () => (
-  <footer className="border-t border-border/30 bg-card/20">
-    <div className="container mx-auto px-4 sm:px-6 py-10 sm:py-16">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 sm:gap-10">
+  <footer className="border-t border-border/20">
+    <div className="container mx-auto px-4 sm:px-5 py-10 sm:py-14">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
         {/* Brand */}
-        <div className="col-span-2 sm:col-span-3 md:col-span-2">
-          <Link to="/" className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-eternia flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary-foreground" />
+        <div className="col-span-2 sm:col-span-1">
+          <Link to="/" className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-gradient-eternia flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
-            <span className="text-base font-bold font-display text-foreground">Eternia</span>
+            <span className="text-sm font-bold font-display text-foreground">Eternia</span>
           </Link>
-          <p className="text-sm text-muted-foreground/70 leading-relaxed max-w-xs mb-4 sm:mb-6">
-            The anonymous student wellbeing platform built for institutions that care about mental health.
+          <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-[200px] mb-3">
+            Anonymous student wellbeing, built for institutions.
           </p>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-eternia-success animate-pulse" />
-            <span className="text-xs text-muted-foreground/60">All systems operational</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-eternia-success animate-pulse" />
+            <span className="text-[10px] text-muted-foreground/40">All systems operational</span>
           </div>
         </div>
 
-        {/* Link columns */}
         {Object.entries(footerLinks).map(([title, links]) => (
           <div key={title}>
-            <h4 className="text-xs font-semibold text-foreground uppercase tracking-widest mb-3 sm:mb-4">{title}</h4>
-            <ul className="space-y-2 sm:space-y-2.5">
+            <h4 className="text-[10px] font-semibold text-foreground/70 uppercase tracking-widest mb-3">{title}</h4>
+            <ul className="space-y-2">
               {links.map((link) => (
                 <li key={link.label}>
-                  <a
-                    href={link.href}
-                    className="text-sm text-muted-foreground/60 hover:text-foreground transition-colors"
-                  >
+                  <a href={link.href} className="text-[12px] sm:text-[13px] text-muted-foreground/50 hover:text-foreground transition-colors">
                     {link.label}
                   </a>
                 </li>
@@ -63,12 +57,12 @@ const Footer = () => (
       </div>
     </div>
 
-    <div className="border-t border-border/20">
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
-        <p className="text-xs text-muted-foreground/40">
-          © {new Date().getFullYear()} Eternia. All rights reserved.
+    <div className="border-t border-border/10">
+      <div className="container mx-auto px-4 sm:px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <p className="text-[10px] sm:text-[11px] text-muted-foreground/30">
+          © {new Date().getFullYear()} Eternia
         </p>
-        <p className="text-xs text-muted-foreground/40">
+        <p className="text-[10px] sm:text-[11px] text-muted-foreground/30">
           Built with ❤️ for student wellbeing
         </p>
       </div>
