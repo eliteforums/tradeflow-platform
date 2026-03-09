@@ -470,6 +470,7 @@ const AdminDashboard = () => {
               <div className="space-y-6">
                 <MemberManager />
                 <RoleManager />
+                <CreditGrantTool />
               </div>
             )}
 
