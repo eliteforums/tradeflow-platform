@@ -79,8 +79,23 @@ const internBottomNavItems = [
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const role = profile?.role || "student";
+  const navItems = useMemo(() => {
+    if (role === "admin" || role === "spoc") return adminNavItems;
+    if (role === "expert") return expertNavItems;
+    if (role === "intern") return internNavItems;
+    return studentNavItems;
+  }, [role]);
+
+  const bottomNavItems = useMemo(() => {
+    if (role === "admin" || role === "spoc") return adminBottomNavItems;
+    if (role === "expert") return expertBottomNavItems;
+    if (role === "intern") return internBottomNavItems;
+    return studentBottomNavItems;
+  }, [role]);
 
   const handleLogout = async () => {
     await signOut();

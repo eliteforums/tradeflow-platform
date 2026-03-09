@@ -42,6 +42,17 @@ const Dashboard = () => {
   const greeting = getGreeting();
   const quote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
 
+  // Role-based redirect: admin/spoc → /admin, expert → /dashboard/expert, intern → /dashboard/intern
+  if (profile?.role === "admin" || profile?.role === "spoc") {
+    return <Navigate to="/admin" replace />;
+  }
+  if (profile?.role === "expert") {
+    return <Navigate to="/dashboard/expert" replace />;
+  }
+  if (profile?.role === "intern") {
+    return <Navigate to="/dashboard/intern" replace />;
+  }
+
   const portals = [
     {
       icon: Calendar,
