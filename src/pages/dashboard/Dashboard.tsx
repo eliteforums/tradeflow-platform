@@ -12,8 +12,13 @@ import {
   Award,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCredits } from "@/hooks/useCredits";
 
 const Dashboard = () => {
+  const { profile } = useAuth();
+  const { balance } = useCredits();
+
   const portals = [
     {
       icon: Calendar,
@@ -56,9 +61,9 @@ const Dashboard = () => {
   ];
 
   const stats = [
-    { label: "Sessions This Month", value: "3", icon: Clock },
-    { label: "Credits Balance", value: "250", icon: Coins },
-    { label: "Streak Days", value: "7", icon: TrendingUp },
+    { label: "Sessions This Month", value: String(profile?.total_sessions || 0), icon: Clock },
+    { label: "Credits Balance", value: String(balance), icon: Coins },
+    { label: "Streak Days", value: String(profile?.streak_days || 0), icon: TrendingUp },
   ];
 
   return (
@@ -67,7 +72,9 @@ const Dashboard = () => {
         {/* Welcome */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold font-display mb-2">Welcome back 👋</h1>
+            <h1 className="text-3xl font-bold font-display mb-2">
+              Welcome back, {profile?.username || "user"} 👋
+            </h1>
             <p className="text-muted-foreground">
               Your safe space for mental wellness. How are you feeling today?
             </p>
@@ -79,7 +86,7 @@ const Dashboard = () => {
             <Coins className="w-5 h-5 text-primary" />
             <div>
               <p className="text-sm text-muted-foreground">Care Credits</p>
-              <p className="font-bold text-lg">250 ECC</p>
+              <p className="font-bold text-lg">{balance} ECC</p>
             </div>
           </Link>
         </div>

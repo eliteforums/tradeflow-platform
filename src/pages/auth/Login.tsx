@@ -4,10 +4,11 @@ import { Sparkles, ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft } from "lucide
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -33,11 +34,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: `${formData.username.toLowerCase()}@eternia.local`,
-        password: formData.password,
-      });
-
+      const { error } = await signIn(formData.username, formData.password);
       if (error) throw error;
 
       toast.success("Welcome back!");
@@ -51,20 +48,17 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Effects */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-eternia-teal/20 rounded-full blur-3xl animate-pulse-glow" />
         <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-eternia-lavender/20 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Back Button */}
         <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Back to Home
         </Link>
 
-        {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 rounded-xl bg-gradient-eternia flex items-center justify-center">
             <Sparkles className="w-6 h-6 text-background" />
@@ -72,7 +66,6 @@ const Login = () => {
           <span className="text-2xl font-bold font-display">Eternia</span>
         </div>
 
-        {/* Form Card */}
         <div className="glass rounded-2xl p-8">
           <div className="mb-8">
             <h1 className="text-2xl font-bold font-display mb-2">Welcome Back</h1>
@@ -119,12 +112,6 @@ const Login = () => {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-            </div>
-
-            <div className="flex justify-end">
-              <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-                Forgot password?
-              </Link>
             </div>
 
             <Button 

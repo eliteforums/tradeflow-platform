@@ -12,43 +12,26 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useBlackBox } from "@/hooks/useBlackBox";
 
 const BlackBox = () => {
   const [newEntry, setNewEntry] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [showEntries, setShowEntries] = useState(true);
+  const { entries, isLoading, createEntry, deleteEntry, isCreating } = useBlackBox();
 
-  const entries = [
-    {
-      id: 1,
-      content:
-        "I've been feeling really anxious about my upcoming presentation. The thought of standing in front of everyone makes my heart race...",
-      timestamp: "Today, 2:30 PM",
-      isPrivate: false,
-      crisisLevel: 0,
-    },
-    {
-      id: 2,
-      content:
-        "Had a better day today. Went for a walk and it helped clear my mind. Small steps.",
-      timestamp: "Yesterday, 8:15 PM",
-      isPrivate: true,
-      crisisLevel: 0,
-    },
-    {
-      id: 3,
-      content:
-        "The pressure is getting too much sometimes. I feel like I'm drowning in responsibilities...",
-      timestamp: "Mar 7, 11:42 AM",
-      isPrivate: false,
-      crisisLevel: 1,
-    },
-  ];
+  const handleSaveEntry = () => {
+    if (!newEntry.trim()) return;
+    createEntry({ content: newEntry, isPrivate }, {
+      onSuccess: () => setNewEntry(""),
+    });
+  };
 
   const getCrisisIndicator = (level: number) => {
     switch (level) {
@@ -132,8 +115,8 @@ const BlackBox = () => {
                 <Type className="w-5 h-5" />
               </Button>
             </div>
-            <Button className="btn-primary" disabled={!newEntry.trim()}>
-              <Send className="w-5 h-5 mr-2" />
+            <Button className="btn-primary" disabled={!newEntry.trim() || isCreating} onClick={handleSaveEntry}>
+              {isCreating ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Send className="w-5 h-5 mr-2" />}
               Save Entry
             </Button>
           </div>
@@ -172,36 +155,43 @@ const BlackBox = () => {
 
           {showEntries && (
             <div className="space-y-4">
-              {entries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        {entry.timestamp}
-                      </span>
-                      {entry.isPrivate && (
-                        <span className="flex items-center gap-1 text-xs text-primary">
-                          <Lock className="w-3 h-3" />
-                          Private
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading entries...</div>
+              ) : entries.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No entries yet. Start expressing yourself.</div>
+              ) : (
+                entries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                         </span>
-                      )}
-                      {getCrisisIndicator(entry.crisisLevel)}
+                        {entry.is_private && (
+                          <span className="flex items-center gap-1 text-xs text-primary">
+                            <Lock className="w-3 h-3" />
+                            Private
+                          </span>
+                        )}
+                        {getCrisisIndicator(entry.ai_flag_level)}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteEntry(entry.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <p className="text-foreground/90 leading-relaxed">{entry.content_encrypted}</p>
                   </div>
-                  <p className="text-foreground/90 leading-relaxed">{entry.content}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
         </div>
