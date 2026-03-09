@@ -114,7 +114,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Tabs — scrollable chips */}
-        <div className="-mx-4 sm:mx-0 px-4 sm:px-0">
+        <div className="-mx-3 sm:mx-0 px-3 sm:px-0">
           <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
             {adminTabs.map((tab) => {
               const active = activeTab === tab.id;
@@ -129,7 +129,7 @@ const AdminDashboard = () => {
                   }`}
                 >
                   <tab.icon className="w-3.5 h-3.5" />
-                  <span className="hidden xs:inline sm:inline">{tab.label}</span>
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
