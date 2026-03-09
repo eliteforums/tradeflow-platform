@@ -12,11 +12,13 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useBlackBox } from "@/hooks/useBlackBox";
 
 const BlackBox = () => {
   const [newEntry, setNewEntry] = useState("");
