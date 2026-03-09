@@ -231,6 +231,21 @@ const InternDashboard = () => {
                       }`}>
                         {session.is_flagged ? "⚠ Flagged" : session.status}
                       </span>
+                      {session.status === "active" && !session.is_flagged && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive border-destructive/30 gap-1 ml-2"
+                          onClick={async () => {
+                            await supabase.from("peer_sessions").update({ is_flagged: true }).eq("id", session.id);
+                            queryClient.invalidateQueries({ queryKey: ["intern-sessions"] });
+                            toast.info("Session flagged for review");
+                          }}
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          Flag
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

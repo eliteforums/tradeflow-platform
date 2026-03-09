@@ -190,6 +190,15 @@ const ExpertDashboard = () => {
                         <Button
                           size="sm"
                           variant="outline"
+                          className="text-destructive border-destructive/30 gap-1"
+                          onClick={() => toast.info("Escalation request sent to SPOC")}
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          Escalate
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => setSelectedAppointment(apt.id)}
                         >
                           Complete
