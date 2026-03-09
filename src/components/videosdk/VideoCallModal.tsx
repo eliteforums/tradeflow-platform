@@ -122,6 +122,7 @@ const VideoCallModal = ({
                 micEnabled: true,
                 webcamEnabled: mode === "video",
                 name: participantName,
+                debugMode: false,
               }}
               token={token}
             >
