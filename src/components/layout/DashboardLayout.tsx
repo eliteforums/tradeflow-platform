@@ -22,7 +22,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
+const studentNavItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: Calendar, label: "Appointments", path: "/dashboard/appointments" },
   { icon: MessageCircle, label: "Peer Connect", path: "/dashboard/peer-connect" },
@@ -33,12 +33,46 @@ const navItems = [
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
+const adminNavItems = [
+  { icon: Shield, label: "Admin Panel", path: "/admin" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const expertNavItems = [
+  { icon: Home, label: "Dashboard", path: "/dashboard/expert" },
+  { icon: Calendar, label: "Appointments", path: "/dashboard/appointments" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const internNavItems = [
+  { icon: Home, label: "Dashboard", path: "/dashboard/intern" },
+  { icon: MessageCircle, label: "Peer Connect", path: "/dashboard/peer-connect" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
 // Instagram-style bottom nav items (mobile only — 5 max)
-const bottomNavItems = [
+const studentBottomNavItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: MessageCircle, label: "Connect", path: "/dashboard/peer-connect" },
   { icon: Sparkles, label: "Tools", path: "/dashboard/self-help" },
   { icon: Music, label: "Sounds", path: "/dashboard/sound-therapy" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const adminBottomNavItems = [
+  { icon: Shield, label: "Admin", path: "/admin" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const expertBottomNavItems = [
+  { icon: Home, label: "Dashboard", path: "/dashboard/expert" },
+  { icon: Calendar, label: "Schedule", path: "/dashboard/appointments" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const internBottomNavItems = [
+  { icon: Home, label: "Dashboard", path: "/dashboard/intern" },
+  { icon: MessageCircle, label: "Connect", path: "/dashboard/peer-connect" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
