@@ -438,6 +438,9 @@ const AdminDashboard = () => {
 
             {/* Sounds Tab */}
             {activeTab === "sounds" && <SoundManager />}
+
+            {/* Institutions Tab */}
+            {activeTab === "institutions" && <InstitutionManager />}
           </>
         )}
       </div>
