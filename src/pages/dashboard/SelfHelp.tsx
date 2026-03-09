@@ -171,18 +171,16 @@ const SelfHelp = () => {
         {/* Content */}
         {activeTab === "quest" && (
           <div className="space-y-5 sm:space-y-6">
-            <Suspense fallback={<ThreeDLoader />}>
-              <QuestCard3D
-                quests={quests.map((q) => ({ id: q.id, title: q.title, xp_reward: q.xp_reward }))}
-                completedIds={completedIds}
-                onComplete={(id) => {
-                  const quest = quests.find((q) => q.id === id);
-                  if (quest && !getQuestStatus(quest.id)) {
-                    completeQuest(quest);
-                  }
-                }}
-              />
-            </Suspense>
+            <QuestCard3D
+              quests={quests.map((q) => ({ id: q.id, title: q.title, xp_reward: q.xp_reward }))}
+              completedIds={completedIds}
+              onComplete={(id) => {
+                const quest = quests.find((q) => q.id === id);
+                if (quest && !getQuestStatus(quest.id)) {
+                  completeQuest(quest);
+                }
+              }}
+            />
 
             {/* Daily Progress */}
             <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border">
