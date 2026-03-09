@@ -142,13 +142,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-sm{
-                  active
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-sm                  active
                     ? "bg-primary/12 text-primary font-semibold"
                     : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                 }`}
               >
-                <item.icon className={`w-[15 h-5hrink-0 ${active ? "text-primary" : ""}`} />
+                <item.icon className={`w-[15 5 h-5tive ? "text-primary" : ""}`} />
                 {sidebarOpen && <span className="truncate">{item.label}</span>}
               </Link>
             );
@@ -159,8 +158,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <Button
             variant="ghost"
             onClick={handleLogout}
-            className={`w-full justify-start gap-2.5 text-[13px] text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-destructive h-9 ${
-              !sidebarOpen ? "justify-center px-0" : ""
+            className={`w-full justify-start gap-2.5 text-[13px] text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-destructive h-10      !sidebarOpen ? "justify-center px-0" : ""
             }`}
           >
             <LogOut className="w-[18px] h-[18px] shrink-0" />
