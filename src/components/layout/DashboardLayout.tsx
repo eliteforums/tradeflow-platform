@@ -205,8 +205,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                <item.icon className={`w-[22px] h-[22px] ${active ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
-                <span className={`text-[10px] leading-none ${active ? "font-semibold" : "font-normal"}`}>
+                <item.icon className={`w-6 h-6 ${active ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
+                <span className={`text-[11px] leading-none ${active ? "font-semibold" : "font-normal"}`}>
                   {item.label}
                 </span>
               </Link>
