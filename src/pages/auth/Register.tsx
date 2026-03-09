@@ -131,7 +131,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-6 sm:p-6 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-eternia-teal/20 rounded-full blur-3xl animate-pulse-glow" />
         <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-eternia-lavender/20 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
@@ -168,7 +168,7 @@ const Register = () => {
           </div>
         </div>
 
-        <div className="glass rounded-2xl p-8">
+        <div className="glass rounded-2xl p-5 sm:p-8">
           {step === 1 ? (
             <>
               <div className="mb-8">
