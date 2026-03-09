@@ -21,7 +21,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 type TrainingStatus = "NOT_STARTED" | "IN_PROGRESS" | "ASSESSMENT_PENDING" | "ACTIVE";
 
