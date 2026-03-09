@@ -20,7 +20,7 @@ const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) =
     if (!isDeleting && displayedText.length < text.length) {
       const timeout = setTimeout(() => {
         setDisplayedText(text.slice(0, displayedText.length + 1));
-      }, 80);
+      }, 150);
       return () => clearTimeout(timeout);
     }
 
