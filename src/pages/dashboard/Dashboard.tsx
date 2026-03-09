@@ -1,20 +1,9 @@
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobileDashboard from "@/components/mobile/MobileDashboard";
 import { Link, Navigate } from "react-router-dom";
 import {
-  Calendar,
-  MessageCircle,
-  Box,
-  Music,
-  Sparkles,
-  Coins,
-  ArrowRight,
-  TrendingUp,
-  Clock,
-  Award,
-  Sun,
-  Moon,
-  Sunrise,
-  Heart,
-  AlertCircle,
+  Calendar, MessageCircle, Box, Music, Sparkles, Coins,
+  ArrowRight, Award, Heart, AlertCircle, Sunrise, Sun, Moon,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,55 +26,25 @@ const motivationalQuotes = [
 ];
 
 const Dashboard = () => {
+  const isMobile = useIsMobile();
   const { profile } = useAuth();
   const { balance } = useCredits();
+
+  // Role-based redirect (must be before mobile check to avoid hook order issues)
+  if (profile?.role === "admin" || profile?.role === "spoc") return <Navigate to="/admin" replace />;
+  if (profile?.role === "expert") return <Navigate to="/dashboard/expert" replace />;
+  if (profile?.role === "intern") return <Navigate to="/dashboard/intern" replace />;
+
+  if (isMobile) return <MobileDashboard />;
+
   const greeting = getGreeting();
   const quote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
 
-  // Role-based redirect: admin/spoc → /admin, expert → /dashboard/expert, intern → /dashboard/intern
-  if (profile?.role === "admin" || profile?.role === "spoc") {
-    return <Navigate to="/admin" replace />;
-  }
-  if (profile?.role === "expert") {
-    return <Navigate to="/dashboard/expert" replace />;
-  }
-  if (profile?.role === "intern") {
-    return <Navigate to="/dashboard/intern" replace />;
-  }
-
   const portals = [
-    {
-      icon: Calendar,
-      title: "Appointments",
-      description: "Book expert sessions",
-      path: "/dashboard/appointments",
-      gradient: "from-emerald-500 to-teal-500",
-      bgClass: "bg-emerald-500/8",
-    },
-    {
-      icon: MessageCircle,
-      title: "Peer Connect",
-      description: "Talk to trained interns",
-      path: "/dashboard/peer-connect",
-      gradient: "from-pink-500 to-rose-500",
-      bgClass: "bg-pink-500/8",
-    },
-    {
-      icon: Box,
-      title: "BlackBox",
-      description: "Express anonymously",
-      path: "/dashboard/blackbox",
-      gradient: "from-violet-500 to-purple-500",
-      bgClass: "bg-violet-500/8",
-    },
-    {
-      icon: Music,
-      title: "Sound Therapy",
-      description: "Meditate & relax",
-      path: "/dashboard/sound-therapy",
-      gradient: "from-cyan-500 to-blue-500",
-      bgClass: "bg-cyan-500/8",
-    },
+    { icon: Calendar, title: "Appointments", description: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500", bgClass: "bg-emerald-500/8" },
+    { icon: MessageCircle, title: "Peer Connect", description: "Talk to trained interns", path: "/dashboard/peer-connect", gradient: "from-pink-500 to-rose-500", bgClass: "bg-pink-500/8" },
+    { icon: Box, title: "BlackBox", description: "Express anonymously", path: "/dashboard/blackbox", gradient: "from-violet-500 to-purple-500", bgClass: "bg-violet-500/8" },
+    { icon: Music, title: "Sound Therapy", description: "Meditate & relax", path: "/dashboard/sound-therapy", gradient: "from-cyan-500 to-blue-500", bgClass: "bg-cyan-500/8" },
   ];
 
   const quickTools = [
@@ -98,27 +57,19 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-5">
-        {/* Greeting — warm and personal */}
         <div className="pt-1">
           <p className="text-muted-foreground text-sm mb-0.5">{greeting.emoji} {greeting.text}</p>
-          <h1 className="text-xl sm:text-2xl font-bold font-display">
-            {profile?.username || "friend"}
-          </h1>
+          <h1 className="text-xl sm:text-2xl font-bold font-display">{profile?.username || "friend"}</h1>
         </div>
 
-        {/* Motivational Card */}
         <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5" style={{ background: "linear-gradient(135deg, hsl(var(--eternia-teal) / 0.12), hsl(var(--eternia-lavender) / 0.12))" }}>
           <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20" style={{ background: "radial-gradient(circle, hsl(var(--eternia-teal)), transparent 70%)" }} />
           <Heart className="w-5 h-5 text-primary mb-2" />
           <p className="text-sm text-foreground/90 leading-relaxed relative z-10">{quote}</p>
         </div>
 
-        {/* Low Balance Prompt (PRD: show when balance < 5 ECC) */}
         {balance < 5 && (
-          <Link
-            to="/dashboard/credits"
-            className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-400/40 transition-all"
-          >
+          <Link to="/dashboard/credits" className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-400/40 transition-all">
             <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground">Your care energy is low.</p>
@@ -128,7 +79,6 @@ const Dashboard = () => {
           </Link>
         )}
 
-        {/* Quick Stats Row */}
         <div className="grid grid-cols-3 gap-2.5">
           <div className="rounded-xl bg-card p-3 text-center border border-border/50">
             <p className="text-lg sm:text-xl font-bold">{profile?.streak_days || 0}</p>
@@ -144,35 +94,25 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Stories-style Quick Tools — horizontal scroll */}
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 px-0.5">Quick Tools</p>
-          <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
             {quickTools.map((tool) => (
-              <Link
-                key={tool.name}
-                to={tool.path}
-                className="flex flex-col items-center gap-1.5 shrink-0"
-              >
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-card border border-border/50 flex items-center justify-center hover:border-primary/30 transition-all active:scale-95">
+              <Link key={tool.name} to={tool.path} className="flex flex-col items-center gap-1.5 shrink-0">
+                <div className="w-16 h-16 rounded-2xl bg-card border border-border/50 flex items-center justify-center hover:border-primary/30 transition-all">
                   <tool.icon className={`w-6 h-6 ${tool.color}`} />
                 </div>
-                <span className="text-[10px] sm:text-[11px] text-muted-foreground text-center leading-tight w-14 sm:w-16 truncate">{tool.name}</span>
+                <span className="text-[11px] text-muted-foreground text-center leading-tight w-16 truncate">{tool.name}</span>
               </Link>
             ))}
           </div>
         </div>
 
-        {/* Core Portals */}
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 px-0.5">Your Space</p>
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {portals.map((portal) => (
-              <Link
-                key={portal.path}
-                to={portal.path}
-                className="group rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all active:scale-[0.97]"
-              >
+              <Link key={portal.path} to={portal.path} className="group rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all">
                 <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${portal.gradient} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
                   <portal.icon className="w-5 h-5 text-white" />
                 </div>
@@ -183,11 +123,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Self-Help Banner */}
-        <Link
-          to="/dashboard/self-help"
-          className="block rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all group active:scale-[0.98]"
-        >
+        <Link to="/dashboard/self-help" className="block rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all group">
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               <Sparkles className="w-5 sm:w-6 h-5 sm:h-6 text-white" />
@@ -200,7 +136,6 @@ const Dashboard = () => {
           </div>
         </Link>
 
-        {/* Tip */}
         <div className="rounded-xl bg-muted/30 p-3.5 sm:p-4">
           <p className="text-xs text-muted-foreground leading-relaxed">
             <span className="font-medium text-foreground/80">💡 Tip:</span> Complete daily quests to earn XP and build your wellness streak. Every action counts!
