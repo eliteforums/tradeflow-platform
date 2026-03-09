@@ -25,35 +25,24 @@ const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) =
     }
 
     if (!isDeleting && displayedText.length === text.length) {
-      const pause = setTimeout(() => setIsDeleting(true), 2000);
+      const pause = setTimeout(() => setIsDeleting(true), 3000);
       return () => clearTimeout(pause);
     }
 
     if (isDeleting && displayedText.length > 0) {
       const timeout = setTimeout(() => {
         setDisplayedText(text.slice(0, displayedText.length - 1));
-      }, 40);
+      }, 100);
       return () => clearTimeout(timeout);
     }
 
     if (isDeleting && displayedText.length === 0) {
-      const pause = setTimeout(() => setIsDeleting(false), 500);
+      const pause = setTimeout(() => setIsDeleting(false), 800);
       return () => clearTimeout(pause);
     }
   }, [displayedText, text, started, isDeleting]);
 
-  return (
-    <>
-      {displayedText}
-      {started && (
-        <motion.span
-          animate={{ opacity: [1, 0] }}
-          transition={{ duration: 0.5, repeat: Infinity }}
-          className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle"
-        />
-      )}
-    </>
-  );
+  return <>{displayedText}</>;
 };
 
 const HeroSection = () => (
