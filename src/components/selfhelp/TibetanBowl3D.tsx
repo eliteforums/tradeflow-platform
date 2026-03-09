@@ -2,12 +2,53 @@ import { useRef, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { motion } from "framer-motion";
 
-interface BowlMeshProps {
+interface TibetanBowl3DProps {
   phase: "inhale" | "hold" | "exhale" | "idle";
 }
 
-function Bowl({ phase }: BowlMeshProps) {
+/* ── Mobile 2D version ── */
+function TibetanBowl2D({ phase }: TibetanBowl3DProps) {
+  const isActive = phase !== "idle";
+  const scale = phase === "inhale" ? 1.15 : phase === "hold" ? 1.1 : phase === "exhale" ? 0.95 : 1;
+
+  return (
+    <div className="w-full max-w-[280px] mx-auto aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-violet-950/30 to-background border border-border/50 flex items-center justify-center">
+      <div className="relative flex items-center justify-center">
+        {isActive && [0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full border border-violet-400/30"
+            initial={{ width: 80, height: 80, opacity: 0.4 }}
+            animate={{
+              width: [80, 160 + i * 40],
+              height: [80, 160 + i * 40],
+              opacity: [0.4, 0],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              delay: i * 0.6,
+              ease: "easeOut",
+            }}
+          />
+        ))}
+        <motion.div
+          animate={{ scale }}
+          transition={{ duration: 1.5, ease: "easeInOut" }}
+          className="text-6xl z-10"
+        >
+          🔔
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+/* ── 3D Bowl mesh ── */
+function Bowl({ phase }: { phase: string }) {
   const groupRef = useRef<THREE.Group>(null);
   const ringsRef = useRef<THREE.Mesh[]>([]);
   const intensity = phase === "inhale" ? 1 : phase === "hold" ? 0.7 : phase === "exhale" ? 0.4 : 0.1;
@@ -15,13 +56,10 @@ function Bowl({ phase }: BowlMeshProps) {
   useFrame((state) => {
     if (!groupRef.current) return;
     const t = state.clock.getElapsedTime();
-
-    // Gentle bob
     groupRef.current.rotation.y = t * 0.15;
     const breathScale = phase !== "idle" ? 1 + Math.sin(t * 2) * 0.02 * intensity : 1;
     groupRef.current.scale.setScalar(breathScale);
 
-    // Animate rings
     ringsRef.current.forEach((ring, i) => {
       if (!ring) return;
       const s = 1 + Math.sin(t * 1.5 + i * 1.2) * 0.15 * intensity;
@@ -36,8 +74,7 @@ function Bowl({ phase }: BowlMeshProps) {
   return (
     <>
       <group ref={groupRef}>
-        {/* Bowl body — lathe geometry for realistic shape */}
-        <mesh position={[0, 0, 0]} rotation={[0, 0, 0]}>
+        <mesh>
           <latheGeometry args={[
             [
               new THREE.Vector2(0, 0.6),
@@ -53,21 +90,15 @@ function Bowl({ phase }: BowlMeshProps) {
           ]} />
           <meshStandardMaterial color={bowlColor} roughness={0.25} metalness={0.7} side={THREE.DoubleSide} />
         </mesh>
-
-        {/* Rim highlight */}
         <mesh position={[0, 0.58, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[0.2, 0.03, 8, 32]} />
           <meshStandardMaterial color={rimColor} roughness={0.2} metalness={0.8} />
         </mesh>
-
-        {/* Inner glow */}
         <mesh position={[0, 0.3, 0]}>
           <sphereGeometry args={[0.35, 16, 16]} />
           <meshBasicMaterial color="#c4b5fd" transparent opacity={intensity * 0.15} />
         </mesh>
       </group>
-
-      {/* Sound wave rings */}
       {[1.4, 1.8, 2.2].map((size, i) => (
         <mesh
           key={i}
@@ -79,8 +110,6 @@ function Bowl({ phase }: BowlMeshProps) {
           <meshBasicMaterial color="#a78bfa" transparent opacity={0} side={THREE.DoubleSide} />
         </mesh>
       ))}
-
-      {/* Floating particles when active */}
       {phase !== "idle" && Array.from({ length: 12 }).map((_, i) => (
         <FloatingParticle key={i} index={i} intensity={intensity} />
       ))}
@@ -110,21 +139,18 @@ function FloatingParticle({ index, intensity }: { index: number; intensity: numb
   );
 }
 
-interface TibetanBowl3DProps {
-  phase: "inhale" | "hold" | "exhale" | "idle";
-}
-
-export default function TibetanBowl3D({ phase }: TibetanBowl3DProps) {
+export default function TibetanBowl3D(props: TibetanBowl3DProps) {
+  const isMobile = useIsMobile();
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (phase !== "idle" && !audioRef.current) {
+    if (props.phase !== "idle" && !audioRef.current) {
       audioRef.current = new Audio("/sounds/tibetan-bowl.mp3");
       audioRef.current.loop = true;
       audioRef.current.volume = 0.5;
       audioRef.current.play().catch(() => {});
     }
-    if (phase === "idle" && audioRef.current) {
+    if (props.phase === "idle" && audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       audioRef.current = null;
@@ -135,7 +161,9 @@ export default function TibetanBowl3D({ phase }: TibetanBowl3DProps) {
         audioRef.current = null;
       }
     };
-  }, [phase]);
+  }, [props.phase]);
+
+  if (isMobile) return <TibetanBowl2D {...props} />;
 
   return (
     <div className="w-full max-w-[320px] mx-auto aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-violet-950/30 to-background border border-border/50">
@@ -143,7 +171,7 @@ export default function TibetanBowl3D({ phase }: TibetanBowl3DProps) {
         <ambientLight intensity={0.5} />
         <directionalLight position={[3, 5, 3]} intensity={0.7} />
         <pointLight position={[-2, 2, 2]} intensity={0.5} color="#8b5cf6" />
-        <Bowl phase={phase} />
+        <Bowl phase={props.phase} />
         <OrbitControls enableZoom={false} enablePan={false} maxPolarAngle={Math.PI / 2.2} minPolarAngle={Math.PI / 6} />
       </Canvas>
     </div>

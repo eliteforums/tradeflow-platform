@@ -220,38 +220,38 @@ const SoundTherapy = () => {
           </div>
         </div>
 
-        {/* Mobile Fixed Bottom Player */}
+        {/* Mobile Fixed Bottom Player — sits above bottom nav (h-16) */}
         {currentTrackData && (
-          <div className="lg:hidden fixed bottom-14 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+          <div className="lg:hidden fixed bottom-16 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border">
             {showPlayer && (
-              <div className="px-4 pt-3 pb-1">
-                <Slider value={progress} onValueChange={setProgress} max={100} step={1} className="mb-1" />
+              <div className="px-3 pt-2.5 pb-0.5">
+                <Slider value={progress} onValueChange={setProgress} max={100} step={1} className="mb-0.5" />
                 <div className="flex justify-between text-[10px] text-muted-foreground">
                   <span>{formatDuration(Math.floor((progress[0] / 100) * (currentTrackData.duration_sec || 0)))}</span>
                   <span>{formatDuration(currentTrackData.duration_sec)}</span>
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-3 px-4 py-2.5">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-lg shrink-0">
+            <div className="flex items-center gap-2.5 px-3 py-2">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-base shrink-0">
                 {currentTrackData.cover_emoji || "🎵"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{currentTrackData.title}</p>
-                <p className="text-[11px] text-muted-foreground truncate">{currentTrackData.artist || "Unknown"}</p>
+                <p className="text-[13px] font-semibold truncate">{currentTrackData.title}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{currentTrackData.artist || "Unknown"}</p>
               </div>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrev}>
-                  <SkipBack className="w-4 h-4" />
+              <div className="flex items-center gap-0.5">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrev}>
+                  <SkipBack className="w-3.5 h-3.5" />
                 </Button>
-                <Button size="icon" className="h-9 w-9 rounded-full bg-primary text-primary-foreground" onClick={() => setIsPlaying(!isPlaying)}>
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+                <Button size="icon" className="h-8 w-8 rounded-full bg-primary text-primary-foreground" onClick={() => setIsPlaying(!isPlaying)}>
+                  {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNext}>
-                  <SkipForward className="w-4 h-4" />
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNext}>
+                  <SkipForward className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowPlayer(!showPlayer)}>
-                  {showPlayer ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowPlayer(!showPlayer)}>
+                  {showPlayer ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
                 </Button>
               </div>
             </div>
