@@ -472,6 +472,10 @@ const AdminDashboard = () => {
               </div>
             )}
 
+
+            {/* Experts Tab */}
+            {activeTab === "experts" && <ExpertManager />}
+
             {/* Audit Log Tab */}
             {activeTab === "audit" && <AuditLogViewer />}
           </>
