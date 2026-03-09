@@ -50,7 +50,6 @@ const internNavItems = [
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
-// Instagram-style bottom nav items (mobile only — 5 max)
 const studentBottomNavItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: MessageCircle, label: "Connect", path: "/dashboard/peer-connect" },
@@ -109,7 +108,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen min-h-dvh bg-background flex">
       {/* Desktop Sidebar */}
       <aside
         className={`hidden lg:flex flex-col fixed inset-y-0 left-0 z-50 transition-all duration-300 ${
@@ -142,7 +141,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Link
                 key={item.path}
                 to={item.path}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-sm ${
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-sm ${
                   active
                     ? "bg-primary/12 text-primary font-semibold"
                     : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
@@ -169,47 +168,50 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </aside>
 
-      {/* Mobile Top Bar — minimal like WhatsApp */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-13 bg-background border-b border-border/50 flex items-center justify-between px-4">
+      {/* Mobile Top Bar */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/40 flex items-center justify-between px-3 h-14">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <EterniaLogo size={26} />
-          <span className="text-base font-bold font-display">Eternia</span>
+          <EterniaLogo size={24} />
+          <span className="text-sm font-bold font-display">Eternia</span>
         </Link>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <Link to="/dashboard/credits">
-            <Button variant="ghost" size="sm" className="h-8 px-2.5 text-xs gap-1.5 text-muted-foreground">
+            <Button variant="ghost" size="sm" className="h-9 px-2 text-xs gap-1 text-muted-foreground">
               <Coins className="w-3.5 h-3.5 text-primary" />
               <span className="font-semibold text-foreground">ECC</span>
             </Button>
           </Link>
           <Link to="/dashboard/blackbox">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-9 w-9">
               <Box className="w-4 h-4 text-muted-foreground" />
             </Button>
           </Link>
           <Link to="/dashboard/appointments">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-9 w-9">
               <Calendar className="w-4 h-4 text-muted-foreground" />
             </Button>
           </Link>
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation — Instagram style */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/50" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-        <div className="flex items-center justify-around h-14">
+      {/* Mobile Bottom Navigation */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/40"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
+        <div className="flex items-center justify-around h-16">
           {bottomNavItems.map((item) => {
             const active = isActive(item.path);
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex flex-col items-center justify-center gap-0.5 w-14 h-full transition-colors ${
+                className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors active:opacity-70 ${
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                <item.icon className={`w-6 h-6 ${active ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
-                <span className={`text-[11px] leading-none ${active ? "font-semibold" : "font-normal"}`}>
+                <item.icon className={`w-5 h-5 ${active ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
+                <span className={`text-[10px] leading-none ${active ? "font-semibold" : "font-normal"}`}>
                   {item.label}
                 </span>
               </Link>
@@ -220,11 +222,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Main Content */}
       <main
-        className={`flex-1 min-h-screen transition-all duration-300 ${
+        className={`flex-1 min-h-screen min-h-dvh transition-all duration-300 ${
           sidebarOpen ? "lg:ml-56" : "lg:ml-[66px]"
-        } pt-12 lg:pt-0 pb-safe lg:pb-0`}
+        } pt-14 lg:pt-0 pb-20 lg:pb-0`}
       >
-        <div className="p-4 sm:p-5 lg:p-8">{children}</div>
+        <div className="px-3 py-4 sm:p-5 lg:p-8">{children}</div>
       </main>
     </div>
   );
