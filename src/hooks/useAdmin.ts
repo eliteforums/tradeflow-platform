@@ -18,56 +18,54 @@ export interface InstitutionMember {
   total_sessions: number;
   streak_days: number;
   created_at: string;
+  institution_id: string | null;
 }
 
 export function useAdmin() {
   const { profile } = useAuth();
   const isAdmin = profile?.role === "admin" || profile?.role === "spoc";
+  const isSuperAdmin = profile?.role === "admin";
 
-  // Get institution members
+  // Get members — super admin sees ALL, SPOC sees own institution only
   const { data: members = [], isLoading: isLoadingMembers } = useQuery({
-    queryKey: ["admin-members", profile?.institution_id],
+    queryKey: ["admin-members", isSuperAdmin ? "all" : profile?.institution_id],
     queryFn: async () => {
-      if (!profile?.institution_id) return [];
-
-      const { data, error } = await supabase
+      let query = supabase
         .from("profiles")
         .select("*")
-        .eq("institution_id", profile.institution_id)
         .order("created_at", { ascending: false });
 
+      // SPOC only sees their own institution
+      if (!isSuperAdmin && profile?.institution_id) {
+        query = query.eq("institution_id", profile.institution_id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as InstitutionMember[];
     },
-    enabled: isAdmin && !!profile?.institution_id,
+    enabled: isAdmin,
   });
 
-  // Get stats
+  // Get stats — super admin sees cross-institution
   const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["admin-stats", profile?.institution_id],
+    queryKey: ["admin-stats", isSuperAdmin ? "all" : profile?.institution_id],
     queryFn: async () => {
-      if (!profile?.institution_id) {
-        return {
-          totalStudents: 0,
-          totalSessions: 0,
-          totalCreditsIssued: 0,
-          activeToday: 0,
-        };
-      }
-
-      // Get student count
-      const { count: studentCount } = await supabase
+      let studentQuery = supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
-        .eq("institution_id", profile.institution_id)
         .eq("role", "student");
 
-      // Get total sessions
+      if (!isSuperAdmin && profile?.institution_id) {
+        studentQuery = studentQuery.eq("institution_id", profile.institution_id);
+      }
+
+      const { count: studentCount } = await studentQuery;
+
       const { count: sessionCount } = await supabase
         .from("appointments")
         .select("*", { count: "exact", head: true });
 
-      // Get peer sessions count
       const { count: peerCount } = await supabase
         .from("peer_sessions")
         .select("*", { count: "exact", head: true });
@@ -75,8 +73,8 @@ export function useAdmin() {
       return {
         totalStudents: studentCount || 0,
         totalSessions: (sessionCount || 0) + (peerCount || 0),
-        totalCreditsIssued: (studentCount || 0) * 100, // 100 credits per student welcome bonus
-        activeToday: Math.floor((studentCount || 0) * 0.3), // Mock ~30% active
+        totalCreditsIssued: (studentCount || 0) * 100,
+        activeToday: Math.floor((studentCount || 0) * 0.3),
       };
     },
     enabled: isAdmin,
@@ -114,7 +112,7 @@ export function useAdmin() {
     enabled: isAdmin,
   });
 
-  // Get flagged entries (BlackBox with AI flag level > 0)
+  // Get flagged entries
   const { data: flaggedEntries = [], isLoading: isLoadingFlags } = useQuery({
     queryKey: ["admin-flagged"],
     queryFn: async () => {
@@ -133,6 +131,7 @@ export function useAdmin() {
 
   return {
     isAdmin,
+    isSuperAdmin,
     members,
     stats: stats || { totalStudents: 0, totalSessions: 0, totalCreditsIssued: 0, activeToday: 0 },
     appointments,
