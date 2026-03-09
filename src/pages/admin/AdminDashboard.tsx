@@ -29,6 +29,9 @@ import { format } from "date-fns";
 
 import SoundManager from "@/components/admin/SoundManager";
 import InstitutionManager from "@/components/admin/InstitutionManager";
+import EscalationManager from "@/components/admin/EscalationManager";
+import AuditLogViewer from "@/components/admin/AuditLogViewer";
+import SPOCTools from "@/components/admin/SPOCTools";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions">("overview");
