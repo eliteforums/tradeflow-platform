@@ -108,6 +108,7 @@ const AdminDashboard = () => {
             { id: "escalations" as const, label: "Escalations", icon: Shield },
             { id: "spoc" as const, label: "SPOC Tools", icon: QrCode },
             { id: "sounds" as const, label: "Sounds", icon: Music },
+            { id: "roles" as const, label: "Roles", icon: UserPlus },
             { id: "institutions" as const, label: "Institutions", icon: Building2 },
             { id: "audit" as const, label: "Audit Log", icon: FileText },
           ]).map((tab) => (
