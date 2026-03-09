@@ -41,3 +41,10 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Mobile friendly adjustments */
+@media (max-width: 768px) {
+  #root {
+    padding: 1rem;
+  }
+}
