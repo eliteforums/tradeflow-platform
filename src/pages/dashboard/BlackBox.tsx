@@ -155,36 +155,43 @@ const BlackBox = () => {
 
           {showEntries && (
             <div className="space-y-4">
-              {entries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">
-                        {entry.timestamp}
-                      </span>
-                      {entry.isPrivate && (
-                        <span className="flex items-center gap-1 text-xs text-primary">
-                          <Lock className="w-3 h-3" />
-                          Private
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading entries...</div>
+              ) : entries.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No entries yet. Start expressing yourself.</div>
+              ) : (
+                entries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                         </span>
-                      )}
-                      {getCrisisIndicator(entry.crisisLevel)}
+                        {entry.is_private && (
+                          <span className="flex items-center gap-1 text-xs text-primary">
+                            <Lock className="w-3 h-3" />
+                            Private
+                          </span>
+                        )}
+                        {getCrisisIndicator(entry.ai_flag_level)}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteEntry(entry.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <p className="text-foreground/90 leading-relaxed">{entry.content_encrypted}</p>
                   </div>
-                  <p className="text-foreground/90 leading-relaxed">{entry.content}</p>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
         </div>
