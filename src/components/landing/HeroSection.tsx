@@ -84,7 +84,7 @@ const HeroSection = () => (
         transition={{ duration: 0.6, delay: 0.1 }}
         className="text-center text-[28px] leading-[1.15] sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display tracking-tight mb-4 sm:mb-5 max-w-4xl mx-auto"
       >
-        Student wellbeing, <span className="text-gradient">anonymous</span>
+        Student wellbeing, <span className="text-gradient"><TypewriterText text="anonymous" delay={600} /></span>
         <motion.span
           animate={{ opacity: [1, 0] }}
           transition={{ duration: 0.5, repeat: Infinity }}
