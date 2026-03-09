@@ -46,8 +46,8 @@ const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) =
 };
 
 const HeroSection = () => (
-  <section className="relative pt-12 sm:pt-20 pb-6 sm:pb-8 px-4 sm:px-6 overflow-hidden">
-    {/* Ambient glow — subtle, warm */}
+  <section className="relative pt-16 sm:pt-24 pb-8 sm:pb-12 px-4 sm:px-6 overflow-hidden">
+    {/* Ambient glow */}
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       <motion.div
         animate={{ scale: [1, 1.15, 1], opacity: [0.12, 0.2, 0.12] }}
@@ -69,11 +69,11 @@ const HeroSection = () => (
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex justify-center mb-5 sm:mb-7"
+        className="flex justify-center mb-6 sm:mb-8"
       >
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/60 border border-border/40 backdrop-blur-sm">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card/60 border border-border/40 backdrop-blur-sm">
           <div className="w-1.5 h-1.5 rounded-full bg-eternia-success animate-pulse" />
-          <span className="text-[11px] sm:text-xs text-muted-foreground">Trusted by 50+ institutions</span>
+          <span className="text-[11px] sm:text-xs text-muted-foreground">Trusted by 50+ institutions across India</span>
         </div>
       </motion.div>
 
@@ -82,13 +82,16 @@ const HeroSection = () => (
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="text-center text-[28px] leading-[1.15] sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display tracking-tight mb-4 sm:mb-5 max-w-4xl mx-auto"
+        className="text-center text-[32px] leading-[1.1] sm:text-5xl md:text-6xl lg:text-7xl font-bold font-display tracking-tight mb-5 sm:mb-6 max-w-4xl mx-auto"
       >
-        Student wellbeing, <span className="text-gradient"><TypewriterText text="anonymous" delay={600} /></span>
+        Student wellbeing,{" "}
+        <span className="text-gradient">
+          <TypewriterText text="anonymous" delay={600} />
+        </span>
         <motion.span
           animate={{ opacity: [1, 0] }}
           transition={{ duration: 0.5, repeat: Infinity }}
-          className="inline-block w-[2px] h-[0.8em] bg-primary ml-0.5 align-middle"
+          className="inline-block w-[2px] h-[0.75em] bg-primary ml-0.5 align-middle"
         />
       </motion.h1>
 
@@ -97,7 +100,7 @@ const HeroSection = () => (
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25, duration: 0.5 }}
-        className="text-center text-[15px] sm:text-lg text-muted-foreground mb-7 sm:mb-9 max-w-lg sm:max-w-2xl mx-auto leading-relaxed"
+        className="text-center text-[15px] sm:text-lg text-muted-foreground mb-8 sm:mb-10 max-w-lg sm:max-w-2xl mx-auto leading-relaxed"
       >
         Counselling, peer support, emotional tools & sound therapy — all anonymous, institution-controlled, and DPDP-compliant.
       </motion.p>
@@ -107,16 +110,16 @@ const HeroSection = () => (
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.5 }}
-        className="flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3 mb-6"
+        className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6"
       >
         <Link to="/institution-code" className="w-full sm:w-auto">
-          <Button size="lg" className="w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm sm:text-base px-7 sm:px-8 h-12 gap-2 font-semibold shadow-lg shadow-primary/20">
+          <Button size="lg" className="w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm sm:text-base px-8 h-13 gap-2 font-semibold shadow-lg shadow-primary/20 active:scale-[0.97] transition-all">
             Get Started Free
             <ArrowRight className="w-4 h-4" />
           </Button>
         </Link>
         <Link to="/login" className="w-full sm:w-auto">
-          <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-border/60 text-foreground hover:bg-card text-sm sm:text-base px-7 sm:px-8 h-12 gap-2">
+          <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-border/50 text-foreground hover:bg-card/80 text-sm sm:text-base px-8 h-13 gap-2 active:scale-[0.97] transition-all">
             <Play className="w-4 h-4" />
             Watch Demo
           </Button>
@@ -128,7 +131,7 @@ const HeroSection = () => (
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
-        className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-[12px] sm:text-sm text-muted-foreground mb-10 sm:mb-14"
+        className="flex flex-wrap items-center justify-center gap-5 sm:gap-6 text-[12px] sm:text-sm text-muted-foreground mb-12 sm:mb-16"
       >
         <div className="flex items-center gap-1.5">
           <Shield className="w-3.5 h-3.5 text-primary" />
@@ -144,7 +147,7 @@ const HeroSection = () => (
         </div>
       </motion.div>
 
-      {/* Dashboard Preview — desktop only */}
+      {/* Dashboard Preview */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -154,7 +157,6 @@ const HeroSection = () => (
         <div className="absolute -inset-6 bg-gradient-to-t from-transparent via-eternia-lavender/5 to-eternia-teal/5 rounded-3xl blur-2xl" />
         
         <div className="relative rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl overflow-hidden shadow-2xl">
-          {/* Browser bar */}
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40 bg-muted/20">
             <div className="flex gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full bg-destructive/30" />
@@ -168,7 +170,6 @@ const HeroSection = () => (
             </div>
           </div>
 
-          {/* Mock content */}
           <div className="p-5 grid grid-cols-12 gap-4 min-h-[300px]">
             <div className="col-span-2 space-y-2">
               <div className="h-7 rounded-lg bg-gradient-eternia opacity-70" />
@@ -176,7 +177,6 @@ const HeroSection = () => (
                 <div key={i} className={`h-6 rounded-md ${i === 0 ? 'bg-primary/10 border border-primary/15' : 'bg-muted/20'}`} />
               ))}
             </div>
-
             <div className="col-span-7 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="space-y-1.5">
@@ -185,7 +185,6 @@ const HeroSection = () => (
                 </div>
                 <div className="h-7 w-20 rounded-lg bg-gradient-eternia opacity-60" />
               </div>
-              
               <div className="grid grid-cols-3 gap-2.5">
                 {[
                   { color: "from-emerald-500/15 to-teal-500/15", border: "border-emerald-500/15" },
@@ -199,7 +198,6 @@ const HeroSection = () => (
                   </div>
                 ))}
               </div>
-
               <div className="rounded-xl border border-border/20 bg-muted/8 p-3 h-28 flex items-end gap-0.5">
                 {[40, 65, 45, 80, 55, 70, 90, 60, 75, 85, 50, 95].map((h, i) => (
                   <motion.div
@@ -212,7 +210,6 @@ const HeroSection = () => (
                 ))}
               </div>
             </div>
-
             <div className="col-span-3 space-y-2.5">
               <div className="rounded-xl border border-border/20 bg-muted/8 p-3 space-y-2">
                 <div className="h-3 w-16 rounded bg-foreground/8" />

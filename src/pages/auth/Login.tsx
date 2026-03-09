@@ -1,53 +1,43 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles, ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft, Shield, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import EterniaLogo from "@/components/EterniaLogo";
+import { motion } from "framer-motion";
 
 const Login = () => {
   const navigate = useNavigate();
   const { signIn } = useAuth();
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!formData.username || !formData.password) {
       toast.error("Please enter both username and password");
       return;
     }
-
     setIsLoading(true);
-
     try {
       const { error } = await signIn(formData.username, formData.password);
       if (error) throw error;
-
-      // Check if admin/spoc to redirect accordingly
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "");
-
       const isAdmin = roles?.some(r => r.role === "admin" || r.role === "spoc");
       toast.success("Welcome back!");
       navigate(isAdmin ? "/admin" : "/dashboard");
-    } catch (error: any) {
+    } catch {
       toast.error("Invalid username or password");
     } finally {
       setIsLoading(false);
@@ -55,101 +45,188 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-eternia-teal/20 rounded-full blur-3xl animate-pulse-glow" />
-        <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-eternia-lavender/20 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+      {/* Left panel — branding (hidden on mobile, shown on lg+) */}
+      <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden bg-card/30 border-r border-border/20 flex-col items-center justify-center p-12">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-eternia-teal/15 rounded-full blur-[100px]" />
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-eternia-lavender/15 rounded-full blur-[100px]" />
+        </div>
+        <div className="relative z-10 max-w-sm text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <EterniaLogo size={72} />
+          </motion.div>
+          <motion.h2
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-2xl font-bold font-display mb-3"
+          >
+            Welcome back to Eternia
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="text-muted-foreground text-sm leading-relaxed mb-8"
+          >
+            Your safe space for anonymous counseling, peer support, and emotional wellbeing tools.
+          </motion.p>
+          
+          {/* Feature pills */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="flex flex-wrap justify-center gap-2"
+          >
+            {["Anonymous", "Encrypted", "DPDP Compliant", "Peer Support"].map((tag) => (
+              <span key={tag} className="px-3 py-1 rounded-full text-[11px] bg-primary/8 text-primary border border-primary/10">
+                {tag}
+              </span>
+            ))}
+          </motion.div>
+
+          {/* Testimonial card */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="mt-10 p-5 rounded-2xl bg-card/60 border border-border/30 backdrop-blur-sm text-left"
+          >
+            <div className="flex gap-0.5 mb-3">
+              {[...Array(5)].map((_, i) => (
+                <Sparkles key={i} className="w-3.5 h-3.5 text-eternia-warning fill-eternia-warning" />
+              ))}
+            </div>
+            <p className="text-sm text-foreground/80 italic leading-relaxed">
+              "Eternia helped me talk about things I couldn't share with anyone else. The anonymity made all the difference."
+            </p>
+            <p className="text-xs text-muted-foreground mt-3">— Anonymous Student</p>
+          </motion.div>
+        </div>
       </div>
 
-      <div className="w-full max-w-md relative z-10">
-        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors">
-          <ArrowLeft className="w-4 h-4" />
-          Back to Home
-        </Link>
-
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-eternia flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-background" />
-          </div>
-          <span className="text-2xl font-bold font-display">Eternia</span>
+      {/* Right panel — login form */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative">
+        <div className="absolute inset-0 overflow-hidden lg:hidden">
+          <div className="absolute top-1/4 right-0 w-64 h-64 bg-eternia-teal/10 rounded-full blur-[80px]" />
+          <div className="absolute bottom-1/4 left-0 w-64 h-64 bg-eternia-lavender/10 rounded-full blur-[80px]" />
         </div>
 
-        <div className="glass rounded-2xl p-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold font-display mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">
-              Sign in with your username and password to continue.
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-[400px] relative z-10"
+        >
+          <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors text-sm">
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Link>
+
+          {/* Mobile logo */}
+          <div className="flex items-center gap-2.5 mb-6 lg:hidden">
+            <EterniaLogo size={36} />
+            <span className="text-lg font-bold font-display">Eternia</span>
+          </div>
+
+          <div className="mb-6">
+            <h1 className="text-2xl sm:text-3xl font-bold font-display mb-1.5">Sign in</h1>
+            <p className="text-muted-foreground text-sm">
+              Enter your credentials to access your dashboard
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Username or Email</label>
+              <label className="text-xs font-medium text-foreground/70 mb-1.5 block uppercase tracking-wider">
+                Username or Email
+              </label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="text"
                   name="username"
                   placeholder="Enter username or email"
                   value={formData.username}
                   onChange={handleChange}
-                  className="input-eternia pl-12"
+                  className="pl-11 h-12 rounded-xl bg-card/50 border-border/40 focus:border-primary/50 focus:ring-primary/20 transition-all text-sm"
                   disabled={isLoading}
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Password</label>
+              <label className="text-xs font-medium text-foreground/70 mb-1.5 block uppercase tracking-wider">
+                Password
+              </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="input-eternia pl-12 pr-12"
+                  className="pl-11 pr-11 h-12 rounded-xl bg-card/50 border-border/40 focus:border-primary/50 focus:ring-primary/20 transition-all text-sm"
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              className="btn-primary w-full py-6 text-lg"
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 shadow-lg shadow-primary/15 transition-all active:scale-[0.98]"
               disabled={isLoading}
             >
               {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                <>
+                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                   Signing in...
-                </div>
+                </>
               ) : (
-                <div className="flex items-center gap-2">
+                <>
                   Sign In
-                  <ArrowRight className="w-5 h-5" />
-                </div>
+                  <ArrowRight className="w-4 h-4" />
+                </>
               )}
             </Button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-border text-center">
+          <div className="mt-6 pt-5 border-t border-border/30 text-center">
             <p className="text-muted-foreground text-sm">
               New to Eternia?{" "}
-              <Link to="/institution-code" className="text-primary hover:underline">
-                Get started with your institution code
+              <Link to="/institution-code" className="text-primary font-medium hover:underline">
+                Get started
               </Link>
             </p>
           </div>
-        </div>
+
+          {/* Trust footer */}
+          <div className="mt-8 flex items-center justify-center gap-4 text-[11px] text-muted-foreground/50">
+            <div className="flex items-center gap-1">
+              <Shield className="w-3 h-3" />
+              <span>Encrypted</span>
+            </div>
+            <span>•</span>
+            <span>Anonymous</span>
+            <span>•</span>
+            <span>DPDP</span>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
