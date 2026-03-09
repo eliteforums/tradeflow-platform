@@ -6,33 +6,33 @@
 
 @layer base {
   :root {
-    /* Dark calming theme for Eternia */
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
+    /* VideoSDK-inspired dark theme for Eternia */
+    --background: 240 10% 4%;
+    --foreground: 0 0% 95%;
 
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 222 47% 8%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 10% 6%;
+    --popover-foreground: 0 0% 95%;
 
     --primary: 174 62% 47%;
-    --primary-foreground: 222 47% 6%;
+    --primary-foreground: 240 10% 4%;
 
-    --secondary: 262 52% 60%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 270 60% 65%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 222 30% 14%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 240 8% 12%;
+    --muted-foreground: 240 5% 55%;
 
-    --accent: 262 52% 60%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 270 60% 65%;
+    --accent-foreground: 0 0% 95%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 95%;
 
-    --border: 222 30% 18%;
-    --input: 222 30% 14%;
+    --border: 240 8% 15%;
+    --input: 240 8% 12%;
     --ring: 174 62% 47%;
 
     --radius: 0.75rem;
@@ -40,23 +40,25 @@
     /* Custom Eternia tokens */
     --eternia-teal: 174 62% 47%;
     --eternia-teal-glow: 174 70% 55%;
-    --eternia-lavender: 262 52% 60%;
-    --eternia-lavender-glow: 262 60% 70%;
-    --eternia-dark: 222 47% 6%;
-    --eternia-dark-card: 222 47% 8%;
-    --eternia-dark-elevated: 222 40% 12%;
+    --eternia-lavender: 270 60% 65%;
+    --eternia-lavender-glow: 270 70% 75%;
+    --eternia-violet: 270 80% 60%;
+    --eternia-violet-glow: 270 90% 75%;
+    --eternia-dark: 240 10% 4%;
+    --eternia-dark-card: 240 10% 6%;
+    --eternia-dark-elevated: 240 10% 10%;
     --eternia-success: 160 84% 39%;
     --eternia-warning: 38 92% 50%;
     --eternia-gradient-start: 174 62% 47%;
-    --eternia-gradient-end: 262 52% 60%;
+    --eternia-gradient-end: 270 60% 65%;
 
-    --sidebar-background: 222 47% 5%;
-    --sidebar-foreground: 210 40% 98%;
+    --sidebar-background: 240 10% 3%;
+    --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: 174 62% 47%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 40% 12%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 30% 15%;
+    --sidebar-primary-foreground: 240 10% 4%;
+    --sidebar-accent: 240 10% 10%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 8% 12%;
     --sidebar-ring: 174 62% 47%;
   }
 
