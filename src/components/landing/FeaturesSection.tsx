@@ -8,7 +8,6 @@ const features = [
     description: "Book video & audio sessions with verified mental health professionals. Pay with Eternia Care Credits.",
     gradient: "from-emerald-500 to-teal-500",
     tag: "Video + Audio",
-    span: "md:col-span-1",
   },
   {
     icon: Heart,
@@ -16,7 +15,6 @@ const features = [
     description: "Real-time anonymous chat with trained psychology interns. Voice & video call support via VideoSDK.",
     gradient: "from-pink-500 to-rose-500",
     tag: "Real-time",
-    span: "md:col-span-1",
   },
   {
     icon: Brain,
@@ -24,7 +22,6 @@ const features = [
     description: "A safe space for anonymous emotional expression. AI monitors for crisis signals with zero visibility to others.",
     gradient: "from-violet-500 to-purple-500",
     tag: "AI-Monitored",
-    span: "md:col-span-1",
   },
   {
     icon: Music,
@@ -32,13 +29,11 @@ const features = [
     description: "Curated meditation, soundscapes, Tibetan bowls, and guided breathing exercises for daily calm.",
     gradient: "from-cyan-500 to-blue-500",
     tag: "Audio Library",
-    span: "md:col-span-1",
   },
 ];
 
 const FeaturesSection = () => (
-  <section id="features" className="py-28 px-6 relative">
-    {/* Subtle grid background */}
+  <section id="features" className="py-16 sm:py-28 px-4 sm:px-6 relative">
     <div className="absolute inset-0 opacity-[0.02]"
       style={{
         backgroundImage: `radial-gradient(hsl(var(--foreground)) 1px, transparent 1px)`,
@@ -52,22 +47,21 @@ const FeaturesSection = () => (
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="text-center mb-16"
+        className="text-center mb-10 sm:mb-16"
       >
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 mb-6">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 mb-4 sm:mb-6">
           <span className="text-xs font-medium text-primary uppercase tracking-wider">Platform Features</span>
         </div>
-        <h2 className="section-title mb-4 max-w-3xl mx-auto">
+        <h2 className="section-title mb-3 sm:mb-4 max-w-3xl mx-auto">
           Everything your campus needs for{" "}
           <span className="text-gradient">mental wellness</span>
         </h2>
-        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+        <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
           Five powerful modules. One anonymous identity. Complete institutional control.
         </p>
       </motion.div>
 
-      {/* Bento grid */}
-      <div className="grid md:grid-cols-2 gap-4 max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-5xl mx-auto">
         {features.map((feature, index) => (
           <motion.div
             key={feature.title}
@@ -75,23 +69,18 @@ const FeaturesSection = () => (
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.08, duration: 0.5 }}
-            className={`group relative rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm p-7 hover:bg-card/60 hover:border-primary/20 transition-all duration-500 ${feature.span}`}
+            className="group relative rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm p-5 sm:p-7 hover:bg-card/60 hover:border-primary/20 transition-all duration-500"
           >
-            {/* Hover glow */}
-            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              style={{ background: `radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), hsl(var(--primary) / 0.04), transparent 40%)` }}
-            />
-
             <div className="relative z-10">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg transition-all duration-300`}>
+              <div className="flex items-start justify-between mb-3 sm:mb-4">
+                <div className={`w-10 sm:w-11 h-10 sm:h-11 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg transition-all duration-300`}>
                   <feature.icon className="w-5 h-5 text-white" />
                 </div>
-                <ArrowUpRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                <ArrowUpRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-all" />
               </div>
 
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-lg font-semibold font-display text-foreground">{feature.title}</h3>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <h3 className="text-base sm:text-lg font-semibold font-display text-foreground">{feature.title}</h3>
                 <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border border-border/30 text-muted-foreground/60">
                   {feature.tag}
                 </span>
@@ -109,26 +98,26 @@ const FeaturesSection = () => (
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.4, duration: 0.5 }}
-        className="mt-4 max-w-5xl mx-auto"
+        className="mt-3 sm:mt-4 max-w-5xl mx-auto"
       >
-        <div className="group rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm p-7 hover:bg-card/60 hover:border-primary/20 transition-all duration-500">
-          <div className="flex items-start gap-5">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+        <div className="group rounded-2xl border border-border/30 bg-card/30 backdrop-blur-sm p-5 sm:p-7 hover:bg-card/60 hover:border-primary/20 transition-all duration-500">
+          <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
+            <div className="w-10 sm:w-11 h-10 sm:h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-lg font-semibold font-display text-foreground">Self-Help & Gamification</h3>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <h3 className="text-base sm:text-lg font-semibold font-display text-foreground">Self-Help & Gamification</h3>
                 <span className="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border border-border/30 text-muted-foreground/60">
                   XP System
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                Daily quest cards, emotional release tools, and guided breathing exercises — all gamified with XP rewards to build healthy habits.
+              <p className="text-sm text-muted-foreground mb-3 sm:mb-4 leading-relaxed">
+                Daily quest cards, emotional release tools, and guided breathing exercises — all gamified with XP rewards.
               </p>
-              <div className="flex flex-wrap gap-2">
-                {["Quest Cards", "Wreck the Buddy", "Tibetan Bowl", "XP Rewards", "Streak Tracking"].map((tool) => (
-                  <span key={tool} className="px-3 py-1.5 rounded-lg bg-muted/30 border border-border/20 text-xs text-muted-foreground">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                {["Quest Cards", "Wreck the Buddy", "Tibetan Bowl", "XP Rewards", "Streaks"].map((tool) => (
+                  <span key={tool} className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-muted/30 border border-border/20 text-xs text-muted-foreground">
                     {tool}
                   </span>
                 ))}
