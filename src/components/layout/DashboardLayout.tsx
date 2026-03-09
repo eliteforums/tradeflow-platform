@@ -167,10 +167,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </aside>
 
       {/* Mobile Top Bar — minimal like WhatsApp */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-12 bg-background border-b border-border/50 flex items-center justify-between px-4">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-13 bg-background border-b border-border/50 flex items-center justify-between px-4">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <EterniaLogo size={24} />
-          <span className="text-sm font-bold font-display">Eternia</span>
+          <EterniaLogo size={26} />
+          <span className="text-base font-bold font-display">Eternia</span>
         </Link>
         <div className="flex items-center gap-1">
           <Link to="/dashboard/credits">
