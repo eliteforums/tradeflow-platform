@@ -69,6 +69,9 @@ const App = () => (
               <Route path="/qr-scan" element={<QRScan />} />
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/dpdp" element={<DPDP />} />
               
               {/* Protected Dashboard Routes */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

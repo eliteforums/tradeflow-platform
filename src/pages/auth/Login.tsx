@@ -76,13 +76,13 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Username</label>
+              <label className="text-sm text-muted-foreground mb-2 block">Username or Email</label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="text"
                   name="username"
-                  placeholder="Enter your username"
+                  placeholder="Enter username or email"
                   value={formData.username}
                   onChange={handleChange}
                   className="input-eternia pl-12"
