@@ -433,6 +433,9 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Sounds Tab */}
+            {activeTab === "sounds" && <SoundManager />}
           </>
         )}
       </div>
