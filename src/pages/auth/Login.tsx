@@ -38,8 +38,15 @@ const Login = () => {
       const { error } = await signIn(formData.username, formData.password);
       if (error) throw error;
 
+      // Check if admin/spoc to redirect accordingly
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "");
+
+      const isAdmin = roles?.some(r => r.role === "admin" || r.role === "spoc");
       toast.success("Welcome back!");
-      navigate("/dashboard");
+      navigate(isAdmin ? "/admin" : "/dashboard");
     } catch (error: any) {
       toast.error("Invalid username or password");
     } finally {
