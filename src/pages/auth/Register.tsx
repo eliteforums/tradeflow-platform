@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { signUp } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -71,19 +73,43 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      // Create auth user with username as email (using a placeholder domain)
-      const { data, error } = await supabase.auth.signUp({
-        email: `${formData.username.toLowerCase()}@eternia.local`,
-        password: formData.password,
-        options: {
-          data: {
-            username: formData.username,
-            institution_code: sessionStorage.getItem("eternia_institution_code"),
-          },
-        },
+      const institutionCode = sessionStorage.getItem("eternia_institution_code");
+      
+      const { error } = await signUp(formData.username, formData.password, {
+        institution_code: institutionCode,
       });
 
       if (error) throw error;
+
+      // Store private data after signup
+      // Small delay to ensure profile is created by trigger
+      setTimeout(async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from("user_private").insert({
+            user_id: user.id,
+            emergency_phone_encrypted: formData.emergencyContact,
+            emergency_relation: formData.emergencyRelation,
+            student_id_encrypted: formData.studentId,
+          });
+
+          // Link to institution if code exists
+          if (institutionCode) {
+            const { data: institution } = await supabase
+              .from("institutions")
+              .select("id")
+              .eq("eternia_code_hash", institutionCode)
+              .single();
+
+            if (institution) {
+              await supabase
+                .from("profiles")
+                .update({ institution_id: institution.id })
+                .eq("id", user.id);
+            }
+          }
+        }
+      }, 500);
 
       toast.success("Account created successfully!");
       sessionStorage.removeItem("eternia_institution_code");
@@ -104,7 +130,6 @@ const Register = () => {
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Back Button */}
         <button 
           onClick={() => step === 1 ? navigate("/institution-code") : setStep(1)}
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
@@ -113,7 +138,6 @@ const Register = () => {
           {step === 1 ? "Back to Institution Code" : "Back to Credentials"}
         </button>
 
-        {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 rounded-xl bg-gradient-eternia flex items-center justify-center">
             <Sparkles className="w-6 h-6 text-background" />
@@ -132,7 +156,6 @@ const Register = () => {
           </div>
         </div>
 
-        {/* Form Card */}
         <div className="glass rounded-2xl p-8">
           {step === 1 ? (
             <>
@@ -259,7 +282,7 @@ const Register = () => {
                     />
                     <label htmlFor="consent" className="text-sm text-muted-foreground cursor-pointer">
                       <span className="flex items-center gap-2 font-medium text-foreground mb-1">
-                        <AlertTriangle className="w-4 h-4 text-warning" />
+                        <AlertTriangle className="w-4 h-4 text-eternia-warning" />
                         Emergency Escalation Consent
                       </span>
                       If the platform detects a high-risk situation requiring intervention, the system may 
