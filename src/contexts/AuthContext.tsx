@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -38,8 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [creditBalance, setCreditBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const fetchingRef = useRef(false);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -52,9 +53,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error fetching profile:", error);
     }
-  };
+  }, []);
 
-  const fetchCreditBalance = async (userId: string) => {
+  const fetchCreditBalance = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase.rpc("get_credit_balance", {
         _user_id: userId,
@@ -65,20 +66,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Error fetching credit balance:", error);
     }
-  };
+  }, []);
+
+  const loadUserData = useCallback(async (userId: string) => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+    try {
+      await Promise.all([fetchProfile(userId), fetchCreditBalance(userId)]);
+    } finally {
+      fetchingRef.current = false;
+    }
+  }, [fetchProfile, fetchCreditBalance]);
 
   useEffect(() => {
+    let mounted = true;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event, session) => {
+        if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Use setTimeout to avoid race conditions with the trigger
-          setTimeout(async () => {
-            await fetchProfile(session.user.id);
-            await fetchCreditBalance(session.user.id);
+          // Use setTimeout to avoid Supabase trigger race conditions
+          setTimeout(() => {
+            if (mounted) loadUserData(session.user.id);
           }, 100);
         } else {
           setProfile(null);
@@ -91,23 +104,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        fetchProfile(session.user.id);
-        fetchCreditBalance(session.user.id);
+        loadUserData(session.user.id);
       }
 
       setIsLoading(false);
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [loadUserData]);
 
-  const signUp = async (username: string, password: string, metadata?: Record<string, unknown>) => {
+  const signUp = useCallback(async (username: string, password: string, metadata?: Record<string, unknown>) => {
     try {
       const { error } = await supabase.auth.signUp({
         email: `${username.toLowerCase()}@eternia.local`,
@@ -125,9 +139,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       return { error: error as Error };
     }
-  };
+  }, []);
 
-  const signIn = async (username: string, password: string) => {
+  const signIn = useCallback(async (username: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: `${username.toLowerCase()}@eternia.local`,
@@ -139,25 +153,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       return { error: error as Error };
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
     setCreditBalance(0);
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       await fetchProfile(user.id);
     }
-  };
+  }, [user, fetchProfile]);
 
-  const refreshCredits = async () => {
+  const refreshCredits = useCallback(async () => {
     if (user) {
       await fetchCreditBalance(user.id);
     }
-  };
+  }, [user, fetchCreditBalance]);
 
   return (
     <AuthContext.Provider

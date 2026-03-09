@@ -63,7 +63,7 @@ const RecoverySetup = () => {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase.from("recovery_credentials" as any).upsert({
+      const { error } = await supabase.from("recovery_credentials").upsert({
         user_id: user.id,
         fragment_pairs_encrypted: JSON.stringify(fragmentPairs),
         emoji_pattern_encrypted: JSON.stringify(selectedEmojis),

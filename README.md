@@ -1,73 +1,108 @@
-# Welcome to your Lovable project
+# Eternia — Anonymous Mental Wellness Platform
 
-## Project info
+**Eternia** is a privacy-first, institution-controlled mental wellness platform for college students in India. Built for scale (lakhs of concurrent users), it provides expert counselling, peer support, emotional tools, and sound therapy — all anonymously and DPDP-compliant.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🏗️ Architecture
 
-## How can I edit this code?
+| Layer | Stack |
+|-------|-------|
+| **Frontend** | React 18 + TypeScript + Vite + Tailwind CSS |
+| **UI** | shadcn/ui + Framer Motion + Recharts |
+| **State** | TanStack React Query (2 min stale, 10 min GC) |
+| **Backend** | Lovable Cloud (Supabase) — Postgres + Edge Functions |
+| **Auth** | Username/password (email-less, anonymous) |
+| **Video** | VideoSDK.live (WebRTC) |
+| **PWA** | vite-plugin-pwa with offline support |
 
-There are several ways of editing your application.
+## 🔑 Core Features
 
-**Use Lovable**
+### Student Portal
+- **Expert Appointments** — Book video/audio sessions with verified professionals (50 ECC)
+- **Peer Connect** — Realtime encrypted chat with trained psychology interns (20 ECC)
+- **BlackBox** — Anonymous emotional expression with AI crisis detection
+- **Sound Therapy** — Curated audio for meditation, relaxation, and focus
+- **Self-Help Tools** — Quest Cards, Wreck the Buddy, Tibetan Bowl breathing
+- **Care Credits (ECC)** — Internal economy with 5 ECC/day earn cap
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Role-Based Dashboards
+- **Expert Dashboard** — Schedule management, session completion, encrypted notes
+- **Intern Dashboard** — 7-day training module progression, peer session logs
+- **Admin/SPOC Dashboard** — Institution overview, member management, flagged entries
 
-Changes made via Lovable will be committed automatically to this repo.
+### Privacy & Security
+- All PII encrypted at rest (AES-256-GCM)
+- Fragment word pairs + emoji pattern account recovery (no email/phone)
+- Row-Level Security (RLS) on all tables
+- DPDP Act compliant — data minimization, right to erasure
+- Emergency escalation consent during registration
 
-**Use your preferred IDE**
+## 📁 Project Structure
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+src/
+├── components/
+│   ├── landing/        # Landing page sections
+│   ├── layout/         # DashboardLayout with sidebar
+│   ├── ui/             # shadcn/ui primitives
+│   └── videosdk/       # VideoSDK meeting components
+├── contexts/
+│   └── AuthContext.tsx  # Auth state + credit balance
+├── hooks/              # Data hooks (useCredits, useQuests, etc.)
+├── pages/
+│   ├── auth/           # InstitutionCode → QRScan → Register → Login
+│   ├── dashboard/      # All dashboard pages
+│   └── admin/          # Admin/SPOC dashboard
+└── integrations/
+    └── supabase/       # Auto-generated client + types
 ```
 
-**Edit a file directly in GitHub**
+## 🚀 Performance Optimizations
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **Code splitting** — All dashboard pages lazy-loaded via `React.lazy`
+- **Query optimization** — 2 min staleTime, window focus refetch disabled
+- **Memoized callbacks** — All auth functions wrapped in `useCallback`
+- **Debounced search** — Search inputs don't trigger on every keystroke
+- **PWA** — Service worker caching for static assets
+- **StrictMode** — Enabled for development correctness
 
-**Use GitHub Codespaces**
+## 🛠️ Local Development
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+# Install dependencies
+npm install
 
-## What technologies are used for this project?
+# Start dev server
+npm run dev
 
-This project is built with:
+# Build for production
+npm run build
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📊 Database Schema
 
-## How can I deploy this project?
+| Table | Purpose |
+|-------|---------|
+| `profiles` | User identity (username, role, institution) |
+| `user_private` | Encrypted PII (emergency contacts, student ID) |
+| `user_roles` | RBAC role assignments |
+| `institutions` | Partnered institutions with Eternia codes |
+| `appointments` | Expert session bookings |
+| `expert_availability` | Expert schedule slots |
+| `peer_sessions` | Peer Connect session records |
+| `peer_messages` | Encrypted chat messages |
+| `blackbox_entries` | Anonymous emotional entries with AI flag levels |
+| `credit_transactions` | ECC economy ledger |
+| `quest_cards` | Daily wellbeing quest definitions |
+| `quest_completions` | User quest completion records |
+| `sound_content` | Audio therapy tracks |
+| `recovery_credentials` | Fragment pairs + emoji pattern (write-only) |
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 🔐 Onboarding Flow
 
-## Can I connect a custom domain to my Lovable project?
+1. **Institution Code** → Validated against `institutions` table
+2. **SPOC QR Scan** → Verified by institution's Grievance Officer
+3. **Registration** → Username + password + encrypted private data + escalation consent
 
-Yes, you can!
+## 📄 License
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Proprietary — Eternia © 2026. All rights reserved.
