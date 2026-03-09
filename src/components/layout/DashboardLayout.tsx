@@ -142,13 +142,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-sm ${
+                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-sm{
                   active
                     ? "bg-primary/12 text-primary font-semibold"
                     : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                 }`}
               >
-                <item.icon className={`w-[18px] h-[18px] shrink-0 ${active ? "text-primary" : ""}`} />
+                <item.icon className={`w-[15 h-5hrink-0 ${active ? "text-primary" : ""}`} />
                 {sidebarOpen && <span className="truncate">{item.label}</span>}
               </Link>
             );
