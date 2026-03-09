@@ -1,47 +1,51 @@
-import { Shield, CheckCircle, Lock, Fingerprint, Eye, Server } from "lucide-react";
+import { Shield, CheckCircle, Lock, Fingerprint, Eye, Server, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 
 const badges = [
-  { icon: Lock, label: "AES-256 Encryption" },
-  { icon: Fingerprint, label: "Device Binding" },
+  { icon: Lock, label: "AES-256" },
+  { icon: Fingerprint, label: "Device Bind" },
   { icon: Eye, label: "Zero-Knowledge" },
   { icon: Server, label: "SOC 2 Ready" },
-  { icon: Shield, label: "DPDP Act 2023" },
+  { icon: ShieldCheck, label: "DPDP 2023" },
+];
+
+const checkItems = [
+  "AES-256 encryption for all personal data",
+  "Device-level binding for accountability",
+  "Institution-controlled data access",
+  "Complete anonymity in peer interactions",
+  "Formal escalation protocols for emergencies",
+  "Separate identity & data storage layers",
 ];
 
 const SecuritySection = () => (
-  <section id="security" className="py-24 px-6 border-t border-border/30">
-    <div className="container mx-auto">
+  <section id="security" className="py-28 px-6 relative">
+    <div className="absolute inset-0 bg-muted/10" />
+
+    <div className="container mx-auto relative z-10">
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-16 items-center">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-sm font-semibold text-primary uppercase tracking-widest mb-3">
-            Enterprise & Security
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 mb-6">
+            <span className="text-xs font-medium text-primary uppercase tracking-wider">Enterprise Security</span>
+          </div>
+          <h2 className="section-title mb-5">
+            Privacy-first{" "}
+            <span className="text-gradient">by design</span>
           </h2>
-          <p className="section-title mb-6">
-            Privacy & Security{" "}
-            <span className="text-gradient">By Design</span>
-          </p>
           <p className="text-muted-foreground mb-8 leading-relaxed">
-            Eternia is built from the ground up to protect student identity. 
-            Personal data is encrypted, institution-controlled, and accessed only 
-            under formal crisis escalation protocols.
+            Student identity is encrypted, institution-controlled, and accessed 
+            only under formal crisis escalation protocols. No exceptions.
           </p>
 
           <div className="space-y-3">
-            {[
-              "AES-256 encryption for all personal data",
-              "Device-level binding for accountability",
-              "Institution-controlled data access",
-              "Complete anonymity in peer interactions",
-              "Formal escalation protocols for emergencies",
-            ].map((item) => (
+            {checkItems.map((item) => (
               <div key={item} className="flex items-center gap-3">
                 <CheckCircle className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-sm text-foreground">{item}</span>
+                <span className="text-sm text-foreground/80">{item}</span>
               </div>
             ))}
           </div>
@@ -53,19 +57,22 @@ const SecuritySection = () => (
           viewport={{ once: true }}
           className="relative"
         >
-          <div className="absolute inset-0 glow-violet rounded-3xl opacity-30" />
-          <div className="relative glass-violet rounded-3xl p-8">
-            <Shield className="w-14 h-14 text-primary mb-5" />
+          <div className="absolute -inset-4 rounded-3xl opacity-20"
+            style={{ background: "radial-gradient(ellipse, hsl(270 60% 65% / 0.3), transparent 70%)" }} />
+          
+          <div className="relative rounded-2xl border border-border/30 bg-card/40 backdrop-blur-xl p-8">
+            <Shield className="w-12 h-12 text-primary mb-5" />
             <h3 className="text-xl font-bold font-display mb-3">Your Data, Your Control</h3>
             <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
               Personal information is encrypted and stored separately. Only designated 
               institutional authorities can access identifying data under formal protocols.
             </p>
-            <div className="flex flex-wrap gap-2">
+            
+            <div className="grid grid-cols-3 gap-2">
               {badges.map((badge) => (
-                <div key={badge.label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
-                  <badge.icon className="w-3 h-3 text-primary" />
-                  <span className="text-xs text-muted-foreground">{badge.label}</span>
+                <div key={badge.label} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-muted/20 border border-border/20">
+                  <badge.icon className="w-4 h-4 text-primary/70" />
+                  <span className="text-[10px] text-muted-foreground text-center leading-tight">{badge.label}</span>
                 </div>
               ))}
             </div>
