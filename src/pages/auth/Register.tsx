@@ -168,7 +168,7 @@ const Register = () => {
           </div>
         </div>
 
-        <div className="glass rounded-2xl p-8">
+        <div className="glass rounded-2xl p-5 sm:p-8">
           {step === 1 ? (
             <>
               <div className="mb-8">
