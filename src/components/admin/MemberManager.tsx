@@ -50,7 +50,7 @@ export default function MemberManager() {
           username: username.trim(),
           password,
           role: selectedRole,
-          institution_id: selectedInstitution || null,
+          institution_id: selectedInstitution && selectedInstitution !== "none" ? selectedInstitution : null,
         },
       });
 
