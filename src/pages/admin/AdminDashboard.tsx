@@ -34,7 +34,7 @@ import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import SPOCTools from "@/components/admin/SPOCTools";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile } = useAuth();
   const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
