@@ -37,6 +37,7 @@ const TRAINING_MODULES = [
 
 const InternDashboard = () => {
   const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"training" | "sessions" | "notes">("training");
   // For demo purposes, training progress is stored in local state
   const [trainingStatus] = useState<TrainingStatus>("NOT_STARTED");
