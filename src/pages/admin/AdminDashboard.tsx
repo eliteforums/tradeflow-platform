@@ -459,6 +459,9 @@ const AdminDashboard = () => {
             {/* SPOC Tools Tab */}
             {activeTab === "spoc" && <SPOCTools />}
 
+            {/* Roles Tab */}
+            {activeTab === "roles" && <RoleManager />}
+
             {/* Audit Log Tab */}
             {activeTab === "audit" && <AuditLogViewer />}
           </>
