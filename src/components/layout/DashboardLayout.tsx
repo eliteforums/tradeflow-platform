@@ -41,7 +41,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   ];
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     toast.success("Logged out successfully");
     navigate("/");
   };
