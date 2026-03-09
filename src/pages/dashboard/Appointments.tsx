@@ -13,9 +13,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import VideoCallModal from "@/components/videosdk/VideoCallModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Appointments = () => {
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
+  const [callModal, setCallModal] = useState<{
+    open: boolean;
+    mode: "video" | "audio";
+  }>({ open: false, mode: "video" });
+  const { profile } = useAuth();
 
   const experts = [
     {
@@ -56,7 +63,7 @@ const Appointments = () => {
       expert: "Dr. Sharma",
       date: "Today",
       time: "4:00 PM",
-      type: "Video Call",
+      type: "Video Call" as const,
       status: "confirmed",
     },
     {
@@ -64,7 +71,7 @@ const Appointments = () => {
       expert: "Dr. Patel",
       date: "Mar 15",
       time: "10:00 AM",
-      type: "Audio Call",
+      type: "Audio Call" as const,
       status: "pending",
     },
   ];
@@ -75,7 +82,7 @@ const Appointments = () => {
       expert: "Dr. Kumar",
       date: "Mar 5",
       time: "3:00 PM",
-      type: "Video Call",
+      type: "Video Call" as const,
       status: "completed",
     },
     {
@@ -83,10 +90,17 @@ const Appointments = () => {
       expert: "Dr. Sharma",
       date: "Feb 28",
       time: "5:00 PM",
-      type: "Video Call",
+      type: "Video Call" as const,
       status: "completed",
     },
   ];
+
+  const handleJoinCall = (type: "Video Call" | "Audio Call") => {
+    setCallModal({
+      open: true,
+      mode: type === "Video Call" ? "video" : "audio",
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -109,7 +123,6 @@ const Appointments = () => {
         <div className="bg-card border border-border rounded-2xl p-6">
           <h2 className="text-lg font-semibold font-display mb-4">My Appointments</h2>
           
-          {/* Tabs */}
           <div className="flex gap-2 mb-6">
             <Button
               variant={activeTab === "upcoming" ? "default" : "ghost"}
@@ -127,7 +140,6 @@ const Appointments = () => {
             </Button>
           </div>
 
-          {/* Appointments List */}
           <div className="space-y-3">
             {(activeTab === "upcoming" ? upcomingAppointments : pastAppointments).map((apt) => (
               <div
@@ -177,8 +189,18 @@ const Appointments = () => {
                       Completed
                     </span>
                   )}
-                  {activeTab === "upcoming" && (
-                    <Button variant="outline" size="sm">
+                  {activeTab === "upcoming" && apt.status === "confirmed" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleJoinCall(apt.type)}
+                      className="gap-1"
+                    >
+                      {apt.type === "Video Call" ? (
+                        <Video className="w-4 h-4" />
+                      ) : (
+                        <Phone className="w-4 h-4" />
+                      )}
                       Join
                     </Button>
                   )}
@@ -195,10 +217,7 @@ const Appointments = () => {
             <div className="flex items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search experts..."
-                  className="pl-9 w-48 bg-card"
-                />
+                <Input placeholder="Search experts..." className="pl-9 w-48 bg-card" />
               </div>
               <Button variant="outline" size="icon">
                 <Filter className="w-4 h-4" />
@@ -249,6 +268,14 @@ const Appointments = () => {
           </div>
         </div>
       </div>
+
+      {/* Video Call Modal */}
+      <VideoCallModal
+        isOpen={callModal.open}
+        onClose={() => setCallModal({ open: false, mode: "video" })}
+        participantName={profile?.username || "Student"}
+        mode={callModal.mode}
+      />
     </DashboardLayout>
   );
 };

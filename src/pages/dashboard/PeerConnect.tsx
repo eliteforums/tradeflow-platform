@@ -16,10 +16,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import VideoCallModal from "@/components/videosdk/VideoCallModal";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PeerConnect = () => {
   const [selectedIntern, setSelectedIntern] = useState<number | null>(null);
   const [message, setMessage] = useState("");
+  const [callModal, setCallModal] = useState<{
+    open: boolean;
+    mode: "video" | "audio";
+  }>({ open: false, mode: "audio" });
+  const { profile } = useAuth();
 
   const interns = [
     {
@@ -175,10 +182,22 @@ const PeerConnect = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setCallModal({ open: true, mode: "audio" })
+                      }
+                    >
                       <Phone className="w-5 h-5" />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        setCallModal({ open: true, mode: "video" })
+                      }
+                    >
                       <Video className="w-5 h-5" />
                     </Button>
                     <Button variant="ghost" size="icon">
@@ -255,6 +274,14 @@ const PeerConnect = () => {
           </div>
         </div>
       </div>
+
+      {/* Video/Audio Call Modal */}
+      <VideoCallModal
+        isOpen={callModal.open}
+        onClose={() => setCallModal({ open: false, mode: "audio" })}
+        participantName={profile?.username || "Student"}
+        mode={callModal.mode}
+      />
     </DashboardLayout>
   );
 };
