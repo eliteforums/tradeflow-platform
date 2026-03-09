@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Sparkles } from "lucide-react";
+import EterniaLogo from "@/components/EterniaLogo";
 
 const footerLinks = {
   Product: [
@@ -13,9 +13,9 @@ const footerLinks = {
     { label: "Contact", href: "#" },
   ],
   Legal: [
-    { label: "Privacy", href: "#" },
-    { label: "Terms", href: "#" },
-    { label: "DPDP", href: "#" },
+    { label: "Privacy", href: "/privacy" },
+    { label: "Terms", href: "/terms" },
+    { label: "DPDP", href: "/dpdp" },
   ],
 };
 
@@ -26,9 +26,7 @@ const Footer = () => (
         {/* Brand */}
         <div className="col-span-2 sm:col-span-1">
           <Link to="/" className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 rounded-lg bg-gradient-eternia flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5 text-primary-foreground" />
-            </div>
+            <EterniaLogo size={28} />
             <span className="text-sm font-bold font-display text-foreground">Eternia</span>
           </Link>
           <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-[200px] mb-3">
@@ -46,9 +44,15 @@ const Footer = () => (
             <ul className="space-y-2">
               {links.map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} className="text-[12px] sm:text-[13px] text-muted-foreground/50 hover:text-foreground transition-colors">
-                    {link.label}
-                  </a>
+                  {link.href.startsWith("/") ? (
+                    <Link to={link.href} className="text-[12px] sm:text-[13px] text-muted-foreground/50 hover:text-foreground transition-colors">
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a href={link.href} className="text-[12px] sm:text-[13px] text-muted-foreground/50 hover:text-foreground transition-colors">
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>

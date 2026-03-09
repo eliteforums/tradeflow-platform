@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -37,8 +38,15 @@ const Login = () => {
       const { error } = await signIn(formData.username, formData.password);
       if (error) throw error;
 
+      // Check if admin/spoc to redirect accordingly
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "");
+
+      const isAdmin = roles?.some(r => r.role === "admin" || r.role === "spoc");
       toast.success("Welcome back!");
-      navigate("/dashboard");
+      navigate(isAdmin ? "/admin" : "/dashboard");
     } catch (error: any) {
       toast.error("Invalid username or password");
     } finally {
@@ -76,13 +84,13 @@ const Login = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">Username</label>
+              <label className="text-sm text-muted-foreground mb-2 block">Username or Email</label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
                   type="text"
                   name="username"
-                  placeholder="Enter your username"
+                  placeholder="Enter username or email"
                   value={formData.username}
                   onChange={handleChange}
                   className="input-eternia pl-12"

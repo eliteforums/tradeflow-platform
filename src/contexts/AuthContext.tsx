@@ -143,8 +143,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (username: string, password: string) => {
     try {
+      // If input looks like an email, use it directly; otherwise append @eternia.local
+      const email = username.includes("@") ? username.toLowerCase() : `${username.toLowerCase()}@eternia.local`;
       const { error } = await supabase.auth.signInWithPassword({
-        email: `${username.toLowerCase()}@eternia.local`,
+        email,
         password,
       });
 
