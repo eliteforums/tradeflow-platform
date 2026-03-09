@@ -14,6 +14,7 @@ interface Profile {
   bio: string | null;
   total_sessions: number;
   streak_days: number;
+  created_at: string;
 }
 
 interface AuthContextType {
