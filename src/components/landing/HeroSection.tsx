@@ -87,15 +87,19 @@ const HeroSection = () => (
       >
         The Platform That Makes{" "}
         <span className="relative">
-          <span className="text-gradient">Student Wellbeing</span>
+          <span className="text-gradient">
+            <TypewriterText text="Student Wellbeing" delay={800} />
+          </span>
           <motion.div
             className="absolute -bottom-1 left-0 right-0 h-[3px] bg-gradient-eternia rounded-full"
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ delay: 1, duration: 0.8 }}
+            transition={{ delay: 3, duration: 0.8 }}
           />
         </span>{" "}
-        Anonymous
+        <span className="text-gradient-violet">
+          <TypewriterText text="Anonymous" delay={2400} />
+        </span>
       </motion.h1>
 
       {/* Subtitle */}
