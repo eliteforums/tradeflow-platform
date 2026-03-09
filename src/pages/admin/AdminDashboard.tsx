@@ -35,6 +35,7 @@ import EscalationManager from "@/components/admin/EscalationManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import SPOCTools from "@/components/admin/SPOCTools";
 import RoleManager from "@/components/admin/RoleManager";
+import MemberManager from "@/components/admin/MemberManager";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit" | "roles">("overview");
@@ -460,7 +461,12 @@ const AdminDashboard = () => {
             {activeTab === "spoc" && <SPOCTools />}
 
             {/* Roles Tab */}
-            {activeTab === "roles" && <RoleManager />}
+            {activeTab === "roles" && (
+              <div className="space-y-6">
+                <MemberManager />
+                <RoleManager />
+              </div>
+            )}
 
             {/* Audit Log Tab */}
             {activeTab === "audit" && <AuditLogViewer />}
