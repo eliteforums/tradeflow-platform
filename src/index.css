@@ -87,6 +87,11 @@
     @apply bg-clip-text text-transparent bg-gradient-to-r from-eternia-teal to-eternia-lavender;
   }
 
+  .text-gradient-violet {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--eternia-lavender)), hsl(var(--eternia-violet-glow)));
+  }
+
   .bg-gradient-eternia {
     @apply bg-gradient-to-r from-eternia-teal to-eternia-lavender;
   }
@@ -95,9 +100,13 @@
     background: linear-gradient(135deg, hsl(var(--eternia-teal) / 0.1), hsl(var(--eternia-lavender) / 0.1));
   }
 
+  .bg-gradient-violet {
+    background: linear-gradient(135deg, hsl(var(--eternia-lavender) / 0.15), hsl(var(--eternia-violet) / 0.05));
+  }
+
   .border-gradient-eternia {
     border: 1px solid transparent;
-    background: linear-gradient(var(--background), var(--background)) padding-box,
+    background: linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
                 linear-gradient(135deg, hsl(var(--eternia-teal)), hsl(var(--eternia-lavender))) border-box;
   }
 
@@ -109,12 +118,22 @@
     box-shadow: 0 0 40px hsl(var(--eternia-lavender) / 0.3), 0 0 80px hsl(var(--eternia-lavender) / 0.1);
   }
 
+  .glow-violet {
+    box-shadow: 0 0 60px hsl(var(--eternia-violet) / 0.4), 0 0 120px hsl(var(--eternia-violet) / 0.15);
+  }
+
   .glass {
     @apply bg-card/50 backdrop-blur-xl border border-border/50;
   }
 
   .glass-strong {
     @apply bg-card/80 backdrop-blur-2xl border border-border/50;
+  }
+
+  .glass-violet {
+    background: hsl(var(--eternia-lavender) / 0.08);
+    backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--eternia-lavender) / 0.15);
   }
 }
 
