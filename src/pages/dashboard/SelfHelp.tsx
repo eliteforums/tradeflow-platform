@@ -320,9 +320,7 @@ const SelfHelp = () => {
 
         {activeTab === "tibetan" && (
           <div className="space-y-5 sm:space-y-6">
-            <Suspense fallback={<ThreeDLoader />}>
-              <TibetanBowl3D phase={breathPhase} />
-            </Suspense>
+            <TibetanBowl3D phase={breathPhase} />
 
             <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border text-center">
               <h2 className="text-xl sm:text-2xl font-bold font-display mb-1.5 sm:mb-2">Tibetan Bowl Breathing</h2>
