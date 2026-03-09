@@ -59,12 +59,13 @@ const SelfHelp = () => {
       timeout = setTimeout(() => setBreathPhase("exhale"), 7000);
     } else if (breathPhase === "exhale") {
       timeout = setTimeout(() => {
-        setBreathCount((prev) => prev + 1);
+      setBreathCount((prev) => prev + 1);
         if (breathCount < 2) {
           setBreathPhase("inhale");
         } else {
           setBreathPhase("idle");
           setBreathCount(0);
+          handleBreathingComplete();
         }
       }, 8000);
     }
