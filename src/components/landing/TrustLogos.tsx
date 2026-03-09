@@ -14,26 +14,26 @@ const institutions = [
 ];
 
 const TrustLogos = () => (
-  <section className="py-16 px-6">
+  <section className="py-8 sm:py-16 px-4 sm:px-6">
     <div className="container mx-auto">
       <motion.p
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
-        className="text-center text-sm text-muted-foreground/60 uppercase tracking-widest mb-10"
+        className="text-center text-[11px] sm:text-sm text-muted-foreground/60 uppercase tracking-widest mb-6 sm:mb-10"
       >
         Trusted by 50+ institutions across India
       </motion.p>
 
-      {/* Double row scrolling marquee */}
+      {/* Scrolling marquee */}
       <div className="relative overflow-hidden mask-gradient">
-        <div className="flex gap-6 animate-[scroll_30s_linear_infinite]">
+        <div className="flex gap-3 sm:gap-6 animate-[scroll_30s_linear_infinite]">
           {[...institutions, ...institutions, ...institutions].map((name, i) => (
             <div
               key={i}
-              className="flex-shrink-0 px-6 py-3 rounded-xl bg-card/30 border border-border/20 backdrop-blur-sm hover:border-primary/20 transition-colors"
+              className="flex-shrink-0 px-3 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-card/30 border border-border/20 backdrop-blur-sm hover:border-primary/20 transition-colors"
             >
-              <span className="text-sm font-medium text-muted-foreground/70 whitespace-nowrap">
+              <span className="text-[11px] sm:text-sm font-medium text-muted-foreground/70 whitespace-nowrap">
                 {name}
               </span>
             </div>
