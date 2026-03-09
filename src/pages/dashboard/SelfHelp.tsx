@@ -81,7 +81,9 @@ const SelfHelp = () => {
     setWreckClicks((prev) => prev + 1);
     if (wreckClicks >= 29) {
       setWreckClicks(0);
-      // Could award credits here
+      if (canEarn) {
+        earnFromActivity({ amount: 1, activity: "Wreck the Buddy completion" });
+      }
     }
   };
 
