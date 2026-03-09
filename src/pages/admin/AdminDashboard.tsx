@@ -37,6 +37,7 @@ import SPOCTools from "@/components/admin/SPOCTools";
 import RoleManager from "@/components/admin/RoleManager";
 import MemberManager from "@/components/admin/MemberManager";
 import ExpertManager from "@/components/admin/ExpertManager";
+import CreditGrantTool from "@/components/admin/CreditGrantTool";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit" | "roles" | "experts">("overview");
