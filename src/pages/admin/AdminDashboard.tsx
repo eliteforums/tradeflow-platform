@@ -450,6 +450,15 @@ const AdminDashboard = () => {
 
             {/* Institutions Tab */}
             {activeTab === "institutions" && <InstitutionManager />}
+
+            {/* Escalations Tab */}
+            {activeTab === "escalations" && <EscalationManager />}
+
+            {/* SPOC Tools Tab */}
+            {activeTab === "spoc" && <SPOCTools />}
+
+            {/* Audit Log Tab */}
+            {activeTab === "audit" && <AuditLogViewer />}
           </>
         )}
       </div>
