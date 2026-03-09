@@ -99,6 +99,7 @@ const AdminDashboard = () => {
             { id: "sessions" as const, label: "Sessions", icon: Calendar },
             { id: "flags" as const, label: `Flags (${flaggedEntries.length})`, icon: AlertTriangle },
             { id: "sounds" as const, label: "Sounds", icon: Music },
+            { id: "institutions" as const, label: "Institutions", icon: Building2 },
           ]).map((tab) => (
             <Button
               key={tab.id}
