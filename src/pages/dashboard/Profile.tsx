@@ -116,7 +116,7 @@ const Profile = () => {
                 {profile?.institution_id ? "Institution Member" : "Independent User"}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Member since {profile?.created_at ? new Date(profile.created_at as unknown as string).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "N/A"}
+                Member since {profile?.created_at ? new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" }) : "N/A"}
               </p>
             </div>
           </div>
