@@ -10,7 +10,7 @@ interface WreckBuddy3DProps {
   onHit: () => void;
 }
 
-/* ── Mobile 2D version ── */
+/* ── Mobile 2D version — full-width, no aspect-square constraint ── */
 function WreckBuddy2D({ hitCount, onHit }: WreckBuddy3DProps) {
   const [flash, setFlash] = useState(false);
   const damage = Math.min(hitCount / 30, 1);
@@ -22,7 +22,7 @@ function WreckBuddy2D({ hitCount, onHit }: WreckBuddy3DProps) {
   };
 
   return (
-    <div className="w-full max-w-[280px] mx-auto aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-rose-950/30 to-background border border-border/50 flex items-center justify-center">
+    <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-b from-rose-950/30 to-background border border-border/50 flex items-center justify-center py-8">
       <motion.button
         onClick={handleClick}
         whileTap={{ scale: 0.9 }}
@@ -37,7 +37,7 @@ function WreckBuddy2D({ hitCount, onHit }: WreckBuddy3DProps) {
           className="relative"
         >
           <div
-            className="w-24 h-28 rounded-full flex items-center justify-center text-5xl"
+            className="w-28 h-32 rounded-full flex items-center justify-center text-6xl"
             style={{
               background: `hsl(0, ${70 + damage * 30}%, ${55 - damage * 25}%)`,
             }}

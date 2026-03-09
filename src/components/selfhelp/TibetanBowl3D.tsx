@@ -9,13 +9,13 @@ interface TibetanBowl3DProps {
   phase: "inhale" | "hold" | "exhale" | "idle";
 }
 
-/* ── Mobile 2D version ── */
+/* ── Mobile 2D version — full-width, no aspect-square ── */
 function TibetanBowl2D({ phase }: TibetanBowl3DProps) {
   const isActive = phase !== "idle";
   const scale = phase === "inhale" ? 1.15 : phase === "hold" ? 1.1 : phase === "exhale" ? 0.95 : 1;
 
   return (
-    <div className="w-full max-w-[280px] mx-auto aspect-square rounded-2xl overflow-hidden bg-gradient-to-b from-violet-950/30 to-background border border-border/50 flex items-center justify-center">
+    <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-b from-violet-950/30 to-background border border-border/50 flex items-center justify-center py-10">
       <div className="relative flex items-center justify-center">
         {isActive && [0, 1, 2].map((i) => (
           <motion.div
@@ -23,8 +23,8 @@ function TibetanBowl2D({ phase }: TibetanBowl3DProps) {
             className="absolute rounded-full border border-violet-400/30"
             initial={{ width: 80, height: 80, opacity: 0.4 }}
             animate={{
-              width: [80, 160 + i * 40],
-              height: [80, 160 + i * 40],
+              width: [80, 180 + i * 40],
+              height: [80, 180 + i * 40],
               opacity: [0.4, 0],
             }}
             transition={{
@@ -38,7 +38,7 @@ function TibetanBowl2D({ phase }: TibetanBowl3DProps) {
         <motion.div
           animate={{ scale }}
           transition={{ duration: 1.5, ease: "easeInOut" }}
-          className="text-6xl z-10"
+          className="text-7xl z-10"
         >
           🔔
         </motion.div>
