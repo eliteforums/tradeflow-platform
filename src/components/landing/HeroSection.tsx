@@ -2,6 +2,40 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Play, Shield, Star, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+
+const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const startTimeout = setTimeout(() => setStarted(true), delay);
+    return () => clearTimeout(startTimeout);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!started) return;
+    if (displayedText.length < text.length) {
+      const timeout = setTimeout(() => {
+        setDisplayedText(text.slice(0, displayedText.length + 1));
+      }, 80);
+      return () => clearTimeout(timeout);
+    }
+  }, [displayedText, text, started]);
+
+  return (
+    <>
+      {displayedText}
+      {started && displayedText.length < text.length && (
+        <motion.span
+          animate={{ opacity: [1, 0] }}
+          transition={{ duration: 0.5, repeat: Infinity }}
+          className="inline-block w-[3px] h-[0.85em] bg-primary ml-1 align-middle"
+        />
+      )}
+    </>
+  );
+};
 
 const HeroSection = () => (
   <section className="relative pt-24 pb-8 px-6 overflow-hidden">
