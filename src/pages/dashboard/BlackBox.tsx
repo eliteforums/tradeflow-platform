@@ -58,44 +58,41 @@ const BlackBox = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold font-display mb-2">BlackBox</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold font-display mb-1">BlackBox</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             A safe space for anonymous emotional expression
           </p>
         </div>
 
         {/* Info Banner */}
-        <div className="p-4 rounded-xl bg-gradient-eternia-subtle border border-border">
-          <div className="flex items-start gap-4">
-            <Shield className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+        <div className="p-3 sm:p-4 rounded-xl bg-gradient-eternia-subtle border border-border">
+          <div className="flex items-start gap-3">
+            <Shield className="w-5 h-5 text-primary shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold mb-1">Your Privacy is Protected</h3>
-              <p className="text-sm text-muted-foreground">
-                All entries are encrypted with your personal key. Private entries are never scanned 
-                or analyzed. Regular entries may be reviewed by AI for crisis detection to ensure your safety.
+              <h3 className="font-semibold text-sm mb-0.5">Your Privacy is Protected</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                All entries are encrypted. Private entries are never scanned. Regular entries may be reviewed by AI for crisis detection.
               </p>
             </div>
           </div>
         </div>
 
         {/* New Entry */}
-        <div className="p-6 rounded-2xl bg-card border border-border">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold font-display flex items-center gap-2">
-              <Plus className="w-5 h-5 text-primary" />
+        <div className="p-4 sm:p-6 rounded-2xl bg-card border border-border">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="font-semibold font-display text-sm sm:text-base flex items-center gap-2">
+              <Plus className="w-4 sm:w-5 h-4 sm:h-5 text-primary" />
               New Entry
             </h2>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Private</span>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-xs sm:text-sm text-muted-foreground">Private</span>
                 <Switch checked={isPrivate} onCheckedChange={setIsPrivate} />
               </div>
-              {isPrivate && (
-                <Lock className="w-4 h-4 text-primary" />
-              )}
+              {isPrivate && <Lock className="w-4 h-4 text-primary" />}
             </div>
           </div>
 
@@ -103,50 +100,50 @@ const BlackBox = () => {
             placeholder="Express yourself freely... Your thoughts are safe here."
             value={newEntry}
             onChange={(e) => setNewEntry(e.target.value)}
-            className="min-h-[150px] bg-muted/30 border-border resize-none mb-4"
+            className="min-h-[120px] sm:min-h-[150px] bg-muted/30 border-border resize-none mb-3 sm:mb-4 text-sm"
           />
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon">
-                <Mic className="w-5 h-5" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9">
+                <Mic className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="icon">
-                <Type className="w-5 h-5" />
+              <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9">
+                <Type className="w-4 h-4" />
               </Button>
             </div>
-            <Button className="btn-primary" disabled={!newEntry.trim() || isCreating} onClick={handleSaveEntry}>
-              {isCreating ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Send className="w-5 h-5 mr-2" />}
-              Save Entry
+            <Button className="btn-primary h-9 sm:h-10 text-xs sm:text-sm px-3 sm:px-4" disabled={!newEntry.trim() || isCreating} onClick={handleSaveEntry}>
+              {isCreating ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Send className="w-4 h-4 mr-1.5" />}
+              Save
             </Button>
           </div>
 
           {isPrivate && (
-            <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-2.5 flex items-center gap-1">
               <Lock className="w-3 h-3" />
-              Private entries are not analyzed by AI and remain fully encrypted
+              Private entries are not analyzed by AI
             </p>
           )}
         </div>
 
         {/* Past Entries */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold font-display">Your Entries</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold font-display text-sm sm:text-base">Your Entries</h2>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowEntries(!showEntries)}
-              className="text-muted-foreground"
+              className="text-muted-foreground h-8 text-xs"
             >
               {showEntries ? (
                 <>
-                  <EyeOff className="w-4 h-4 mr-2" />
+                  <EyeOff className="w-3.5 h-3.5 mr-1.5" />
                   Hide
                 </>
               ) : (
                 <>
-                  <Eye className="w-4 h-4 mr-2" />
+                  <Eye className="w-3.5 h-3.5 mr-1.5" />
                   Show
                 </>
               )}
@@ -154,25 +151,25 @@ const BlackBox = () => {
           </div>
 
           {showEntries && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {isLoading ? (
-                <div className="text-center py-8 text-muted-foreground">Loading entries...</div>
+                <div className="text-center py-8 text-muted-foreground text-sm">Loading entries...</div>
               ) : entries.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">No entries yet. Start expressing yourself.</div>
+                <div className="text-center py-8 text-muted-foreground text-sm">No entries yet. Start expressing yourself.</div>
               ) : (
                 entries.map((entry) => (
                   <div
                     key={entry.id}
-                    className="p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
+                    className="p-3.5 sm:p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">
+                    <div className="flex items-start justify-between mb-2 sm:mb-3 gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3 shrink-0" />
                           {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                         </span>
                         {entry.is_private && (
-                          <span className="flex items-center gap-1 text-xs text-primary">
+                          <span className="flex items-center gap-1 text-[11px] text-primary">
                             <Lock className="w-3 h-3" />
                             Private
                           </span>
@@ -182,13 +179,13 @@ const BlackBox = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-muted-foreground hover:text-destructive"
+                        className="text-muted-foreground hover:text-destructive h-7 w-7 shrink-0"
                         onClick={() => deleteEntry(entry.id)}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
-                    <p className="text-foreground/90 leading-relaxed">{entry.content_encrypted}</p>
+                    <p className="text-sm text-foreground/90 leading-relaxed">{entry.content_encrypted}</p>
                   </div>
                 ))
               )}
@@ -197,10 +194,9 @@ const BlackBox = () => {
         </div>
 
         {/* Support Notice */}
-        <div className="p-4 rounded-xl border border-border bg-muted/20">
-          <p className="text-sm text-muted-foreground text-center">
-            If you're in crisis or need immediate support, our AI may suggest connecting 
-            with a professional. Your identity remains protected unless you choose otherwise.
+        <div className="p-3 sm:p-4 rounded-xl border border-border bg-muted/20">
+          <p className="text-xs sm:text-sm text-muted-foreground text-center leading-relaxed">
+            If you're in crisis, our AI may suggest connecting with a professional. Your identity remains protected.
           </p>
         </div>
       </div>
