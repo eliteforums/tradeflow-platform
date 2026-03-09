@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Music,
   Play,
@@ -24,11 +24,51 @@ const SoundTherapy = () => {
   const [progress, setProgress] = useState([0]);
   const [isMuted, setIsMuted] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { tracks, categories, isLoading, formatDuration } = useSoundTherapy();
 
   const filteredTracks =
     activeCategory === "all" ? tracks : tracks.filter((t) => t.category === activeCategory);
+
+  const currentTrackData = filteredTracks[currentTrack];
+
+  // Audio management
+  useEffect(() => {
+    if (currentTrackData?.file_url && isPlaying) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      audioRef.current = new Audio(currentTrackData.file_url);
+      audioRef.current.volume = isMuted ? 0 : volume[0] / 100;
+      audioRef.current.play().catch(() => {});
+
+      const audio = audioRef.current;
+      const updateProgress = () => {
+        if (audio.duration) {
+          setProgress([(audio.currentTime / audio.duration) * 100]);
+        }
+      };
+      audio.addEventListener("timeupdate", updateProgress);
+      audio.addEventListener("ended", () => {
+        handleNext();
+      });
+
+      return () => {
+        audio.removeEventListener("timeupdate", updateProgress);
+        audio.pause();
+      };
+    } else if (!isPlaying && audioRef.current) {
+      audioRef.current.pause();
+    }
+  }, [currentTrack, isPlaying, currentTrackData?.file_url]);
+
+  // Volume sync
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume[0] / 100;
+    }
+  }, [volume, isMuted]);
 
   const handleTrackSelect = useCallback((index: number) => {
     setCurrentTrack(index);
@@ -60,24 +100,6 @@ const SoundTherapy = () => {
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => !prev);
   }, []);
-
-  // Simulate progress
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        const newProgress = prev[0] + 0.5;
-        if (newProgress >= 100) {
-          handleNext();
-          return [0];
-        }
-        return [newProgress];
-      });
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, handleNext]);
 
   if (isLoading) {
     return (
