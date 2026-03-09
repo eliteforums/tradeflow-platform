@@ -155,7 +155,7 @@ export default function MemberManager() {
                 <SelectValue placeholder="Select institution" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {institutions.map((inst) => (
                   <SelectItem key={inst.id} value={inst.id}>
                     {inst.name}
