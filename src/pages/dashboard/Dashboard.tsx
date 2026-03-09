@@ -14,6 +14,7 @@ import {
   Moon,
   Sunrise,
   Heart,
+  AlertCircle,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
