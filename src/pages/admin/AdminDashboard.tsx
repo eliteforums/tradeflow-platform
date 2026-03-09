@@ -18,6 +18,8 @@ import {
   Settings,
   Music,
   Building2,
+  FileText,
+  QrCode,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,9 +31,12 @@ import { format } from "date-fns";
 
 import SoundManager from "@/components/admin/SoundManager";
 import InstitutionManager from "@/components/admin/InstitutionManager";
+import EscalationManager from "@/components/admin/EscalationManager";
+import AuditLogViewer from "@/components/admin/AuditLogViewer";
+import SPOCTools from "@/components/admin/SPOCTools";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile } = useAuth();
   const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
@@ -99,8 +104,11 @@ const AdminDashboard = () => {
             { id: "members" as const, label: `Members (${members.length})`, icon: Users },
             { id: "sessions" as const, label: "Sessions", icon: Calendar },
             { id: "flags" as const, label: `Flags (${flaggedEntries.length})`, icon: AlertTriangle },
+            { id: "escalations" as const, label: "Escalations", icon: Shield },
+            { id: "spoc" as const, label: "SPOC Tools", icon: QrCode },
             { id: "sounds" as const, label: "Sounds", icon: Music },
             { id: "institutions" as const, label: "Institutions", icon: Building2 },
+            { id: "audit" as const, label: "Audit Log", icon: FileText },
           ]).map((tab) => (
             <Button
               key={tab.id}
@@ -442,6 +450,15 @@ const AdminDashboard = () => {
 
             {/* Institutions Tab */}
             {activeTab === "institutions" && <InstitutionManager />}
+
+            {/* Escalations Tab */}
+            {activeTab === "escalations" && <EscalationManager />}
+
+            {/* SPOC Tools Tab */}
+            {activeTab === "spoc" && <SPOCTools />}
+
+            {/* Audit Log Tab */}
+            {activeTab === "audit" && <AuditLogViewer />}
           </>
         )}
       </div>

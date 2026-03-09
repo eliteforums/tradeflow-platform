@@ -81,6 +81,47 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action_type: string
+          actor_id: string
+          created_at: string
+          id: string
+          ip_hash: string | null
+          metadata: Json | null
+          target_id: string | null
+          target_table: string | null
+        }
+        Insert: {
+          action_type: string
+          actor_id: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          metadata?: Json | null
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Update: {
+          action_type?: string
+          actor_id?: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          metadata?: Json | null
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blackbox_entries: {
         Row: {
           ai_flag_level: number
@@ -164,6 +205,71 @@ export type Database = {
           {
             foreignKeyName: "credit_transactions_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escalation_requests: {
+        Row: {
+          admin_id: string | null
+          created_at: string
+          entry_id: string | null
+          id: string
+          justification_encrypted: string
+          resolved_at: string | null
+          session_id: string | null
+          spoc_id: string
+          status: string
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string
+          entry_id?: string | null
+          id?: string
+          justification_encrypted: string
+          resolved_at?: string | null
+          session_id?: string | null
+          spoc_id: string
+          status?: string
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string
+          entry_id?: string | null
+          id?: string
+          justification_encrypted?: string
+          resolved_at?: string | null
+          session_id?: string | null
+          spoc_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalation_requests_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalation_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "blackbox_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalation_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "peer_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalation_requests_spoc_id_fkey"
+            columns: ["spoc_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

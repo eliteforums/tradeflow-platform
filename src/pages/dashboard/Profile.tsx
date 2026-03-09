@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AccountDeletion from "@/components/admin/AccountDeletion";
 
 const Profile = () => {
   const { user, profile, refreshProfile } = useAuth();
@@ -291,17 +292,8 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Danger Zone */}
-        <div className="p-6 rounded-2xl bg-destructive/5 border border-destructive/20 space-y-4">
-          <h3 className="font-semibold font-display flex items-center gap-2 text-destructive">
-            <AlertTriangle className="w-5 h-5" />
-            Danger Zone
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Permanently delete your account and all associated data. This action cannot be undone.
-          </p>
-          <Button variant="destructive">Delete Account</Button>
-        </div>
+        {/* Account Deletion - DPDP Compliance */}
+        <AccountDeletion />
       </div>
     </DashboardLayout>
   );

@@ -18,8 +18,9 @@ import { Progress } from "@/components/ui/progress";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 type TrainingStatus = "NOT_STARTED" | "IN_PROGRESS" | "ASSESSMENT_PENDING" | "ACTIVE";
 
@@ -35,6 +36,7 @@ const TRAINING_MODULES = [
 
 const InternDashboard = () => {
   const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"training" | "sessions" | "notes">("training");
   // For demo purposes, training progress is stored in local state
   const [trainingStatus] = useState<TrainingStatus>("NOT_STARTED");
@@ -231,6 +233,21 @@ const InternDashboard = () => {
                       }`}>
                         {session.is_flagged ? "⚠ Flagged" : session.status}
                       </span>
+                      {session.status === "active" && !session.is_flagged && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive border-destructive/30 gap-1 ml-2"
+                          onClick={async () => {
+                            await supabase.from("peer_sessions").update({ is_flagged: true }).eq("id", session.id);
+                            queryClient.invalidateQueries({ queryKey: ["intern-sessions"] });
+                            toast.info("Session flagged for review");
+                          }}
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          Flag
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

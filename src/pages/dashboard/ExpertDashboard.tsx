@@ -104,6 +104,14 @@ const ExpertDashboard = () => {
           </p>
         </div>
 
+        {/* AI Risk Notice */}
+        <div className="p-3 rounded-xl bg-eternia-warning/10 border border-eternia-warning/20 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-eternia-warning shrink-0" />
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">AI Risk Monitor Active</span> — Sessions are monitored for crisis indicators. Use the escalation button if you identify a high-risk situation.
+          </p>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
@@ -179,6 +187,15 @@ const ExpertDashboard = () => {
                         }`}>
                           {apt.status}
                         </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive border-destructive/30 gap-1"
+                          onClick={() => toast.info("Escalation request sent to SPOC")}
+                        >
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          Escalate
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
