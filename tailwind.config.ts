@@ -66,6 +66,8 @@ export default {
           "teal-glow": "hsl(var(--eternia-teal-glow))",
           lavender: "hsl(var(--eternia-lavender))",
           "lavender-glow": "hsl(var(--eternia-lavender-glow))",
+          violet: "hsl(var(--eternia-violet))",
+          "violet-glow": "hsl(var(--eternia-violet-glow))",
           dark: "hsl(var(--eternia-dark))",
           "dark-card": "hsl(var(--eternia-dark-card))",
           "dark-elevated": "hsl(var(--eternia-dark-elevated))",
