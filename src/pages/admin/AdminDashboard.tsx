@@ -17,6 +17,7 @@ import {
   UserPlus,
   Settings,
   Music,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,9 +28,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 import SoundManager from "@/components/admin/SoundManager";
+import InstitutionManager from "@/components/admin/InstitutionManager";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile } = useAuth();
   const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
@@ -98,6 +100,7 @@ const AdminDashboard = () => {
             { id: "sessions" as const, label: "Sessions", icon: Calendar },
             { id: "flags" as const, label: `Flags (${flaggedEntries.length})`, icon: AlertTriangle },
             { id: "sounds" as const, label: "Sounds", icon: Music },
+            { id: "institutions" as const, label: "Institutions", icon: Building2 },
           ]).map((tab) => (
             <Button
               key={tab.id}
@@ -436,6 +439,9 @@ const AdminDashboard = () => {
 
             {/* Sounds Tab */}
             {activeTab === "sounds" && <SoundManager />}
+
+            {/* Institutions Tab */}
+            {activeTab === "institutions" && <InstitutionManager />}
           </>
         )}
       </div>
