@@ -61,71 +61,79 @@ const AdminDashboard = () => {
     m.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const adminTabs = [
+    { id: "overview" as const, label: "Overview", icon: BarChart3 },
+    { id: "members" as const, label: "Members", icon: Users },
+    { id: "sessions" as const, label: "Sessions", icon: Calendar },
+    { id: "flags" as const, label: "Flags", icon: AlertTriangle },
+    { id: "escalations" as const, label: "Escalations", icon: Shield },
+    { id: "spoc" as const, label: "SPOC", icon: QrCode },
+    { id: "sounds" as const, label: "Sounds", icon: Music },
+    { id: "roles" as const, label: "Roles", icon: UserPlus },
+    { id: "experts" as const, label: "Experts", icon: Users },
+    { id: "institutions" as const, label: "Institutions", icon: Building2 },
+    { id: "audit" as const, label: "Audit", icon: FileText },
+  ];
+
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold font-display mb-1">Admin Dashboard</h1>
-            <p className="text-muted-foreground">
-              Institution overview and management • {profile?.role === "admin" ? "Super Admin" : "SPOC"}
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-3xl font-bold font-display truncate">Admin Dashboard</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">
+              {profile?.role === "admin" ? "Super Admin" : "SPOC"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2">
-              <Settings className="w-4 h-4" />
-              Settings
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" className="shrink-0 gap-1.5 h-8 sm:h-9">
+            <Settings className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Settings</span>
+          </Button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           {[
-            { label: "Total Students", value: stats.totalStudents, icon: Users, color: "text-primary" },
-            { label: "Total Sessions", value: stats.totalSessions, icon: Activity, color: "text-primary" },
-            { label: "Credits Issued", value: stats.totalCreditsIssued, icon: Coins, color: "text-eternia-warning" },
-            { label: "Active Today", value: stats.activeToday, icon: TrendingUp, color: "text-eternia-success" },
+            { label: "Students", value: stats.totalStudents, icon: Users, color: "text-primary" },
+            { label: "Sessions", value: stats.totalSessions, icon: Activity, color: "text-primary" },
+            { label: "Credits", value: stats.totalCreditsIssued, icon: Coins, color: "text-eternia-warning" },
+            { label: "Active", value: stats.activeToday, icon: TrendingUp, color: "text-eternia-success" },
           ].map((stat) => (
             <Card key={stat.label}>
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                  <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-full bg-muted">Today</span>
+              <CardContent className="p-3 sm:p-5">
+                <div className="flex items-center justify-between mb-1.5 sm:mb-3">
+                  <stat.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.color}`} />
+                  <span className="text-[10px] sm:text-xs text-muted-foreground px-1.5 py-0.5 rounded-full bg-muted">Today</span>
                 </div>
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <p className="text-lg sm:text-2xl font-bold">{stat.value}</p>
+                <p className="text-[11px] sm:text-sm text-muted-foreground">{stat.label}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {([
-            { id: "overview" as const, label: "Overview", icon: BarChart3 },
-            { id: "members" as const, label: `Members (${members.length})`, icon: Users },
-            { id: "sessions" as const, label: "Sessions", icon: Calendar },
-            { id: "flags" as const, label: `Flags (${flaggedEntries.length})`, icon: AlertTriangle },
-            { id: "escalations" as const, label: "Escalations", icon: Shield },
-            { id: "spoc" as const, label: "SPOC Tools", icon: QrCode },
-            { id: "sounds" as const, label: "Sounds", icon: Music },
-            { id: "roles" as const, label: "Roles", icon: UserPlus },
-            { id: "experts" as const, label: "Experts", icon: Users },
-            { id: "institutions" as const, label: "Institutions", icon: Building2 },
-            { id: "audit" as const, label: "Audit Log", icon: FileText },
-          ]).map((tab) => (
-            <Button
-              key={tab.id}
-              variant={activeTab === tab.id ? "default" : "ghost"}
-              onClick={() => setActiveTab(tab.id)}
-              className={`gap-2 shrink-0 ${activeTab === tab.id ? "bg-primary text-primary-foreground" : ""}`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </Button>
-          ))}
+        {/* Tabs — scrollable chips */}
+        <div className="-mx-4 sm:mx-0 px-4 sm:px-0">
+          <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+            {adminTabs.map((tab) => {
+              const active = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  <span className="hidden xs:inline sm:inline">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {isLoading ? (
