@@ -1,20 +1,11 @@
 import { useState } from "react";
 import {
-  Calendar,
-  Clock,
-  Users,
-  FileText,
-  CheckCircle,
-  AlertTriangle,
-  Video,
-  Phone,
-  Plus,
-  Loader2,
-  BarChart3,
+  Calendar, Clock, Users, FileText, CheckCircle, AlertTriangle,
+  Video, Phone, Loader2, BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,93 +87,86 @@ const ExpertDashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         <div>
-          <h1 className="text-3xl font-bold font-display mb-2">Expert Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage your schedule, sessions, and session notes
+          <h1 className="text-xl sm:text-3xl font-bold font-display">Expert Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            Manage your schedule, sessions, and notes
           </p>
         </div>
 
         {/* AI Risk Notice */}
-        <div className="p-3 rounded-xl bg-eternia-warning/10 border border-eternia-warning/20 flex items-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-eternia-warning shrink-0" />
-          <p className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">AI Risk Monitor Active</span> — Sessions are monitored for crisis indicators. Use the escalation button if you identify a high-risk situation.
+        <div className="p-3 rounded-xl bg-eternia-warning/10 border border-eternia-warning/20 flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-eternia-warning shrink-0 mt-0.5" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">AI Risk Monitor Active</span> — Sessions monitored for crisis indicators.
           </p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {[
             { label: "Upcoming", value: upcomingAppointments.length, icon: Calendar, color: "text-primary" },
             { label: "Completed", value: completedAppointments.length, icon: CheckCircle, color: "text-eternia-success" },
-            { label: "Total Slots", value: mySlots.length, icon: Clock, color: "text-eternia-warning" },
-            { label: "Total Sessions", value: profile?.total_sessions || 0, icon: BarChart3, color: "text-primary" },
+            { label: "Slots", value: mySlots.length, icon: Clock, color: "text-eternia-warning" },
+            { label: "Total", value: profile?.total_sessions || 0, icon: BarChart3, color: "text-primary" },
           ].map((stat) => (
-            <Card key={stat.label}>
-              <CardContent className="p-5">
-                <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
-                <p className="text-2xl font-bold">{stat.value}</p>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-              </CardContent>
-            </Card>
+            <div key={stat.label} className="p-3 rounded-xl bg-card border border-border/50 text-center">
+              <stat.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${stat.color} mx-auto mb-1`} />
+              <p className="text-lg sm:text-xl font-bold leading-none">{stat.value}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+            </div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
           {([
-            { id: "schedule", label: "Schedule", icon: Calendar },
-            { id: "sessions", label: "Sessions", icon: Users },
-            { id: "notes", label: "Notes", icon: FileText },
-          ] as const).map((tab) => (
-            <Button
+            { id: "schedule" as const, label: "Schedule", icon: Calendar },
+            { id: "sessions" as const, label: "Sessions", icon: Users },
+            { id: "notes" as const, label: "Notes", icon: FileText },
+          ]).map((tab) => (
+            <button
               key={tab.id}
-              variant={activeTab === tab.id ? "default" : "ghost"}
               onClick={() => setActiveTab(tab.id)}
-              className={`gap-2 ${activeTab === tab.id ? "bg-primary text-primary-foreground" : ""}`}
+              className={`flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                activeTab === tab.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted/50 text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <tab.icon className="w-4 h-4" />
+              <tab.icon className="w-3.5 h-3.5" />
               {tab.label}
-            </Button>
+            </button>
           ))}
         </div>
 
         {activeTab === "schedule" && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold font-display">Upcoming Appointments</h2>
-            </div>
+          <div className="space-y-2.5">
+            <h2 className="text-sm sm:text-base font-semibold font-display">Upcoming Appointments</h2>
             {upcomingAppointments.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No upcoming appointments</p>
-                </CardContent>
-              </Card>
+              <div className="text-center py-10 text-muted-foreground bg-card rounded-xl border border-border/50">
+                <Calendar className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No upcoming appointments</p>
+              </div>
             ) : (
               upcomingAppointments.map((apt: any) => (
-                <Card key={apt.id}>
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                          {apt.session_type === "video" ? (
-                            <Video className="w-6 h-6 text-white" />
-                          ) : (
-                            <Phone className="w-6 h-6 text-white" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-semibold">Session with {apt.student?.username}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(apt.slot_time), "EEEE, MMMM d · h:mm a")}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-3 py-1 rounded-full text-xs ${
+                <div key={apt.id} className="p-3 sm:p-4 rounded-xl bg-card border border-border/50">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shrink-0">
+                      {apt.session_type === "video" ? (
+                        <Video className="w-5 h-5 text-white" />
+                      ) : (
+                        <Phone className="w-5 h-5 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{apt.student?.username}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {format(new Date(apt.slot_time), "EEE, MMM d · h:mm a")}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${
                           apt.status === "confirmed" ? "bg-eternia-success/10 text-eternia-success" : "bg-eternia-warning/10 text-eternia-warning"
                         }`}>
                           {apt.status}
@@ -190,113 +174,106 @@ const ExpertDashboard = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-destructive border-destructive/30 gap-1"
+                          className="text-destructive border-destructive/30 gap-1 h-7 text-[11px] px-2"
                           onClick={() => toast.info("Escalation request sent to SPOC")}
                         >
-                          <AlertTriangle className="w-3.5 h-3.5" />
+                          <AlertTriangle className="w-3 h-3" />
                           Escalate
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
+                          className="h-7 text-[11px] px-2"
                           onClick={() => setSelectedAppointment(apt.id)}
                         >
                           Complete
                         </Button>
                       </div>
                     </div>
+                  </div>
 
-                    {selectedAppointment === apt.id && (
-                      <div className="mt-4 pt-4 border-t border-border space-y-3">
-                        <Textarea
-                          placeholder="Add session notes (encrypted)..."
-                          value={sessionNotes}
-                          onChange={(e) => setSessionNotes(e.target.value)}
-                          className="min-h-[100px] bg-muted/30"
-                        />
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => completeSession.mutate({ appointmentId: apt.id, notes: sessionNotes })}
-                            disabled={completeSession.isPending}
-                            className="gap-2"
-                          >
-                            {completeSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                            Mark Complete
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setSelectedAppointment(null)}>
-                            Cancel
-                          </Button>
-                        </div>
+                  {selectedAppointment === apt.id && (
+                    <div className="mt-3 pt-3 border-t border-border space-y-2.5">
+                      <Textarea
+                        placeholder="Add session notes (encrypted)..."
+                        value={sessionNotes}
+                        onChange={(e) => setSessionNotes(e.target.value)}
+                        className="min-h-[80px] bg-muted/30 text-sm"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => completeSession.mutate({ appointmentId: apt.id, notes: sessionNotes })}
+                          disabled={completeSession.isPending}
+                          className="gap-1.5 h-8 text-xs"
+                        >
+                          {completeSession.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                          Mark Complete
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setSelectedAppointment(null)}>
+                          Cancel
+                        </Button>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    </div>
+                  )}
+                </div>
               ))
             )}
           </div>
         )}
 
         {activeTab === "sessions" && (
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold font-display">Completed Sessions</h2>
+          <div className="space-y-2.5">
+            <h2 className="text-sm sm:text-base font-semibold font-display">Completed Sessions</h2>
             {completedAppointments.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <CheckCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No completed sessions yet</p>
-                </CardContent>
-              </Card>
+              <div className="text-center py-10 text-muted-foreground bg-card rounded-xl border border-border/50">
+                <CheckCircle className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No completed sessions yet</p>
+              </div>
             ) : (
               completedAppointments.map((apt: any) => (
-                <Card key={apt.id}>
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">Session with {apt.student?.username}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(apt.slot_time), "MMM d, h:mm a")}
-                          {apt.completed_at && ` · Completed ${format(new Date(apt.completed_at), "h:mm a")}`}
-                        </p>
-                      </div>
-                      <span className="px-3 py-1 rounded-full text-xs bg-eternia-success/10 text-eternia-success">
-                        Completed
-                      </span>
+                <div key={apt.id} className="p-3 rounded-xl bg-card border border-border/50">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate">{apt.student?.username}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {format(new Date(apt.slot_time), "MMM d, h:mm a")}
+                        {apt.completed_at && ` · Done ${format(new Date(apt.completed_at), "h:mm a")}`}
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-eternia-success/10 text-eternia-success shrink-0">
+                      Completed
+                    </span>
+                  </div>
+                </div>
               ))
             )}
           </div>
         )}
 
         {activeTab === "notes" && (
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold font-display">Session Notes</h2>
+          <div className="space-y-2.5">
+            <h2 className="text-sm sm:text-base font-semibold font-display">Session Notes</h2>
             {completedAppointments.filter((a: any) => a.session_notes_encrypted).length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No session notes recorded</p>
-                </CardContent>
-              </Card>
+              <div className="text-center py-10 text-muted-foreground bg-card rounded-xl border border-border/50">
+                <FileText className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No session notes recorded</p>
+              </div>
             ) : (
               completedAppointments
                 .filter((a: any) => a.session_notes_encrypted)
                 .map((apt: any) => (
-                  <Card key={apt.id}>
-                    <CardContent className="p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="font-semibold text-sm">Session with {apt.student?.username}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(apt.slot_time), "MMM d, yyyy")}
-                        </p>
-                      </div>
-                      <p className="text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
-                        {apt.session_notes_encrypted}
+                  <div key={apt.id} className="p-3 rounded-xl bg-card border border-border/50">
+                    <div className="flex items-center justify-between mb-2 gap-2">
+                      <p className="font-semibold text-sm truncate">{apt.student?.username}</p>
+                      <p className="text-[10px] text-muted-foreground shrink-0">
+                        {format(new Date(apt.slot_time), "MMM d, yyyy")}
                       </p>
-                    </CardContent>
-                  </Card>
+                    </div>
+                    <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg">
+                      {apt.session_notes_encrypted}
+                    </p>
+                  </div>
                 ))
             )}
           </div>
