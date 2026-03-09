@@ -461,7 +461,12 @@ const AdminDashboard = () => {
             {activeTab === "spoc" && <SPOCTools />}
 
             {/* Roles Tab */}
-            {activeTab === "roles" && <RoleManager />}
+            {activeTab === "roles" && (
+              <div className="space-y-6">
+                <MemberManager />
+                <RoleManager />
+              </div>
+            )}
 
             {/* Audit Log Tab */}
             {activeTab === "audit" && <AuditLogViewer />}
