@@ -24,33 +24,14 @@ const BlackBox = () => {
   const [newEntry, setNewEntry] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [showEntries, setShowEntries] = useState(true);
+  const { entries, isLoading, createEntry, deleteEntry, isCreating } = useBlackBox();
 
-  const entries = [
-    {
-      id: 1,
-      content:
-        "I've been feeling really anxious about my upcoming presentation. The thought of standing in front of everyone makes my heart race...",
-      timestamp: "Today, 2:30 PM",
-      isPrivate: false,
-      crisisLevel: 0,
-    },
-    {
-      id: 2,
-      content:
-        "Had a better day today. Went for a walk and it helped clear my mind. Small steps.",
-      timestamp: "Yesterday, 8:15 PM",
-      isPrivate: true,
-      crisisLevel: 0,
-    },
-    {
-      id: 3,
-      content:
-        "The pressure is getting too much sometimes. I feel like I'm drowning in responsibilities...",
-      timestamp: "Mar 7, 11:42 AM",
-      isPrivate: false,
-      crisisLevel: 1,
-    },
-  ];
+  const handleSaveEntry = () => {
+    if (!newEntry.trim()) return;
+    createEntry({ content: newEntry, isPrivate }, {
+      onSuccess: () => setNewEntry(""),
+    });
+  };
 
   const getCrisisIndicator = (level: number) => {
     switch (level) {
