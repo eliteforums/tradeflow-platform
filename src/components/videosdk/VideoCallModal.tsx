@@ -1,0 +1,138 @@
+import { useState, useCallback } from "react";
+import { MeetingProvider } from "@videosdk.live/react-sdk";
+import { Video, Phone, Loader2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { createVideoSDKRoom, getVideoSDKToken } from "@/lib/videosdk";
+import MeetingView from "./MeetingView";
+import { toast } from "@/hooks/use-toast";
+
+interface VideoCallModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  participantName: string;
+  mode?: "video" | "audio";
+  existingRoomId?: string;
+}
+
+const VideoCallModal = ({
+  isOpen,
+  onClose,
+  participantName,
+  mode = "video",
+  existingRoomId,
+}: VideoCallModalProps) => {
+  const [meetingId, setMeetingId] = useState<string | null>(existingRoomId || null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const startCall = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      if (existingRoomId) {
+        const t = await getVideoSDKToken();
+        setToken(t);
+        setMeetingId(existingRoomId);
+      } else {
+        const { token: t, roomId } = await createVideoSDKRoom();
+        setToken(t);
+        setMeetingId(roomId);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start call",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [existingRoomId]);
+
+  const handleLeave = useCallback(() => {
+    setMeetingId(null);
+    setToken(null);
+    onClose();
+  }, [onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+      <div className="relative w-full max-w-4xl h-[80vh] bg-card border border-border rounded-2xl overflow-hidden flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            {mode === "video" ? (
+              <Video className="w-5 h-5 text-primary" />
+            ) : (
+              <Phone className="w-5 h-5 text-primary" />
+            )}
+            <span className="font-semibold font-display">
+              {mode === "video" ? "Video" : "Audio"} Session
+            </span>
+            {meetingId && (
+              <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
+                {meetingId}
+              </span>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleLeave}>
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1">
+          {!token || !meetingId ? (
+            <div className="flex flex-col items-center justify-center h-full gap-6">
+              <div className="w-24 h-24 rounded-full bg-gradient-eternia flex items-center justify-center">
+                {mode === "video" ? (
+                  <Video className="w-12 h-12 text-primary-foreground" />
+                ) : (
+                  <Phone className="w-12 h-12 text-primary-foreground" />
+                )}
+              </div>
+              <div className="text-center">
+                <h3 className="text-xl font-semibold font-display mb-2">
+                  Ready to connect?
+                </h3>
+                <p className="text-muted-foreground text-sm">
+                  Start a secure, anonymous {mode} session
+                </p>
+              </div>
+              <Button
+                onClick={startCall}
+                disabled={isLoading}
+                className="btn-primary text-lg px-8 py-4"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  `Start ${mode === "video" ? "Video" : "Audio"} Call`
+                )}
+              </Button>
+            </div>
+          ) : (
+            <MeetingProvider
+              config={{
+                meetingId,
+                micEnabled: true,
+                webcamEnabled: mode === "video",
+                name: participantName,
+                debugMode: false,
+              }}
+              token={token}
+            >
+              <MeetingView meetingId={meetingId} onMeetingLeave={handleLeave} />
+            </MeetingProvider>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default VideoCallModal;
