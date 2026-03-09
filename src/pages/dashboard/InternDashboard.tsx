@@ -18,7 +18,9 @@ import { Progress } from "@/components/ui/progress";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { toast } from "sonner";
 import { format } from "date-fns";
 
 type TrainingStatus = "NOT_STARTED" | "IN_PROGRESS" | "ASSESSMENT_PENDING" | "ACTIVE";
