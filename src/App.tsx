@@ -28,6 +28,9 @@ const RecoverySetup = lazy(() => import("./pages/dashboard/RecoverySetup"));
 const ExpertDashboard = lazy(() => import("./pages/dashboard/ExpertDashboard"));
 const InternDashboard = lazy(() => import("./pages/dashboard/InternDashboard"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const Privacy = lazy(() => import("./pages/legal/Privacy"));
+const Terms = lazy(() => import("./pages/legal/Terms"));
+const DPDP = lazy(() => import("./pages/legal/DPDP"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const PageLoader = () => (
