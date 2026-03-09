@@ -36,9 +36,10 @@ import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import SPOCTools from "@/components/admin/SPOCTools";
 import RoleManager from "@/components/admin/RoleManager";
 import MemberManager from "@/components/admin/MemberManager";
+import ExpertManager from "@/components/admin/ExpertManager";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit" | "roles">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit" | "roles" | "experts">("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const { profile } = useAuth();
   const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
@@ -110,6 +111,7 @@ const AdminDashboard = () => {
             { id: "spoc" as const, label: "SPOC Tools", icon: QrCode },
             { id: "sounds" as const, label: "Sounds", icon: Music },
             { id: "roles" as const, label: "Roles", icon: UserPlus },
+            { id: "experts" as const, label: "Experts", icon: Users },
             { id: "institutions" as const, label: "Institutions", icon: Building2 },
             { id: "audit" as const, label: "Audit Log", icon: FileText },
           ]).map((tab) => (
@@ -224,7 +226,9 @@ const AdminDashboard = () => {
                           className="p-4 rounded-xl bg-muted/30 border border-border text-left hover:border-primary/50 transition-all"
                           onClick={() => {
                             if (action.label === "View Flags") setActiveTab("flags");
-                            if (action.label === "Add Member") setActiveTab("members");
+                            if (action.label === "Add Member") setActiveTab("roles");
+                            if (action.label === "Grant Credits") setActiveTab("spoc");
+                            if (action.label === "Manage Experts") setActiveTab("experts");
                           }}
                         >
                           <action.icon className="w-5 h-5 text-primary mb-2" />
@@ -467,6 +471,10 @@ const AdminDashboard = () => {
                 <RoleManager />
               </div>
             )}
+
+
+            {/* Experts Tab */}
+            {activeTab === "experts" && <ExpertManager />}
 
             {/* Audit Log Tab */}
             {activeTab === "audit" && <AuditLogViewer />}
