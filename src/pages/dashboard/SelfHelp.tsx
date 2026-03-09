@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useEccEarn } from "@/hooks/useEccEarn";
 import {
   Sparkles,
   Award,
