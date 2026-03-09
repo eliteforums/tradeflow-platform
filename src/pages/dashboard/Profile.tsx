@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   User,
   Shield,
@@ -215,6 +216,15 @@ const Profile = () => {
               <p className="text-xs text-muted-foreground mt-1">
                 Username cannot be changed to protect anonymity
               </p>
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">Account Recovery</label>
+              <Link to="/dashboard/recovery-setup">
+                <Button variant="outline" className="w-full justify-between">
+                  Set up recovery (Fragment Pairs + Emoji Pattern)
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">Change Password</label>

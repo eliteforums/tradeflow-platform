@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Sparkles, ArrowRight, Building2, ArrowLeft } from "lucide-react";
+import { ArrowRight, Building2, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import EterniaLogo from "@/components/EterniaLogo";
 
 const InstitutionCode = () => {
   const navigate = useNavigate();
@@ -18,22 +20,38 @@ const InstitutionCode = () => {
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simulate validation - in production this would validate against the institutions table
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    // For demo purposes, accept any 6+ character code
-    if (code.length >= 6) {
-      toast.success("Institution verified!");
-      // Store institution code temporarily
-      sessionStorage.setItem("eternia_institution_code", code);
-      navigate("/register");
-    } else {
+    if (code.length < 6) {
       toast.error("Invalid institution code. Please check with your institution.");
+      return;
     }
-    
-    setIsLoading(false);
+
+    setIsLoading(true);
+
+    try {
+      // Validate against institutions table
+      const { data: institution, error } = await supabase
+        .from("institutions")
+        .select("id, name, is_active")
+        .eq("eternia_code_hash", code)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (institution) {
+        toast.success(`Institution verified: ${institution.name}`);
+        sessionStorage.setItem("eternia_institution_code", code);
+        sessionStorage.setItem("eternia_institution_id", institution.id);
+        navigate("/qr-scan");
+      } else {
+        toast.error("Invalid institution code. Please check with your institution.");
+      }
+    } catch (error: any) {
+      console.error("Validation error:", error);
+      toast.error("Failed to verify institution code. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -45,7 +63,6 @@ const InstitutionCode = () => {
       </div>
 
       <div className="w-full max-w-md relative z-10">
-        {/* Back Button */}
         <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors">
           <ArrowLeft className="w-4 h-4" />
           Back to Home
@@ -53,10 +70,23 @@ const InstitutionCode = () => {
 
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-eternia flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-background" />
-          </div>
+          <EterniaLogo size={48} />
           <span className="text-2xl font-bold font-display">Eternia</span>
+        </div>
+
+        {/* Progress */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-eternia text-background font-semibold text-sm">
+            1
+          </div>
+          <div className="flex-1 h-1 rounded bg-muted" />
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground font-semibold text-sm">
+            2
+          </div>
+          <div className="flex-1 h-1 rounded bg-muted" />
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted text-muted-foreground font-semibold text-sm">
+            3
+          </div>
         </div>
 
         {/* Form Card */}
@@ -88,7 +118,7 @@ const InstitutionCode = () => {
             >
               {isLoading ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin" />
                   Verifying...
                 </div>
               ) : (

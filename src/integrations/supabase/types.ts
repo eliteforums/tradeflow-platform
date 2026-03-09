@@ -466,6 +466,33 @@ export type Database = {
           },
         ]
       }
+      recovery_credentials: {
+        Row: {
+          created_at: string
+          emoji_pattern_encrypted: string
+          fragment_pairs_encrypted: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji_pattern_encrypted: string
+          fragment_pairs_encrypted: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji_pattern_encrypted?: string
+          fragment_pairs_encrypted?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sound_content: {
         Row: {
           artist: string | null
@@ -510,6 +537,7 @@ export type Database = {
       }
       user_private: {
         Row: {
+          contact_is_self: boolean | null
           created_at: string
           device_id_encrypted: string | null
           emergency_name_encrypted: string | null
@@ -520,6 +548,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          contact_is_self?: boolean | null
           created_at?: string
           device_id_encrypted?: string | null
           emergency_name_encrypted?: string | null
@@ -530,6 +559,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          contact_is_self?: boolean | null
           created_at?: string
           device_id_encrypted?: string | null
           emergency_name_encrypted?: string | null
@@ -573,6 +603,7 @@ export type Database = {
     }
     Functions: {
       get_credit_balance: { Args: { _user_id: string }; Returns: number }
+      get_daily_earn_total: { Args: { _user_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

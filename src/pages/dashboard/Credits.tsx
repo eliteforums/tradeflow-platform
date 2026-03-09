@@ -58,7 +58,7 @@ const Credits = () => {
     .filter((t) => t.delta < 0)
     .reduce((sum, t) => sum + Math.abs(t.delta), 0);
 
-  const isLowBalance = balance < 20;
+  const isLowBalance = balance < 5;
 
   return (
     <DashboardLayout>

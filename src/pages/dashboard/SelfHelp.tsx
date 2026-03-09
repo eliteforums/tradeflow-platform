@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useEccEarn } from "@/hooks/useEccEarn";
 import {
   Sparkles,
   Award,
@@ -26,6 +27,7 @@ const SelfHelp = () => {
   const [breathCount, setBreathCount] = useState(0);
   const [wreckClicks, setWreckClicks] = useState(0);
 
+  const { earnFromActivity, canEarn, remainingToday, dailyEarned } = useEccEarn();
   const { profile, creditBalance } = useAuth();
   const {
     quests,
@@ -57,12 +59,13 @@ const SelfHelp = () => {
       timeout = setTimeout(() => setBreathPhase("exhale"), 7000);
     } else if (breathPhase === "exhale") {
       timeout = setTimeout(() => {
-        setBreathCount((prev) => prev + 1);
+      setBreathCount((prev) => prev + 1);
         if (breathCount < 2) {
           setBreathPhase("inhale");
         } else {
           setBreathPhase("idle");
           setBreathCount(0);
+          handleBreathingComplete();
         }
       }, 8000);
     }
@@ -75,11 +78,19 @@ const SelfHelp = () => {
     setBreathPhase("inhale");
   };
 
+  const handleBreathingComplete = () => {
+    if (canEarn) {
+      earnFromActivity({ amount: 1, activity: "Tibetan Bowl breathing exercise" });
+    }
+  };
+
   const handleWreckClick = () => {
     setWreckClicks((prev) => prev + 1);
     if (wreckClicks >= 29) {
       setWreckClicks(0);
-      // Could award credits here
+      if (canEarn) {
+        earnFromActivity({ amount: 1, activity: "Wreck the Buddy completion" });
+      }
     }
   };
 
