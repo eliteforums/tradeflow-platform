@@ -158,10 +158,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <Button
             variant="ghost"
             onClick={handleLogout}
-            className={`w-full justify-start gap-2.5 text-[13px] text-sm text-sidesm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-destructive h-10pen ? "justify-center px-0" : ""
+            className={`w-full justify-start gap-2.5 text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-destructive h-10 ${
+              !sidebarOpen ? "justify-center px-0" : ""
             }`}
           >
-            <LogOut className="w-[18px] h-[18px]5 h-5           {sidebarOpen && <span>Logout</span>}
+            <LogOut className="w-5 h-5 shrink-0" />
+            {sidebarOpen && <span>Logout</span>}
           </Button>
         </div>
       </aside>
