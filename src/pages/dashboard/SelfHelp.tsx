@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useEccEarn } from "@/hooks/useEccEarn";
 import {
-  Sparkles,
   Award,
   Zap,
   Music,
@@ -21,17 +20,26 @@ import { useQuests } from "@/hooks/useQuests";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
+const WreckBuddy3D = lazy(() => import("@/components/selfhelp/WreckBuddy3D"));
+const TibetanBowl3D = lazy(() => import("@/components/selfhelp/TibetanBowl3D"));
+const QuestCard3D = lazy(() => import("@/components/selfhelp/QuestCard3D"));
+
+const ThreeDLoader = () => (
+  <div className="w-full h-[300px] rounded-2xl bg-card border border-border flex items-center justify-center">
+    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+  </div>
+);
+
 const SelfHelp = () => {
   const [activeTab, setActiveTab] = useState("quest");
   const [breathPhase, setBreathPhase] = useState<"inhale" | "hold" | "exhale" | "idle">("idle");
   const [breathCount, setBreathCount] = useState(0);
   const [wreckClicks, setWreckClicks] = useState(0);
 
-  const { earnFromActivity, canEarn, remainingToday, dailyEarned } = useEccEarn();
-  const { profile, creditBalance } = useAuth();
+  const { earnFromActivity, canEarn } = useEccEarn();
+  const { profile } = useAuth();
   const {
     quests,
-    completions,
     isLoading,
     completeQuest,
     isCompleting,
@@ -50,8 +58,7 @@ const SelfHelp = () => {
   // Breathing exercise logic
   useEffect(() => {
     if (breathPhase === "idle") return;
-
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout>;
 
     if (breathPhase === "inhale") {
       timeout = setTimeout(() => setBreathPhase("hold"), 4000);
@@ -59,29 +66,24 @@ const SelfHelp = () => {
       timeout = setTimeout(() => setBreathPhase("exhale"), 7000);
     } else if (breathPhase === "exhale") {
       timeout = setTimeout(() => {
-      setBreathCount((prev) => prev + 1);
+        setBreathCount((prev) => prev + 1);
         if (breathCount < 2) {
           setBreathPhase("inhale");
         } else {
           setBreathPhase("idle");
           setBreathCount(0);
-          handleBreathingComplete();
+          if (canEarn) {
+            earnFromActivity({ amount: 1, activity: "Tibetan Bowl breathing exercise" });
+          }
         }
       }, 8000);
     }
-
     return () => clearTimeout(timeout);
-  }, [breathPhase, breathCount]);
+  }, [breathPhase, breathCount, canEarn, earnFromActivity]);
 
   const startBreathing = () => {
     setBreathCount(0);
     setBreathPhase("inhale");
-  };
-
-  const handleBreathingComplete = () => {
-    if (canEarn) {
-      earnFromActivity({ amount: 1, activity: "Tibetan Bowl breathing exercise" });
-    }
   };
 
   const handleWreckClick = () => {
@@ -103,6 +105,8 @@ const SelfHelp = () => {
       </DashboardLayout>
     );
   }
+
+  const completedIds = quests.filter((q) => getQuestStatus(q.id)).map((q) => q.id);
 
   return (
     <DashboardLayout>
@@ -142,13 +146,11 @@ const SelfHelp = () => {
         </div>
 
         {/* Tools Tabs */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant={activeTab === "quest" ? "default" : "outline"}
             onClick={() => setActiveTab("quest")}
-            className={`gap-2 ${
-              activeTab === "quest" ? "bg-gradient-to-br from-amber-500 to-orange-500" : ""
-            }`}
+            className={`gap-2 ${activeTab === "quest" ? "bg-gradient-to-br from-amber-500 to-orange-500" : ""}`}
           >
             <Award className="w-4 h-4" />
             Quest Cards
@@ -156,9 +158,7 @@ const SelfHelp = () => {
           <Button
             variant={activeTab === "wreck" ? "default" : "outline"}
             onClick={() => setActiveTab("wreck")}
-            className={`gap-2 ${
-              activeTab === "wreck" ? "bg-gradient-to-br from-red-500 to-pink-500" : ""
-            }`}
+            className={`gap-2 ${activeTab === "wreck" ? "bg-gradient-to-br from-red-500 to-pink-500" : ""}`}
           >
             <Zap className="w-4 h-4" />
             Wreck the Buddy
@@ -166,9 +166,7 @@ const SelfHelp = () => {
           <Button
             variant={activeTab === "tibetan" ? "default" : "outline"}
             onClick={() => setActiveTab("tibetan")}
-            className={`gap-2 ${
-              activeTab === "tibetan" ? "bg-gradient-to-br from-violet-500 to-purple-500" : ""
-            }`}
+            className={`gap-2 ${activeTab === "tibetan" ? "bg-gradient-to-br from-violet-500 to-purple-500" : ""}`}
           >
             <Music className="w-4 h-4" />
             Tibetan Bowl
@@ -178,6 +176,20 @@ const SelfHelp = () => {
         {/* Content */}
         {activeTab === "quest" && (
           <div className="space-y-6">
+            {/* 3D Quest Cards */}
+            <Suspense fallback={<ThreeDLoader />}>
+              <QuestCard3D
+                quests={quests.map((q) => ({ id: q.id, title: q.title, xp_reward: q.xp_reward }))}
+                completedIds={completedIds}
+                onComplete={(id) => {
+                  const quest = quests.find((q) => q.id === id);
+                  if (quest && !getQuestStatus(quest.id)) {
+                    completeQuest(quest);
+                  }
+                }}
+              />
+            </Suspense>
+
             {/* Daily Progress */}
             <div className="p-6 rounded-2xl bg-card border border-border">
               <div className="flex items-center justify-between mb-4">
@@ -201,7 +213,6 @@ const SelfHelp = () => {
             <div className="space-y-3">
               {quests.map((quest) => {
                 const isCompleted = getQuestStatus(quest.id);
-
                 return (
                   <div
                     key={quest.id}
@@ -232,9 +243,7 @@ const SelfHelp = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-sm font-medium text-primary">
-                          +{quest.xp_reward} XP
-                        </span>
+                        <span className="text-sm font-medium text-primary">+{quest.xp_reward} XP</span>
                         {!isCompleted && (
                           <Button
                             size="sm"
@@ -286,112 +295,98 @@ const SelfHelp = () => {
         )}
 
         {activeTab === "wreck" && (
-          <div className="p-8 rounded-2xl bg-card border border-border text-center">
-            <motion.div
-              className="w-32 h-32 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center mx-auto mb-6 cursor-pointer"
-              onClick={handleWreckClick}
-              animate={{
-                scale: wreckClicks > 0 ? [1, 1.1, 1] : 1,
-                rotate: wreckClicks > 0 ? [0, -5, 5, 0] : 0,
-              }}
-              transition={{ duration: 0.2 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              <Zap className="w-16 h-16 text-white" />
-            </motion.div>
-            <h2 className="text-2xl font-bold font-display mb-2">Wreck the Buddy</h2>
-            <p className="text-muted-foreground mb-4 max-w-md mx-auto">
-              Tap, shake, or click to release pent-up stress and frustration in a safe, controlled
-              way.
-            </p>
+          <div className="space-y-6">
+            {/* 3D Buddy */}
+            <Suspense fallback={<ThreeDLoader />}>
+              <WreckBuddy3D hitCount={wreckClicks} onHit={handleWreckClick} />
+            </Suspense>
 
-            {/* Progress bar */}
-            <div className="max-w-xs mx-auto mb-6">
-              <Progress value={(wreckClicks / 30) * 100} className="h-3" />
-              <p className="text-sm text-muted-foreground mt-2">{wreckClicks}/30 interactions</p>
-            </div>
-
-            <Button
-              size="lg"
-              className="bg-gradient-to-br from-red-500 to-pink-500 text-white"
-              onClick={handleWreckClick}
-            >
-              <Zap className="w-5 h-5 mr-2" />
-              Tap to Release ({30 - wreckClicks} left)
-            </Button>
-
-            {wreckClicks >= 30 && (
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-4 text-eternia-success font-semibold"
+            <div className="p-6 rounded-2xl bg-card border border-border text-center">
+              <h2 className="text-2xl font-bold font-display mb-2">Wreck the Buddy</h2>
+              <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                Click or tap the buddy to release pent-up stress. Hit it 30 times to earn 1 ECC!
+              </p>
+              <div className="max-w-xs mx-auto mb-4">
+                <Progress value={(wreckClicks / 30) * 100} className="h-3" />
+                <p className="text-sm text-muted-foreground mt-2">{wreckClicks}/30 interactions</p>
+              </div>
+              <Button
+                size="lg"
+                className="bg-gradient-to-br from-red-500 to-pink-500 text-white"
+                onClick={handleWreckClick}
               >
-                🎉 Great job releasing that energy! Feel better?
-              </motion.p>
-            )}
+                <Zap className="w-5 h-5 mr-2" />
+                Tap to Release ({30 - wreckClicks} left)
+              </Button>
+              {wreckClicks >= 30 && (
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 text-eternia-success font-semibold"
+                >
+                  🎉 Great job releasing that energy! Feel better?
+                </motion.p>
+              )}
+            </div>
           </div>
         )}
 
         {activeTab === "tibetan" && (
-          <div className="p-8 rounded-2xl bg-card border border-border text-center">
-            <motion.div
-              className="w-32 h-32 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mx-auto mb-6"
-              animate={{
-                scale: breathPhase === "inhale" ? 1.3 : breathPhase === "exhale" ? 0.9 : 1,
-              }}
-              transition={{ duration: breathPhase === "inhale" ? 4 : breathPhase === "exhale" ? 8 : 0 }}
-            >
-              <Wind className="w-16 h-16 text-white" />
-            </motion.div>
+          <div className="space-y-6">
+            {/* 3D Bowl */}
+            <Suspense fallback={<ThreeDLoader />}>
+              <TibetanBowl3D phase={breathPhase} />
+            </Suspense>
 
-            <h2 className="text-2xl font-bold font-display mb-2">Tibetan Bowl Breathing</h2>
-
-            <AnimatePresence mode="wait">
-              {breathPhase === "idle" ? (
-                <motion.div
-                  key="idle"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    A guided 4-7-8 breathing exercise using the soothing rhythm of Tibetan singing
-                    bowls. Perfect for quick stress relief.
-                  </p>
-                  <Button
-                    size="lg"
-                    className="bg-gradient-to-br from-violet-500 to-purple-500 text-white"
-                    onClick={startBreathing}
+            <div className="p-6 rounded-2xl bg-card border border-border text-center">
+              <h2 className="text-2xl font-bold font-display mb-2">Tibetan Bowl Breathing</h2>
+              <AnimatePresence mode="wait">
+                {breathPhase === "idle" ? (
+                  <motion.div
+                    key="idle"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                   >
-                    <Play className="w-5 h-5 mr-2" />
-                    Begin Breathing
-                  </Button>
-                  <p className="text-sm text-muted-foreground mt-4">Duration: ~2 minutes</p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key={breathPhase}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="py-4"
-                >
-                  <p className="text-3xl font-bold font-display text-primary mb-2">
-                    {breathPhase === "inhale" && "Breathe In..."}
-                    {breathPhase === "hold" && "Hold..."}
-                    {breathPhase === "exhale" && "Breathe Out..."}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {breathPhase === "inhale" && "4 seconds"}
-                    {breathPhase === "hold" && "7 seconds"}
-                    {breathPhase === "exhale" && "8 seconds"}
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-4">
-                    Cycle {breathCount + 1} of 3
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                      A guided 4-7-8 breathing exercise using the soothing rhythm of Tibetan singing
+                      bowls. Perfect for quick stress relief.
+                    </p>
+                    <Button
+                      size="lg"
+                      className="bg-gradient-to-br from-violet-500 to-purple-500 text-white"
+                      onClick={startBreathing}
+                    >
+                      <Play className="w-5 h-5 mr-2" />
+                      Begin Breathing
+                    </Button>
+                    <p className="text-sm text-muted-foreground mt-4">Duration: ~2 minutes</p>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key={breathPhase}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="py-4"
+                  >
+                    <p className="text-3xl font-bold font-display text-primary mb-2">
+                      {breathPhase === "inhale" && "Breathe In..."}
+                      {breathPhase === "hold" && "Hold..."}
+                      {breathPhase === "exhale" && "Breathe Out..."}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {breathPhase === "inhale" && "4 seconds"}
+                      {breathPhase === "hold" && "7 seconds"}
+                      {breathPhase === "exhale" && "8 seconds"}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-4">
+                      Cycle {breathCount + 1} of 3
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         )}
       </div>
