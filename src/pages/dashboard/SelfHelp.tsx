@@ -27,6 +27,7 @@ const SelfHelp = () => {
   const [breathCount, setBreathCount] = useState(0);
   const [wreckClicks, setWreckClicks] = useState(0);
 
+  const { earnFromActivity, canEarn, remainingToday, dailyEarned } = useEccEarn();
   const { profile, creditBalance } = useAuth();
   const {
     quests,
