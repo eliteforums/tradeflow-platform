@@ -128,6 +128,20 @@ const MobileProfile = () => {
         </div>
 
         <AccountDeletion />
+
+        {/* Logout */}
+        <Button
+          variant="destructive"
+          className="w-full h-12 text-sm font-semibold gap-2"
+          onClick={async () => {
+            await signOut();
+            toast.success("Logged out successfully");
+            navigate("/");
+          }}
+        >
+          <LogOut className="w-5 h-5" />
+          Log Out
+        </Button>
       </div>
     </DashboardLayout>
   );
