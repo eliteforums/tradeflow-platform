@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { User, Shield, Bell, Lock, Building2, Calendar, Coins, CheckCircle, Settings, ChevronRight, Save, Loader2, Phone, UserCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { User, Shield, Bell, Lock, Building2, Calendar, Coins, CheckCircle, Settings, ChevronRight, Save, Loader2, Phone, UserCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
