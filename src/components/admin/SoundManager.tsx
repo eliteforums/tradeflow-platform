@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Music, Plus, Trash2, Edit2, Save, X, Loader2 } from "lucide-react";
+import { Music, Plus, Trash2, Edit2, Save, X, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,6 +30,9 @@ export default function SoundManager() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<SoundForm>(EMPTY_FORM);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const { data: sounds = [], isLoading } = useQuery({
@@ -40,6 +43,48 @@ export default function SoundManager() {
       return data;
     },
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("audio/")) {
+      toast.error("Please select an audio file");
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("File must be under 20MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("sound-files").upload(fileName, file);
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage.from("sound-files").getPublicUrl(fileName);
+      setForm((p) => ({ ...p, file_url: urlData.publicUrl }));
+      setUploadedFileName(file.name);
+
+      // Auto-detect duration
+      const audio = new Audio(urlData.publicUrl);
+      audio.addEventListener("loadedmetadata", () => {
+        if (audio.duration && isFinite(audio.duration)) {
+          setForm((p) => ({ ...p, duration_sec: Math.round(audio.duration).toString() }));
+        }
+      });
+
+      toast.success("Audio uploaded!");
+    } catch (err: any) {
+      toast.error(err.message || "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -83,7 +128,7 @@ export default function SoundManager() {
     onError: (error: any) => toast.error(error.message),
   });
 
-  const resetForm = () => { setForm(EMPTY_FORM); setEditingId(null); setShowForm(false); };
+  const resetForm = () => { setForm(EMPTY_FORM); setEditingId(null); setShowForm(false); setUploadedFileName(null); };
 
   const startEdit = (sound: any) => {
     setForm({
@@ -93,6 +138,7 @@ export default function SoundManager() {
     });
     setEditingId(sound.id);
     setShowForm(true);
+    setUploadedFileName(sound.file_url ? "Existing file" : null);
   };
 
   return (
@@ -129,7 +175,25 @@ export default function SoundManager() {
             <Input placeholder="Emoji" value={form.cover_emoji} onChange={(e) => setForm((p) => ({ ...p, cover_emoji: e.target.value }))} className="h-9" />
           </div>
           <Input placeholder="Description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} className="h-9" />
-          <Input placeholder="Audio URL" value={form.file_url} onChange={(e) => setForm((p) => ({ ...p, file_url: e.target.value }))} className="h-9" />
+
+          {/* Upload Audio */}
+          <div className="space-y-1.5">
+            <input ref={fileInputRef} type="file" accept="audio/*" className="hidden" onChange={handleFileUpload} />
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2 h-9 text-xs"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+              {uploading ? "Uploading..." : uploadedFileName || "Upload Audio File"}
+            </Button>
+            {form.file_url && (
+              <p className="text-[10px] text-muted-foreground truncate px-1">✓ {form.file_url.split("/").pop()}</p>
+            )}
+          </div>
+
           <Button onClick={() => saveMutation.mutate()} disabled={!form.title || saveMutation.isPending} className="w-full gap-1.5 h-8 text-xs" size="sm">
             {saveMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             {editingId ? "Update" : "Add"}
