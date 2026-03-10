@@ -174,6 +174,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <EterniaLogo size={22} />
           <span className="text-sm font-bold font-display">Eternia</span>
         </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleLogout}
+          className="h-9 w-9 text-muted-foreground hover:text-destructive"
+        >
+          <LogOut className="w-4.5 h-4.5" />
+        </Button>
       </header>
 
       {/* Mobile Bottom Navigation — larger touch targets */}
