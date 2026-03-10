@@ -33,6 +33,9 @@ export default function RoleManager() {
         .from("profiles")
         .update({
           role: selectedRole as any,
+          // Auto-verify experts and interns since admin is onboarding them
+          is_verified: selectedRole === "expert" || selectedRole === "intern" ? true : undefined,
+          is_active: true,
           ...(institutionId ? { institution_id: institutionId } : {}),
         })
         .eq("id", profile.id);
