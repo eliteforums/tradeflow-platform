@@ -1,9 +1,10 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileAppointments from "@/components/mobile/MobileAppointments";
+import ExpertDashboard from "@/pages/dashboard/ExpertDashboard";
 
 import { useState } from "react";
 import {
-  Calendar, Clock, User, Video, Phone, CheckCircle, Filter, Search, Coins, X, Loader2,
+  Calendar, Clock, User, Video, Phone, CheckCircle, Search, Coins, X, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,14 +20,17 @@ import { format } from "date-fns";
 
 const Appointments = () => {
   const isMobile = useIsMobile();
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "video" });
   const [bookingDialog, setBookingDialog] = useState<{ open: boolean; expert?: any; slot?: any }>({ open: false });
   const [sessionType, setSessionType] = useState<"video" | "audio">("video");
 
-  const { profile } = useAuth();
   const { balance } = useCredits();
   const { experts, slots, upcomingAppointments, pastAppointments, isLoading, bookAppointment, cancelAppointment, isBooking } = useAppointments();
+
+  // If user is an expert, show Expert Dashboard instead
+  if (profile?.role === "expert") return <ExpertDashboard />;
 
   const handleJoinCall = (type: string) => setCallModal({ open: true, mode: type === "video" ? "video" : "audio" });
   const handleBookSlot = (expert: any, slot: any) => setBookingDialog({ open: true, expert, slot });

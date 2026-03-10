@@ -4,20 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import VideoCallModal from "@/components/videosdk/VideoCallModal";
+import MobileExpertDashboard from "@/components/mobile/MobileExpertDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppointments } from "@/hooks/useAppointments";
 import { useCredits } from "@/hooks/useCredits";
 import { format } from "date-fns";
 
 const MobileAppointments = () => {
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "video" });
   const [bookingDialog, setBookingDialog] = useState<{ open: boolean; expert?: any; slot?: any }>({ open: false });
   const [sessionType, setSessionType] = useState<"video" | "audio">("video");
 
-  const { profile } = useAuth();
   const { balance } = useCredits();
   const { experts, slots, upcomingAppointments, pastAppointments, isLoading, bookAppointment, cancelAppointment, isBooking } = useAppointments();
+
+  // If user is an expert, show expert dashboard
+  if (profile?.role === "expert") return <MobileExpertDashboard />;
 
   const handleBookSlot = (expert: any, slot: any) => setBookingDialog({ open: true, expert, slot });
   const confirmBooking = () => {
@@ -42,7 +46,6 @@ const MobileAppointments = () => {
           </div>
         </div>
 
-        {/* My Appointments */}
         <div className="rounded-2xl bg-card border border-border/50 p-4">
           <h2 className="text-sm font-semibold font-display mb-3">My Appointments</h2>
           <div className="flex gap-2 mb-4">
@@ -90,7 +93,6 @@ const MobileAppointments = () => {
           </div>
         </div>
 
-        {/* Experts */}
         <div>
           <h2 className="text-sm font-semibold font-display mb-3">Available Experts</h2>
           {experts.length === 0 ? (
