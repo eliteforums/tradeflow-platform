@@ -1,19 +1,23 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBlackBox from "@/components/mobile/MobileBlackBox";
 import { useState } from "react";
-import { Box, Plus, Lock, Mic, Type, Send, Clock, Shield, AlertTriangle, Trash2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Plus, Lock, Mic, Type, Send, Clock, Shield, AlertTriangle, Trash2, Eye, EyeOff, Loader2, Phone, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import VideoCallModal from "@/components/videosdk/VideoCallModal";
 import { useBlackBox } from "@/hooks/useBlackBox";
+import { useAuth } from "@/contexts/AuthContext";
 
 const BlackBox = () => {
   const isMobile = useIsMobile();
   const [newEntry, setNewEntry] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [showEntries, setShowEntries] = useState(true);
+  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "video" });
   const { entries, isLoading, createEntry, deleteEntry, isCreating } = useBlackBox();
+  const { profile } = useAuth();
 
   const handleSaveEntry = () => {
     if (!newEntry.trim()) return;
@@ -31,7 +35,22 @@ const BlackBox = () => {
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto space-y-6">
-        <div><h1 className="text-3xl font-bold font-display mb-1">BlackBox</h1><p className="text-base text-muted-foreground">A safe space for anonymous emotional expression</p></div>
+        <div><h1 className="text-3xl font-bold font-display mb-1">BlackBox</h1><p className="text-base text-muted-foreground">A safe space for anonymous emotional expression & on-call support</p></div>
+
+        {/* Talk Now */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30">
+          <div className="flex items-start gap-3">
+            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0"><Phone className="w-6 h-6 text-primary" /></div>
+            <div className="flex-1">
+              <h2 className="font-semibold font-display text-base mb-1">Talk to Someone Now</h2>
+              <p className="text-sm text-muted-foreground mb-3">Connect anonymously with a professional — 24/7 on-call support.</p>
+              <div className="flex gap-2">
+                <Button className="h-10 text-sm gap-1.5 px-5" onClick={() => setCallModal({ open: true, mode: "audio" })}><Phone className="w-4 h-4" />Voice Call</Button>
+                <Button variant="outline" className="h-10 text-sm gap-1.5 px-5" onClick={() => setCallModal({ open: true, mode: "video" })}><Video className="w-4 h-4" />Video Call</Button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="p-4 rounded-xl bg-gradient-eternia-subtle border border-border">
           <div className="flex items-start gap-3"><Shield className="w-5 h-5 text-primary shrink-0 mt-0.5" /><div><h3 className="font-semibold text-sm mb-0.5">Your Privacy is Protected</h3><p className="text-sm text-muted-foreground leading-relaxed">All entries are encrypted. Private entries are never scanned.</p></div></div>
@@ -78,6 +97,8 @@ const BlackBox = () => {
 
         <div className="p-4 rounded-xl border border-border bg-muted/20"><p className="text-sm text-muted-foreground text-center leading-relaxed">If you're in crisis, our AI may suggest connecting with a professional.</p></div>
       </div>
+
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Anonymous"} mode={callModal.mode} />
     </DashboardLayout>
   );
 };
