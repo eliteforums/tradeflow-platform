@@ -90,29 +90,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (session?.user) {
           // Use setTimeout to avoid Supabase trigger race conditions
-          setTimeout(() => {
-            if (mounted) loadUserData(session.user.id);
+          setTimeout(async () => {
+            if (mounted) {
+              await loadUserData(session.user.id);
+              if (mounted) setIsLoading(false);
+            }
           }, 100);
         } else {
           setProfile(null);
           setCreditBalance(0);
+          setIsLoading(false);
         }
-
-        setIsLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        loadUserData(session.user.id);
+        await loadUserData(session.user.id);
       }
 
-      setIsLoading(false);
+      if (mounted) setIsLoading(false);
     });
 
     return () => {
