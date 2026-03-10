@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 
 const MobileProfile = () => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, signOut } = useAuth();
+  const navigate = useNavigate();
   const { balance } = useCredits();
   const [bio, setBio] = useState(profile?.bio || "");
   const [emergencyName, setEmergencyName] = useState("");
