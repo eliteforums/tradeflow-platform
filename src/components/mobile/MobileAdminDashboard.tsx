@@ -49,26 +49,47 @@ const MobileAdminDashboard = () => {
     { id: "audit", label: "Audit", icon: FileText },
   ];
 
+  const roleCounts = {
+    admin: members.filter((m) => m.role === "admin").length,
+    spoc: members.filter((m) => m.role === "spoc").length,
+    expert: members.filter((m) => m.role === "expert").length,
+    intern: members.filter((m) => m.role === "intern").length,
+    student: members.filter((m) => m.role === "student").length,
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-5 pb-24">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div><h1 className="text-xl font-bold font-display">Admin</h1><p className="text-sm text-muted-foreground">{profile?.role === "admin" ? "Super Admin" : "SPOC"}</p></div>
-          <Button variant="outline" size="icon" className="h-10 w-10"><Settings className="w-5 h-5" /></Button>
+          <h1 className="text-lg font-bold font-display">Super Admin Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-9 w-9"><Settings className="w-4 h-4" /></Button>
+          </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-2">
+        {/* Control Center Banner */}
+        <div className="rounded-2xl p-5 border border-primary/20" style={{ background: "linear-gradient(135deg, hsl(var(--eternia-teal) / 0.15), hsl(var(--eternia-lavender) / 0.15))" }}>
+          <h2 className="text-base font-bold font-display mb-1">Super Admin Control Center</h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">Full system overview — all users, all data, all modules</p>
+        </div>
+
+        {/* Role Count Cards - 2 col grid */}
+        <div className="grid grid-cols-2 gap-3">
           {[
-            { label: "Students", value: stats.totalStudents, icon: Users, color: "text-primary" },
-            { label: "Sessions", value: stats.totalSessions, icon: Activity, color: "text-primary" },
-            { label: "Credits", value: stats.totalCreditsIssued, icon: Coins, color: "text-eternia-warning" },
-            { label: "Active", value: stats.activeToday, icon: TrendingUp, color: "text-eternia-success" },
+            { label: "Super Admins", value: roleCounts.admin, icon: Shield, iconBg: "bg-destructive/10", iconColor: "text-destructive" },
+            { label: "SPOCs", value: roleCounts.spoc, icon: Shield, iconBg: "bg-primary/10", iconColor: "text-primary" },
+            { label: "Experts", value: roleCounts.expert, icon: CheckCircle, iconBg: "bg-eternia-success/10", iconColor: "text-eternia-success" },
+            { label: "Interns", value: roleCounts.intern, icon: Users, iconBg: "bg-eternia-warning/10", iconColor: "text-eternia-warning" },
+            { label: "Students", value: roleCounts.student, icon: Users, iconBg: "bg-eternia-lavender/10", iconColor: "text-eternia-lavender" },
+            { label: "Sessions", value: stats.totalSessions, icon: Activity, iconBg: "bg-primary/10", iconColor: "text-primary" },
           ].map((s) => (
-            <div key={s.label} className="p-3 rounded-2xl bg-card border border-border/50">
-              <s.icon className={`w-4 h-4 ${s.color} mb-1`} />
-              <p className="text-base font-bold leading-none">{s.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+            <div key={s.label} className="p-4 rounded-2xl bg-card border border-border/50">
+              <div className={`w-10 h-10 rounded-xl ${s.iconBg} flex items-center justify-center mb-3`}>
+                <s.icon className={`w-5 h-5 ${s.iconColor}`} />
+              </div>
+              <p className="text-2xl font-bold leading-none">{s.value}</p>
+              <p className="text-xs text-muted-foreground mt-1.5">{s.label}</p>
             </div>
           ))}
         </div>
