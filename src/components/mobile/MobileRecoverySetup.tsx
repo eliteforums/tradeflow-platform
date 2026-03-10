@@ -26,7 +26,8 @@ const MobileRecoverySetup = () => {
   const handleSave = async () => {
     if (!user) return; setIsSaving(true);
     try {
-      await supabase.from("recovery_credentials").upsert({ user_id: user.id, fragment_pairs_encrypted: JSON.stringify(pairs), emoji_pattern_encrypted: JSON.stringify(emojis), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+      const { error } = await supabase.from("recovery_credentials").upsert({ user_id: user.id, fragment_pairs_encrypted: JSON.stringify(pairs), emoji_pattern_encrypted: JSON.stringify(emojis), updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+      if (error) throw error;
       setIsComplete(true); toast.success("Recovery setup complete!");
     } catch (e: any) { toast.error(e.message); } finally { setIsSaving(false); }
   };
