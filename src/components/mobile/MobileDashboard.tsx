@@ -1,7 +1,7 @@
 import { Link, Navigate } from "react-router-dom";
 import {
   Calendar, MessageCircle, Box, Music, Sparkles, Coins,
-  ArrowRight, Award, Heart, AlertCircle, Sunrise, Sun, Moon,
+  ArrowRight, Award, Heart, AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
@@ -49,57 +49,57 @@ const MobileDashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 pb-24">
+      <div className="space-y-5 pb-24">
         {/* Greeting */}
         <div>
-          <p className="text-muted-foreground text-xs">{greeting.emoji} {greeting.text}</p>
-          <h1 className="text-lg font-bold font-display">{profile?.username || "friend"}</h1>
+          <p className="text-muted-foreground text-sm">{greeting.emoji} {greeting.text}</p>
+          <h1 className="text-xl font-bold font-display">{profile?.username || "friend"}</h1>
         </div>
 
         {/* Motivational */}
-        <div className="rounded-xl p-3" style={{ background: "linear-gradient(135deg, hsl(var(--eternia-teal) / 0.12), hsl(var(--eternia-lavender) / 0.12))" }}>
-          <Heart className="w-4 h-4 text-primary mb-1.5" />
-          <p className="text-xs text-foreground/90 leading-relaxed">{quote}</p>
+        <div className="rounded-2xl p-4" style={{ background: "linear-gradient(135deg, hsl(var(--eternia-teal) / 0.12), hsl(var(--eternia-lavender) / 0.12))" }}>
+          <Heart className="w-5 h-5 text-primary mb-2" />
+          <p className="text-sm text-foreground/90 leading-relaxed">{quote}</p>
         </div>
 
         {/* Low Balance */}
         {balance < 5 && (
-          <Link to="/dashboard/credits" className="flex items-center gap-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 active:scale-[0.97] transition-transform">
-            <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+          <Link to="/dashboard/credits" className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 active:scale-[0.97] transition-transform">
+            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium">Your care energy is low.</p>
-              <p className="text-[10px] text-muted-foreground">Earn credits through self-help.</p>
+              <p className="text-sm font-medium">Your care energy is low.</p>
+              <p className="text-xs text-muted-foreground">Earn credits through self-help.</p>
             </div>
-            <ArrowRight className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <ArrowRight className="w-4 h-4 text-amber-500 shrink-0" />
           </Link>
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-xl bg-card p-2.5 text-center border border-border/50">
-            <p className="text-base font-bold">{profile?.streak_days || 0}</p>
-            <p className="text-[10px] text-muted-foreground">Streak 🔥</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-2xl bg-card p-4 text-center border border-border/50">
+            <p className="text-xl font-bold">{profile?.streak_days || 0}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Streak 🔥</p>
           </div>
-          <div className="rounded-xl bg-card p-2.5 text-center border border-border/50">
-            <p className="text-base font-bold">{balance}</p>
-            <p className="text-[10px] text-muted-foreground">Credits 💎</p>
+          <div className="rounded-2xl bg-card p-4 text-center border border-border/50">
+            <p className="text-xl font-bold">{balance}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Credits 💎</p>
           </div>
-          <div className="rounded-xl bg-card p-2.5 text-center border border-border/50">
-            <p className="text-base font-bold">{profile?.total_sessions || 0}</p>
-            <p className="text-[10px] text-muted-foreground">Sessions 📊</p>
+          <div className="rounded-2xl bg-card p-4 text-center border border-border/50">
+            <p className="text-xl font-bold">{profile?.total_sessions || 0}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Sessions 📊</p>
           </div>
         </div>
 
         {/* Quick Tools */}
         <div>
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Quick Tools</p>
-          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quick Tools</p>
+          <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
             {quickTools.map((tool) => (
-              <Link key={tool.name} to={tool.path} className="flex flex-col items-center gap-1 shrink-0">
-                <div className="w-12 h-12 rounded-xl bg-card border border-border/50 flex items-center justify-center active:scale-95 transition-transform">
-                  <tool.icon className={`w-5 h-5 ${tool.color}`} />
+              <Link key={tool.name} to={tool.path} className="flex flex-col items-center gap-1.5 shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-card border border-border/50 flex items-center justify-center active:scale-95 transition-transform">
+                  <tool.icon className={`w-6 h-6 ${tool.color}`} />
                 </div>
-                <span className="text-[9px] text-muted-foreground text-center w-12 truncate">{tool.name}</span>
+                <span className="text-[11px] text-muted-foreground text-center w-14 truncate">{tool.name}</span>
               </Link>
             ))}
           </div>
@@ -107,38 +107,31 @@ const MobileDashboard = () => {
 
         {/* Portals */}
         <div>
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Your Space</p>
-          <div className="grid grid-cols-2 gap-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Your Space</p>
+          <div className="grid grid-cols-2 gap-3">
             {portals.map((p) => (
-              <Link key={p.path} to={p.path} className="rounded-xl bg-card border border-border/40 p-3 active:scale-[0.97] transition-transform">
-                <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${p.gradient} flex items-center justify-center mb-2`}>
-                  <p.icon className="w-4 h-4 text-white" />
+              <Link key={p.path} to={p.path} className="rounded-2xl bg-card border border-border/40 p-4 active:scale-[0.97] transition-transform">
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center mb-3`}>
+                  <p.icon className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="text-xs font-semibold font-display mb-0.5">{p.title}</h3>
-                <p className="text-[10px] text-muted-foreground leading-snug">{p.desc}</p>
+                <h3 className="text-sm font-semibold font-display mb-0.5">{p.title}</h3>
+                <p className="text-xs text-muted-foreground leading-snug">{p.desc}</p>
               </Link>
             ))}
           </div>
         </div>
 
         {/* Self-Help Banner */}
-        <Link to="/dashboard/self-help" className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border/40 active:scale-[0.98] transition-transform">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-white" />
+        <Link to="/dashboard/self-help" className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border/40 active:scale-[0.98] transition-transform">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0">
+            <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-xs font-semibold font-display">Self-Help & Wellbeing</h3>
-            <p className="text-[10px] text-muted-foreground">Quest cards, breathing & more</p>
+            <h3 className="text-sm font-semibold font-display">Self-Help & Wellbeing</h3>
+            <p className="text-xs text-muted-foreground">Quest cards, breathing & more</p>
           </div>
-          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
         </Link>
-
-        {/* Tip */}
-        <div className="rounded-xl bg-muted/30 p-3">
-          <p className="text-[10px] text-muted-foreground leading-relaxed">
-            <span className="font-medium text-foreground/80">💡 Tip:</span> Complete daily quests to earn XP and build your streak!
-          </p>
-        </div>
       </div>
     </DashboardLayout>
   );
