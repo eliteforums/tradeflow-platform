@@ -29,10 +29,13 @@ export default function RoleManager() {
         .eq("username", username.trim())
         .single();
       if (profileErr || !profile) throw new Error("User not found.");
+      const isExpertOrIntern = selectedRole === "expert" || selectedRole === "intern";
       const { error: updateErr } = await supabase
         .from("profiles")
         .update({
           role: selectedRole as any,
+          // Auto-verify and activate experts/interns since admin onboards them
+          ...(isExpertOrIntern ? { is_verified: true, is_active: true } : { is_active: true }),
           ...(institutionId ? { institution_id: institutionId } : {}),
         })
         .eq("id", profile.id);
