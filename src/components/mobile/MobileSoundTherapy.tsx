@@ -1,10 +1,21 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Clock, Loader2, ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Loader2, ChevronDown, Heart } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useSoundTherapy } from "@/hooks/useSoundTherapy";
+import { motion, AnimatePresence } from "framer-motion";
+
+const gradients = [
+  "from-cyan-500 to-blue-600",
+  "from-violet-500 to-purple-600",
+  "from-emerald-500 to-teal-600",
+  "from-pink-500 to-rose-600",
+  "from-amber-500 to-orange-600",
+  "from-indigo-500 to-blue-700",
+  "from-fuchsia-500 to-pink-600",
+  "from-teal-400 to-cyan-600",
+];
 
 const MobileSoundTherapy = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -14,6 +25,7 @@ const MobileSoundTherapy = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
   const [showExpanded, setShowExpanded] = useState(false);
+  const [liked, setLiked] = useState<Set<string>>(new Set());
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { tracks, categories, isLoading, formatDuration } = useSoundTherapy();
@@ -39,123 +51,247 @@ const MobileSoundTherapy = () => {
   const handleTrackSelect = useCallback((i: number) => { setCurrentTrack(i); setIsPlaying(true); setProgress([0]); }, []);
   const handleNext = useCallback(() => { setCurrentTrack((p) => p + 1 < filteredTracks.length ? (setProgress([0]), p + 1) : p); }, [filteredTracks.length]);
   const handlePrev = useCallback(() => { setCurrentTrack((p) => p > 0 ? (setProgress([0]), p - 1) : p); }, []);
+  const toggleLike = (id: string) => setLiked(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></DashboardLayout>;
 
   const hasPlayer = !!currentTrackData;
 
+  // Expanded full-screen player
   const expandedPlayer = showExpanded && currentTrackData
     ? createPortal(
-        <div className="fixed inset-0 z-[100] bg-background flex flex-col" style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-          <div className="flex items-center justify-between px-5 py-4">
-            <button onClick={() => setShowExpanded(false)} className="text-muted-foreground"><ChevronDown className="w-7 h-7" /></button>
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Now Playing</p>
-            <div className="w-7" />
+        <motion.div
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+          className="fixed inset-0 z-[100] bg-background flex flex-col"
+          style={{ paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        >
+          {/* Background glow */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[120%] aspect-square bg-gradient-to-b ${gradients[currentTrack % gradients.length]} opacity-15 blur-[100px] rounded-full`} />
           </div>
-          <div className="flex-1 flex items-center justify-center px-8">
-            <div className="w-56 h-56 rounded-3xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-7xl shadow-2xl shadow-cyan-500/20">
-              {currentTrackData.cover_emoji || "🎵"}
+
+          <div className="relative z-10 flex flex-col flex-1">
+            {/* Top bar */}
+            <div className="flex items-center justify-between px-5 py-4">
+              <button onClick={() => setShowExpanded(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-muted/30 active:scale-90">
+                <ChevronDown className="w-6 h-6 text-foreground" />
+              </button>
+              <p className="text-xs text-muted-foreground font-semibold uppercase tracking-widest">Now Playing</p>
+              <button onClick={() => toggleLike(currentTrackData.id)} className="w-10 h-10 flex items-center justify-center rounded-full bg-muted/30 active:scale-90">
+                <Heart className={`w-5 h-5 ${liked.has(currentTrackData.id) ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
+              </button>
             </div>
-          </div>
-          <div className="px-6 pb-8 space-y-5">
-            <div className="text-center">
-              <h2 className="text-lg font-bold font-display truncate">{currentTrackData.title}</h2>
-              <p className="text-sm text-muted-foreground">{currentTrackData.artist || "Unknown"}</p>
+
+            {/* Album art */}
+            <div className="flex-1 flex items-center justify-center px-10">
+              <motion.div
+                animate={{ scale: isPlaying ? 1 : 0.92 }}
+                transition={{ type: "spring", damping: 20 }}
+                className={`w-full max-w-[280px] aspect-square rounded-3xl bg-gradient-to-br ${gradients[currentTrack % gradients.length]} flex items-center justify-center shadow-2xl`}
+              >
+                <span className="text-8xl drop-shadow-lg">{currentTrackData.cover_emoji || "🎵"}</span>
+              </motion.div>
             </div>
-            <div>
-              <Slider value={progress} onValueChange={setProgress} max={100} step={1} className="mb-2" />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{formatDuration(Math.floor((progress[0] / 100) * (currentTrackData.duration_sec || 0)))}</span>
-                <span>{formatDuration(currentTrackData.duration_sec)}</span>
+
+            {/* Controls */}
+            <div className="px-7 pb-10 space-y-6">
+              <div>
+                <h2 className="text-xl font-bold font-display truncate">{currentTrackData.title}</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">{currentTrackData.artist || "Unknown Artist"}</p>
+              </div>
+
+              <div>
+                <Slider value={progress} onValueChange={setProgress} max={100} step={0.5} className="mb-2" />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{formatDuration(Math.floor((progress[0] / 100) * (currentTrackData.duration_sec || 0)))}</span>
+                  <span>{formatDuration(currentTrackData.duration_sec)}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-8">
+                <button onClick={handlePrev} className="text-foreground/70 active:scale-90 transition-transform">
+                  <SkipBack className="w-7 h-7" />
+                </button>
+                <button
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className="w-18 h-18 rounded-full bg-foreground text-background flex items-center justify-center active:scale-95 shadow-xl"
+                  style={{ width: 72, height: 72 }}
+                >
+                  {isPlaying ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+                </button>
+                <button onClick={handleNext} className="text-foreground/70 active:scale-90 transition-transform">
+                  <SkipForward className="w-7 h-7" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button onClick={() => setIsMuted(!isMuted)}>
+                  {isMuted ? <VolumeX className="w-4 h-4 text-muted-foreground" /> : <Volume2 className="w-4 h-4 text-muted-foreground" />}
+                </button>
+                <Slider value={isMuted ? [0] : volume} onValueChange={setVolume} max={100} step={1} className="flex-1" />
               </div>
             </div>
-            <div className="flex items-center justify-center gap-6">
-              <button onClick={handlePrev} className="text-muted-foreground active:scale-90"><SkipBack className="w-7 h-7" /></button>
-              <button onClick={() => setIsPlaying(!isPlaying)} className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center active:scale-95 shadow-lg shadow-primary/30">
-                {isPlaying ? <Pause className="w-7 h-7" /> : <Play className="w-7 h-7 ml-0.5" />}
-              </button>
-              <button onClick={handleNext} className="text-muted-foreground active:scale-90"><SkipForward className="w-7 h-7" /></button>
-            </div>
-            <div className="flex items-center gap-3">
-              <button onClick={() => setIsMuted(!isMuted)}>{isMuted ? <VolumeX className="w-4 h-4 text-muted-foreground" /> : <Volume2 className="w-4 h-4 text-muted-foreground" />}</button>
-              <Slider value={isMuted ? [0] : volume} onValueChange={setVolume} max={100} step={1} className="flex-1" />
-            </div>
           </div>
-        </div>,
+        </motion.div>,
         document.body
       )
     : null;
 
   return (
     <DashboardLayout>
-      {expandedPlayer}
+      <AnimatePresence>{expandedPlayer}</AnimatePresence>
       <div className="space-y-5 pb-24">
+        {/* Header */}
         <div>
-          <h1 className="text-xl font-bold font-display">Sound Therapy</h1>
-          <p className="text-sm text-muted-foreground">Curated audio for meditation & focus</p>
+          <h1 className="text-2xl font-bold font-display">Sounds</h1>
+          <p className="text-sm text-muted-foreground">Curated audio for healing & focus</p>
         </div>
 
-        {/* Categories */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <button onClick={() => setActiveCategory("all")} className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium ${activeCategory === "all" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"}`}>All</button>
+        {/* Categories as horizontal pills */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4">
+          <button
+            onClick={() => setActiveCategory("all")}
+            className={`shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
+              activeCategory === "all"
+                ? "bg-foreground text-background"
+                : "bg-muted/40 text-muted-foreground active:scale-95"
+            }`}
+          >
+            All
+          </button>
           {categories.map((cat) => (
-            <button key={cat} onClick={() => setActiveCategory(cat)} className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium ${activeCategory === cat ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"}`}>
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                activeCategory === cat
+                  ? "bg-foreground text-background"
+                  : "bg-muted/40 text-muted-foreground active:scale-95"
+              }`}
+            >
               {cat.charAt(0).toUpperCase() + cat.slice(1)}
             </button>
           ))}
         </div>
 
-        {/* Track List */}
-        <div className={`space-y-2 ${hasPlayer ? "pb-20" : ""}`}>
-          {filteredTracks.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground"><Music className="w-10 h-10 mx-auto mb-3 opacity-50" /><p className="text-sm">No tracks</p></div>
-          ) : filteredTracks.map((track, index) => {
-            const isActive = currentTrack === index && isPlaying;
-            return (
-              <button key={track.id} onClick={() => handleTrackSelect(index)}
-                className={`w-full p-3 rounded-2xl text-left flex items-center gap-3 active:scale-[0.98] ${isActive ? "bg-primary/10 border-primary/50" : "bg-card"} border border-border/50`}>
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-xl shrink-0">{track.cover_emoji || "🎵"}</div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-sm truncate">{track.title}</h3>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                    <span className="truncate">{track.artist || "Unknown"}</span>
-                    <span>·</span>
-                    <span className="shrink-0 flex items-center gap-1"><Clock className="w-3 h-3" />{formatDuration(track.duration_sec)}</span>
-                  </div>
-                </div>
-                <div className="shrink-0">
-                  {isActive ? (
-                    <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center"><Pause className="w-4 h-4 text-primary-foreground" /></div>
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center"><Play className="w-4 h-4 ml-0.5" /></div>
-                  )}
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        {/* Featured / Hero Card for first track */}
+        {filteredTracks.length > 0 && (
+          <button
+            onClick={() => handleTrackSelect(0)}
+            className="w-full text-left active:scale-[0.98] transition-transform"
+          >
+            <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${gradients[0]} p-6 min-h-[180px] flex flex-col justify-end`}>
+              <div className="absolute top-4 right-4 text-6xl opacity-30">{filteredTracks[0].cover_emoji || "🎵"}</div>
+              <div className="relative z-10">
+                <p className="text-white/70 text-xs font-semibold uppercase tracking-wider mb-1">Featured</p>
+                <h2 className="text-white text-xl font-bold font-display">{filteredTracks[0].title}</h2>
+                <p className="text-white/70 text-sm mt-0.5">{filteredTracks[0].artist || "Unknown Artist"}</p>
+              </div>
+              <div className="absolute bottom-5 right-5 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                {currentTrack === 0 && isPlaying ? <Pause className="w-5 h-5 text-white" /> : <Play className="w-5 h-5 text-white ml-0.5" />}
+              </div>
+            </div>
+          </button>
+        )}
 
-        {/* Mini Player */}
-        {hasPlayer && !showExpanded && (
-          <div className="fixed left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border/40" style={{ bottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}>
-            <div className="h-0.5 bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${progress[0]}%` }} /></div>
-            <button onClick={() => setShowExpanded(true)} className="w-full flex items-center gap-3 px-4 py-3 active:bg-muted/30">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-lg shrink-0">{currentTrackData.cover_emoji || "🎵"}</div>
-              <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium truncate">{currentTrackData.title}</p>
-                <p className="text-xs text-muted-foreground truncate">{currentTrackData.artist || "Unknown"}</p>
-              </div>
-              <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handlePrev}><SkipBack className="w-4 h-4" /></Button>
-                <Button size="icon" className="h-10 w-10 rounded-full bg-primary text-primary-foreground" onClick={() => setIsPlaying(!isPlaying)}>
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-                </Button>
-                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={handleNext}><SkipForward className="w-4 h-4" /></Button>
-              </div>
-            </button>
+        {/* Track Grid — Spotify card style */}
+        {filteredTracks.length > 1 && (
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">All Tracks</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {filteredTracks.slice(1).map((track, idx) => {
+                const realIndex = idx + 1;
+                const isActive = currentTrack === realIndex && isPlaying;
+                return (
+                  <button
+                    key={track.id}
+                    onClick={() => handleTrackSelect(realIndex)}
+                    className="text-left active:scale-[0.97] transition-transform"
+                  >
+                    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[realIndex % gradients.length]} aspect-square flex items-center justify-center`}>
+                      <span className="text-5xl drop-shadow-md">{track.cover_emoji || "🎵"}</span>
+                      {isActive && (
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <div className="flex gap-1 items-end h-6">
+                            {[1, 2, 3, 4].map(i => (
+                              <motion.div
+                                key={i}
+                                className="w-1 bg-white rounded-full"
+                                animate={{ height: [8, 20, 12, 24, 8] }}
+                                transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.15 }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Like button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); toggleLike(track.id); }}
+                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center"
+                      >
+                        <Heart className={`w-4 h-4 ${liked.has(track.id) ? "fill-red-500 text-red-500" : "text-white/80"}`} />
+                      </button>
+                    </div>
+                    <div className="mt-2 px-0.5">
+                      <p className="text-sm font-semibold truncate">{track.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{track.artist || "Unknown"} · {formatDuration(track.duration_sec)}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {filteredTracks.length === 0 && (
+          <div className="text-center py-16">
+            <Music className="w-12 h-12 mx-auto mb-3 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">No tracks in this category</p>
           </div>
         )}
       </div>
+
+      {/* Mini Player */}
+      {hasPlayer && !showExpanded && (
+        <div
+          className="fixed left-0 right-0 z-40"
+          style={{ bottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
+        >
+          {/* Progress bar */}
+          <div className="h-[2px] bg-muted/50 mx-4 rounded-full overflow-hidden">
+            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress[0]}%` }} />
+          </div>
+          <button
+            onClick={() => setShowExpanded(true)}
+            className="w-full flex items-center gap-3 px-4 py-3 bg-card/95 backdrop-blur-xl border-t border-border/30 active:bg-muted/30"
+          >
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradients[currentTrack % gradients.length]} flex items-center justify-center text-xl shrink-0 shadow-lg`}>
+              {currentTrackData.cover_emoji || "🎵"}
+            </div>
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-semibold truncate">{currentTrackData.title}</p>
+              <p className="text-xs text-muted-foreground truncate">{currentTrackData.artist || "Unknown"}</p>
+            </div>
+            <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+              <button onClick={handlePrev} className="w-9 h-9 flex items-center justify-center active:scale-90">
+                <SkipBack className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="w-11 h-11 rounded-full bg-foreground text-background flex items-center justify-center active:scale-95"
+              >
+                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+              </button>
+              <button onClick={handleNext} className="w-9 h-9 flex items-center justify-center active:scale-90">
+                <SkipForward className="w-4 h-4" />
+              </button>
+            </div>
+          </button>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
