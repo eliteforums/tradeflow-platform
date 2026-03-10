@@ -168,35 +168,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </aside>
 
-      {/* Mobile Top Bar */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/40 flex items-center justify-between px-3 h-14">
+      {/* Mobile Top Bar — minimal, app-like */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/30 flex items-center justify-between px-4 h-12">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <EterniaLogo size={24} />
+          <EterniaLogo size={22} />
           <span className="text-sm font-bold font-display">Eternia</span>
         </Link>
-        <div className="flex items-center gap-0.5">
-          <Link to="/dashboard/credits">
-            <Button variant="ghost" size="sm" className="h-9 px-2 text-xs gap-1 text-muted-foreground">
-              <Coins className="w-3.5 h-3.5 text-primary" />
-              <span className="font-semibold text-foreground">ECC</span>
-            </Button>
-          </Link>
-          <Link to="/dashboard/blackbox">
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <Box className="w-4 h-4 text-muted-foreground" />
-            </Button>
-          </Link>
-          <Link to="/dashboard/appointments">
-            <Button variant="ghost" size="icon" className="h-9 w-9">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-            </Button>
-          </Link>
-        </div>
       </header>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation — larger touch targets */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/40"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/30"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-center justify-around h-16">
@@ -206,11 +188,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors active:opacity-70 ${
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors active:opacity-70 ${
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                <item.icon className={`w-5 h-5 ${active ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
+                <div className="relative">
+                  <item.icon className={`w-5 h-5 ${active ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
+                  {active && (
+                    <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                  )}
+                </div>
                 <span className={`text-[10px] leading-none ${active ? "font-semibold" : "font-normal"}`}>
                   {item.label}
                 </span>
@@ -224,9 +211,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <main
         className={`flex-1 min-h-screen min-h-dvh transition-all duration-300 ${
           sidebarOpen ? "lg:ml-56" : "lg:ml-[66px]"
-        } pt-14 lg:pt-0 pb-20 lg:pb-0`}
+        } pt-12 lg:pt-0 pb-20 lg:pb-0`}
       >
-        <div className="px-3 py-4 sm:p-5 lg:p-8">{children}</div>
+        <div className="px-4 pt-3 pb-2 sm:p-5 lg:p-8">{children}</div>
       </main>
     </div>
   );
