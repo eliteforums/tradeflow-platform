@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { User, Shield, Bell, Lock, Building2, Calendar, Coins, CheckCircle, Settings, ChevronRight, Save, Loader2, Phone, UserCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { User, Shield, Bell, Lock, Building2, Calendar, Coins, CheckCircle, Settings, ChevronRight, Save, Loader2, Phone, UserCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 
 const MobileProfile = () => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, signOut } = useAuth();
+  const navigate = useNavigate();
   const { balance } = useCredits();
   const [bio, setBio] = useState(profile?.bio || "");
   const [emergencyName, setEmergencyName] = useState("");
@@ -127,6 +128,20 @@ const MobileProfile = () => {
         </div>
 
         <AccountDeletion />
+
+        {/* Logout */}
+        <Button
+          variant="destructive"
+          className="w-full h-12 text-sm font-semibold gap-2"
+          onClick={async () => {
+            await signOut();
+            toast.success("Logged out successfully");
+            navigate("/");
+          }}
+        >
+          <LogOut className="w-5 h-5" />
+          Log Out
+        </Button>
       </div>
     </DashboardLayout>
   );
