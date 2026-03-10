@@ -12,10 +12,6 @@ import { format } from "date-fns";
 
 const MobileAppointments = () => {
   const { profile } = useAuth();
-
-  // If user is an expert, show expert dashboard
-  if (profile?.role === "expert") return <MobileExpertDashboard />;
-
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "video" });
   const [bookingDialog, setBookingDialog] = useState<{ open: boolean; expert?: any; slot?: any }>({ open: false });
@@ -23,6 +19,9 @@ const MobileAppointments = () => {
 
   const { balance } = useCredits();
   const { experts, slots, upcomingAppointments, pastAppointments, isLoading, bookAppointment, cancelAppointment, isBooking } = useAppointments();
+
+  // If user is an expert, show expert dashboard
+  if (profile?.role === "expert") return <MobileExpertDashboard />;
 
   const handleBookSlot = (expert: any, slot: any) => setBookingDialog({ open: true, expert, slot });
   const confirmBooking = () => {
