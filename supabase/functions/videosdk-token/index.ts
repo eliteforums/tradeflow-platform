@@ -5,6 +5,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+function toBase64Url(str: string): string {
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
+  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -41,20 +52,21 @@ Deno.serve(async (req) => {
     const VIDEOSDK_API_SECRET = Deno.env.get('VIDEOSDK_API_SECRET');
 
     if (!VIDEOSDK_API_KEY || !VIDEOSDK_API_SECRET) {
+      console.error('VideoSDK credentials missing');
       return new Response(JSON.stringify({ error: 'VideoSDK not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Generate JWT token for VideoSDK
-    const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+    // Generate JWT token for VideoSDK using proper base64url encoding
+    const header = toBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
     const now = Math.floor(Date.now() / 1000);
-    const payload = btoa(JSON.stringify({
+    const payload = toBase64Url(JSON.stringify({
       apikey: VIDEOSDK_API_KEY,
       permissions: ['allow_join', 'allow_mod'],
       iat: now,
-      exp: now + 7200, // 2 hours
+      exp: now + 7200,
     }));
 
     const encoder = new TextEncoder();
@@ -72,11 +84,7 @@ Deno.serve(async (req) => {
       encoder.encode(`${header}.${payload}`)
     );
 
-    const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-
+    const signature = arrayBufferToBase64Url(signatureBytes);
     const videosdkToken = `${header}.${payload}.${signature}`;
 
     if (action === 'get-token') {
@@ -86,6 +94,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'create-room') {
+      console.log('Creating VideoSDK room...');
       const roomResponse = await fetch('https://api.videosdk.live/v2/rooms', {
         method: 'POST',
         headers: {
@@ -96,6 +105,7 @@ Deno.serve(async (req) => {
       });
 
       const roomData = await roomResponse.json();
+      console.log('Room response status:', roomResponse.status, JSON.stringify(roomData));
 
       if (!roomResponse.ok) {
         return new Response(JSON.stringify({ error: 'Failed to create room', details: roomData }), {
