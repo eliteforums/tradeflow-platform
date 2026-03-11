@@ -3,6 +3,7 @@ import MobileSoundTherapy from "@/components/mobile/MobileSoundTherapy";
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Clock, Headphones, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import DashboardLayout from "@/components/layout/DashboardLayout";
