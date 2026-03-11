@@ -117,7 +117,8 @@ const HeroSection = () => {
               ].map((card, ci) => (
                 <motion.div
                   key={ci}
-                  className="absolute left-1/2 bottom-full w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-card/80 border border-border/30 backdrop-blur-sm flex items-center justify-center shadow-lg"
+                  className="absolute left-1/2 bottom-full w-8 h-8 sm:w-10 sm:h-10 rounded-lg border backdrop-blur-sm flex items-center justify-center shadow-lg shadow-primary/20"
+                  style={{ background: 'linear-gradient(135deg, hsl(var(--eternia-teal) / 0.25), hsl(var(--eternia-lavender) / 0.25))', borderColor: 'hsl(var(--eternia-teal) / 0.4)' }}
                   initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
                   animate={{
                     opacity: [0, 1, 1, 0.7],
