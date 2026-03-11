@@ -29,6 +29,8 @@ const MobileSoundTherapy = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { tracks, categories, isLoading, formatDuration } = useSoundTherapy();
+  const { earnFromActivity, canEarn } = useEccEarn();
+  const earnedForTrackRef = useRef<Set<string>>(new Set());
   const filteredTracks = activeCategory === "all" ? tracks : tracks.filter((t) => t.category === activeCategory);
   const currentTrackData = filteredTracks[currentTrack];
 
