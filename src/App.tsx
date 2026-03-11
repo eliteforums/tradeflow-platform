@@ -28,6 +28,7 @@ const RecoverySetup = lazy(() => import("./pages/dashboard/RecoverySetup"));
 const ExpertDashboard = lazy(() => import("./pages/dashboard/ExpertDashboard"));
 const InternDashboard = lazy(() => import("./pages/dashboard/InternDashboard"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const SPOCDashboard = lazy(() => import("./pages/dashboard/SPOCDashboard"));
 const Privacy = lazy(() => import("./pages/legal/Privacy"));
 const Terms = lazy(() => import("./pages/legal/Terms"));
 const DPDP = lazy(() => import("./pages/legal/DPDP"));
@@ -90,6 +91,7 @@ const App = () => (
               
               {/* Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute allowedRoles={["spoc", "admin"]}><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/spoc" element={<ProtectedRoute allowedRoles={["spoc"]}><SPOCDashboard /></ProtectedRoute>} />
               
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
