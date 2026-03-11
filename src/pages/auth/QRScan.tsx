@@ -42,14 +42,7 @@ const QRScan = () => {
         navigate("/register");
       }
     } catch {
-      // Fallback for network errors
-      if (manualCode.length >= 8) {
-        sessionStorage.setItem("eternia_spoc_verified", "true");
-        toast.success("SPOC verification complete!");
-        navigate("/register");
-      } else {
-        toast.error("Invalid SPOC code.");
-      }
+      toast.error("Verification failed. Please check your connection and try again.");
     }
     setIsVerifying(false);
   };

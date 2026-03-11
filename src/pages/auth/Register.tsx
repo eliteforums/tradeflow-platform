@@ -79,24 +79,27 @@ const Register = () => {
     try {
       const institutionCode = sessionStorage.getItem("eternia_institution_code");
       const institutionId = sessionStorage.getItem("eternia_institution_id");
-      const { error } = await signUp(formData.username, formData.password, {
+      const { error, data: signUpData } = await signUp(formData.username, formData.password, {
         institution_code: institutionCode,
       });
       if (error) throw error;
 
-      setTimeout(async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Generate device fingerprint for binding
-          let deviceFingerprint = "";
-          try {
-            deviceFingerprint = await generateDeviceFingerprint();
-          } catch (e) {
-            console.warn("Device fingerprint generation failed:", e);
-          }
+      // Wait for session to be established properly
+      const userId = signUpData?.user?.id;
+      if (userId) {
+        // Generate device fingerprint for binding
+        let deviceFingerprint = "";
+        try {
+          deviceFingerprint = await generateDeviceFingerprint();
+        } catch (e) {
+          console.warn("Device fingerprint generation failed:", e);
+        }
 
-          await supabase.from("user_private").insert({
-            user_id: user.id,
+        // Retry inserting private data until profile trigger completes
+        let retries = 0;
+        while (retries < 5) {
+          const { error: privateError } = await supabase.from("user_private").insert({
+            user_id: userId,
             emergency_name_encrypted: formData.emergencyName,
             emergency_phone_encrypted: formData.emergencyContact,
             emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
@@ -104,14 +107,18 @@ const Register = () => {
             contact_is_self: formData.contactIsSelf,
             device_id_encrypted: deviceFingerprint || null,
           });
-          if (institutionId) {
-            await supabase
-              .from("profiles")
-              .update({ institution_id: institutionId })
-              .eq("id", user.id);
-          }
+          if (!privateError) break;
+          retries++;
+          await new Promise((r) => setTimeout(r, 500));
         }
-      }, 500);
+
+        if (institutionId) {
+          await supabase
+            .from("profiles")
+            .update({ institution_id: institutionId })
+            .eq("id", userId);
+        }
+      }
 
       toast.success("Account created successfully!");
       sessionStorage.removeItem("eternia_institution_code");

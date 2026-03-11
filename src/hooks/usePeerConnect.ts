@@ -185,9 +185,6 @@ export function usePeerConnect() {
         .eq("id", sessionId);
 
       if (error) throw error;
-
-      // Server-side atomic credit deduction
-      await spendCredits(20, "Peer Connect session", sessionId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });

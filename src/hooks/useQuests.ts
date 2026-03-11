@@ -64,32 +64,39 @@ export function useQuests() {
     mutationFn: async (quest: QuestCard) => {
       if (!user) throw new Error("Not authenticated");
 
-      // Check if already completed today
       const alreadyCompleted = completions.some(c => c.quest_id === quest.id);
       if (alreadyCompleted) {
         throw new Error("Quest already completed today");
       }
 
-      // Mark quest as completed
+      // Enforce daily ECC cap
+      const actualReward = Math.min(quest.xp_reward, remainingToday);
+      if (!canEarn || actualReward <= 0) {
+        // Still mark quest as completed but no ECC
+        const { error: completionError } = await supabase.from("quest_completions").insert({
+          user_id: user.id,
+          quest_id: quest.id,
+        });
+        if (completionError) throw completionError;
+        return { ...quest, xp_reward: 0 };
+      }
+
       const { error: completionError } = await supabase.from("quest_completions").insert({
         user_id: user.id,
         quest_id: quest.id,
       });
-
       if (completionError) throw completionError;
 
-      // Award XP as credits
       const { error: creditError } = await supabase.from("credit_transactions").insert({
         user_id: user.id,
-        delta: quest.xp_reward,
+        delta: actualReward,
         type: "earn",
         notes: `Quest completed: ${quest.title}`,
         reference_id: quest.id,
       });
-
       if (creditError) throw creditError;
 
-      return quest;
+      return { ...quest, xp_reward: actualReward };
     },
     onSuccess: (quest) => {
       queryClient.invalidateQueries({ queryKey: ["quest-completions"] });

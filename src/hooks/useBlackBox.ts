@@ -49,8 +49,8 @@ export function useBlackBox() {
 
       if (error) throw error;
 
-      // Trigger AI moderation asynchronously (fire-and-forget)
-      if (data?.id) {
+      // Only trigger AI moderation for non-private entries (PRD §4.3)
+      if (data?.id && !isPrivate) {
         supabase.functions.invoke("ai-moderate", {
           body: { content, entry_id: data.id },
         }).catch((err) => console.warn("AI moderation failed:", err));

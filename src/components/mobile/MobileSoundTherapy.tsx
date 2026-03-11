@@ -49,7 +49,7 @@ const MobileSoundTherapy = () => {
           earnFromActivity({ amount: 1, activity: `Listened to: ${currentTrackData.title}` });
         }
         if (currentTrackData) {
-          supabase.from("sound_content").update({ play_count: (currentTrackData.play_count || 0) + 1 }).eq("id", currentTrackData.id).then(() => {});
+          supabase.rpc("increment_play_count", { _track_id: currentTrackData.id }).then(() => {});
         }
         handleNext();
       });
