@@ -63,8 +63,10 @@ const InternDashboardContent = () => {
   const [notesSearch, setNotesSearch] = useState("");
   const [notesFilterInstitution, setNotesFilterInstitution] = useState<string>("all");
 
-  const isTrainingComplete = completedModules.length >= TRAINING_MODULES.length;
-  const trainingProgress = (completedModules.length / TRAINING_MODULES.length) * 100;
+  // training_status from DB: 'not_started' | 'in_progress' | 'completed'
+  const trainingStatus = (profile as any)?.training_status || "not_started";
+  const isTrainingComplete = trainingStatus === "completed" || completedModules.length >= TRAINING_MODULES.length;
+  const trainingProgress = isTrainingComplete ? 100 : (completedModules.length / TRAINING_MODULES.length) * 100;
 
   // Queries
   const { data: mySessions = [], isLoading } = useQuery({
