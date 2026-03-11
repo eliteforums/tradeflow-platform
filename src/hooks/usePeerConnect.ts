@@ -125,6 +125,9 @@ export function usePeerConnect() {
     mutationFn: async (internId: string) => {
       if (!user) throw new Error("Not authenticated");
 
+      // Deduct credits on session start (PRD requirement)
+      await spendCredits(20, "Peer Connect session");
+
       const { data, error } = await supabase
         .from("peer_sessions")
         .insert({
@@ -182,9 +185,6 @@ export function usePeerConnect() {
         .eq("id", sessionId);
 
       if (error) throw error;
-
-      // Server-side atomic credit deduction
-      await spendCredits(20, "Peer Connect session", sessionId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });

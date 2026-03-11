@@ -84,34 +84,46 @@ const Register = () => {
       });
       if (error) throw error;
 
-      setTimeout(async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Generate device fingerprint for binding
-          let deviceFingerprint = "";
-          try {
-            deviceFingerprint = await generateDeviceFingerprint();
-          } catch (e) {
-            console.warn("Device fingerprint generation failed:", e);
-          }
+      // Wait for session to be established, then insert private data
+      const waitForUser = (): Promise<string | null> => {
+        return new Promise((resolve) => {
+          let attempts = 0;
+          const check = async () => {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (authUser?.id) return resolve(authUser.id);
+            if (++attempts >= 10) return resolve(null);
+            setTimeout(check, 400);
+          };
+          check();
+        });
+      };
 
-          await supabase.from("user_private").insert({
-            user_id: user.id,
-            emergency_name_encrypted: formData.emergencyName,
-            emergency_phone_encrypted: formData.emergencyContact,
-            emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
-            student_id_encrypted: formData.studentId,
-            contact_is_self: formData.contactIsSelf,
-            device_id_encrypted: deviceFingerprint || null,
-          });
-          if (institutionId) {
-            await supabase
-              .from("profiles")
-              .update({ institution_id: institutionId })
-              .eq("id", user.id);
-          }
+      const userId = await waitForUser();
+      if (userId) {
+        let deviceFingerprint = "";
+        try {
+          deviceFingerprint = await generateDeviceFingerprint();
+        } catch (e) {
+          console.warn("Device fingerprint generation failed:", e);
         }
-      }, 500);
+
+        await supabase.from("user_private").insert({
+          user_id: userId,
+          emergency_name_encrypted: formData.emergencyName,
+          emergency_phone_encrypted: formData.emergencyContact,
+          emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
+          student_id_encrypted: formData.studentId,
+          contact_is_self: formData.contactIsSelf,
+          device_id_encrypted: deviceFingerprint || null,
+        });
+
+        if (institutionId) {
+          await supabase
+            .from("profiles")
+            .update({ institution_id: institutionId })
+            .eq("id", userId);
+        }
+      }
 
       toast.success("Account created successfully!");
       sessionStorage.removeItem("eternia_institution_code");
