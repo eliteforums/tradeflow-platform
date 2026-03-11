@@ -112,7 +112,7 @@ const ExpertDashboard = () => {
                       <p className="text-[11px] text-muted-foreground">{format(new Date(apt.slot_time), "EEE, MMM d · h:mm a")}</p>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] ${apt.status === "confirmed" ? "bg-eternia-success/10 text-eternia-success" : "bg-eternia-warning/10 text-eternia-warning"}`}>{apt.status}</span>
-                        <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-2" onClick={() => setCallModal({ open: true, mode: apt.session_type === "video" ? "video" : "audio" })}>
+                        <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-2" onClick={() => setCallModal({ open: true, mode: apt.session_type === "video" ? "video" : "audio", appointmentId: apt.id })}>
                           {apt.session_type === "video" ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}Join Call
                         </Button>
                         <Button size="sm" variant="outline" className="text-destructive border-destructive/30 gap-1 h-7 text-[11px] px-2" onClick={() => toast.info("Escalation request sent")}><AlertTriangle className="w-3 h-3" />Escalate</Button>
