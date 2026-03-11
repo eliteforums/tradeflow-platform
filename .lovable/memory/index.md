@@ -1,37 +1,37 @@
-# Memory: index.md
-Updated: now
-
 # Eternia Project Memory
 
 ## Project Overview
-- **Type**: Institutional Student Wellbeing PWA (mobile-first)
+- **Type**: Institutional Student Wellbeing Platform (PWA)
 - **Design**: Dark + calming theme with teal/lavender accents
-- **Fonts**: Outfit (headings), DM Sans (body)
+- **Fonts**: Space Grotesk (headings), Inter (body)
 
 ## Design System Tokens
-- Primary: Teal (166 72% 46%)
+- Primary: Teal (174 62% 47%)
 - Secondary/Accent: Lavender (262 52% 60%)
-- Background: Dark (220 14% 6%)
-- Success: Green, Warning: Amber, Destructive: Red
+- Background: Dark blue (222 47% 6%)
 
-## Critical: Mobile-First PWA
-- ALL pages must be designed mobile-first (target: phones)
-- Use compact padding (p-3), small text (text-xs/text-sm)
-- Bottom nav is h-16 + safe-area-inset-bottom
-- Mini player must use `bottom: calc(4rem + env(safe-area-inset-bottom))`
-- useIsMobile initializes with window check (not undefined)
-- 3D components have 2D mobile fallbacks
-- Tabs use scrollable pill pattern on mobile
-- Tables replaced with card lists on mobile
-- Headings: text-xl on mobile, text-2xl+ on desktop
+## Labels (PRD aligned)
+- "Expert Connect" not "Appointments"
+- "Wallet" not "Credits" (student-facing)
+- "Training" not "Home" (intern tabs)
+
+## Credit Costs
+- Expert Connect: 50 ECC
+- Peer Connect: 20 ECC
+- BlackBox Talk Now: 30 ECC
+- All enforced server-side via spend-credits edge function
+
+## Edge Functions
+- spend-credits, purchase-credits, generate-spoc-qr, validate-spoc-qr
+- reset-device, stability-pool-contribute, seed-admin
+- videosdk-token, ai-moderate, delete-account
+- add-member, bulk-add-members
 
 ## Auth
 - Username-based login via @eternia.local emails
 - Auto-confirm enabled
-- Profile auto-created on signup via trigger
-- 100 ECC welcome bonus
+- Device fingerprint validated on app load (students)
 
-## User Roles (RBAC)
-- Student, Intern, Expert, SPOC, Admin
-- Stored in user_roles table
-- has_role() security definer function
+## Intern Training
+- 7 modules, progress persisted to profiles.training_progress JSONB
+- Sessions/Notes tabs locked until training_status = "completed"
