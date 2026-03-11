@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -13,6 +13,8 @@ import {
   ChevronLeft,
   Shield,
   Headphones,
+  AlertCircle,
+  ArrowRight,
 } from "lucide-react";
 import EterniaLogo from "@/components/EterniaLogo";
 import { Button } from "@/components/ui/button";
@@ -81,10 +83,16 @@ const internBottomNavItems = [
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, creditBalance } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const role = profile?.role || "student";
+  const isStudent = role === "student";
+  const showLowBalance = isStudent && creditBalance < 5;
+
+  // Hide low-balance banner on Credits page itself
+  const isCreditsPage = location.pathname === "/dashboard/credits";
+
   const navItems = useMemo(() => {
     if (role === "admin" || role === "spoc") return adminNavItems;
     if (role === "expert") return expertNavItems;
@@ -171,7 +179,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </aside>
 
-      {/* Mobile Top Bar — minimal, app-like */}
+      {/* Mobile Top Bar */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/30 flex items-center justify-between px-4 h-12">
         <Link to="/dashboard" className="flex items-center gap-2">
           <EterniaLogo size={22} />
@@ -187,7 +195,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </Button>
       </header>
 
-      {/* Mobile Bottom Navigation — larger touch targets */}
+      {/* Mobile Bottom Navigation */}
       <nav
         className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/30"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
@@ -199,7 +207,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors active:opacity-70 ${
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[44px] min-h-[44px] transition-colors active:opacity-70 ${
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
@@ -224,10 +232,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           sidebarOpen ? "lg:ml-56" : "lg:ml-[66px]"
         } pt-12 lg:pt-0 pb-20 lg:pb-0`}
       >
-        <div className="px-4 pt-3 pb-2 sm:p-5 lg:p-8">{children}</div>
+        <div className="px-4 pt-3 pb-2 sm:p-5 lg:p-8">
+          {/* Global Low Balance Banner */}
+          {showLowBalance && !isCreditsPage && (
+            <Link
+              to="/dashboard/credits"
+              className="flex items-center gap-3 p-3 mb-4 rounded-xl bg-eternia-warning/10 border border-eternia-warning/20 hover:bg-eternia-warning/15 transition-colors group"
+            >
+              <AlertCircle className="w-4 h-4 text-eternia-warning shrink-0" />
+              <p className="text-sm text-eternia-warning font-medium flex-1">
+                Your care energy is low. Refill gently.
+              </p>
+              <ArrowRight className="w-4 h-4 text-eternia-warning shrink-0 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          )}
+          {children}
+        </div>
       </main>
     </div>
   );
 };
 
-export default DashboardLayout;
+export default memo(DashboardLayout);
