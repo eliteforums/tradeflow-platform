@@ -29,6 +29,7 @@ const ExpertDashboard = lazy(() => import("./pages/dashboard/ExpertDashboard"));
 const InternDashboard = lazy(() => import("./pages/dashboard/InternDashboard"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const SPOCDashboard = lazy(() => import("./pages/dashboard/SPOCDashboard"));
+const TherapistDashboard = lazy(() => import("./pages/dashboard/TherapistDashboard"));
 const Privacy = lazy(() => import("./pages/legal/Privacy"));
 const Terms = lazy(() => import("./pages/legal/Terms"));
 const DPDP = lazy(() => import("./pages/legal/DPDP"));
