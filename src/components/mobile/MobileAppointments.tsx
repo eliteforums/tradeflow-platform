@@ -173,7 +173,7 @@ const MobileAppointments = () => {
         </DialogContent>
       </Dialog>
 
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Student"} mode={callModal.mode} />
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Student"} mode={callModal.mode} appointmentId={callModal.appointmentId} />
     </DashboardLayout>
   );
 };

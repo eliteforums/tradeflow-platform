@@ -254,7 +254,7 @@ const MobileExpertDashboard = () => {
         )}
       </div>
 
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} />
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} />
     </DashboardLayout>
   );
 };
