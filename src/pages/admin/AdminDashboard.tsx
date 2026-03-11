@@ -382,6 +382,28 @@ const AdminDashboard = () => {
                 <CreditGrantTool />
               </div>
             )}
+
+            {/* ─── SOUNDS ─── */}
+            {activeTab === "sounds" && (
+              <div className="max-w-2xl">
+                <SoundManager />
+              </div>
+            )}
+
+            {/* ─── ESCALATIONS ─── */}
+            {activeTab === "escalations" && (
+              <div className="max-w-3xl">
+                <EscalationManager />
+              </div>
+            )}
+
+            {/* ─── AUDIT LOGS ─── */}
+            {activeTab === "audit" && (
+              <div className="max-w-4xl space-y-4">
+                <AuditLogViewer />
+                <AccountDeletion />
+              </div>
+            )}
           </>
         )}
       </div>
