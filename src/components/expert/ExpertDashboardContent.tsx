@@ -256,9 +256,9 @@ const ExpertDashboardContent = () => {
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold font-display">Expert Dashboard</h1>
+            <h1 className="text-2xl xl:text-3xl font-bold font-display">Expert Dashboard</h1>
             <p className="text-sm text-muted-foreground">Manage appointments, schedule & sessions</p>
           </div>
           <div className="flex items-center gap-2">

@@ -195,9 +195,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </Button>
       </header>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation — hidden on expert dashboard (it has its own tabs) */}
       <nav
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/30"
+        className={cn(
+          "lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/30",
+          location.pathname === "/dashboard/expert" && "hidden"
+        )}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-center justify-around h-16">
