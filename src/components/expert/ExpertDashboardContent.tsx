@@ -729,10 +729,10 @@ const ExpertDashboardContent = () => {
 function SessionTimerDisplay({ startTime }: { startTime: number }) {
   const [elapsed, setElapsed] = useState(0);
   
-  useState(() => {
+  React.useEffect(() => {
     const interval = setInterval(() => setElapsed(Math.floor((Date.now() - startTime) / 1000)), 1000);
     return () => clearInterval(interval);
-  });
+  }, [startTime]);
 
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
