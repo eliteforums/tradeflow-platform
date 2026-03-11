@@ -91,6 +91,7 @@ const App = () => (
               
               {/* Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute allowedRoles={["spoc", "admin"]}><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/spoc" element={<ProtectedRoute allowedRoles={["spoc"]}><SPOCDashboard /></ProtectedRoute>} />
               
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
