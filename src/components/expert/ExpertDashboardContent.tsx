@@ -270,20 +270,20 @@ const ExpertDashboardContent = () => {
         </div>
 
         {/* Tab Bar */}
-        <div className="flex gap-1 bg-muted/30 p-1 rounded-xl">
+        <div className="flex gap-1 bg-muted/30 p-1 rounded-xl overflow-x-auto scrollbar-none">
           {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 justify-center",
+                "flex items-center gap-2 px-3 xl:px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0 justify-center",
                 activeTab === tab.key
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
               <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <span className="hidden xl:inline">{tab.label}</span>
             </button>
           ))}
         </div>
