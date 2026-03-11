@@ -46,7 +46,11 @@ const MobileSoundTherapy = () => {
 
   useEffect(() => { if (audioRef.current) audioRef.current.volume = isMuted ? 0 : volume[0] / 100; }, [volume, isMuted]);
 
-  const handleTrackSelect = useCallback((i: number) => { setCurrentTrack(i); setIsPlaying(true); setProgress([0]); }, []);
+  const handleTrackSelect = useCallback((i: number) => {
+    if (!filteredTracks[i]?.file_url) { toast({ title: "No audio file", description: "This track has no audio file yet", variant: "destructive" }); return; }
+    setCurrentTrack(i); setIsPlaying(true); setProgress([0]);
+  }, [filteredTracks]);
+  const handleSeek = useCallback((val: number[]) => { if (audioRef.current?.duration) audioRef.current.currentTime = (val[0] / 100) * audioRef.current.duration; }, []);
   const handleNext = useCallback(() => { setCurrentTrack((p) => p + 1 < filteredTracks.length ? (setProgress([0]), p + 1) : p); }, [filteredTracks.length]);
   const handlePrev = useCallback(() => { setCurrentTrack((p) => p > 0 ? (setProgress([0]), p - 1) : p); }, []);
 
