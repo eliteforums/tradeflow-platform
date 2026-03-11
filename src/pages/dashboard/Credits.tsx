@@ -6,14 +6,12 @@ import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award,
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCredits } from "@/hooks/useCredits";
-import { usePurchaseCredits } from "@/hooks/usePurchaseCredits";
 import { format } from "date-fns";
 
 const Credits = () => {
   const isMobile = useIsMobile();
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
-  const { purchaseCredits, isPurchasing, purchasingCredits, PACKAGES } = usePurchaseCredits();
 
   if (isMobile) return <MobileCredits />;
 
