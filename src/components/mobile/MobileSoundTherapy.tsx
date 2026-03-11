@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { toast } from "@/hooks/use-toast";
 import { createPortal } from "react-dom";
 import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Loader2, ChevronDown, Clock } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -45,7 +46,11 @@ const MobileSoundTherapy = () => {
 
   useEffect(() => { if (audioRef.current) audioRef.current.volume = isMuted ? 0 : volume[0] / 100; }, [volume, isMuted]);
 
-  const handleTrackSelect = useCallback((i: number) => { setCurrentTrack(i); setIsPlaying(true); setProgress([0]); }, []);
+  const handleTrackSelect = useCallback((i: number) => {
+    if (!filteredTracks[i]?.file_url) { toast({ title: "No audio file", description: "This track has no audio file yet", variant: "destructive" }); return; }
+    setCurrentTrack(i); setIsPlaying(true); setProgress([0]);
+  }, [filteredTracks]);
+  const handleSeek = useCallback((val: number[]) => { if (audioRef.current?.duration) audioRef.current.currentTime = (val[0] / 100) * audioRef.current.duration; }, []);
   const handleNext = useCallback(() => { setCurrentTrack((p) => p + 1 < filteredTracks.length ? (setProgress([0]), p + 1) : p); }, [filteredTracks.length]);
   const handlePrev = useCallback(() => { setCurrentTrack((p) => p > 0 ? (setProgress([0]), p - 1) : p); }, []);
 
@@ -96,7 +101,7 @@ const MobileSoundTherapy = () => {
               </div>
 
               <div>
-                <Slider value={progress} onValueChange={setProgress} max={100} step={0.5} className="mb-1.5" />
+                <Slider value={progress} onValueChange={setProgress} onValueCommit={handleSeek} max={100} step={0.5} className="mb-1.5" />
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>{formatDuration(Math.floor((progress[0] / 100) * (currentTrackData.duration_sec || 0)))}</span>
                   <span>{formatDuration(currentTrackData.duration_sec)}</span>
@@ -200,6 +205,7 @@ const MobileSoundTherapy = () => {
                     <p className={`text-sm font-medium truncate ${isActive ? "text-primary" : ""}`}>{track.title}</p>
                     <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                       {track.artist || "Unknown"} · <Clock className="w-3 h-3" /> {formatDuration(track.duration_sec)}
+                      {!track.file_url && <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive ml-1">No audio</span>}
                     </p>
                   </div>
                   <div className="w-8 h-8 rounded-full bg-muted/40 flex items-center justify-center shrink-0">

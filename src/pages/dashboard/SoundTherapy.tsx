@@ -3,6 +3,7 @@ import MobileSoundTherapy from "@/components/mobile/MobileSoundTherapy";
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Clock, Headphones, Loader2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -38,7 +39,11 @@ const SoundTherapy = () => {
 
   useEffect(() => { if (audioRef.current) audioRef.current.volume = isMuted ? 0 : volume[0] / 100; }, [volume, isMuted]);
 
-  const handleTrackSelect = useCallback((index: number) => { setCurrentTrack(index); setIsPlaying(true); setProgress([0]); }, []);
+  const handleTrackSelect = useCallback((index: number) => {
+    if (!filteredTracks[index]?.file_url) { toast({ title: "No audio file", description: "This track has no audio file yet", variant: "destructive" }); return; }
+    setCurrentTrack(index); setIsPlaying(true); setProgress([0]);
+  }, [filteredTracks]);
+  const handleSeek = useCallback((val: number[]) => { if (audioRef.current?.duration) audioRef.current.currentTime = (val[0] / 100) * audioRef.current.duration; }, []);
   const handleNext = useCallback(() => { setCurrentTrack((prev) => prev + 1 < filteredTracks.length ? (setProgress([0]), prev + 1) : prev); }, [filteredTracks.length]);
   const handlePrev = useCallback(() => { setCurrentTrack((prev) => prev > 0 ? (setProgress([0]), prev - 1) : prev); }, []);
   const toggleMute = useCallback(() => setIsMuted((prev) => !prev), []);
@@ -72,11 +77,12 @@ const SoundTherapy = () => {
                 <button key={track.id} onClick={() => handleTrackSelect(index)}
                   className={`w-full p-3.5 rounded-xl text-left transition-all flex items-center gap-3 ${isActive ? "bg-primary/10 border-primary/50" : "bg-card hover:bg-muted/40"} border border-border/50`}>
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-xl shrink-0">{track.cover_emoji || "🎵"}</div>
-                  <div className="flex-1 min-w-0">
+                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-sm truncate">{track.title}</h3>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="truncate">{track.artist || "Unknown"}</span><span>·</span>
                       <span className="shrink-0 flex items-center gap-0.5"><Clock className="w-3 h-3" />{formatDuration(track.duration_sec)}</span>
+                      {!track.file_url && <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">No audio</span>}
                     </div>
                   </div>
                   <div className="shrink-0">
@@ -97,7 +103,7 @@ const SoundTherapy = () => {
                 <p className="text-xs text-muted-foreground">{currentTrackData?.artist || ""}</p>
               </div>
               <div className="mb-4">
-                <Slider value={progress} onValueChange={setProgress} max={100} step={1} className="mb-1.5" />
+                <Slider value={progress} onValueChange={setProgress} onValueCommit={handleSeek} max={100} step={1} className="mb-1.5" />
                 <div className="flex justify-between text-[10px] text-muted-foreground">
                   <span>{currentTrackData ? formatDuration(Math.floor((progress[0] / 100) * (currentTrackData.duration_sec || 0))) : "0:00"}</span>
                   <span>{currentTrackData ? formatDuration(currentTrackData.duration_sec) : "0:00"}</span>
