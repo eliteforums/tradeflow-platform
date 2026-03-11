@@ -119,14 +119,35 @@ const MobileExpertDashboard = () => {
           <p className="text-sm text-muted-foreground">Manage your practice</p>
         </div>
 
-        {/* Tab bar */}
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
-          {tabs.map((tab) => (
-            <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={cn("shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium", activeTab === tab.key ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground")}>
-              <tab.icon className="w-3.5 h-3.5" />{tab.label}
-            </button>
-          ))}
-        </div>
+        {/* Fixed bottom tab bar - replaces DashboardLayout's bottom nav */}
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-[60] bg-background/95 backdrop-blur-xl border-t border-border/30"
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        >
+          <div className="flex items-center justify-around h-16">
+            {tabs.map((tab) => {
+              const active = activeTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-[44px] min-h-[44px] transition-colors active:opacity-70",
+                    active ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  <div className="relative">
+                    <tab.icon className={cn("w-5 h-5", active ? "stroke-[2.5]" : "stroke-[1.5]")} />
+                    {active && (
+                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                    )}
+                  </div>
+                  <span className={cn("text-[10px] leading-none", active ? "font-semibold" : "font-normal")}>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
 
         {/* HOME */}
         {activeTab === "home" && (
