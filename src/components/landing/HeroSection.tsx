@@ -121,34 +121,6 @@ const HeroSection = () => {
               </motion.span>
             ))}
           </h2>
-
-          {/* Infinity symbol glow beneath */}
-          <motion.div
-            className="absolute left-1/2 -translate-x-1/2 -bottom-2 sm:-bottom-4"
-            animate={{
-              opacity: glowing ? [0.3, 0.8, 0.3] : [0.1, 0.3, 0.1],
-              scale: glowing ? [1, 1.05, 1] : 1,
-            }}
-            transition={{ duration: 2, ease: "easeInOut" }}
-          >
-            <svg width="120" height="40" viewBox="0 0 120 40" className="sm:w-[180px] sm:h-[60px]">
-              <path
-                d="M30 20 C30 10, 10 10, 10 20 C10 30, 30 30, 30 20 M30 20 C30 10, 50 10, 50 20 C50 30, 30 30, 30 20"
-                fill="none"
-                stroke="url(#infinityGradient)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                transform="translate(30, 0)"
-              />
-              <defs>
-                <linearGradient id="infinityGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="hsl(174 62% 47%)" />
-                  <stop offset="50%" stopColor="hsl(262 52% 60%)" />
-                  <stop offset="100%" stopColor="hsl(174 62% 47%)" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </motion.div>
         </motion.div>
 
         {/* Subtitle */}
