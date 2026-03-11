@@ -19,6 +19,7 @@ export interface InstitutionMember {
   streak_days: number;
   created_at: string;
   institution_id: string | null;
+  specialty: string | null;
 }
 
 export function useAdmin() {
