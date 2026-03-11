@@ -1,0 +1,740 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { format, subDays } from "date-fns";
+import {
+  Home, Users, AlertTriangle, BarChart3, User,
+  QrCode, Copy, Check, Shield, Activity, Calendar,
+  MessageCircle, Coins, Bell, Eye, Loader2,
+  CheckCircle, Clock, XCircle, FileText, Plus,
+  Search, Filter, Download, LogOut, Lock, Settings,
+  TrendingUp, Music, Gamepad2, Phone,
+} from "lucide-react";
+
+type SPOCTab = "home" | "onboarding" | "flags" | "reports" | "profile";
+
+const SPOCDashboardContent = () => {
+  const { user, profile, signOut } = useAuth();
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<SPOCTab>("home");
+  const [copiedQR, setCopiedQR] = useState(false);
+  const [showNewEscalation, setShowNewEscalation] = useState(false);
+  const [escalationReason, setEscalationReason] = useState("");
+  const [reportDateFilter, setReportDateFilter] = useState("30");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const institutionId = profile?.institution_id;
+
+  // ─── Queries ───
+  const { data: institution } = useQuery({
+    queryKey: ["spoc-institution", institutionId],
+    queryFn: async () => {
+      if (!institutionId) return null;
+      const { data, error } = await supabase
+        .from("institutions")
+        .select("*")
+        .eq("id", institutionId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!institutionId,
+  });
+
+  const { data: students = [] } = useQuery({
+    queryKey: ["spoc-students", institutionId],
+    queryFn: async () => {
+      if (!institutionId) return [];
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, is_active, is_verified, created_at, total_sessions, streak_days")
+        .eq("institution_id", institutionId)
+        .eq("role", "student")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!institutionId,
+  });
+
+  const { data: todaySessions = 0 } = useQuery({
+    queryKey: ["spoc-today-sessions", institutionId],
+    queryFn: async () => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { count } = await supabase
+        .from("appointments")
+        .select("*", { count: "exact", head: true })
+        .gte("slot_time", today.toISOString());
+      return count || 0;
+    },
+    enabled: !!institutionId,
+  });
+
+  const { data: peerSessionCount = 0 } = useQuery({
+    queryKey: ["spoc-peer-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("peer_sessions")
+        .select("*", { count: "exact", head: true });
+      return count || 0;
+    },
+  });
+
+  const { data: expertSessionCount = 0 } = useQuery({
+    queryKey: ["spoc-expert-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("appointments")
+        .select("*", { count: "exact", head: true });
+      return count || 0;
+    },
+  });
+
+  const { data: escalations = [], isLoading: escalationsLoading } = useQuery({
+    queryKey: ["spoc-escalations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("escalation_requests")
+        .select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: flaggedEntries = [] } = useQuery({
+    queryKey: ["spoc-flagged"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blackbox_entries")
+        .select("*")
+        .gt("ai_flag_level", 0)
+        .order("ai_flag_level", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: reportData } = useQuery({
+    queryKey: ["spoc-reports", reportDateFilter],
+    queryFn: async () => {
+      const since = subDays(new Date(), parseInt(reportDateFilter)).toISOString();
+      const [appointments, peerSessions, soundPlays, questCompletions] = await Promise.all([
+        supabase.from("appointments").select("*", { count: "exact", head: true }).gte("created_at", since),
+        supabase.from("peer_sessions").select("*", { count: "exact", head: true }).gte("created_at", since),
+        supabase.from("sound_content").select("play_count"),
+        supabase.from("quest_completions").select("*", { count: "exact", head: true }).gte("completed_at", since),
+      ]);
+      return {
+        appointments: appointments.count || 0,
+        peerSessions: peerSessions.count || 0,
+        soundPlays: soundPlays.data?.reduce((sum, s) => sum + (s.play_count || 0), 0) || 0,
+        questCompletions: questCompletions.count || 0,
+      };
+    },
+  });
+
+  const { data: auditLogs = [] } = useQuery({
+    queryKey: ["spoc-audit-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_logs")
+        .select("*, actor:profiles!audit_logs_actor_id_fkey(username)")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // ─── Mutations ───
+  const createEscalation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase.from("escalation_requests").insert({
+        spoc_id: user.id,
+        justification_encrypted: escalationReason,
+      });
+      if (error) throw error;
+      await supabase.from("audit_logs").insert({
+        actor_id: user.id,
+        action_type: "escalation_request_created",
+        target_table: "escalation_requests",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spoc-escalations"] });
+      toast.success("Escalation submitted");
+      setEscalationReason("");
+      setShowNewEscalation(false);
+    },
+    onError: () => toast.error("Failed to submit escalation"),
+  });
+
+  // ─── Helpers ───
+  const qrPayload = profile
+    ? `ETERNIA-SPOC-${institutionId}-${user?.id}-${Date.now()}`
+    : "";
+
+  const copyQRCode = () => {
+    navigator.clipboard.writeText(qrPayload);
+    setCopiedQR(true);
+    toast.success("QR code payload copied!");
+    setTimeout(() => setCopiedQR(false), 2000);
+  };
+
+  const activeStudents = students.filter((s) => s.is_active).length;
+  const filteredStudents = students.filter((s) =>
+    s.username.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const statusConfig: Record<string, { icon: typeof Clock; color: string; label: string }> = {
+    pending: { icon: Clock, color: "text-eternia-warning bg-eternia-warning/10", label: "Pending" },
+    approved: { icon: CheckCircle, color: "text-eternia-success bg-eternia-success/10", label: "Approved" },
+    rejected: { icon: XCircle, color: "text-destructive bg-destructive/10", label: "Rejected" },
+    resolved: { icon: Shield, color: "text-primary bg-primary/10", label: "Resolved" },
+  };
+
+  const tabs: { id: SPOCTab; label: string; icon: typeof Home }[] = [
+    { id: "home", label: "Home", icon: Home },
+    { id: "onboarding", label: "Onboarding", icon: Users },
+    { id: "flags", label: "Flags", icon: AlertTriangle },
+    { id: "reports", label: "Reports", icon: BarChart3 },
+    { id: "profile", label: "Profile", icon: User },
+  ];
+
+  return (
+    <div className="space-y-5 pb-24">
+      {/* Header */}
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold font-display">SPOC Dashboard</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+          {institution?.name || "Institution"} — Student wellbeing management
+        </p>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center gap-1.5 shrink-0 px-3.5 py-2 rounded-full text-xs font-medium transition-all ${
+              activeTab === tab.id
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            <tab.icon className="w-3.5 h-3.5" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ═══════════════ HOME TAB ═══════════════ */}
+      {activeTab === "home" && (
+        <div className="space-y-4">
+          {/* Institution Overview */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/15 via-primary/10 to-accent/15 border border-primary/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                <Shield className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-sm font-display">{institution?.name || "Your Institution"}</h2>
+                <p className="text-xs text-muted-foreground">
+                  {activeStudents} active students · {institution?.plan_type || "Basic"} plan
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Stat Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Active Students", value: activeStudents, icon: Users, iconBg: "bg-primary/10", iconColor: "text-primary" },
+              { label: "Sessions Today", value: todaySessions, icon: Calendar, iconBg: "bg-eternia-success/10", iconColor: "text-eternia-success" },
+              { label: "Peer Connect", value: peerSessionCount, icon: MessageCircle, iconBg: "bg-accent/10", iconColor: "text-accent" },
+              { label: "Expert Sessions", value: expertSessionCount, icon: Phone, iconBg: "bg-eternia-warning/10", iconColor: "text-eternia-warning" },
+            ].map((stat) => (
+              <div key={stat.label} className="p-4 rounded-2xl bg-card border border-border/50 hover:border-border transition-colors">
+                <div className={`w-9 h-9 rounded-lg ${stat.iconBg} flex items-center justify-center mb-2.5`}>
+                  <stat.icon className={`w-4 h-4 ${stat.iconColor}`} />
+                </div>
+                <p className="text-xl font-bold leading-none">{stat.value}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Alert Area */}
+          {flaggedEntries.length > 0 && (
+            <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-destructive" />
+                  <p className="text-sm font-medium">{flaggedEntries.length} AI Flagged Entries</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 h-8 text-xs border-destructive/30 text-destructive"
+                  onClick={() => setActiveTab("flags")}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  View Alerts
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              className="p-4 rounded-2xl bg-card border border-border/50 text-left hover:border-primary/30 transition-all group"
+              onClick={() => setActiveTab("onboarding")}
+            >
+              <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+                <QrCode className="w-4 h-4 text-primary" />
+              </div>
+              <p className="font-medium text-sm">Generate QR</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Onboard students</p>
+            </button>
+            <button
+              className="p-4 rounded-2xl bg-card border border-border/50 text-left hover:border-primary/30 transition-all group"
+              onClick={() => setActiveTab("reports")}
+            >
+              <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform">
+                <BarChart3 className="w-4 h-4 text-accent" />
+              </div>
+              <p className="font-medium text-sm">View Reports</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Wellbeing analytics</p>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════ STUDENT ONBOARDING TAB ═══════════════ */}
+      {activeTab === "onboarding" && (
+        <div className="space-y-4">
+          {/* QR Code Section */}
+          <div className="p-4 rounded-2xl bg-card border border-border/50 space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <QrCode className="w-4 h-4 text-primary" />
+              QR Onboarding Code
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Share this code with students during onboarding sessions.
+            </p>
+            <div className="p-4 rounded-xl bg-muted/30 border border-border text-center">
+              <div className="w-28 h-28 mx-auto bg-card rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center mb-3">
+                <QrCode className="w-14 h-14 text-primary/60" />
+              </div>
+              <code className="text-[10px] font-mono text-muted-foreground break-all block mb-3">
+                {qrPayload.slice(0, 40)}...
+              </code>
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={copyQRCode}>
+                {copiedQR ? <Check className="w-3.5 h-3.5 text-eternia-success" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedQR ? "Copied!" : "Copy Code"}
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground italic">Valid for 24 hours · Audited</p>
+          </div>
+
+          {/* Student List */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Users className="w-4 h-4 text-primary" />
+                Student IDs ({students.length})
+              </h3>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search students..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9 bg-card text-sm"
+              />
+            </div>
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {filteredStudents.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground bg-card rounded-xl border border-border/50">
+                  <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">No students found</p>
+                </div>
+              ) : (
+                filteredStudents.map((student) => (
+                  <div
+                    key={student.id}
+                    className="p-3 rounded-xl bg-card border border-border/50 flex items-center gap-3"
+                  >
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{student.username}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Joined {format(new Date(student.created_at), "MMM d, yyyy")}
+                      </p>
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${
+                        student.is_active
+                          ? "bg-eternia-success/10 text-eternia-success"
+                          : "bg-destructive/10 text-destructive"
+                      }`}
+                    >
+                      {student.is_active ? "Allocated" : "Revoked"}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════ FLAGS & ESCALATION TAB ═══════════════ */}
+      {activeTab === "flags" && (
+        <div className="space-y-4">
+          {/* Flagged Entries */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-destructive" />
+              AI Flagged Entries ({flaggedEntries.length})
+            </h3>
+            {flaggedEntries.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground bg-card rounded-2xl border border-border/50">
+                <CheckCircle className="w-10 h-10 mx-auto mb-2 text-eternia-success" />
+                <p className="text-sm font-medium">All Clear</p>
+                <p className="text-xs text-muted-foreground mt-1">No flagged entries</p>
+              </div>
+            ) : (
+              flaggedEntries.map((entry: any) => (
+                <div key={entry.id} className="p-4 rounded-xl border border-destructive/20 bg-destructive/5">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                        entry.ai_flag_level >= 3
+                          ? "bg-destructive text-destructive-foreground"
+                          : entry.ai_flag_level === 2
+                          ? "bg-eternia-warning/20 text-eternia-warning"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {entry.ai_flag_level >= 3 ? "🔴 Critical" : entry.ai_flag_level === 2 ? "🟡 Moderate" : "🟢 Low"}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {format(new Date(entry.created_at), "MMM d, h:mm a")}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">Flagged by AI safety system — requires review</p>
+                  <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-2">
+                    <Eye className="w-3 h-3" />
+                    Review
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Escalation Reports */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Shield className="w-4 h-4 text-primary" />
+                Escalation Reports ({escalations.length})
+              </h3>
+              <Button
+                size="sm"
+                className="gap-1.5 h-8 text-xs"
+                onClick={() => setShowNewEscalation(!showNewEscalation)}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                New
+              </Button>
+            </div>
+
+            {showNewEscalation && (
+              <div className="p-3 rounded-xl bg-card border border-destructive/20 space-y-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-destructive" />
+                  <p className="font-medium text-sm">New Escalation</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-destructive/5 border border-destructive/10 text-xs text-muted-foreground">
+                  <p className="font-medium text-destructive mb-0.5">⚠️ This initiates a formal identity reveal request.</p>
+                  All requests are audited and logged.
+                </div>
+                <Textarea
+                  placeholder="Reason for escalation..."
+                  value={escalationReason}
+                  onChange={(e) => setEscalationReason(e.target.value)}
+                  className="min-h-[80px] text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => createEscalation.mutate()}
+                    disabled={!escalationReason.trim() || createEscalation.isPending}
+                    className="gap-1.5 h-8 text-xs"
+                    variant="destructive"
+                    size="sm"
+                  >
+                    {createEscalation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                    Submit
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowNewEscalation(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {escalationsLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : escalations.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground bg-card rounded-xl border border-border/50">
+                <Shield className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">No escalations</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {escalations.map((esc: any) => {
+                  const config = statusConfig[esc.status] || statusConfig.pending;
+                  const StatusIcon = config.icon;
+                  return (
+                    <div key={esc.id} className="p-3 rounded-xl bg-card border border-border/50">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-medium flex items-center gap-1 ${config.color}`}>
+                          <StatusIcon className="w-3 h-3" />
+                          {config.label}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {format(new Date(esc.created_at), "MMM d, h:mm a")}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg line-clamp-3">
+                        {esc.justification_encrypted}
+                      </p>
+                      {esc.resolved_at && (
+                        <p className="text-[10px] text-muted-foreground mt-1.5">
+                          Resolved {format(new Date(esc.resolved_at), "MMM d, h:mm a")}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════ REPORTS TAB ═══════════════ */}
+      {activeTab === "reports" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-primary" />
+              Wellbeing Reports
+            </h3>
+            <div className="flex items-center gap-2">
+              <select
+                value={reportDateFilter}
+                onChange={(e) => setReportDateFilter(e.target.value)}
+                className="h-8 px-2 rounded-lg border border-border bg-card text-xs"
+              >
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs">
+                <Download className="w-3.5 h-3.5" />
+                Export PDF
+              </Button>
+            </div>
+          </div>
+
+          {/* Report Cards */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                label: "Peer Connect Usage",
+                value: reportData?.peerSessions || 0,
+                icon: MessageCircle,
+                iconBg: "bg-accent/10",
+                iconColor: "text-accent",
+                desc: "Total peer sessions",
+              },
+              {
+                label: "Appointments",
+                value: reportData?.appointments || 0,
+                icon: Calendar,
+                iconBg: "bg-primary/10",
+                iconColor: "text-primary",
+                desc: "Expert sessions booked",
+              },
+              {
+                label: "Sound Therapy",
+                value: reportData?.soundPlays || 0,
+                icon: Music,
+                iconBg: "bg-eternia-warning/10",
+                iconColor: "text-eternia-warning",
+                desc: "Total play count",
+              },
+              {
+                label: "Quest Engagement",
+                value: reportData?.questCompletions || 0,
+                icon: Gamepad2,
+                iconBg: "bg-eternia-success/10",
+                iconColor: "text-eternia-success",
+                desc: "Quests completed",
+              },
+            ].map((stat) => (
+              <div key={stat.label} className="p-4 rounded-2xl bg-card border border-border/50">
+                <div className={`w-9 h-9 rounded-lg ${stat.iconBg} flex items-center justify-center mb-2.5`}>
+                  <stat.icon className={`w-4 h-4 ${stat.iconColor}`} />
+                </div>
+                <p className="text-xl font-bold leading-none">{stat.value}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">{stat.label}</p>
+                <p className="text-[10px] text-muted-foreground">{stat.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Risk Overview */}
+          <div className="p-4 rounded-2xl bg-card border border-border/50">
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-eternia-warning" />
+              Risk Factor Summary
+            </h4>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/10 text-center">
+                <p className="text-lg font-bold text-destructive">
+                  {flaggedEntries.filter((f: any) => f.ai_flag_level >= 3).length}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Critical</p>
+              </div>
+              <div className="p-3 rounded-xl bg-eternia-warning/5 border border-eternia-warning/10 text-center">
+                <p className="text-lg font-bold text-eternia-warning">
+                  {flaggedEntries.filter((f: any) => f.ai_flag_level === 2).length}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Moderate</p>
+              </div>
+              <div className="p-3 rounded-xl bg-eternia-success/5 border border-eternia-success/10 text-center">
+                <p className="text-lg font-bold text-eternia-success">
+                  {flaggedEntries.filter((f: any) => f.ai_flag_level === 1).length}
+                </p>
+                <p className="text-[10px] text-muted-foreground">Low</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════ PROFILE TAB ═══════════════ */}
+      {activeTab === "profile" && (
+        <div className="space-y-4">
+          {/* SPOC Profile Card */}
+          <div className="p-5 rounded-2xl bg-card border border-border/50">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Shield className="w-7 h-7 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-base">{profile?.username}</h3>
+                <p className="text-xs text-muted-foreground capitalize">{profile?.role} · SPOC</p>
+              </div>
+            </div>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                <span className="text-xs text-muted-foreground">Institution</span>
+                <span className="text-xs font-medium">{institution?.name || "—"}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                <span className="text-xs text-muted-foreground">Role</span>
+                <span className="text-xs font-medium capitalize">{profile?.role}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                <span className="text-xs text-muted-foreground">Contact Email</span>
+                <span className="text-xs font-medium">{profile?.username}@eternia.local</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                <span className="text-xs text-muted-foreground">Verification</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                  profile?.is_verified
+                    ? "bg-eternia-success/10 text-eternia-success"
+                    : "bg-eternia-warning/10 text-eternia-warning"
+                }`}>
+                  {profile?.is_verified ? "Verified" : "Pending"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full justify-start gap-2 h-11 text-sm">
+              <Lock className="w-4 h-4" />
+              Change Password
+            </Button>
+            <Button variant="outline" className="w-full justify-start gap-2 h-11 text-sm">
+              <Settings className="w-4 h-4" />
+              Notification Settings
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 h-11 text-sm text-destructive border-destructive/30 hover:bg-destructive/5"
+              onClick={signOut}
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+          </div>
+
+          {/* Messaging / Audit Log */}
+          <div className="p-4 rounded-2xl bg-card border border-border/50">
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary" />
+              Audit Log ({auditLogs.length})
+            </h4>
+            <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+              {auditLogs.length === 0 ? (
+                <p className="text-center py-6 text-xs text-muted-foreground">No audit logs</p>
+              ) : (
+                auditLogs.slice(0, 20).map((log: any) => (
+                  <div key={log.id} className="p-2.5 rounded-lg bg-muted/30 border border-border/30">
+                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase tracking-wider bg-muted text-muted-foreground">
+                        {log.action_type.replace(/_/g, " ")}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground shrink-0">
+                        {format(new Date(log.created_at), "MMM d, h:mm a")}
+                      </span>
+                    </div>
+                    <p className="text-xs">
+                      <span className="font-medium">{log.actor?.username || "System"}</span>
+                      {log.target_table && <span className="text-muted-foreground"> → {log.target_table}</span>}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SPOCDashboardContent;
