@@ -51,7 +51,7 @@ const Dashboard = () => {
     { name: "Quest Cards", icon: Award, path: "/dashboard/self-help", color: "text-amber-400" },
     { name: "Wreck Buddy", icon: Sparkles, path: "/dashboard/self-help", color: "text-pink-400" },
     { name: "Tibetan Bowl", icon: Music, path: "/dashboard/self-help", color: "text-violet-400" },
-    { name: "Credits", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
+    { name: "Wallet", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
   ];
 
   return (
