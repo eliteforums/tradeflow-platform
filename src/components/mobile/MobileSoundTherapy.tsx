@@ -101,7 +101,7 @@ const MobileSoundTherapy = () => {
               </div>
 
               <div>
-                <Slider value={progress} onValueChange={setProgress} max={100} step={0.5} className="mb-1.5" />
+                <Slider value={progress} onValueChange={setProgress} onValueCommit={handleSeek} max={100} step={0.5} className="mb-1.5" />
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>{formatDuration(Math.floor((progress[0] / 100) * (currentTrackData.duration_sec || 0)))}</span>
                   <span>{formatDuration(currentTrackData.duration_sec)}</span>
