@@ -267,6 +267,41 @@ export type Database = {
           },
         ]
       }
+      ecc_stability_pool: {
+        Row: {
+          balance: number
+          id: string
+          institution_id: string | null
+          total_contributed: number
+          total_disbursed: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          id?: string
+          institution_id?: string | null
+          total_contributed?: number
+          total_disbursed?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          id?: string
+          institution_id?: string | null
+          total_contributed?: number
+          total_disbursed?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecc_stability_pool_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       escalation_requests: {
         Row: {
           admin_id: string | null
@@ -514,6 +549,7 @@ export type Database = {
           specialty: string | null
           streak_days: number
           total_sessions: number
+          training_status: string
           updated_at: string
           username: string
         }
@@ -530,6 +566,7 @@ export type Database = {
           specialty?: string | null
           streak_days?: number
           total_sessions?: number
+          training_status?: string
           updated_at?: string
           username: string
         }
@@ -546,6 +583,7 @@ export type Database = {
           specialty?: string | null
           streak_days?: number
           total_sessions?: number
+          training_status?: string
           updated_at?: string
           username?: string
         }
@@ -766,6 +804,7 @@ export type Database = {
     Functions: {
       get_credit_balance: { Args: { _user_id: string }; Returns: number }
       get_daily_earn_total: { Args: { _user_id: string }; Returns: number }
+      get_pool_balance: { Args: { _institution_id: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
