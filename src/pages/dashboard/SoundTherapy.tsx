@@ -36,7 +36,18 @@ const SoundTherapy = () => {
       const audio = audioRef.current;
       const updateProgress = () => { if (audio.duration) setProgress([(audio.currentTime / audio.duration) * 100]); };
       audio.addEventListener("timeupdate", updateProgress);
-      audio.addEventListener("ended", () => handleNext());
+      audio.addEventListener("ended", () => {
+        // Earn ECC on full track listen
+        if (currentTrackData && canEarn && !earnedForTrackRef.current.has(currentTrackData.id)) {
+          earnedForTrackRef.current.add(currentTrackData.id);
+          earnFromActivity({ amount: 1, activity: `Listened to: ${currentTrackData.title}` });
+        }
+        // Increment play count
+        if (currentTrackData) {
+          supabase.from("sound_content").update({ play_count: (currentTrackData.play_count || 0) + 1 }).eq("id", currentTrackData.id).then(() => {});
+        }
+        handleNext();
+      });
       return () => { audio.removeEventListener("timeupdate", updateProgress); audio.pause(); };
     } else if (!isPlaying && audioRef.current) { audioRef.current.pause(); }
   }, [currentTrack, isPlaying, currentTrackData?.file_url]);
