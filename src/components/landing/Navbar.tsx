@@ -1,19 +1,47 @@
 import { Link } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import EterniaLogo from "@/components/EterniaLogo";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Security", href: "#security" },
+  {
+    label: "Product",
+    children: [
+      { label: "Expert Connect", href: "#features", desc: "Book expert sessions" },
+      { label: "Peer Connect", href: "#features", desc: "Anonymous peer chat" },
+      { label: "BlackBox", href: "#features", desc: "Private expression" },
+      { label: "Sound Therapy", href: "#features", desc: "Meditation & sounds" },
+    ],
+  },
+  {
+    label: "Platform",
+    children: [
+      { label: "How It Works", href: "#how-it-works", desc: "Three-step onboarding" },
+      { label: "Security", href: "#security", desc: "DPDP compliant privacy" },
+      { label: "Architecture", href: "#architecture", desc: "Built for scale" },
+    ],
+  },
+  { label: "About", href: "#about" },
+  { label: "FAQ", href: "#faq" },
   { label: "Testimonials", href: "#testimonials" },
 ];
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <motion.nav
@@ -23,23 +51,63 @@ const Navbar = () => {
       className="sticky top-0 z-40 w-full border-b border-border/20 bg-background/70 backdrop-blur-2xl"
     >
       <div className="container mx-auto px-4 sm:px-5 py-2.5 flex items-center justify-between">
+        {/* Logo - left */}
         <Link to="/" className="flex items-center gap-2">
           <EterniaLogo size={26} />
           <span className="text-sm font-bold font-display text-foreground">Eternia</span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-6">
-          {navLinks.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {item.label}
-            </a>
-          ))}
+        {/* Nav links - right side with dropdowns */}
+        <div className="hidden md:flex items-center gap-1" ref={dropdownRef}>
+          {navLinks.map((item) =>
+            "children" in item && item.children ? (
+              <div key={item.label} className="relative">
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
+                  className="flex items-center gap-1 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted/20"
+                >
+                  {item.label}
+                  <ChevronDown className={`w-3 h-3 transition-transform ${openDropdown === item.label ? "rotate-180" : ""}`} />
+                </button>
+                <AnimatePresence>
+                  {openDropdown === item.label && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute top-full left-0 mt-1 w-56 rounded-xl bg-card/95 backdrop-blur-xl border border-border/30 shadow-2xl shadow-black/20 overflow-hidden"
+                    >
+                      <div className="py-1.5">
+                        {item.children.map((child) => (
+                          <a
+                            key={child.label}
+                            href={child.href}
+                            onClick={() => setOpenDropdown(null)}
+                            className="flex flex-col px-3.5 py-2.5 hover:bg-muted/20 transition-colors"
+                          >
+                            <span className="text-[13px] font-medium text-foreground">{child.label}</span>
+                            <span className="text-[11px] text-muted-foreground">{child.desc}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <a
+                key={item.label}
+                href={item.href}
+                className="px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted/20"
+              >
+                {item.label}
+              </a>
+            )
+          )}
         </div>
 
+        {/* CTA buttons - far right */}
         <div className="flex items-center gap-2">
           <Link to="/login" className="hidden md:block">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-[13px] h-8">
@@ -62,6 +130,7 @@ const Navbar = () => {
         </div>
       </div>
 
+      {/* Mobile menu */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -71,16 +140,32 @@ const Navbar = () => {
             className="md:hidden border-t border-border/20 bg-background/95 backdrop-blur-xl overflow-hidden"
           >
             <div className="px-4 py-3 space-y-0.5">
-              {navLinks.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="block px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {item.label}
-                </a>
-              ))}
+              {navLinks.map((item) =>
+                "children" in item && item.children ? (
+                  <div key={item.label}>
+                    <p className="px-3 pt-3 pb-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">{item.label}</p>
+                    {item.children.map((child) => (
+                      <a
+                        key={child.label}
+                        href={child.href}
+                        className="block px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        {child.label}
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    className="block px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {item.label}
+                  </a>
+                )
+              )}
               <Link
                 to="/login"
                 className="block px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/20"
