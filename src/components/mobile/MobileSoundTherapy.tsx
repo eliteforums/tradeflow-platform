@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { toast } from "@/hooks/use-toast";
 import { createPortal } from "react-dom";
 import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Loader2, ChevronDown, Clock } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
