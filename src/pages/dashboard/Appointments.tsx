@@ -83,7 +83,7 @@ const Appointments = () => {
                     </div>
                     {activeTab === "upcoming" && (apt.status === "confirmed" || apt.status === "pending") && (
                       <div className="flex items-center gap-2 mt-2">
-                        <Button variant="outline" size="sm" onClick={() => handleJoinCall(apt.session_type)} className="gap-1 h-7 text-xs">{apt.session_type === "video" ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}Join</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleJoinCall(apt.session_type, apt.id)} className="gap-1 h-7 text-xs">{apt.session_type === "video" ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}Join</Button>
                         <Button variant="ghost" size="sm" onClick={() => cancelAppointment(apt.id)} className="text-destructive h-7 text-xs"><X className="w-3 h-3 mr-1" />Cancel</Button>
                       </div>
                     )}
