@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User, Shield, Bell, Lock, Building2, Calendar, Coins, CheckCircle, Settings, ChevronRight, Save, Loader2, Phone, UserCircle, LogOut } from "lucide-react";
+import {
+  User, Shield, Bell, Lock, Building2, Calendar, Coins, CheckCircle, Settings,
+  ChevronRight, Save, Loader2, Phone, UserCircle, LogOut, BadgeCheck, AlertCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
@@ -17,6 +23,14 @@ const MobileProfile = () => {
   const navigate = useNavigate();
   const { balance } = useCredits();
   const [bio, setBio] = useState(profile?.bio || "");
+
+  // APAAR
+  const [studentId, setStudentId] = useState("");
+  const [isVerifyingId, setIsVerifyingId] = useState(false);
+  const [idVerified, setIdVerified] = useState(false);
+
+  // Emergency
+  const [contactIsSelf, setContactIsSelf] = useState<boolean | null>(null);
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
   const [emergencyRelation, setEmergencyRelation] = useState("");
@@ -24,14 +38,65 @@ const MobileProfile = () => {
   const [isSavingEmergency, setIsSavingEmergency] = useState(false);
   const [notifications, setNotifications] = useState({ sessions: true, credits: true, wellness: false });
 
+  useEffect(() => {
+    if (!user) return;
+    const loadPrivate = async () => {
+      const { data } = await supabase.from("user_private").select("*").eq("user_id", user.id).maybeSingle();
+      if (data) {
+        setContactIsSelf(data.contact_is_self ?? null);
+        setEmergencyName(data.emergency_name_encrypted || "");
+        setEmergencyPhone(data.emergency_phone_encrypted || "");
+        setEmergencyRelation(data.emergency_relation || "");
+        if (data.student_id_encrypted) { setStudentId("••••••••"); setIdVerified(true); }
+      }
+    };
+    loadPrivate();
+  }, [user]);
+
   const handleSaveProfile = async () => {
-    if (!user) return; setIsSaving(true);
-    try { await supabase.from("profiles").update({ bio, updated_at: new Date().toISOString() }).eq("id", user.id); await refreshProfile(); toast.success("Saved"); } catch (e: any) { toast.error(e.message); } finally { setIsSaving(false); }
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      await supabase.from("profiles").update({ bio, updated_at: new Date().toISOString() }).eq("id", user.id);
+      await refreshProfile();
+      toast.success("Saved");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setIsSaving(false); }
+  };
+
+  const handleVerifyStudentId = async () => {
+    if (!user || !studentId.trim() || studentId === "••••••••") return;
+    if (studentId.trim().length < 4) { toast.error("Enter a valid ID (min 4 chars)"); return; }
+    setIsVerifyingId(true);
+    try {
+      const { error } = await supabase.from("user_private").upsert({
+        user_id: user.id, student_id_encrypted: studentId.trim(), updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+      if (error) throw error;
+      setIdVerified(true); setStudentId("••••••••");
+      toast.success("Student ID stored securely");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setIsVerifyingId(false); }
   };
 
   const handleSaveEmergency = async () => {
-    if (!user) return; setIsSavingEmergency(true);
-    try { await supabase.from("user_private").upsert({ user_id: user.id, emergency_name_encrypted: emergencyName, emergency_phone_encrypted: emergencyPhone, emergency_relation: emergencyRelation, updated_at: new Date().toISOString() }, { onConflict: "user_id" }); toast.success("Saved"); } catch (e: any) { toast.error(e.message); } finally { setIsSavingEmergency(false); }
+    if (!user || contactIsSelf === null) return;
+    if (!emergencyPhone.trim()) { toast.error("Phone number required"); return; }
+    if (!contactIsSelf && !emergencyRelation.trim()) { toast.error("Relationship required"); return; }
+    setIsSavingEmergency(true);
+    try {
+      const { error } = await supabase.from("user_private").upsert({
+        user_id: user.id,
+        contact_is_self: contactIsSelf,
+        emergency_name_encrypted: contactIsSelf ? "" : emergencyName.trim(),
+        emergency_phone_encrypted: emergencyPhone.trim(),
+        emergency_relation: contactIsSelf ? "self" : emergencyRelation.trim(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+      if (error) throw error;
+      toast.success("Emergency contact saved");
+    } catch (e: any) { toast.error(e.message); }
+    finally { setIsSavingEmergency(false); }
   };
 
   return (
@@ -67,6 +132,34 @@ const MobileProfile = () => {
           </div>
         </div>
 
+        {/* APAAR / Student ID */}
+        <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
+          <h3 className="font-semibold text-sm flex items-center gap-2">
+            <BadgeCheck className="w-4 h-4 text-primary" />Student Verification
+          </h3>
+          <p className="text-xs text-muted-foreground">APAAR / ABC ID (university) or ERP ID (school)</p>
+          {idVerified ? (
+            <div className="p-3 rounded-xl bg-eternia-success/10 border border-eternia-success/20 flex items-center gap-2.5">
+              <CheckCircle className="w-4 h-4 text-eternia-success shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-eternia-success">Verified</p>
+                <p className="text-[11px] text-muted-foreground">Securely stored.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Input placeholder="Enter APAAR / ABC / ERP ID" value={studentId} onChange={(e) => setStudentId(e.target.value)} className="bg-muted/30 h-10 text-sm" maxLength={30} />
+              <Button onClick={handleVerifyStudentId} disabled={!studentId.trim() || isVerifyingId} size="sm" className="gap-1.5 h-9 text-xs">
+                {isVerifyingId ? <Loader2 className="w-4 h-4 animate-spin" /> : <BadgeCheck className="w-4 h-4" />}Verify
+              </Button>
+            </div>
+          )}
+          <div className="p-2 rounded-lg bg-muted/30 flex items-start gap-2">
+            <AlertCircle className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+            <p className="text-[10px] text-muted-foreground">Encrypted. Only accessible during formal escalation.</p>
+          </div>
+        </div>
+
         {/* Bio */}
         <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
           <h3 className="font-semibold text-sm flex items-center gap-2"><UserCircle className="w-4 h-4 text-primary" />About</h3>
@@ -76,16 +169,57 @@ const MobileProfile = () => {
           </Button>
         </div>
 
-        {/* Emergency */}
+        {/* Emergency Contact */}
         <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
           <h3 className="font-semibold text-sm flex items-center gap-2"><Phone className="w-4 h-4 text-destructive" />Emergency Contact</h3>
           <p className="text-xs text-muted-foreground">Encrypted, only for escalation.</p>
-          <div className="space-y-2">
-            <Input placeholder="Contact Name" value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} className="bg-muted/30 h-10 text-sm" />
-            <Input placeholder="Relationship" value={emergencyRelation} onChange={(e) => setEmergencyRelation(e.target.value)} className="bg-muted/30 h-10 text-sm" />
-            <Input placeholder="+91 XXXXX XXXXX" value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} className="bg-muted/30 h-10 text-sm" />
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Whose number? *</label>
+            <Select
+              value={contactIsSelf === null ? "" : contactIsSelf ? "self" : "other"}
+              onValueChange={(v) => {
+                setContactIsSelf(v === "self");
+                if (v === "self") { setEmergencyName(""); setEmergencyRelation("self"); }
+              }}
+            >
+              <SelectTrigger className="h-10 text-sm bg-muted/30"><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="self">My own number</SelectItem>
+                <SelectItem value="other">Someone else's</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Button onClick={handleSaveEmergency} disabled={isSavingEmergency} variant="outline" size="sm" className="gap-1.5 h-9 text-xs">
+
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">Phone Number *</label>
+            <Input placeholder="+91 XXXXX XXXXX" value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} className="bg-muted/30 h-10 text-sm" maxLength={15} />
+          </div>
+
+          {contactIsSelf === false && (
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Contact Name *</label>
+                <Input placeholder="e.g., Parent" value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} className="bg-muted/30 h-10 text-sm" maxLength={100} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Relationship *</label>
+                <Select value={emergencyRelation} onValueChange={setEmergencyRelation}>
+                  <SelectTrigger className="h-10 text-sm bg-muted/30"><SelectValue placeholder="Select..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mother">Mother</SelectItem>
+                    <SelectItem value="father">Father</SelectItem>
+                    <SelectItem value="guardian">Guardian</SelectItem>
+                    <SelectItem value="sibling">Sibling</SelectItem>
+                    <SelectItem value="spouse">Spouse</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <Button onClick={handleSaveEmergency} disabled={isSavingEmergency || contactIsSelf === null || !emergencyPhone.trim()} variant="outline" size="sm" className="gap-1.5 h-9 text-xs">
             {isSavingEmergency ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}Save
           </Button>
         </div>
@@ -129,18 +263,12 @@ const MobileProfile = () => {
 
         <AccountDeletion />
 
-        {/* Logout */}
         <Button
           variant="destructive"
           className="w-full h-12 text-sm font-semibold gap-2"
-          onClick={async () => {
-            await signOut();
-            toast.success("Logged out successfully");
-            navigate("/");
-          }}
+          onClick={async () => { await signOut(); toast.success("Logged out"); navigate("/"); }}
         >
-          <LogOut className="w-5 h-5" />
-          Log Out
+          <LogOut className="w-5 h-5" />Log Out
         </Button>
       </div>
     </DashboardLayout>
