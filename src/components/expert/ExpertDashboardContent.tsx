@@ -362,7 +362,7 @@ const ExpertDashboardContent = () => {
         {activeTab === "schedule" && (
           <div className="space-y-4">
             {/* Calendar controls */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}>
                   <ChevronRight className="w-4 h-4 rotate-180" />
@@ -371,12 +371,12 @@ const ExpertDashboardContent = () => {
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex bg-muted/50 rounded-lg p-0.5">
+                <div className="flex bg-muted/50 rounded-lg p-0.5 ml-2">
                   <button onClick={() => setCalendarView("month")} className={cn("px-3 py-1 rounded-md text-xs font-medium", calendarView === "month" ? "bg-background shadow-sm" : "text-muted-foreground")}>Month</button>
                   <button onClick={() => setCalendarView("week")} className={cn("px-3 py-1 rounded-md text-xs font-medium", calendarView === "week" ? "bg-background shadow-sm" : "text-muted-foreground")}>Week</button>
                 </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button size="sm" className="gap-1.5 h-8" onClick={() => setSlotDialogOpen(true)}>
                   <Plus className="w-3.5 h-3.5" />Add Slot
                 </Button>
