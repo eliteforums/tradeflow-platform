@@ -86,56 +86,6 @@ const MobileAdminDashboard = () => {
     </DashboardLayout>
   );
 
-  const filteredMembers = useMemo(() => {
-    let filtered = members;
-    if (roleFilter !== "all") {
-      filtered = roleFilter === "therapist"
-        ? filtered.filter((m) => m.role === "expert" && m.specialty)
-        : filtered.filter((m) => m.role === roleFilter);
-    }
-    if (searchQuery) {
-      filtered = filtered.filter((m) => m.username.toLowerCase().includes(searchQuery.toLowerCase()));
-    }
-    return filtered;
-  }, [members, roleFilter, searchQuery]);
-
-  const unifiedSessions = useMemo(() => {
-    const items: { id: string; type: "appointment" | "peer" | "blackbox"; description: string; date: string; status: string; flagged?: boolean }[] = [];
-    if (sessionFilter === "all" || sessionFilter === "appointment") {
-      appointments.forEach((apt: any) => {
-        items.push({ id: apt.id, type: "appointment", description: `${apt.expert?.username || "Expert"} → ${apt.student?.username || "Student"}`, date: apt.slot_time, status: apt.status });
-      });
-    }
-    if (sessionFilter === "all" || sessionFilter === "peer") {
-      peerSessions.forEach((s: any) => {
-        items.push({ id: s.id, type: "peer", description: `${s.student?.username || "Student"} → ${s.intern?.username || "Pending"}`, date: s.created_at, status: s.status, flagged: s.is_flagged });
-      });
-    }
-    if (sessionFilter === "all" || sessionFilter === "blackbox") {
-      blackboxSessions.forEach((bs: any) => {
-        items.push({ id: bs.id, type: "blackbox", description: `BlackBox${bs.therapist?.username ? ` → ${bs.therapist.username}` : ""}`, date: bs.created_at, status: bs.status, flagged: bs.flag_level > 0 });
-      });
-    }
-    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [appointments, peerSessions, blackboxSessions, sessionFilter]);
-
-  const roleCounts = {
-    admin: members.filter((m) => m.role === "admin").length,
-    spoc: members.filter((m) => m.role === "spoc").length,
-    expert: members.filter((m) => m.role === "expert").length,
-    intern: members.filter((m) => m.role === "intern").length,
-    student: members.filter((m) => m.role === "student").length,
-  };
-
-  const institutionData = useMemo(() => {
-    return institutions.map((inst: any) => {
-      const instMembers = members.filter(m => m.institution_id === inst.id);
-      const spoc = instMembers.find(m => m.role === "spoc");
-      const studentCount = instMembers.filter(m => m.role === "student").length;
-      return { ...inst, spoc, studentCount, memberCount: instMembers.length };
-    });
-  }, [institutions, members]);
-
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: "overview", label: "Overview", icon: BarChart3 },
     { id: "members", label: "Members", icon: Users },
