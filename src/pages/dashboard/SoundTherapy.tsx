@@ -39,7 +39,11 @@ const SoundTherapy = () => {
 
   useEffect(() => { if (audioRef.current) audioRef.current.volume = isMuted ? 0 : volume[0] / 100; }, [volume, isMuted]);
 
-  const handleTrackSelect = useCallback((index: number) => { setCurrentTrack(index); setIsPlaying(true); setProgress([0]); }, []);
+  const handleTrackSelect = useCallback((index: number) => {
+    if (!filteredTracks[index]?.file_url) { toast({ title: "No audio file", description: "This track has no audio file yet", variant: "destructive" }); return; }
+    setCurrentTrack(index); setIsPlaying(true); setProgress([0]);
+  }, [filteredTracks]);
+  const handleSeek = useCallback((val: number[]) => { if (audioRef.current?.duration) audioRef.current.currentTime = (val[0] / 100) * audioRef.current.duration; }, []);
   const handleNext = useCallback(() => { setCurrentTrack((prev) => prev + 1 < filteredTracks.length ? (setProgress([0]), prev + 1) : prev); }, [filteredTracks.length]);
   const handlePrev = useCallback(() => { setCurrentTrack((prev) => prev > 0 ? (setProgress([0]), prev - 1) : prev); }, []);
   const toggleMute = useCallback(() => setIsMuted((prev) => !prev), []);
