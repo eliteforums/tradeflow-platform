@@ -13,6 +13,14 @@ import { format } from "date-fns";
 const PeerConnect = () => {
   const isMobile = useIsMobile();
   const { user, profile, creditBalance } = useAuth();
+  const [message, setMessage] = useState("");
+  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
+  const [mobileView, setMobileView] = useState<"list" | "chat">("list");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { interns, sessions, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, isRequesting, isSending } = usePeerConnect();
+
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
+  useEffect(() => { if (activeSession && !activeSessionId) { setActiveSessionId(activeSession.id); setMobileView("chat"); } }, [activeSession, activeSessionId, setActiveSessionId]);
 
   // Gate: Interns must complete training before accessing Peer Connect
   const isIntern = profile?.role === "intern";
@@ -34,15 +42,6 @@ const PeerConnect = () => {
       </DashboardLayout>
     );
   }
-  const [message, setMessage] = useState("");
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
-  const [mobileView, setMobileView] = useState<"list" | "chat">("list");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { interns, sessions, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, isRequesting, isSending } = usePeerConnect();
-  const { interns, sessions, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, isRequesting, isSending } = usePeerConnect();
-
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
-  useEffect(() => { if (activeSession && !activeSessionId) { setActiveSessionId(activeSession.id); setMobileView("chat"); } }, [activeSession, activeSessionId, setActiveSessionId]);
 
   const handleSendMessage = () => { if (!message.trim() || !activeSessionId) return; sendMessage({ sessionId: activeSessionId, content: message }); setMessage(""); };
   const handleKeyPress = (e: React.KeyboardEvent) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } };
