@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { createVideoSDKRoom, getVideoSDKToken } from "@/lib/videosdk";
 import { toast } from "sonner";
+import { spendCredits } from "./useSpendCredits";
 
 export type BlackBoxSessionStatus = "queued" | "accepted" | "active" | "escalated" | "completed" | "cancelled";
 
