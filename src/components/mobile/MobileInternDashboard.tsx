@@ -52,8 +52,9 @@ const MobileInternDashboard = () => {
   // Notes
   const [notesSearch, setNotesSearch] = useState("");
 
-  const isTrainingComplete = completedModules.length >= MODULES.length;
-  const progress = (completedModules.length / MODULES.length) * 100;
+  const trainingStatus = (profile as any)?.training_status || "not_started";
+  const isTrainingComplete = trainingStatus === "completed" || completedModules.length >= MODULES.length;
+  const progress = isTrainingComplete ? 100 : (completedModules.length / MODULES.length) * 100;
 
   const { data: mySessions = [], isLoading } = useQuery({
     queryKey: ["intern-sessions", user?.id],

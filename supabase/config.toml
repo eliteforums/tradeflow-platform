@@ -1,1 +1,4 @@
 project_id = "hzlinabncewcahdnobet"
+
+[functions.purchase-credits]
+verify_jwt = false
