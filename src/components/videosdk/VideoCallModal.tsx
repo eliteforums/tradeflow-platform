@@ -3,6 +3,7 @@ import { MeetingProvider } from "@videosdk.live/react-sdk";
 import { Video, Phone, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createVideoSDKRoom, getVideoSDKToken } from "@/lib/videosdk";
+import { supabase } from "@/integrations/supabase/client";
 import MeetingView from "./MeetingView";
 import { toast } from "@/hooks/use-toast";
 
@@ -11,6 +12,7 @@ interface VideoCallModalProps {
   onClose: () => void;
   participantName: string;
   mode?: "video" | "audio";
+  appointmentId?: string;
   existingRoomId?: string;
 }
 
@@ -19,15 +21,45 @@ const VideoCallModal = ({
   onClose,
   participantName,
   mode = "video",
+  appointmentId,
   existingRoomId,
 }: VideoCallModalProps) => {
-  const [meetingId, setMeetingId] = useState<string | null>(existingRoomId || null);
+  const [meetingId, setMeetingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const startCall = useCallback(async () => {
     setIsLoading(true);
     try {
+      // If we have an appointmentId, check if a room already exists for this appointment
+      if (appointmentId) {
+        const { data: apt } = await supabase
+          .from("appointments")
+          .select("room_id")
+          .eq("id", appointmentId)
+          .single();
+
+        if (apt?.room_id) {
+          // Room already exists — join it
+          const t = await getVideoSDKToken();
+          setToken(t);
+          setMeetingId(apt.room_id);
+          return;
+        }
+
+        // No room yet — create one and save it to the appointment
+        const { token: t, roomId } = await createVideoSDKRoom();
+        await supabase
+          .from("appointments")
+          .update({ room_id: roomId } as any)
+          .eq("id", appointmentId);
+
+        setToken(t);
+        setMeetingId(roomId);
+        return;
+      }
+
+      // Fallback: use existingRoomId or create a standalone room
       if (existingRoomId) {
         const t = await getVideoSDKToken();
         setToken(t);
@@ -46,7 +78,7 @@ const VideoCallModal = ({
     } finally {
       setIsLoading(false);
     }
-  }, [existingRoomId]);
+  }, [appointmentId, existingRoomId]);
 
   const handleLeave = useCallback(() => {
     setMeetingId(null);

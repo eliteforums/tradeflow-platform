@@ -22,7 +22,7 @@ const Appointments = () => {
   const isMobile = useIsMobile();
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "video" });
+  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; appointmentId?: string }>({ open: false, mode: "video" });
   const [bookingDialog, setBookingDialog] = useState<{ open: boolean; expert?: any; slot?: any }>({ open: false });
   const [sessionType, setSessionType] = useState<"video" | "audio">("video");
 
@@ -32,7 +32,7 @@ const Appointments = () => {
   // If user is an expert, show Expert Dashboard instead
   if (profile?.role === "expert") return <ExpertDashboard />;
 
-  const handleJoinCall = (type: string) => setCallModal({ open: true, mode: type === "video" ? "video" : "audio" });
+  const handleJoinCall = (type: string, aptId: string) => setCallModal({ open: true, mode: type === "video" ? "video" : "audio", appointmentId: aptId });
   const handleBookSlot = (expert: any, slot: any) => setBookingDialog({ open: true, expert, slot });
   const confirmBooking = () => {
     if (!bookingDialog.expert || !bookingDialog.slot) return;
@@ -83,7 +83,7 @@ const Appointments = () => {
                     </div>
                     {activeTab === "upcoming" && (apt.status === "confirmed" || apt.status === "pending") && (
                       <div className="flex items-center gap-2 mt-2">
-                        <Button variant="outline" size="sm" onClick={() => handleJoinCall(apt.session_type)} className="gap-1 h-7 text-xs">{apt.session_type === "video" ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}Join</Button>
+                        <Button variant="outline" size="sm" onClick={() => handleJoinCall(apt.session_type, apt.id)} className="gap-1 h-7 text-xs">{apt.session_type === "video" ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}Join</Button>
                         <Button variant="ghost" size="sm" onClick={() => cancelAppointment(apt.id)} className="text-destructive h-7 text-xs"><X className="w-3 h-3 mr-1" />Cancel</Button>
                       </div>
                     )}
@@ -160,7 +160,7 @@ const Appointments = () => {
         </DialogContent>
       </Dialog>
 
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Student"} mode={callModal.mode} />
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Student"} mode={callModal.mode} appointmentId={callModal.appointmentId} />
     </DashboardLayout>
   );
 };

@@ -13,7 +13,7 @@ import { format } from "date-fns";
 const MobileAppointments = () => {
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "video" });
+  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; appointmentId?: string }>({ open: false, mode: "video" });
   const [bookingDialog, setBookingDialog] = useState<{ open: boolean; expert?: any; slot?: any }>({ open: false });
   const [sessionType, setSessionType] = useState<"video" | "audio">("video");
 
@@ -78,7 +78,7 @@ const MobileAppointments = () => {
                     </div>
                     {activeTab === "upcoming" && (apt.status === "confirmed" || apt.status === "pending") && (
                       <div className="flex items-center gap-2 mt-2">
-                        <Button variant="outline" size="sm" onClick={() => setCallModal({ open: true, mode: apt.session_type === "video" ? "video" : "audio" })} className="gap-1.5 h-9 text-xs px-3">
+                        <Button variant="outline" size="sm" onClick={() => setCallModal({ open: true, mode: apt.session_type === "video" ? "video" : "audio", appointmentId: apt.id })} className="gap-1.5 h-9 text-xs px-3">
                           {apt.session_type === "video" ? <Video className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}Join
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => cancelAppointment(apt.id)} className="text-destructive h-9 text-xs px-3">
@@ -173,7 +173,7 @@ const MobileAppointments = () => {
         </DialogContent>
       </Dialog>
 
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Student"} mode={callModal.mode} />
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Student"} mode={callModal.mode} appointmentId={callModal.appointmentId} />
     </DashboardLayout>
   );
 };
