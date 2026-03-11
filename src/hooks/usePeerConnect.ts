@@ -183,14 +183,8 @@ export function usePeerConnect() {
 
       if (error) throw error;
 
-      // Deduct credits for peer session
-      await supabase.from("credit_transactions").insert({
-        user_id: user.id,
-        delta: -20,
-        type: "spend",
-        notes: "Peer Connect session",
-        reference_id: sessionId,
-      });
+      // Server-side atomic credit deduction
+      await spendCredits(20, "Peer Connect session", sessionId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });

@@ -98,6 +98,13 @@ export const useBlackBoxSession = () => {
     if (!user) return;
     setIsRequesting(true);
     try {
+      // Server-side atomic credit deduction (BlackBox session costs 30 ECC)
+      const spendResult = await spendCredits(30, "BlackBox Talk Now session");
+      if (!spendResult.success) {
+        toast.error("Insufficient credits for a BlackBox session");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("blackbox_sessions")
         .insert({ student_id: user.id, status: "queued" })

@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { spendCredits } from "./useSpendCredits";
 
 export interface Expert {
   id: string;
@@ -34,10 +35,9 @@ export interface Appointment {
 }
 
 export function useAppointments() {
-  const { user, creditBalance, refreshCredits } = useAuth();
+  const { user, refreshCredits } = useAuth();
   const queryClient = useQueryClient();
 
-  // Get all experts
   const { data: experts = [], isLoading: isLoadingExperts } = useQuery({
     queryKey: ["experts"],
     queryFn: async () => {
@@ -47,13 +47,11 @@ export function useAppointments() {
         .eq("role", "expert")
         .eq("is_active", true)
         .eq("is_verified", true);
-
       if (error) throw error;
       return data as Expert[];
     },
   });
 
-  // Get available slots
   const { data: slots = [], isLoading: isLoadingSlots } = useQuery({
     queryKey: ["expert-slots"],
     queryFn: async () => {
@@ -63,47 +61,38 @@ export function useAppointments() {
         .eq("is_booked", false)
         .gte("start_time", new Date().toISOString())
         .order("start_time", { ascending: true });
-
       if (error) throw error;
       return data as ExpertSlot[];
     },
   });
 
-  // Get user's appointments
   const { data: appointments = [], isLoading: isLoadingAppointments } = useQuery({
     queryKey: ["appointments", user?.id],
     queryFn: async () => {
       if (!user) return [];
-
       const { data, error } = await supabase
         .from("appointments")
         .select("*, expert:profiles!appointments_expert_id_fkey(*)")
         .eq("student_id", user.id)
         .order("slot_time", { ascending: false });
-
       if (error) throw error;
       return data as Appointment[];
     },
     enabled: !!user,
   });
 
-  // Book appointment
   const bookAppointment = useMutation({
     mutationFn: async ({
-      expertId,
-      slotId,
-      slotTime,
-      sessionType,
-      creditCost,
+      expertId, slotId, slotTime, sessionType, creditCost,
     }: {
-      expertId: string;
-      slotId: string;
-      slotTime: string;
-      sessionType: "video" | "audio";
-      creditCost: number;
+      expertId: string; slotId: string; slotTime: string;
+      sessionType: "video" | "audio"; creditCost: number;
     }) => {
       if (!user) throw new Error("Not authenticated");
-      if (creditBalance < creditCost) throw new Error("Insufficient credits");
+
+      // Server-side atomic credit deduction
+      const result = await spendCredits(creditCost, "Expert Connect booking");
+      if (!result.success) throw new Error("Insufficient credits");
 
       // Create appointment
       const { data: appointment, error: appointmentError } = await supabase
@@ -119,27 +108,10 @@ export function useAppointments() {
         })
         .select()
         .single();
-
       if (appointmentError) throw appointmentError;
 
       // Mark slot as booked
-      const { error: slotError } = await supabase
-        .from("expert_availability")
-        .update({ is_booked: true })
-        .eq("id", slotId);
-
-      if (slotError) throw slotError;
-
-      // Deduct credits
-      const { error: creditError } = await supabase.from("credit_transactions").insert({
-        user_id: user.id,
-        delta: -creditCost,
-        type: "spend",
-        notes: `Expert appointment booking`,
-        reference_id: appointment.id,
-      });
-
-      if (creditError) throw creditError;
+      await supabase.from("expert_availability").update({ is_booked: true }).eq("id", slotId);
 
       return appointment;
     },
@@ -155,17 +127,14 @@ export function useAppointments() {
     },
   });
 
-  // Cancel appointment
   const cancelAppointment = useMutation({
     mutationFn: async (appointmentId: string) => {
       if (!user) throw new Error("Not authenticated");
-
       const { error } = await supabase
         .from("appointments")
         .update({ status: "cancelled" })
         .eq("id", appointmentId)
         .eq("student_id", user.id);
-
       if (error) throw error;
     },
     onSuccess: () => {
@@ -180,17 +149,12 @@ export function useAppointments() {
   const upcomingAppointments = appointments.filter(
     (a) => a.status !== "completed" && a.status !== "cancelled" && new Date(a.slot_time) > new Date()
   );
-
   const pastAppointments = appointments.filter(
     (a) => a.status === "completed" || new Date(a.slot_time) <= new Date()
   );
 
   return {
-    experts,
-    slots,
-    appointments,
-    upcomingAppointments,
-    pastAppointments,
+    experts, slots, appointments, upcomingAppointments, pastAppointments,
     isLoading: isLoadingExperts || isLoadingSlots || isLoadingAppointments,
     bookAppointment: bookAppointment.mutate,
     cancelAppointment: cancelAppointment.mutate,
