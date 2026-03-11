@@ -34,14 +34,7 @@ const QRScan = () => {
         body: { qr_payload: manualCode.trim() },
       });
       if (error || !data?.valid) {
-        // Fallback: check if it's a legacy institution code (8+ chars)
-        if (manualCode.length >= 8) {
-          sessionStorage.setItem("eternia_spoc_verified", "true");
-          toast.success("SPOC verification complete!");
-          navigate("/register");
-        } else {
-          toast.error(data?.error || "Invalid SPOC code. Please ask your Grievance Officer.");
-        }
+        toast.error(data?.error || "Invalid SPOC code. Please ask your Grievance Officer.");
       } else {
         sessionStorage.setItem("eternia_spoc_verified", "true");
         sessionStorage.setItem("eternia_institution_id", data.institution_id);
