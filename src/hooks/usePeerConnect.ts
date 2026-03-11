@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
+import { spendCredits } from "./useSpendCredits";
 
 export interface Intern {
   id: string;
