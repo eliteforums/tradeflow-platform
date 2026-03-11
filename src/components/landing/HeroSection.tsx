@@ -108,35 +108,6 @@ const HeroSection = () => {
               transition={{ delay: 0.9, duration: 0.4 }}
             >
               I
-              {/* Photo cards coming from "I" */}
-              {[
-                { rotate: -35, x: -60, y: -50, delay: 1.3, emoji: "🧘" },
-                { rotate: 15, x: 30, y: -70, delay: 1.5, emoji: "💬" },
-                { rotate: -10, x: -40, y: -90, delay: 1.7, emoji: "🎵" },
-                { rotate: 25, x: 50, y: -40, delay: 1.9, emoji: "🛡️" },
-              ].map((card, ci) => (
-                <motion.div
-                  key={ci}
-                  className="absolute left-1/2 bottom-full w-8 h-8 sm:w-10 sm:h-10 rounded-lg border backdrop-blur-sm flex items-center justify-center shadow-lg shadow-primary/20"
-                  style={{ background: 'linear-gradient(135deg, hsl(var(--eternia-teal) / 0.25), hsl(var(--eternia-lavender) / 0.25))', borderColor: 'hsl(var(--eternia-teal) / 0.4)' }}
-                  initial={{ opacity: 0, x: 0, y: 0, scale: 0 }}
-                  animate={{
-                    opacity: [0, 1, 1, 0.7],
-                    x: card.x,
-                    y: card.y,
-                    scale: [0, 1, 1, 0.8],
-                    rotate: card.rotate,
-                  }}
-                  transition={{
-                    delay: card.delay,
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatDelay: 5,
-                  }}
-                >
-                  <span className="text-xs sm:text-sm">{card.emoji}</span>
-                </motion.div>
-              ))}
             </motion.span>
             {"A".split("").map((char, i) => (
               <motion.span
