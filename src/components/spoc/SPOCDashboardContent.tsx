@@ -387,21 +387,49 @@ const SPOCDashboardContent = () => {
               QR Onboarding Code
             </h3>
             <p className="text-xs text-muted-foreground">
-              Share this code with students during onboarding sessions.
+              Generate HMAC-signed QR code for student onboarding (24h TTL).
             </p>
             <div className="p-4 rounded-xl bg-muted/30 border border-border text-center">
               <div className="w-28 h-28 mx-auto bg-card rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center mb-3">
                 <QrCode className="w-14 h-14 text-primary/60" />
               </div>
-              <code className="text-[10px] font-mono text-muted-foreground break-all block mb-3">
-                {qrPayload.slice(0, 40)}...
-              </code>
-              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={copyQRCode}>
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={generateQR}>
                 {copiedQR ? <Check className="w-3.5 h-3.5 text-eternia-success" /> : <Copy className="w-3.5 h-3.5" />}
-                {copiedQR ? "Copied!" : "Copy Code"}
+                {copiedQR ? "Copied!" : "Generate & Copy"}
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground italic">Valid for 24 hours · Audited</p>
+            <p className="text-[10px] text-muted-foreground italic">HMAC-SHA256 signed · Valid for 24 hours · Audited</p>
+          </div>
+
+          {/* Bulk Credit Granting */}
+          <div className="p-4 rounded-2xl bg-card border border-border/50 space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Coins className="w-4 h-4 text-primary" />
+              Grant Credits to Students
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Bulk-allocate ECC to all enrolled students ({students.length} students).
+            </p>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={grantAmount}
+                onChange={(e) => setGrantAmount(e.target.value)}
+                className="w-24 h-9 text-sm"
+                min="1"
+                max="1000"
+              />
+              <span className="text-xs text-muted-foreground">ECC per student</span>
+            </div>
+            <Button
+              size="sm"
+              className="gap-1.5 h-8 text-xs"
+              onClick={grantCreditsToStudents}
+              disabled={isGranting || students.length === 0}
+            >
+              {isGranting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Coins className="w-3.5 h-3.5" />}
+              Grant to All Students
+            </Button>
           </div>
 
           {/* Student List */}
