@@ -24,7 +24,7 @@ const ExpertDashboard = () => {
   const [activeTab, setActiveTab] = useState<"schedule" | "slots" | "sessions" | "notes">("schedule");
   const [sessionNotes, setSessionNotes] = useState("");
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "video" });
+  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; appointmentId?: string }>({ open: false, mode: "video" });
 
   // Slot creation
   const [slotDate, setSlotDate] = useState<Date>();
