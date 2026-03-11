@@ -67,6 +67,7 @@ const adminBottomNavItems = [
 
 const expertBottomNavItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard/expert" },
+  { icon: Headphones, label: "Queue", path: "/dashboard/therapist" },
   { icon: Calendar, label: "Schedule", path: "/dashboard/appointments" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
