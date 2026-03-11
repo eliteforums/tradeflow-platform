@@ -69,7 +69,7 @@ const MobileDashboard = () => {
   if (profile?.role === "intern") return <Navigate to="/dashboard/intern" replace />;
 
   const portals = [
-    { icon: Calendar, title: "Appointments", desc: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500" },
+    { icon: Calendar, title: "Expert Connect", desc: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500" },
     { icon: MessageCircle, title: "Peer Connect", desc: "Talk to trained interns", path: "/dashboard/peer-connect", gradient: "from-pink-500 to-rose-500" },
     { icon: Box, title: "BlackBox", desc: "Express anonymously", path: "/dashboard/blackbox", gradient: "from-violet-500 to-purple-500" },
     { icon: Music, title: "Sound Therapy", desc: "Meditate & relax", path: "/dashboard/sound-therapy", gradient: "from-cyan-500 to-blue-500" },
