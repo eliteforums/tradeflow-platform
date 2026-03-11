@@ -177,8 +177,20 @@ const ExpertDashboardContent = () => {
   const submitEscalation = useMutation({
     mutationFn: async () => {
       if (!user || !escalationDialog.appointmentId) throw new Error("Missing data");
+      // Find the student's institution SPOC
+      const appointment = myAppointments.find(a => a.id === escalationDialog.appointmentId);
+      let spocId = user.id; // fallback
+      if (appointment?.student?.institution_id) {
+        const { data: spocs } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("institution_id", (appointment.student as any).institution_id)
+          .eq("role", "spoc")
+          .limit(1);
+        if (spocs && spocs.length > 0) spocId = spocs[0].id;
+      }
       const { error } = await supabase.from("escalation_requests").insert({
-        spoc_id: user.id,
+        spoc_id: spocId,
         justification_encrypted: escalationReason,
         session_id: null,
         entry_id: null,
@@ -186,7 +198,7 @@ const ExpertDashboardContent = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Escalation submitted");
+      toast.success("Escalation submitted to SPOC");
       setEscalationDialog({ open: false });
       setEscalationReason("");
     },
