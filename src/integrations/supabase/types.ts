@@ -21,6 +21,7 @@ export type Database = {
           credits_charged: number
           expert_id: string
           id: string
+          room_id: string | null
           session_notes_encrypted: string | null
           session_type: string
           slot_id: string | null
@@ -35,6 +36,7 @@ export type Database = {
           credits_charged?: number
           expert_id: string
           id?: string
+          room_id?: string | null
           session_notes_encrypted?: string | null
           session_type?: string
           slot_id?: string | null
@@ -49,6 +51,7 @@ export type Database = {
           credits_charged?: number
           expert_id?: string
           id?: string
+          room_id?: string | null
           session_notes_encrypted?: string | null
           session_type?: string
           slot_id?: string | null
