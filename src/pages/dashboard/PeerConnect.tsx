@@ -12,6 +12,28 @@ import { format } from "date-fns";
 
 const PeerConnect = () => {
   const isMobile = useIsMobile();
+  const { user, profile, creditBalance } = useAuth();
+
+  // Gate: Interns must complete training before accessing Peer Connect
+  const isIntern = profile?.role === "intern";
+  const trainingStatus = (profile as any)?.training_status || "not_started";
+  const isTrainingComplete = trainingStatus === "completed";
+
+  if (isIntern && !isTrainingComplete) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+          <div className="w-16 h-16 rounded-2xl bg-eternia-warning/10 flex items-center justify-center mb-4">
+            <Shield className="w-8 h-8 text-eternia-warning" />
+          </div>
+          <h2 className="text-xl font-bold font-display mb-2">Training Required</h2>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Complete all 7 training modules before you can access Peer Connect sessions. Head to your Intern Dashboard to continue training.
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
   const [message, setMessage] = useState("");
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
