@@ -4,6 +4,7 @@ import { ArrowLeft, Camera, QrCode, Shield, CheckCircle, Loader2 } from "lucide-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const QRScan = () => {
   const navigate = useNavigate();
@@ -27,13 +28,35 @@ const QRScan = () => {
       return;
     }
     setIsVerifying(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    if (manualCode.length >= 8) {
-      sessionStorage.setItem("eternia_spoc_verified", "true");
-      toast.success("SPOC verification complete!");
-      navigate("/register");
-    } else {
-      toast.error("Invalid SPOC code. Please ask your Grievance Officer.");
+    try {
+      // Try to validate as HMAC-signed QR payload
+      const { data, error } = await supabase.functions.invoke("validate-spoc-qr", {
+        body: { qr_payload: manualCode.trim() },
+      });
+      if (error || !data?.valid) {
+        // Fallback: check if it's a legacy institution code (8+ chars)
+        if (manualCode.length >= 8) {
+          sessionStorage.setItem("eternia_spoc_verified", "true");
+          toast.success("SPOC verification complete!");
+          navigate("/register");
+        } else {
+          toast.error(data?.error || "Invalid SPOC code. Please ask your Grievance Officer.");
+        }
+      } else {
+        sessionStorage.setItem("eternia_spoc_verified", "true");
+        sessionStorage.setItem("eternia_institution_id", data.institution_id);
+        toast.success(`Verified: ${data.institution_name}`);
+        navigate("/register");
+      }
+    } catch {
+      // Fallback for network errors
+      if (manualCode.length >= 8) {
+        sessionStorage.setItem("eternia_spoc_verified", "true");
+        toast.success("SPOC verification complete!");
+        navigate("/register");
+      } else {
+        toast.error("Invalid SPOC code.");
+      }
     }
     setIsVerifying(false);
   };

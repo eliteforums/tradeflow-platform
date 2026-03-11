@@ -337,7 +337,7 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Privacy */}
+        {/* Privacy & Consent */}
         <div className="p-6 rounded-2xl bg-card border border-border space-y-3">
           <h3 className="font-semibold font-display text-sm flex items-center gap-2"><Lock className="w-4 h-4 text-primary" />Privacy & Security</h3>
           <div className="space-y-2">
@@ -348,6 +348,17 @@ const Profile = () => {
             <div className="flex items-start gap-2.5">
               <Shield className="w-4 h-4 text-primary shrink-0 mt-0.5" />
               <div><p className="font-medium text-xs mb-0.5">Your Data is Protected</p><p className="text-[11px] text-muted-foreground leading-relaxed">AES-256 encrypted. Only formal escalation can reveal identity.</p></div>
+            </div>
+          </div>
+          <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/20">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-xs mb-0.5 text-destructive">Withdraw Consent</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed mb-2">
+                  Under DPDP Act 2023, you can withdraw your consent at any time. This will initiate account deletion and data erasure.
+                </p>
+              </div>
             </div>
           </div>
         </div>

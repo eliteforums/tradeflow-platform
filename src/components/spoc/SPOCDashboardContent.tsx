@@ -479,6 +479,16 @@ const SPOCDashboardContent = () => {
                     >
                       {student.is_active ? "Allocated" : "Revoked"}
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[10px] text-muted-foreground hover:text-destructive shrink-0"
+                      onClick={() => handleResetDevice(student.id)}
+                      disabled={isResettingDevice}
+                      title="Reset device binding"
+                    >
+                      <Lock className="w-3 h-3" />
+                    </Button>
                   </div>
                 ))
               )}
