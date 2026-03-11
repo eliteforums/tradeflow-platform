@@ -17,24 +17,16 @@ const AccountDeletion = () => {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Not authenticated");
-      await supabase.from("audit_logs").insert({
-        actor_id: user.id, action_type: "account_deleted",
-        target_table: "profiles", target_id: user.id,
-        metadata: { reason: "user_requested", dpdp_compliance: true },
-      });
-      await supabase.from("user_private").delete().eq("user_id", user.id);
-      await supabase.from("recovery_credentials").delete().eq("user_id", user.id);
-      await supabase.from("blackbox_entries").delete().eq("user_id", user.id);
-      await supabase.from("profiles")
-        .update({ is_active: false, username: `deleted_${user.id.slice(0, 8)}`, bio: null, avatar_url: null })
-        .eq("id", user.id);
+      const { data, error } = await supabase.functions.invoke("delete-account");
+      if (error) throw error;
+      if (!data?.success) throw new Error("Deletion failed");
     },
     onSuccess: async () => {
-      toast.success("Account deleted.");
+      toast.success("Account deleted. Your data has been erased.");
       await signOut();
       navigate("/");
     },
-    onError: () => toast.error("Failed to delete account."),
+    onError: () => toast.error("Failed to delete account. Please try again."),
   });
 
   return (
@@ -47,10 +39,11 @@ const AccountDeletion = () => {
         Under DPDP Act 2023, you can delete your personal data permanently.
       </p>
       <ul className="text-[10px] text-muted-foreground space-y-0.5 list-disc list-inside">
-        <li>Emergency contacts & student ID deleted</li>
-        <li>BlackBox entries removed</li>
-        <li>Recovery credentials removed</li>
-        <li>Profile deactivated</li>
+        <li>Emergency contacts & student ID hard-deleted</li>
+        <li>BlackBox entries permanently removed</li>
+        <li>Recovery credentials destroyed</li>
+        <li>Profile deactivated & anonymized</li>
+        <li>Auth account permanently deleted</li>
       </ul>
 
       {!showForm ? (

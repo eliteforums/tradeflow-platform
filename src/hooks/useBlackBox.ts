@@ -39,15 +39,22 @@ export function useBlackBox() {
     mutationFn: async ({ content, isPrivate }: { content: string; isPrivate: boolean }) => {
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase.from("blackbox_entries").insert({
+      const { data, error } = await supabase.from("blackbox_entries").insert({
         user_id: user.id,
-        content_encrypted: content, // In production, encrypt before storing
+        content_encrypted: content,
         content_type: "text",
         is_private: isPrivate,
         ai_flag_level: 0,
-      });
+      }).select("id").single();
 
       if (error) throw error;
+
+      // Trigger AI moderation asynchronously (fire-and-forget)
+      if (data?.id) {
+        supabase.functions.invoke("ai-moderate", {
+          body: { content, entry_id: data.id },
+        }).catch((err) => console.warn("AI moderation failed:", err));
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["blackbox-entries"] });
