@@ -24,6 +24,7 @@ export interface QuestCompletion {
 export function useQuests() {
   const { user, refreshCredits } = useAuth();
   const queryClient = useQueryClient();
+  const { remainingToday, canEarn } = useEccEarn();
 
   const { data: quests = [], isLoading: isLoadingQuests } = useQuery({
     queryKey: ["quest-cards"],
