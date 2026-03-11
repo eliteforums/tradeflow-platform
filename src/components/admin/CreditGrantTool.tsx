@@ -22,6 +22,7 @@ export default function CreditGrantTool() {
         .eq("username", username.trim())
         .single();
       if (profileErr || !profile) throw new Error("User not found.");
+      if ((profile as any).role !== "student") throw new Error("Credits can only be granted to students.");
       const { error: creditErr } = await supabase.from("credit_transactions").insert({
         user_id: profile.id,
         delta: credits,
