@@ -1,19 +1,21 @@
 import { useState } from "react";
-import { Plus, Lock, Mic, Type, Send, Clock, Shield, AlertTriangle, Trash2, Eye, EyeOff, Loader2, Phone, Video } from "lucide-react";
+import { Plus, Lock, Mic, Type, Send, Clock, Shield, AlertTriangle, Trash2, Eye, EyeOff, Loader2, Phone, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import VideoCallModal from "@/components/videosdk/VideoCallModal";
+import { MeetingProvider } from "@videosdk.live/react-sdk";
+import MeetingView from "@/components/videosdk/MeetingView";
 import { useBlackBox } from "@/hooks/useBlackBox";
+import { useBlackBoxSession } from "@/hooks/useBlackBoxSession";
 import { useAuth } from "@/contexts/AuthContext";
 
 const MobileBlackBox = () => {
   const [newEntry, setNewEntry] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [showEntries, setShowEntries] = useState(true);
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "video" });
   const { entries, isLoading, createEntry, deleteEntry, isCreating } = useBlackBox();
+  const { activeSession, isRequesting, token, requestSession, cancelSession, endSession } = useBlackBoxSession();
   const { profile } = useAuth();
 
   const handleSaveEntry = () => {
@@ -29,19 +31,54 @@ const MobileBlackBox = () => {
           <p className="text-sm text-muted-foreground">Safe space for anonymous expression & support</p>
         </div>
 
-        {/* Talk Now */}
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30">
-          <h2 className="font-semibold text-sm mb-2 flex items-center gap-2"><Phone className="w-4 h-4 text-primary" />Talk to Someone Now</h2>
-          <p className="text-xs text-muted-foreground mb-3">Connect anonymously with a professional — 24/7 on-call support.</p>
-          <div className="flex gap-2">
-            <Button className="flex-1 h-10 text-sm gap-1.5" onClick={() => setCallModal({ open: true, mode: "audio" })}>
-              <Phone className="w-4 h-4" />Voice Call
-            </Button>
-            <Button variant="outline" className="flex-1 h-10 text-sm gap-1.5" onClick={() => setCallModal({ open: true, mode: "video" })}>
-              <Video className="w-4 h-4" />Video Call
+        {/* Talk Now — Queue-based */}
+        {activeSession && activeSession.status === "queued" ? (
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30">
+            <div className="flex flex-col items-center gap-3 py-2">
+              <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+                <Phone className="w-7 h-7 text-primary" />
+              </div>
+              <div className="text-center">
+                <h2 className="font-semibold text-sm">Waiting for a therapist...</h2>
+                <p className="text-xs text-muted-foreground mt-1">You're in the queue.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={cancelSession} className="gap-1.5">
+                <X className="w-4 h-4" />Cancel
+              </Button>
+            </div>
+          </div>
+        ) : activeSession && activeSession.room_id && token && (activeSession.status === "accepted" || activeSession.status === "active") ? (
+          <div className="rounded-2xl bg-card border border-border overflow-hidden">
+            <div className="flex items-center justify-between p-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-sm">Audio Session</span>
+              </div>
+              <Button variant="destructive" size="sm" onClick={endSession} className="h-8 text-xs">End</Button>
+            </div>
+            <MeetingProvider
+              config={{
+                meetingId: activeSession.room_id,
+                micEnabled: true,
+                webcamEnabled: false,
+                name: profile?.username || "Anonymous",
+                debugMode: false,
+              }}
+              token={token}
+            >
+              <MeetingView meetingId={activeSession.room_id} onMeetingLeave={endSession} />
+            </MeetingProvider>
+          </div>
+        ) : (
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30">
+            <h2 className="font-semibold text-sm mb-2 flex items-center gap-2"><Phone className="w-4 h-4 text-primary" />Talk to Someone Now</h2>
+            <p className="text-xs text-muted-foreground mb-3">Connect anonymously with a professional — 24/7 on-call support.</p>
+            <Button className="w-full h-10 text-sm gap-1.5" disabled={isRequesting} onClick={requestSession}>
+              {isRequesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Phone className="w-4 h-4" />}
+              Request Voice Call
             </Button>
           </div>
-        </div>
+        )}
 
         {/* Privacy Info */}
         <div className="p-4 rounded-2xl bg-gradient-eternia-subtle border border-border flex items-start gap-3">
@@ -115,8 +152,6 @@ const MobileBlackBox = () => {
           <p className="text-xs text-muted-foreground text-center">If you're in crisis, AI may suggest connecting with a professional.</p>
         </div>
       </div>
-
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Anonymous"} mode={callModal.mode} />
     </DashboardLayout>
   );
 };

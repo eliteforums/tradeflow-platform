@@ -166,6 +166,59 @@ export type Database = {
           },
         ]
       }
+      blackbox_sessions: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          escalation_history: Json | null
+          escalation_reason: string | null
+          flag_level: number
+          id: string
+          room_id: string | null
+          session_notes_encrypted: string | null
+          started_at: string | null
+          status: string
+          student_id: string
+          therapist_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          escalation_history?: Json | null
+          escalation_reason?: string | null
+          flag_level?: number
+          id?: string
+          room_id?: string | null
+          session_notes_encrypted?: string | null
+          started_at?: string | null
+          status?: string
+          student_id: string
+          therapist_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          escalation_history?: Json | null
+          escalation_reason?: string | null
+          flag_level?: number
+          id?: string
+          room_id?: string | null
+          session_notes_encrypted?: string | null
+          started_at?: string | null
+          status?: string
+          student_id?: string
+          therapist_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blackbox_sessions_therapist_id_fkey"
+            columns: ["therapist_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       credit_transactions: {
         Row: {
           created_at: string
