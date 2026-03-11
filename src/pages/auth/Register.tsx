@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import EterniaLogo from "@/components/EterniaLogo";
+import { generateDeviceFingerprint } from "@/lib/deviceFingerprint";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -86,6 +87,14 @@ const Register = () => {
       setTimeout(async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // Generate device fingerprint for binding
+          let deviceFingerprint = "";
+          try {
+            deviceFingerprint = await generateDeviceFingerprint();
+          } catch (e) {
+            console.warn("Device fingerprint generation failed:", e);
+          }
+
           await supabase.from("user_private").insert({
             user_id: user.id,
             emergency_name_encrypted: formData.emergencyName,
@@ -93,6 +102,7 @@ const Register = () => {
             emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
             student_id_encrypted: formData.studentId,
             contact_is_self: formData.contactIsSelf,
+            device_id_encrypted: deviceFingerprint || null,
           });
           if (institutionId) {
             await supabase
@@ -315,7 +325,7 @@ const Register = () => {
                         <AlertTriangle className="w-3.5 h-3.5 text-eternia-warning" />
                         Emergency Escalation Consent
                       </span>
-                      If the platform detects a high-risk situation, the system may notify your institution's SPOC and share your username and emergency contact.
+                      I consent to the platform sharing my username and emergency contact with my institution's SPOC (Single Point of Contact) if the system or a qualified professional detects a high-risk situation requiring immediate intervention. This disclosure will only occur when there is a credible threat to my safety or the safety of others.
                     </label>
                   </div>
                 </div>

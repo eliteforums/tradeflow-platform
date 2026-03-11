@@ -218,15 +218,18 @@
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
+  will-change: transform;
 }
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+  will-change: opacity;
 }
 
 .animate-gradient {
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
+  will-change: background-position;
 }
 
 .mask-gradient {
@@ -236,4 +239,32 @@
 
 .h-13 {
   height: 3.25rem;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-pulse-glow,
+  .animate-gradient {
+    animation: none !important;
+  }
+  
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* GPU acceleration for animated elements */
+.portal-card,
+.glass,
+.glass-strong {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Content visibility for long lists */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 80px;
 }
