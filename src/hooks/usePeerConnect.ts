@@ -125,6 +125,9 @@ export function usePeerConnect() {
     mutationFn: async (internId: string) => {
       if (!user) throw new Error("Not authenticated");
 
+      // Deduct credits on session start (PRD requirement)
+      await spendCredits(20, "Peer Connect session");
+
       const { data, error } = await supabase
         .from("peer_sessions")
         .insert({
