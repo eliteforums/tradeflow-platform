@@ -8,6 +8,7 @@ import {
   UserPlus, Settings, Music, Building2, FileText, QrCode, Crown, UserCheck,
   Stethoscope, GraduationCap, Phone, Zap, Filter, BookOpen,
 } from "lucide-react";
+import InstitutionManager from "@/components/admin/InstitutionManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -356,55 +357,13 @@ const AdminDashboard = () => {
 
             {/* ─── SPOC ─── */}
             {activeTab === "spoc" && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-sm flex items-center gap-2"><Building2 className="w-4 h-4 text-primary" />Institutions & SPOCs</h3>
-                {institutionData.length === 0 ? (
-                  <div className="text-center py-10 text-muted-foreground bg-card rounded-xl border border-border/50"><Building2 className="w-8 h-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No institutions</p></div>
-                ) : (
-                  <div className="space-y-3">
-                    {institutionData.map((inst: any) => (
-                      <div key={inst.id} className="p-5 rounded-2xl bg-card border border-border/50">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
-                            <h4 className="font-semibold text-sm">{inst.name}</h4>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">Code: {inst.eternia_code_hash} · Plan: {inst.plan_type}</p>
-                          </div>
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] ${inst.is_active ? "bg-eternia-success/10 text-eternia-success" : "bg-muted text-muted-foreground"}`}>
-                            {inst.is_active ? "Active" : "Inactive"}
-                          </span>
-                        </div>
-                        {/* SPOC info */}
-                        <div className="p-3 rounded-xl bg-muted/30 border border-border/30 mb-3">
-                          <p className="text-[10px] font-medium text-muted-foreground mb-1">SPOC</p>
-                          {inst.spoc ? (
-                            <div className="flex items-center gap-2">
-                              <Shield className="w-3.5 h-3.5 text-primary" />
-                              <span className="text-sm font-medium">{inst.spoc.username}</span>
-                              <span className={`w-2 h-2 rounded-full ${inst.spoc.is_active ? "bg-eternia-success" : "bg-muted-foreground"}`} />
-                            </div>
-                          ) : (
-                            <p className="text-xs text-muted-foreground italic">No SPOC assigned</p>
-                          )}
-                        </div>
-                        {/* Analytics */}
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="p-2.5 rounded-lg bg-muted/20 text-center">
-                            <p className="text-lg font-bold">{inst.studentCount}</p>
-                            <p className="text-[10px] text-muted-foreground">Students</p>
-                          </div>
-                          <div className="p-2.5 rounded-lg bg-muted/20 text-center">
-                            <p className="text-lg font-bold">{inst.sessionCount}</p>
-                            <p className="text-[10px] text-muted-foreground">Sessions</p>
-                          </div>
-                          <div className="p-2.5 rounded-lg bg-muted/20 text-center">
-                            <p className="text-lg font-bold">{inst.credits_pool}</p>
-                            <p className="text-[10px] text-muted-foreground">Credits Pool</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <InstitutionManager />
+                </div>
+                <div>
+                  <RoleManager />
+                </div>
               </div>
             )}
 
