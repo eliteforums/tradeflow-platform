@@ -34,7 +34,17 @@ const MobileInternDashboard = () => {
   const { user, profile, signOut } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("training");
-  const [completedModules, setCompletedModules] = useState<number[]>([]);
+
+  // Load training progress from DB
+  const savedProgress: number[] = (profile as any)?.training_progress || [];
+  const [completedModules, setCompletedModules] = useState<number[]>(savedProgress);
+
+  const profileProgress = (profile as any)?.training_progress;
+  const [lastSynced, setLastSynced] = useState<string>("");
+  if (profileProgress && JSON.stringify(profileProgress) !== lastSynced && JSON.stringify(profileProgress) !== JSON.stringify(completedModules)) {
+    setCompletedModules(profileProgress);
+    setLastSynced(JSON.stringify(profileProgress));
+  }
 
   // Escalation
   const [escalationDialog, setEscalationDialog] = useState<{ open: boolean; sessionId?: string }>({ open: false });
