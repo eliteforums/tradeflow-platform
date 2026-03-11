@@ -2,3 +2,15 @@ project_id = "hzlinabncewcahdnobet"
 
 [functions.purchase-credits]
 verify_jwt = false
+
+[functions.spend-credits]
+verify_jwt = false
+
+[functions.generate-spoc-qr]
+verify_jwt = false
+
+[functions.validate-spoc-qr]
+verify_jwt = false
+
+[functions.reset-device]
+verify_jwt = false

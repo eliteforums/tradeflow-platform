@@ -27,7 +27,7 @@ interface DashboardLayoutProps {
 
 const studentNavItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
-  { icon: Calendar, label: "Appointments", path: "/dashboard/appointments" },
+  { icon: Calendar, label: "Expert Connect", path: "/dashboard/appointments" },
   { icon: MessageCircle, label: "Peer Connect", path: "/dashboard/peer-connect" },
   { icon: Box, label: "BlackBox", path: "/dashboard/blackbox" },
   { icon: Music, label: "Sounds", path: "/dashboard/sound-therapy" },

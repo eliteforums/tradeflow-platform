@@ -179,15 +179,71 @@ const SPOCDashboardContent = () => {
   });
 
   // ─── Helpers ───
-  const qrPayload = profile
-    ? `ETERNIA-SPOC-${institutionId}-${user?.id}-${Date.now()}`
-    : "";
+  const [grantAmount, setGrantAmount] = useState("10");
+  const [isGranting, setIsGranting] = useState(false);
+  const [resetDeviceStudent, setResetDeviceStudent] = useState<string | null>(null);
+  const [isResettingDevice, setIsResettingDevice] = useState(false);
 
-  const copyQRCode = () => {
-    navigator.clipboard.writeText(qrPayload);
-    setCopiedQR(true);
-    toast.success("QR code payload copied!");
-    setTimeout(() => setCopiedQR(false), 2000);
+  const generateQR = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
+      if (error) throw error;
+      if (data?.qr_payload) {
+        navigator.clipboard.writeText(data.qr_payload);
+        setCopiedQR(true);
+        toast.success("Secure QR code generated & copied!");
+        setTimeout(() => setCopiedQR(false), 2000);
+      }
+    } catch (err: any) {
+      // Fallback to legacy
+      const fallback = `ETERNIA-SPOC-${institutionId}-${user?.id}-${Date.now()}`;
+      navigator.clipboard.writeText(fallback);
+      setCopiedQR(true);
+      toast.success("QR code copied (legacy format)");
+      setTimeout(() => setCopiedQR(false), 2000);
+    }
+  };
+
+  const grantCreditsToStudents = async () => {
+    if (!user || !institutionId) return;
+    setIsGranting(true);
+    try {
+      const amount = parseInt(grantAmount);
+      if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
+      // Insert credit_transactions for all students
+      const inserts = students.map((s) => ({
+        user_id: s.id,
+        delta: amount,
+        type: "grant" as const,
+        notes: `SPOC bulk grant`,
+        institution_id: institutionId,
+      }));
+      // Batch insert (max 100 at a time)
+      for (let i = 0; i < inserts.length; i += 100) {
+        const batch = inserts.slice(i, i + 100);
+        const { error } = await supabase.from("credit_transactions").insert(batch);
+        if (error) throw error;
+      }
+      toast.success(`Granted ${amount} ECC to ${students.length} students`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setIsGranting(false);
+  };
+
+  const handleResetDevice = async (studentId: string) => {
+    setIsResettingDevice(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-device", {
+        body: { student_id: studentId },
+      });
+      if (error) throw error;
+      toast.success("Device binding reset successfully");
+      setResetDeviceStudent(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset device");
+    }
+    setIsResettingDevice(false);
   };
 
   const activeStudents = students.filter((s) => s.is_active).length;
@@ -331,21 +387,49 @@ const SPOCDashboardContent = () => {
               QR Onboarding Code
             </h3>
             <p className="text-xs text-muted-foreground">
-              Share this code with students during onboarding sessions.
+              Generate HMAC-signed QR code for student onboarding (24h TTL).
             </p>
             <div className="p-4 rounded-xl bg-muted/30 border border-border text-center">
               <div className="w-28 h-28 mx-auto bg-card rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center mb-3">
                 <QrCode className="w-14 h-14 text-primary/60" />
               </div>
-              <code className="text-[10px] font-mono text-muted-foreground break-all block mb-3">
-                {qrPayload.slice(0, 40)}...
-              </code>
-              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={copyQRCode}>
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={generateQR}>
                 {copiedQR ? <Check className="w-3.5 h-3.5 text-eternia-success" /> : <Copy className="w-3.5 h-3.5" />}
-                {copiedQR ? "Copied!" : "Copy Code"}
+                {copiedQR ? "Copied!" : "Generate & Copy"}
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground italic">Valid for 24 hours · Audited</p>
+            <p className="text-[10px] text-muted-foreground italic">HMAC-SHA256 signed · Valid for 24 hours · Audited</p>
+          </div>
+
+          {/* Bulk Credit Granting */}
+          <div className="p-4 rounded-2xl bg-card border border-border/50 space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Coins className="w-4 h-4 text-primary" />
+              Grant Credits to Students
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Bulk-allocate ECC to all enrolled students ({students.length} students).
+            </p>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={grantAmount}
+                onChange={(e) => setGrantAmount(e.target.value)}
+                className="w-24 h-9 text-sm"
+                min="1"
+                max="1000"
+              />
+              <span className="text-xs text-muted-foreground">ECC per student</span>
+            </div>
+            <Button
+              size="sm"
+              className="gap-1.5 h-8 text-xs"
+              onClick={grantCreditsToStudents}
+              disabled={isGranting || students.length === 0}
+            >
+              {isGranting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Coins className="w-3.5 h-3.5" />}
+              Grant to All Students
+            </Button>
           </div>
 
           {/* Student List */}
@@ -395,6 +479,16 @@ const SPOCDashboardContent = () => {
                     >
                       {student.is_active ? "Allocated" : "Revoked"}
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[10px] text-muted-foreground hover:text-destructive shrink-0"
+                      onClick={() => handleResetDevice(student.id)}
+                      disabled={isResettingDevice}
+                      title="Reset device binding"
+                    >
+                      <Lock className="w-3 h-3" />
+                    </Button>
                   </div>
                 ))
               )}

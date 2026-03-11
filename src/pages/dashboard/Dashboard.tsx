@@ -41,7 +41,7 @@ const Dashboard = () => {
   const quote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
 
   const portals = [
-    { icon: Calendar, title: "Appointments", description: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500", bgClass: "bg-emerald-500/8" },
+    { icon: Calendar, title: "Expert Connect", description: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500", bgClass: "bg-emerald-500/8" },
     { icon: MessageCircle, title: "Peer Connect", description: "Talk to trained interns", path: "/dashboard/peer-connect", gradient: "from-pink-500 to-rose-500", bgClass: "bg-pink-500/8" },
     { icon: Box, title: "BlackBox", description: "Express anonymously", path: "/dashboard/blackbox", gradient: "from-violet-500 to-purple-500", bgClass: "bg-violet-500/8" },
     { icon: Music, title: "Sound Therapy", description: "Meditate & relax", path: "/dashboard/sound-therapy", gradient: "from-cyan-500 to-blue-500", bgClass: "bg-cyan-500/8" },
