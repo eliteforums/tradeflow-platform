@@ -411,7 +411,7 @@ const ExpertDashboardContent = () => {
                   const isToday = isSameDay(day, new Date());
                   return (
                     <div key={i} className={cn(
-                      "min-h-[80px] p-1.5 border-b border-r border-border/30",
+                      "min-h-[60px] xl:min-h-[80px] p-1.5 border-b border-r border-border/30",
                       !isCurrentMonth && "opacity-30",
                       isToday && "bg-primary/5"
                     )}>
