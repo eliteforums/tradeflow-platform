@@ -8,6 +8,7 @@ import {
   UserPlus, Settings, Music, Building2, FileText, QrCode, Crown, UserCheck,
   Stethoscope, GraduationCap, Phone, Zap, Filter, BookOpen,
 } from "lucide-react";
+import InstitutionManager from "@/components/admin/InstitutionManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
