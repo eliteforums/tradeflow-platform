@@ -79,15 +79,27 @@ const Register = () => {
     try {
       const institutionCode = sessionStorage.getItem("eternia_institution_code");
       const institutionId = sessionStorage.getItem("eternia_institution_id");
-      const { error, data: signUpData } = await signUp(formData.username, formData.password, {
+      const { error } = await signUp(formData.username, formData.password, {
         institution_code: institutionCode,
       });
       if (error) throw error;
 
-      // Wait for session to be established properly
-      const userId = signUpData?.user?.id;
+      // Wait for session to be established, then insert private data
+      const waitForUser = (): Promise<string | null> => {
+        return new Promise((resolve) => {
+          let attempts = 0;
+          const check = async () => {
+            const { data: { user: authUser } } = await supabase.auth.getUser();
+            if (authUser?.id) return resolve(authUser.id);
+            if (++attempts >= 10) return resolve(null);
+            setTimeout(check, 400);
+          };
+          check();
+        });
+      };
+
+      const userId = await waitForUser();
       if (userId) {
-        // Generate device fingerprint for binding
         let deviceFingerprint = "";
         try {
           deviceFingerprint = await generateDeviceFingerprint();
@@ -95,22 +107,15 @@ const Register = () => {
           console.warn("Device fingerprint generation failed:", e);
         }
 
-        // Retry inserting private data until profile trigger completes
-        let retries = 0;
-        while (retries < 5) {
-          const { error: privateError } = await supabase.from("user_private").insert({
-            user_id: userId,
-            emergency_name_encrypted: formData.emergencyName,
-            emergency_phone_encrypted: formData.emergencyContact,
-            emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
-            student_id_encrypted: formData.studentId,
-            contact_is_self: formData.contactIsSelf,
-            device_id_encrypted: deviceFingerprint || null,
-          });
-          if (!privateError) break;
-          retries++;
-          await new Promise((r) => setTimeout(r, 500));
-        }
+        await supabase.from("user_private").insert({
+          user_id: userId,
+          emergency_name_encrypted: formData.emergencyName,
+          emergency_phone_encrypted: formData.emergencyContact,
+          emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
+          student_id_encrypted: formData.studentId,
+          contact_is_self: formData.contactIsSelf,
+          device_id_encrypted: deviceFingerprint || null,
+        });
 
         if (institutionId) {
           await supabase
