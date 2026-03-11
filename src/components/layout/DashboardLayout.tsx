@@ -32,7 +32,7 @@ const studentNavItems = [
   { icon: Box, label: "BlackBox", path: "/dashboard/blackbox" },
   { icon: Music, label: "Sounds", path: "/dashboard/sound-therapy" },
   { icon: Sparkles, label: "Self-Help", path: "/dashboard/self-help" },
-  { icon: Coins, label: "Credits", path: "/dashboard/credits" },
+  { icon: Coins, label: "Wallet", path: "/dashboard/credits" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 

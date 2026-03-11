@@ -105,7 +105,7 @@ const MobileDashboard = () => {
           </div>
           <div className="rounded-2xl bg-card p-4 text-center border border-border/50">
             <p className="text-xl font-bold">{balance}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Credits 💎</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Wallet 💎</p>
           </div>
           <div className="rounded-2xl bg-card p-4 text-center border border-border/50">
             <p className="text-xl font-bold">{profile?.total_sessions || 0}</p>

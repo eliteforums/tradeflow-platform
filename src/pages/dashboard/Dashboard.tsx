@@ -86,7 +86,7 @@ const Dashboard = () => {
           </div>
           <div className="rounded-xl bg-card p-3 text-center border border-border/50">
             <p className="text-lg sm:text-xl font-bold">{balance}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Credits 💎</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Wallet 💎</p>
           </div>
           <div className="rounded-xl bg-card p-3 text-center border border-border/50">
             <p className="text-lg sm:text-xl font-bold">{profile?.total_sessions || 0}</p>
