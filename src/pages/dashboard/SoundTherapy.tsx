@@ -77,11 +77,12 @@ const SoundTherapy = () => {
                 <button key={track.id} onClick={() => handleTrackSelect(index)}
                   className={`w-full p-3.5 rounded-xl text-left transition-all flex items-center gap-3 ${isActive ? "bg-primary/10 border-primary/50" : "bg-card hover:bg-muted/40"} border border-border/50`}>
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-xl shrink-0">{track.cover_emoji || "🎵"}</div>
-                  <div className="flex-1 min-w-0">
+                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-sm truncate">{track.title}</h3>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="truncate">{track.artist || "Unknown"}</span><span>·</span>
                       <span className="shrink-0 flex items-center gap-0.5"><Clock className="w-3 h-3" />{formatDuration(track.duration_sec)}</span>
+                      {!track.file_url && <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">No audio</span>}
                     </div>
                   </div>
                   <div className="shrink-0">

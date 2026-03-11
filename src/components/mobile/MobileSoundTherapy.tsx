@@ -205,6 +205,7 @@ const MobileSoundTherapy = () => {
                     <p className={`text-sm font-medium truncate ${isActive ? "text-primary" : ""}`}>{track.title}</p>
                     <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                       {track.artist || "Unknown"} · <Clock className="w-3 h-3" /> {formatDuration(track.duration_sec)}
+                      {!track.file_url && <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/10 text-destructive ml-1">No audio</span>}
                     </p>
                   </div>
                   <div className="w-8 h-8 rounded-full bg-muted/40 flex items-center justify-center shrink-0">
