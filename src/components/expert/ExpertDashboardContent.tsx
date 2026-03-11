@@ -256,9 +256,9 @@ const ExpertDashboardContent = () => {
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold font-display">Expert Dashboard</h1>
+            <h1 className="text-2xl xl:text-3xl font-bold font-display">Expert Dashboard</h1>
             <p className="text-sm text-muted-foreground">Manage appointments, schedule & sessions</p>
           </div>
           <div className="flex items-center gap-2">
@@ -270,20 +270,20 @@ const ExpertDashboardContent = () => {
         </div>
 
         {/* Tab Bar */}
-        <div className="flex gap-1 bg-muted/30 p-1 rounded-xl">
+        <div className="flex gap-1 bg-muted/30 p-1 rounded-xl overflow-x-auto scrollbar-none">
           {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all flex-1 justify-center",
+                "flex items-center gap-2 px-3 xl:px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0 justify-center",
                 activeTab === tab.key
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
             >
               <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <span className="hidden xl:inline">{tab.label}</span>
             </button>
           ))}
         </div>
@@ -362,7 +362,7 @@ const ExpertDashboardContent = () => {
         {activeTab === "schedule" && (
           <div className="space-y-4">
             {/* Calendar controls */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCalendarMonth(subMonths(calendarMonth, 1))}>
                   <ChevronRight className="w-4 h-4 rotate-180" />
@@ -371,12 +371,12 @@ const ExpertDashboardContent = () => {
                 <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCalendarMonth(addMonths(calendarMonth, 1))}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="flex bg-muted/50 rounded-lg p-0.5">
+                <div className="flex bg-muted/50 rounded-lg p-0.5 ml-2">
                   <button onClick={() => setCalendarView("month")} className={cn("px-3 py-1 rounded-md text-xs font-medium", calendarView === "month" ? "bg-background shadow-sm" : "text-muted-foreground")}>Month</button>
                   <button onClick={() => setCalendarView("week")} className={cn("px-3 py-1 rounded-md text-xs font-medium", calendarView === "week" ? "bg-background shadow-sm" : "text-muted-foreground")}>Week</button>
                 </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
                 <Button size="sm" className="gap-1.5 h-8" onClick={() => setSlotDialogOpen(true)}>
                   <Plus className="w-3.5 h-3.5" />Add Slot
                 </Button>
@@ -411,7 +411,7 @@ const ExpertDashboardContent = () => {
                   const isToday = isSameDay(day, new Date());
                   return (
                     <div key={i} className={cn(
-                      "min-h-[80px] p-1.5 border-b border-r border-border/30",
+                      "min-h-[60px] xl:min-h-[80px] p-1.5 border-b border-r border-border/30",
                       !isCurrentMonth && "opacity-30",
                       isToday && "bg-primary/5"
                     )}>
