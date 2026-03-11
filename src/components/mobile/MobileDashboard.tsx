@@ -1,10 +1,12 @@
+import { memo } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
   Calendar, MessageCircle, Box, Music, Sparkles, Coins,
-  ArrowRight, Award, Heart, AlertCircle,
+  ArrowRight, Award, Heart,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
+import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 const getGreeting = () => {
@@ -23,11 +25,44 @@ const quotes = [
   "Healing isn't linear, and that's okay. 💚",
 ];
 
+const DashboardSkeleton = () => (
+  <DashboardLayout>
+    <div className="space-y-5 pb-24">
+      <div>
+        <Skeleton className="h-4 w-32 mb-2" />
+        <Skeleton className="h-6 w-40" />
+      </div>
+      <Skeleton className="h-20 w-full rounded-2xl" />
+      <div className="grid grid-cols-3 gap-3">
+        <Skeleton className="h-20 rounded-2xl" />
+        <Skeleton className="h-20 rounded-2xl" />
+        <Skeleton className="h-20 rounded-2xl" />
+      </div>
+      <Skeleton className="h-4 w-24" />
+      <div className="flex gap-4">
+        <Skeleton className="w-14 h-14 rounded-2xl" />
+        <Skeleton className="w-14 h-14 rounded-2xl" />
+        <Skeleton className="w-14 h-14 rounded-2xl" />
+        <Skeleton className="w-14 h-14 rounded-2xl" />
+      </div>
+      <Skeleton className="h-4 w-24" />
+      <div className="grid grid-cols-2 gap-3">
+        <Skeleton className="h-32 rounded-2xl" />
+        <Skeleton className="h-32 rounded-2xl" />
+        <Skeleton className="h-32 rounded-2xl" />
+        <Skeleton className="h-32 rounded-2xl" />
+      </div>
+    </div>
+  </DashboardLayout>
+);
+
 const MobileDashboard = () => {
-  const { profile } = useAuth();
+  const { profile, isLoading } = useAuth();
   const { balance } = useCredits();
   const greeting = getGreeting();
   const quote = quotes[Math.floor(Math.random() * quotes.length)];
+
+  if (isLoading) return <DashboardSkeleton />;
 
   if (profile?.role === "admin" || profile?.role === "spoc") return <Navigate to="/admin" replace />;
   if (profile?.role === "expert") return <Navigate to="/dashboard/expert" replace />;
@@ -62,18 +97,6 @@ const MobileDashboard = () => {
           <p className="text-sm text-foreground/90 leading-relaxed">{quote}</p>
         </div>
 
-        {/* Low Balance */}
-        {balance < 5 && (
-          <Link to="/dashboard/credits" className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 active:scale-[0.97] transition-transform">
-            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">Your care energy is low.</p>
-              <p className="text-xs text-muted-foreground">Earn credits through self-help.</p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-amber-500 shrink-0" />
-          </Link>
-        )}
-
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-2xl bg-card p-4 text-center border border-border/50">
@@ -96,7 +119,7 @@ const MobileDashboard = () => {
           <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
             {quickTools.map((tool) => (
               <Link key={tool.name} to={tool.path} className="flex flex-col items-center gap-1.5 shrink-0">
-                <div className="w-14 h-14 rounded-2xl bg-card border border-border/50 flex items-center justify-center active:scale-95 transition-transform">
+                <div className="w-14 h-14 rounded-2xl bg-card border border-border/50 flex items-center justify-center active:scale-95 transition-transform min-w-[44px] min-h-[44px]">
                   <tool.icon className={`w-6 h-6 ${tool.color}`} />
                 </div>
                 <span className="text-[11px] text-muted-foreground text-center w-14 truncate">{tool.name}</span>
@@ -110,7 +133,7 @@ const MobileDashboard = () => {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Your Space</p>
           <div className="grid grid-cols-2 gap-3">
             {portals.map((p) => (
-              <Link key={p.path} to={p.path} className="rounded-2xl bg-card border border-border/40 p-4 active:scale-[0.97] transition-transform">
+              <Link key={p.path} to={p.path} className="rounded-2xl bg-card border border-border/40 p-4 active:scale-[0.97] transition-transform min-h-[44px]">
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center mb-3`}>
                   <p.icon className="w-5 h-5 text-white" />
                 </div>
@@ -122,7 +145,7 @@ const MobileDashboard = () => {
         </div>
 
         {/* Self-Help Banner */}
-        <Link to="/dashboard/self-help" className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border/40 active:scale-[0.98] transition-transform">
+        <Link to="/dashboard/self-help" className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border/40 active:scale-[0.98] transition-transform min-h-[44px]">
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0">
             <Sparkles className="w-6 h-6 text-white" />
           </div>
@@ -137,4 +160,4 @@ const MobileDashboard = () => {
   );
 };
 
-export default MobileDashboard;
+export default memo(MobileDashboard);

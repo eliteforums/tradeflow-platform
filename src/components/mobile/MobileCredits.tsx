@@ -3,11 +3,13 @@ import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award,
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCredits } from "@/hooks/useCredits";
+import { usePurchaseCredits } from "@/hooks/usePurchaseCredits";
 import { format } from "date-fns";
 
 const MobileCredits = () => {
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
+  const { purchaseCredits, isPurchasing, purchasingCredits, PACKAGES } = usePurchaseCredits();
   const filtered = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
 
   const now = new Date();
@@ -20,13 +22,6 @@ const MobileCredits = () => {
     switch (type) { case "earn": return Award; case "spend": return Calendar; case "grant": return Gift; case "purchase": return CreditCard; default: return Coins; }
   };
 
-  const packages = [
-    { credits: 50, price: "₹99", popular: false },
-    { credits: 100, price: "₹179", popular: true },
-    { credits: 250, price: "₹399", popular: false },
-    { credits: 500, price: "₹699", popular: false },
-  ];
-
   return (
     <DashboardLayout>
       <div className="space-y-5 pb-24">
@@ -38,7 +33,7 @@ const MobileCredits = () => {
         {balance < 5 && (
           <div className="flex items-center gap-3 p-4 rounded-2xl bg-eternia-warning/10 border border-eternia-warning/20">
             <AlertCircle className="w-5 h-5 text-eternia-warning shrink-0" />
-            <p className="text-sm text-eternia-warning font-medium">Low balance — earn credits via self-help</p>
+            <p className="text-sm text-eternia-warning font-medium">Your care energy is low. Refill gently.</p>
           </div>
         )}
 
@@ -49,7 +44,6 @@ const MobileCredits = () => {
               <p className="text-background/70 text-xs mb-1">Available Balance</p>
               <h2 className="text-3xl font-bold font-display flex items-center gap-2"><Coins className="w-7 h-7" />{balance} <span className="text-base">ECC</span></h2>
             </div>
-            <Button className="bg-background/20 hover:bg-background/30 text-background border-0 text-sm h-9 px-3"><CreditCard className="w-4 h-4 mr-1.5" />Add</Button>
           </div>
           <div className="grid grid-cols-3 gap-3 pt-3 border-t border-background/20">
             <div><p className="text-background/70 text-xs">Earned</p><p className="font-semibold text-sm flex items-center gap-1"><TrendingUp className="w-3 h-3" />+{earned}</p></div>
@@ -62,15 +56,24 @@ const MobileCredits = () => {
         <div>
           <h3 className="font-semibold text-sm mb-2">Top-up</h3>
           <div className="grid grid-cols-2 gap-2">
-            {packages.map((pkg) => (
-              <button key={pkg.credits} className={`p-4 rounded-2xl text-left border active:scale-[0.97] ${pkg.popular ? "bg-primary/10 border-primary" : "bg-card border-border"}`}>
+            {PACKAGES.map((pkg) => (
+              <button
+                key={pkg.credits}
+                onClick={() => purchaseCredits(pkg.credits)}
+                disabled={isPurchasing}
+                className={`p-4 rounded-2xl text-left border active:scale-[0.97] disabled:opacity-50 ${pkg.popular ? "bg-primary/10 border-primary" : "bg-card border-border"}`}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="font-semibold text-sm">{pkg.credits} ECC</span>
                     {pkg.popular && <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px]">Popular</span>}
                     <p className="text-xs text-muted-foreground mt-0.5">{pkg.price}</p>
                   </div>
-                  <Coins className="w-5 h-5 text-primary" />
+                  {isPurchasing && purchasingCredits === pkg.credits ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  ) : (
+                    <Coins className="w-5 h-5 text-primary" />
+                  )}
                 </div>
               </button>
             ))}

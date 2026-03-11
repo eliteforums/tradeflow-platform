@@ -6,12 +6,14 @@ import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award,
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCredits } from "@/hooks/useCredits";
+import { usePurchaseCredits } from "@/hooks/usePurchaseCredits";
 import { format } from "date-fns";
 
 const Credits = () => {
   const isMobile = useIsMobile();
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
+  const { purchaseCredits, isPurchasing, purchasingCredits, PACKAGES } = usePurchaseCredits();
 
   if (isMobile) return <MobileCredits />;
 
@@ -23,13 +25,6 @@ const Credits = () => {
   const monthlyTransactions = transactions.filter((t) => new Date(t.created_at) >= startOfMonth);
   const earnedThisMonth = monthlyTransactions.filter((t) => t.delta > 0).reduce((sum, t) => sum + t.delta, 0);
   const spentThisMonth = monthlyTransactions.filter((t) => t.delta < 0).reduce((sum, t) => sum + Math.abs(t.delta), 0);
-
-  const creditPackages = [
-    { credits: 50, price: "₹99", popular: false },
-    { credits: 100, price: "₹179", popular: true },
-    { credits: 250, price: "₹399", popular: false },
-    { credits: 500, price: "₹699", popular: false },
-  ];
 
   return (
     <DashboardLayout>
@@ -45,7 +40,6 @@ const Credits = () => {
         <div className="p-6 rounded-2xl bg-gradient-eternia text-background">
           <div className="flex items-start justify-between mb-6">
             <div><p className="text-background/70 text-sm mb-1">Available Balance</p><h2 className="text-4xl font-bold font-display flex items-center gap-2"><Coins className="w-10 h-10" />{balance} <span className="text-2xl">ECC</span></h2></div>
-            <Button className="bg-background/20 hover:bg-background/30 text-background border-0 text-sm h-9 px-3"><CreditCard className="w-4 h-4 mr-1.5" />Add</Button>
           </div>
           <div className="grid grid-cols-3 gap-4 pt-4 border-t border-background/20">
             <div><p className="text-background/70 text-sm">Earned</p><p className="font-semibold text-lg flex items-center gap-1"><TrendingUp className="w-4 h-4" />+{earnedThisMonth}</p></div>
@@ -59,7 +53,7 @@ const Credits = () => {
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-semibold font-display text-base">History</h3>
               <div className="flex gap-1">
-                {["all", "earn", "spend", "grant"].map((f) => (
+                {["all", "earn", "spend", "grant", "purchase"].map((f) => (
                   <Button key={f} variant={filter === f ? "default" : "ghost"} size="sm" onClick={() => setFilter(f)} className={`text-xs h-7 px-2 ${filter === f ? "bg-primary text-primary-foreground" : ""}`}>{f.charAt(0).toUpperCase() + f.slice(1)}</Button>
                 ))}
               </div>
@@ -82,9 +76,27 @@ const Credits = () => {
           <div className="space-y-4">
             <h3 className="font-semibold font-display text-base">Top-up Credits</h3>
             <div className="grid grid-cols-1 gap-3">
-              {creditPackages.map((pkg) => (
-                <button key={pkg.credits} className={`p-4 rounded-xl text-left transition-all border ${pkg.popular ? "bg-primary/10 border-primary" : "bg-card border-border hover:border-primary/50"}`}>
-                  <div className="flex items-center justify-between"><div><div className="flex items-center gap-1.5"><span className="font-semibold text-lg">{pkg.credits} ECC</span>{pkg.popular && <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px]">Popular</span>}</div><p className="text-sm text-muted-foreground">{pkg.price}</p></div><Coins className="w-5 h-5 text-primary" /></div>
+              {PACKAGES.map((pkg) => (
+                <button
+                  key={pkg.credits}
+                  onClick={() => purchaseCredits(pkg.credits)}
+                  disabled={isPurchasing}
+                  className={`p-4 rounded-xl text-left transition-all border disabled:opacity-50 ${pkg.popular ? "bg-primary/10 border-primary" : "bg-card border-border hover:border-primary/50"}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-lg">{pkg.credits} ECC</span>
+                        {pkg.popular && <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px]">Popular</span>}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{pkg.price}</p>
+                    </div>
+                    {isPurchasing && purchasingCredits === pkg.credits ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    ) : (
+                      <Coins className="w-5 h-5 text-primary" />
+                    )}
+                  </div>
                 </button>
               ))}
             </div>
