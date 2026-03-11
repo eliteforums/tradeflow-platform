@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { createVideoSDKRoom, getVideoSDKToken } from "@/lib/videosdk";
 import { toast } from "sonner";
+import { spendCredits } from "./useSpendCredits";
 
 export type BlackBoxSessionStatus = "queued" | "accepted" | "active" | "escalated" | "completed" | "cancelled";
 
@@ -97,6 +98,13 @@ export const useBlackBoxSession = () => {
     if (!user) return;
     setIsRequesting(true);
     try {
+      // Server-side atomic credit deduction (BlackBox session costs 30 ECC)
+      const spendResult = await spendCredits(30, "BlackBox Talk Now session");
+      if (!spendResult.success) {
+        toast.error("Insufficient credits for a BlackBox session");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("blackbox_sessions")
         .insert({ student_id: user.id, status: "queued" })

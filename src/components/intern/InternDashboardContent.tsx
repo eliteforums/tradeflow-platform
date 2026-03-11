@@ -42,7 +42,18 @@ const InternDashboardContent = () => {
   const { user, profile, signOut } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("training");
-  const [completedModules, setCompletedModules] = useState<number[]>([]);
+
+  // Load training progress from DB
+  const savedProgress: number[] = (profile as any)?.training_progress || [];
+  const [completedModules, setCompletedModules] = useState<number[]>(savedProgress);
+
+  // Sync when profile loads
+  const profileProgress = (profile as any)?.training_progress;
+  const [lastSynced, setLastSynced] = useState<string>("");
+  if (profileProgress && JSON.stringify(profileProgress) !== lastSynced && JSON.stringify(profileProgress) !== JSON.stringify(completedModules)) {
+    setCompletedModules(profileProgress);
+    setLastSynced(JSON.stringify(profileProgress));
+  }
 
   // Escalation
   const [escalationDialog, setEscalationDialog] = useState<{ open: boolean; sessionId?: string }>({ open: false });
@@ -206,7 +217,15 @@ const InternDashboardContent = () => {
                         <p className="text-[10px] text-muted-foreground truncate">{mod.description} · {mod.duration}</p>
                       </div>
                       {isNext && (
-                        <Button size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={() => setCompletedModules((p) => [...p, mod.day])}>
+                        <Button size="sm" className="h-6 text-[10px] px-2 gap-1" onClick={async () => {
+                          const newModules = [...completedModules, mod.day];
+                          setCompletedModules(newModules);
+                          // Persist to DB
+                          if (user) {
+                            const newStatus = newModules.length >= TRAINING_MODULES.length ? "completed" : "in_progress";
+                            await supabase.from("profiles").update({ training_progress: newModules, training_status: newStatus }).eq("id", user.id);
+                          }
+                        }}>
                           <Play className="w-3 h-3" />Start
                         </Button>
                       )}

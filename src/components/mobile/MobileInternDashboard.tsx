@@ -34,7 +34,17 @@ const MobileInternDashboard = () => {
   const { user, profile, signOut } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("training");
-  const [completedModules, setCompletedModules] = useState<number[]>([]);
+
+  // Load training progress from DB
+  const savedProgress: number[] = (profile as any)?.training_progress || [];
+  const [completedModules, setCompletedModules] = useState<number[]>(savedProgress);
+
+  const profileProgress = (profile as any)?.training_progress;
+  const [lastSynced, setLastSynced] = useState<string>("");
+  if (profileProgress && JSON.stringify(profileProgress) !== lastSynced && JSON.stringify(profileProgress) !== JSON.stringify(completedModules)) {
+    setCompletedModules(profileProgress);
+    setLastSynced(JSON.stringify(profileProgress));
+  }
 
   // Escalation
   const [escalationDialog, setEscalationDialog] = useState<{ open: boolean; sessionId?: string }>({ open: false });
@@ -133,7 +143,14 @@ const MobileInternDashboard = () => {
                         done ? "bg-eternia-success/20 text-eternia-success" : isNext ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                       )}>{done ? <CheckCircle className="w-3 h-3" /> : locked ? <Lock className="w-2.5 h-2.5" /> : m.day}</div>
                       <p className="text-[11px] font-medium flex-1 truncate">{m.title}</p>
-                      {isNext && <Button size="sm" className="h-5 text-[9px] px-1.5 gap-0.5" onClick={() => setCompletedModules((p) => [...p, m.day])}><Play className="w-2.5 h-2.5" />Start</Button>}
+                      {isNext && <Button size="sm" className="h-5 text-[9px] px-1.5 gap-0.5" onClick={async () => {
+                        const newModules = [...completedModules, m.day];
+                        setCompletedModules(newModules);
+                        if (user) {
+                          const newStatus = newModules.length >= MODULES.length ? "completed" : "in_progress";
+                          await supabase.from("profiles").update({ training_progress: newModules, training_status: newStatus }).eq("id", user.id);
+                        }
+                      }}><Play className="w-2.5 h-2.5" />Start</Button>}
                     </div>
                   );
                 })}

@@ -549,6 +549,7 @@ export type Database = {
           specialty: string | null
           streak_days: number
           total_sessions: number
+          training_progress: Json | null
           training_status: string
           updated_at: string
           username: string
@@ -566,6 +567,7 @@ export type Database = {
           specialty?: string | null
           streak_days?: number
           total_sessions?: number
+          training_progress?: Json | null
           training_status?: string
           updated_at?: string
           username: string
@@ -583,6 +585,7 @@ export type Database = {
           specialty?: string | null
           streak_days?: number
           total_sessions?: number
+          training_progress?: Json | null
           training_status?: string
           updated_at?: string
           username?: string

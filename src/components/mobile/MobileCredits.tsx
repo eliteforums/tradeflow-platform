@@ -26,8 +26,8 @@ const MobileCredits = () => {
     <DashboardLayout>
       <div className="space-y-5 pb-24">
         <div>
-          <h1 className="text-xl font-bold font-display">Care Credits</h1>
-          <p className="text-sm text-muted-foreground">Manage your ECC</p>
+          <h1 className="text-xl font-bold font-display">Wallet</h1>
+          <p className="text-sm text-muted-foreground">Manage your ECC wallet</p>
         </div>
 
         {balance < 5 && (

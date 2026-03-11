@@ -69,7 +69,7 @@ const MobileDashboard = () => {
   if (profile?.role === "intern") return <Navigate to="/dashboard/intern" replace />;
 
   const portals = [
-    { icon: Calendar, title: "Appointments", desc: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500" },
+    { icon: Calendar, title: "Expert Connect", desc: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500" },
     { icon: MessageCircle, title: "Peer Connect", desc: "Talk to trained interns", path: "/dashboard/peer-connect", gradient: "from-pink-500 to-rose-500" },
     { icon: Box, title: "BlackBox", desc: "Express anonymously", path: "/dashboard/blackbox", gradient: "from-violet-500 to-purple-500" },
     { icon: Music, title: "Sound Therapy", desc: "Meditate & relax", path: "/dashboard/sound-therapy", gradient: "from-cyan-500 to-blue-500" },
@@ -79,7 +79,7 @@ const MobileDashboard = () => {
     { name: "Quest Cards", icon: Award, path: "/dashboard/self-help", color: "text-amber-400" },
     { name: "Wreck Buddy", icon: Sparkles, path: "/dashboard/self-help", color: "text-pink-400" },
     { name: "Tibetan Bowl", icon: Music, path: "/dashboard/self-help", color: "text-violet-400" },
-    { name: "Credits", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
+    { name: "Wallet", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
   ];
 
   return (
@@ -105,7 +105,7 @@ const MobileDashboard = () => {
           </div>
           <div className="rounded-2xl bg-card p-4 text-center border border-border/50">
             <p className="text-xl font-bold">{balance}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Credits 💎</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Wallet 💎</p>
           </div>
           <div className="rounded-2xl bg-card p-4 text-center border border-border/50">
             <p className="text-xl font-bold">{profile?.total_sessions || 0}</p>

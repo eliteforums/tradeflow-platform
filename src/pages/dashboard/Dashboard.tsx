@@ -51,7 +51,7 @@ const Dashboard = () => {
     { name: "Quest Cards", icon: Award, path: "/dashboard/self-help", color: "text-amber-400" },
     { name: "Wreck Buddy", icon: Sparkles, path: "/dashboard/self-help", color: "text-pink-400" },
     { name: "Tibetan Bowl", icon: Music, path: "/dashboard/self-help", color: "text-violet-400" },
-    { name: "Credits", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
+    { name: "Wallet", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
   ];
 
   return (
@@ -86,7 +86,7 @@ const Dashboard = () => {
           </div>
           <div className="rounded-xl bg-card p-3 text-center border border-border/50">
             <p className="text-lg sm:text-xl font-bold">{balance}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Credits 💎</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Wallet 💎</p>
           </div>
           <div className="rounded-xl bg-card p-3 text-center border border-border/50">
             <p className="text-lg sm:text-xl font-bold">{profile?.total_sessions || 0}</p>
