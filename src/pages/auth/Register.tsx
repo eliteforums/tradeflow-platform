@@ -87,6 +87,14 @@ const Register = () => {
       setTimeout(async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // Generate device fingerprint for binding
+          let deviceFingerprint = "";
+          try {
+            deviceFingerprint = await generateDeviceFingerprint();
+          } catch (e) {
+            console.warn("Device fingerprint generation failed:", e);
+          }
+
           await supabase.from("user_private").insert({
             user_id: user.id,
             emergency_name_encrypted: formData.emergencyName,
@@ -94,6 +102,7 @@ const Register = () => {
             emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
             student_id_encrypted: formData.studentId,
             contact_is_self: formData.contactIsSelf,
+            device_id_encrypted: deviceFingerprint || null,
           });
           if (institutionId) {
             await supabase
