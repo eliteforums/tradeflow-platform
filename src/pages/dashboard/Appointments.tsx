@@ -32,7 +32,7 @@ const Appointments = () => {
   // If user is an expert, show Expert Dashboard instead
   if (profile?.role === "expert") return <ExpertDashboard />;
 
-  const handleJoinCall = (type: string) => setCallModal({ open: true, mode: type === "video" ? "video" : "audio" });
+  const handleJoinCall = (type: string, aptId: string) => setCallModal({ open: true, mode: type === "video" ? "video" : "audio", appointmentId: aptId });
   const handleBookSlot = (expert: any, slot: any) => setBookingDialog({ open: true, expert, slot });
   const confirmBooking = () => {
     if (!bookingDialog.expert || !bookingDialog.slot) return;
