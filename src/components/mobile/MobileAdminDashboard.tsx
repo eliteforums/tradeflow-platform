@@ -1,5 +1,10 @@
-import { useState } from "react";
-import { Users, Calendar, MessageCircle, AlertTriangle, TrendingUp, Coins, Shield, Activity, Eye, CheckCircle, Clock, BarChart3, Search, Loader2, UserPlus, Settings, Music, Building2, FileText, QrCode } from "lucide-react";
+import { useState, useMemo } from "react";
+import {
+  Users, Calendar, MessageCircle, AlertTriangle, Coins,
+  Shield, Activity, BarChart3, Search, Loader2,
+  UserPlus, Settings, Building2, Crown, Stethoscope,
+  GraduationCap, Zap, Eye, CheckCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -7,23 +12,71 @@ import { useAdmin } from "@/hooks/useAdmin";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
-import SoundManager from "@/components/admin/SoundManager";
-import InstitutionManager from "@/components/admin/InstitutionManager";
-import EscalationManager from "@/components/admin/EscalationManager";
-import AuditLogViewer from "@/components/admin/AuditLogViewer";
-import SPOCTools from "@/components/admin/SPOCTools";
 import RoleManager from "@/components/admin/RoleManager";
 import MemberManager from "@/components/admin/MemberManager";
-import ExpertManager from "@/components/admin/ExpertManager";
 import CreditGrantTool from "@/components/admin/CreditGrantTool";
 
-type TabId = "overview" | "members" | "sessions" | "flags" | "sounds" | "institutions" | "escalations" | "spoc" | "audit" | "roles" | "experts";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles";
+type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
+type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
 const MobileAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [sessionFilter, setSessionFilter] = useState<SessionFilter>("all");
   const { profile } = useAuth();
-  const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, isLoading } = useAdmin();
+  const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, blackboxSessions, institutions, isLoading } = useAdmin();
+
+  const filteredMembers = useMemo(() => {
+    let filtered = members;
+    if (roleFilter !== "all") {
+      filtered = roleFilter === "therapist"
+        ? filtered.filter((m) => m.role === "expert" && m.specialty)
+        : filtered.filter((m) => m.role === roleFilter);
+    }
+    if (searchQuery) {
+      filtered = filtered.filter((m) => m.username.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+    return filtered;
+  }, [members, roleFilter, searchQuery]);
+
+  const unifiedSessions = useMemo(() => {
+    const items: { id: string; type: "appointment" | "peer" | "blackbox"; description: string; date: string; status: string; flagged?: boolean }[] = [];
+    if (sessionFilter === "all" || sessionFilter === "appointment") {
+      appointments.forEach((apt: any) => {
+        items.push({ id: apt.id, type: "appointment", description: `${apt.expert?.username || "Expert"} → ${apt.student?.username || "Student"}`, date: apt.slot_time, status: apt.status });
+      });
+    }
+    if (sessionFilter === "all" || sessionFilter === "peer") {
+      peerSessions.forEach((s: any) => {
+        items.push({ id: s.id, type: "peer", description: `${s.student?.username || "Student"} → ${s.intern?.username || "Pending"}`, date: s.created_at, status: s.status, flagged: s.is_flagged });
+      });
+    }
+    if (sessionFilter === "all" || sessionFilter === "blackbox") {
+      blackboxSessions.forEach((bs: any) => {
+        items.push({ id: bs.id, type: "blackbox", description: `BlackBox${bs.therapist?.username ? ` → ${bs.therapist.username}` : ""}`, date: bs.created_at, status: bs.status, flagged: bs.flag_level > 0 });
+      });
+    }
+    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [appointments, peerSessions, blackboxSessions, sessionFilter]);
+
+  const roleCounts = useMemo(() => ({
+    admin: members.filter((m) => m.role === "admin").length,
+    spoc: members.filter((m) => m.role === "spoc").length,
+    expert: members.filter((m) => m.role === "expert").length,
+    intern: members.filter((m) => m.role === "intern").length,
+    student: members.filter((m) => m.role === "student").length,
+  }), [members]);
+
+  const institutionData = useMemo(() => {
+    return institutions.map((inst: any) => {
+      const instMembers = members.filter(m => m.institution_id === inst.id);
+      const spoc = instMembers.find(m => m.role === "spoc");
+      const studentCount = instMembers.filter(m => m.role === "student").length;
+      return { ...inst, spoc, studentCount, memberCount: instMembers.length };
+    });
+  }, [institutions, members]);
 
   if (!isAdmin) return (
     <DashboardLayout>
@@ -33,68 +86,33 @@ const MobileAdminDashboard = () => {
     </DashboardLayout>
   );
 
-  const filteredMembers = members.filter((m) => m.username.toLowerCase().includes(searchQuery.toLowerCase()));
-
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: "overview", label: "Overview", icon: BarChart3 },
     { id: "members", label: "Members", icon: Users },
     { id: "sessions", label: "Sessions", icon: Calendar },
-    { id: "flags", label: "Flags", icon: AlertTriangle },
-    { id: "escalations", label: "Escalations", icon: Shield },
-    { id: "spoc", label: "SPOC", icon: QrCode },
-    { id: "sounds", label: "Sounds", icon: Music },
+    { id: "spoc", label: "SPOC", icon: Building2 },
     { id: "roles", label: "Roles", icon: UserPlus },
-    { id: "experts", label: "Experts", icon: Users },
-    { id: "institutions", label: "Institutions", icon: Building2 },
-    { id: "audit", label: "Audit", icon: FileText },
   ];
 
-  const roleCounts = {
-    admin: members.filter((m) => m.role === "admin").length,
-    spoc: members.filter((m) => m.role === "spoc").length,
-    expert: members.filter((m) => m.role === "expert").length,
-    intern: members.filter((m) => m.role === "intern").length,
-    student: members.filter((m) => m.role === "student").length,
+  const getTypeBadge = (type: string) => {
+    const map: Record<string, string> = { appointment: "bg-primary/10 text-primary", peer: "bg-eternia-lavender/10 text-eternia-lavender", blackbox: "bg-eternia-warning/10 text-eternia-warning" };
+    return map[type] || "bg-muted text-muted-foreground";
   };
 
   return (
     <DashboardLayout>
       <div className="space-y-5 pb-24">
-        {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold font-display">Super Admin Dashboard</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-9 w-9"><Settings className="w-4 h-4" /></Button>
-          </div>
+          <h1 className="text-lg font-bold font-display">Admin Dashboard</h1>
+          <Button variant="ghost" size="icon" className="h-9 w-9"><Settings className="w-4 h-4" /></Button>
         </div>
 
-        {/* Control Center Banner */}
         <div className="rounded-2xl p-5 border border-primary/20" style={{ background: "linear-gradient(135deg, hsl(var(--eternia-teal) / 0.15), hsl(var(--eternia-lavender) / 0.15))" }}>
-          <h2 className="text-base font-bold font-display mb-1">Super Admin Control Center</h2>
-          <p className="text-xs text-muted-foreground leading-relaxed">Full system overview — all users, all data, all modules</p>
+          <h2 className="text-base font-bold font-display mb-1">Control Center</h2>
+          <p className="text-xs text-muted-foreground">Full system overview</p>
         </div>
 
-        {/* Role Count Cards - 2 col grid */}
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: "Super Admins", value: roleCounts.admin, icon: Shield, iconBg: "bg-destructive/10", iconColor: "text-destructive" },
-            { label: "SPOCs", value: roleCounts.spoc, icon: Shield, iconBg: "bg-primary/10", iconColor: "text-primary" },
-            { label: "Experts", value: roleCounts.expert, icon: CheckCircle, iconBg: "bg-eternia-success/10", iconColor: "text-eternia-success" },
-            { label: "Interns", value: roleCounts.intern, icon: Users, iconBg: "bg-eternia-warning/10", iconColor: "text-eternia-warning" },
-            { label: "Students", value: roleCounts.student, icon: Users, iconBg: "bg-eternia-lavender/10", iconColor: "text-eternia-lavender" },
-            { label: "Sessions", value: stats.totalSessions, icon: Activity, iconBg: "bg-primary/10", iconColor: "text-primary" },
-          ].map((s) => (
-            <div key={s.label} className="p-4 rounded-2xl bg-card border border-border/50">
-              <div className={`w-10 h-10 rounded-xl ${s.iconBg} flex items-center justify-center mb-3`}>
-                <s.icon className={`w-5 h-5 ${s.iconColor}`} />
-              </div>
-              <p className="text-2xl font-bold leading-none">{s.value}</p>
-              <p className="text-xs text-muted-foreground mt-1.5">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Scrollable Tabs */}
+        {/* Tabs */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -106,34 +124,48 @@ const MobileAdminDashboard = () => {
 
         {isLoading ? <div className="flex items-center justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div> : (
           <>
+            {/* OVERVIEW */}
             {activeTab === "overview" && (
               <div className="space-y-4">
-                <div className="rounded-2xl bg-card border border-border/50 p-4">
-                  <h3 className="font-semibold text-sm flex items-center gap-2 mb-3"><Calendar className="w-4 h-4 text-primary" />Recent Appointments</h3>
-                  {appointments.length === 0 ? <p className="text-center py-6 text-sm text-muted-foreground">None</p>
-                    : appointments.slice(0, 5).map((apt: any) => (
-                      <div key={apt.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 gap-2 mb-2 last:mb-0">
-                        <div className="min-w-0"><p className="font-medium text-sm truncate">{apt.student?.username} → {apt.expert?.username}</p><p className="text-xs text-muted-foreground">{format(new Date(apt.slot_time), "MMM d, h:mm a")}</p></div>
-                        <span className={`px-2 py-0.5 rounded text-xs shrink-0 ${apt.status === "completed" ? "bg-eternia-success/10 text-eternia-success" : "bg-muted text-muted-foreground"}`}>{apt.status}</span>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "Super Admins", value: roleCounts.admin, icon: Shield, iconBg: "bg-destructive/10", iconColor: "text-destructive" },
+                    { label: "SPOCs", value: roleCounts.spoc, icon: Shield, iconBg: "bg-primary/10", iconColor: "text-primary" },
+                    { label: "Experts", value: roleCounts.expert, icon: CheckCircle, iconBg: "bg-eternia-success/10", iconColor: "text-eternia-success" },
+                    { label: "Interns", value: roleCounts.intern, icon: Users, iconBg: "bg-eternia-warning/10", iconColor: "text-eternia-warning" },
+                    { label: "Students", value: roleCounts.student, icon: Users, iconBg: "bg-eternia-lavender/10", iconColor: "text-eternia-lavender" },
+                    { label: "Sessions", value: stats.totalSessions, icon: Activity, iconBg: "bg-primary/10", iconColor: "text-primary" },
+                  ].map((s) => (
+                    <div key={s.label} className="p-4 rounded-2xl bg-card border border-border/50">
+                      <div className={`w-10 h-10 rounded-xl ${s.iconBg} flex items-center justify-center mb-3`}>
+                        <s.icon className={`w-5 h-5 ${s.iconColor}`} />
+                      </div>
+                      <p className="text-2xl font-bold leading-none">{s.value}</p>
+                      <p className="text-xs text-muted-foreground mt-1.5">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {flaggedEntries.length > 0 && (
+                  <div className="rounded-2xl bg-destructive/5 border border-destructive/20 p-4">
+                    <h3 className="font-semibold text-sm flex items-center gap-2 mb-2"><AlertTriangle className="w-4 h-4 text-destructive" />Flagged ({flaggedEntries.length})</h3>
+                    {flaggedEntries.slice(0, 3).map((entry: any) => (
+                      <div key={entry.id} className="flex items-center justify-between p-2.5 rounded-xl bg-card border border-border/30 mb-1.5 last:mb-0">
+                        <span className={`px-2 py-0.5 rounded text-[10px] ${entry.ai_flag_level >= 3 ? "bg-destructive text-destructive-foreground" : "bg-eternia-warning/20 text-eternia-warning"}`}>
+                          {entry.ai_flag_level >= 3 ? "Critical" : "Moderate"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{format(new Date(entry.created_at), "MMM d")}</span>
                       </div>
                     ))}
-                </div>
-                <div className="rounded-2xl bg-card border border-border/50 p-4">
-                  <h3 className="font-semibold text-sm flex items-center gap-2 mb-3"><MessageCircle className="w-4 h-4 text-primary" />Peer Sessions</h3>
-                  {peerSessions.length === 0 ? <p className="text-center py-6 text-sm text-muted-foreground">None</p>
-                    : peerSessions.slice(0, 5).map((s: any) => (
-                      <div key={s.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 gap-2 mb-2 last:mb-0">
-                        <div className="min-w-0"><p className="font-medium text-sm truncate">{s.student?.username} → {s.intern?.username || "Pending"}</p><p className="text-xs text-muted-foreground">{format(new Date(s.created_at), "MMM d, h:mm a")}</p></div>
-                        <span className={`px-2 py-0.5 rounded text-xs shrink-0 ${s.is_flagged ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>{s.is_flagged ? "Flagged" : s.status}</span>
-                      </div>
-                    ))}
-                </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: "Grant Credits", icon: Coins, tab: "spoc" as TabId },
+                    { label: "Grant Credits", icon: Coins, tab: "roles" as TabId },
                     { label: "Add Member", icon: UserPlus, tab: "roles" as TabId },
-                    { label: "View Flags", icon: AlertTriangle, tab: "flags" as TabId },
-                    { label: "Experts", icon: Users, tab: "experts" as TabId },
+                    { label: "View Sessions", icon: Calendar, tab: "sessions" as TabId },
+                    { label: "Institutions", icon: Building2, tab: "spoc" as TabId },
                   ].map((a) => (
                     <button key={a.label} className="p-4 rounded-2xl bg-muted/30 border border-border text-left active:scale-[0.97]" onClick={() => setActiveTab(a.tab)}>
                       <a.icon className="w-5 h-5 text-primary mb-2" /><p className="font-medium text-sm">{a.label}</p>
@@ -143,11 +175,19 @@ const MobileAdminDashboard = () => {
               </div>
             )}
 
+            {/* MEMBERS */}
             {activeTab === "members" && (
               <div className="space-y-3">
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {(["all", "spoc", "expert", "intern", "therapist"] as RoleFilter[]).map((rf) => (
+                    <button key={rf} onClick={() => setRoleFilter(rf)}
+                      className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${roleFilter === rf ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"}`}>
+                      {rf}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input placeholder="Search..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-10 bg-card text-sm" /></div>
-                  <Button size="icon" variant="outline" className="h-10 w-10" onClick={() => setActiveTab("roles")}><UserPlus className="w-4 h-4" /></Button>
                 </div>
                 <p className="text-xs text-muted-foreground">{filteredMembers.length} members</p>
                 {filteredMembers.map((m) => (
@@ -166,63 +206,71 @@ const MobileAdminDashboard = () => {
               </div>
             )}
 
+            {/* SESSIONS */}
             {activeTab === "sessions" && (
-              <div className="space-y-4">
-                <div className="rounded-2xl bg-card border border-border/50 p-4">
-                  <h3 className="font-semibold text-sm mb-3">Appointments ({appointments.length})</h3>
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {appointments.map((apt: any) => (
-                      <div key={apt.id} className="p-3 rounded-xl bg-muted/30 flex items-center justify-between gap-2">
-                        <div className="min-w-0"><p className="font-medium text-sm truncate">{apt.student?.username} → {apt.expert?.username}</p><p className="text-xs text-muted-foreground">{format(new Date(apt.slot_time), "MMM d, h:mm a")}</p></div>
-                        <span className={`px-2 py-0.5 rounded text-xs shrink-0 ${apt.status === "completed" ? "bg-eternia-success/10 text-eternia-success" : "bg-muted text-muted-foreground"}`}>{apt.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="rounded-2xl bg-card border border-border/50 p-4">
-                  <h3 className="font-semibold text-sm mb-3">Peer Sessions ({peerSessions.length})</h3>
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {peerSessions.map((s: any) => (
-                      <div key={s.id} className={`p-3 rounded-xl flex items-center justify-between gap-2 ${s.is_flagged ? "bg-destructive/5" : "bg-muted/30"}`}>
-                        <div className="min-w-0"><p className="font-medium text-sm truncate">{s.student?.username} → {s.intern?.username || "—"}</p><p className="text-xs text-muted-foreground">{format(new Date(s.created_at), "MMM d, h:mm a")}</p></div>
-                        <span className={`px-2 py-0.5 rounded text-xs shrink-0 ${s.is_flagged ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>{s.is_flagged ? "⚠" : s.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === "flags" && (
               <div className="space-y-3">
-                <h3 className="font-semibold text-sm flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-destructive" />Flagged ({flaggedEntries.length})</h3>
-                {flaggedEntries.length === 0 ? (
-                  <div className="text-center py-10 text-muted-foreground"><CheckCircle className="w-10 h-10 mx-auto mb-3 text-eternia-success" /><p className="text-sm">All Clear</p></div>
-                ) : flaggedEntries.map((entry: any) => (
-                  <div key={entry.id} className="p-4 rounded-2xl border border-destructive/20 bg-destructive/5">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${entry.ai_flag_level >= 3 ? "bg-destructive text-destructive-foreground" : "bg-eternia-warning/20 text-eternia-warning"}`}>
-                        {entry.ai_flag_level >= 3 ? "🔴 Critical" : "🟡 Moderate"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{format(new Date(entry.created_at), "MMM d, h:mm a")}</span>
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                  {(["all", "appointment", "peer", "blackbox"] as SessionFilter[]).map((sf) => (
+                    <button key={sf} onClick={() => setSessionFilter(sf)}
+                      className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-medium capitalize ${sessionFilter === sf ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"}`}>
+                      {sf}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">{unifiedSessions.length} sessions</p>
+                {unifiedSessions.length === 0 ? (
+                  <div className="text-center py-10 text-muted-foreground"><Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No sessions</p></div>
+                ) : unifiedSessions.map((s) => (
+                  <div key={s.id} className={`p-3 rounded-2xl border flex items-start justify-between gap-2 ${s.flagged ? "bg-destructive/5 border-destructive/20" : "bg-card border-border/50"}`}>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{s.description}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(s.date), "MMM d, h:mm a")}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-2">Requires review</p>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" className="gap-1 h-9 text-xs px-3"><Eye className="w-3.5 h-3.5" />Review</Button>
-                      <Button size="sm" variant="ghost" className="gap-1 h-9 text-xs px-3 text-eternia-success"><CheckCircle className="w-3.5 h-3.5" />Dismiss</Button>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] capitalize ${getTypeBadge(s.type)}`}>{s.type}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${s.flagged ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>{s.flagged ? "⚠" : s.status}</span>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {activeTab === "sounds" && <SoundManager />}
-            {activeTab === "institutions" && <InstitutionManager />}
-            {activeTab === "escalations" && <EscalationManager />}
-            {activeTab === "spoc" && <SPOCTools />}
-            {activeTab === "roles" && <div className="space-y-4"><MemberManager /><RoleManager /><CreditGrantTool /></div>}
-            {activeTab === "experts" && <ExpertManager />}
-            {activeTab === "audit" && <AuditLogViewer />}
+            {/* SPOC */}
+            {activeTab === "spoc" && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2"><Building2 className="w-4 h-4 text-primary" />Institutions & SPOCs</h3>
+                {institutionData.length === 0 ? (
+                  <div className="text-center py-10 text-muted-foreground"><Building2 className="w-8 h-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No institutions</p></div>
+                ) : institutionData.map((inst: any) => (
+                  <div key={inst.id} className="p-4 rounded-2xl bg-card border border-border/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm">{inst.name}</h4>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${inst.is_active ? "bg-eternia-success/10 text-eternia-success" : "bg-muted text-muted-foreground"}`}>{inst.is_active ? "Active" : "Inactive"}</span>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-muted/30 border border-border/30">
+                      <p className="text-[10px] font-medium text-muted-foreground mb-1">SPOC</p>
+                      {inst.spoc ? (
+                        <div className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-primary" /><span className="text-sm font-medium">{inst.spoc.username}</span></div>
+                      ) : <p className="text-xs text-muted-foreground italic">Not assigned</p>}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2 rounded-lg bg-muted/20 text-center"><p className="text-lg font-bold">{inst.studentCount}</p><p className="text-[10px] text-muted-foreground">Students</p></div>
+                      <div className="p-2 rounded-lg bg-muted/20 text-center"><p className="text-lg font-bold">{inst.memberCount}</p><p className="text-[10px] text-muted-foreground">Members</p></div>
+                      <div className="p-2 rounded-lg bg-muted/20 text-center"><p className="text-lg font-bold">{inst.credits_pool}</p><p className="text-[10px] text-muted-foreground">Credits</p></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ROLES */}
+            {activeTab === "roles" && (
+              <div className="space-y-4">
+                <MemberManager />
+                <RoleManager />
+                <CreditGrantTool />
+              </div>
+            )}
           </>
         )}
       </div>

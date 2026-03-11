@@ -19,6 +19,7 @@ export interface InstitutionMember {
   streak_days: number;
   created_at: string;
   institution_id: string | null;
+  specialty: string | null;
 }
 
 export function useAdmin() {
@@ -129,6 +130,37 @@ export function useAdmin() {
     enabled: isAdmin,
   });
 
+  // Get blackbox sessions for unified session feed
+  const { data: blackboxSessions = [], isLoading: isLoadingBlackbox } = useQuery({
+    queryKey: ["admin-blackbox-sessions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("blackbox_sessions")
+        .select("*, therapist:profiles!blackbox_sessions_therapist_id_fkey(*)")
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  // Get institutions for SPOC tab
+  const { data: institutions = [], isLoading: isLoadingInstitutions } = useQuery({
+    queryKey: ["admin-institutions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("institutions")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
   return {
     isAdmin,
     isSuperAdmin,
@@ -137,6 +169,8 @@ export function useAdmin() {
     appointments,
     peerSessions,
     flaggedEntries,
-    isLoading: isLoadingMembers || isLoadingStats || isLoadingAppointments || isLoadingPeerSessions || isLoadingFlags,
+    blackboxSessions,
+    institutions,
+    isLoading: isLoadingMembers || isLoadingStats || isLoadingAppointments || isLoadingPeerSessions || isLoadingFlags || isLoadingBlackbox || isLoadingInstitutions,
   };
 }
