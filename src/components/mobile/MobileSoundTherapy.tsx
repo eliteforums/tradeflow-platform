@@ -5,6 +5,8 @@ import { Music, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Loader2, C
 import { Slider } from "@/components/ui/slider";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useSoundTherapy } from "@/hooks/useSoundTherapy";
+import { useEccEarn } from "@/hooks/useEccEarn";
+import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 
 const gradients = [
@@ -27,6 +29,8 @@ const MobileSoundTherapy = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const { tracks, categories, isLoading, formatDuration } = useSoundTherapy();
+  const { earnFromActivity, canEarn } = useEccEarn();
+  const earnedForTrackRef = useRef<Set<string>>(new Set());
   const filteredTracks = activeCategory === "all" ? tracks : tracks.filter((t) => t.category === activeCategory);
   const currentTrackData = filteredTracks[currentTrack];
 
@@ -39,7 +43,16 @@ const MobileSoundTherapy = () => {
       const audio = audioRef.current;
       const update = () => { if (audio.duration) setProgress([(audio.currentTime / audio.duration) * 100]); };
       audio.addEventListener("timeupdate", update);
-      audio.addEventListener("ended", () => handleNext());
+      audio.addEventListener("ended", () => {
+        if (currentTrackData && canEarn && !earnedForTrackRef.current.has(currentTrackData.id)) {
+          earnedForTrackRef.current.add(currentTrackData.id);
+          earnFromActivity({ amount: 1, activity: `Listened to: ${currentTrackData.title}` });
+        }
+        if (currentTrackData) {
+          supabase.from("sound_content").update({ play_count: (currentTrackData.play_count || 0) + 1 }).eq("id", currentTrackData.id).then(() => {});
+        }
+        handleNext();
+      });
       return () => { audio.removeEventListener("timeupdate", update); audio.pause(); };
     } else if (!isPlaying && audioRef.current) { audioRef.current.pause(); }
   }, [currentTrack, isPlaying, currentTrackData?.file_url]);

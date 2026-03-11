@@ -6,14 +6,12 @@ import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award,
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCredits } from "@/hooks/useCredits";
-import { usePurchaseCredits } from "@/hooks/usePurchaseCredits";
 import { format } from "date-fns";
 
 const Credits = () => {
   const isMobile = useIsMobile();
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
-  const { purchaseCredits, isPurchasing, purchasingCredits, PACKAGES } = usePurchaseCredits();
 
   if (isMobile) return <MobileCredits />;
 
@@ -74,33 +72,25 @@ const Credits = () => {
               })}</div>}
           </div>
           <div className="space-y-4">
-            <h3 className="font-semibold font-display text-base">Top-up Credits</h3>
-            <div className="grid grid-cols-1 gap-3">
-              {PACKAGES.map((pkg) => (
-                <button
-                  key={pkg.credits}
-                  onClick={() => purchaseCredits(pkg.credits)}
-                  disabled={isPurchasing}
-                  className={`p-4 rounded-xl text-left transition-all border disabled:opacity-50 ${pkg.popular ? "bg-primary/10 border-primary" : "bg-card border-border hover:border-primary/50"}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-semibold text-lg">{pkg.credits} ECC</span>
-                        {pkg.popular && <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px]">Popular</span>}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{pkg.price}</p>
-                    </div>
-                    {isPurchasing && purchasingCredits === pkg.credits ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                    ) : (
-                      <Coins className="w-5 h-5 text-primary" />
-                    )}
-                  </div>
-                </button>
-              ))}
+            <h3 className="font-semibold font-display text-base">How to Get Credits</h3>
+            <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-3">
+              <div>
+                <h4 className="font-medium text-sm mb-1.5 flex items-center gap-2"><Award className="w-4 h-4 text-primary" />Earn (5 ECC/day max)</h4>
+                <ul className="space-y-1.5 text-sm text-muted-foreground">
+                  <li className="flex items-center gap-2">• Complete Quest Cards</li>
+                  <li className="flex items-center gap-2">• Wreck the Buddy exercise</li>
+                  <li className="flex items-center gap-2">• Tibetan Bowl breathing</li>
+                  <li className="flex items-center gap-2">• Listen to Sound Therapy</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-medium text-sm mb-1.5 flex items-center gap-2"><Gift className="w-4 h-4 text-primary" />Institution Grants</h4>
+                <p className="text-sm text-muted-foreground">Your SPOC can allocate bulk credits to all students at the start of each term.</p>
+              </div>
             </div>
-            <div className="p-4 rounded-xl bg-muted/30 border border-border"><h4 className="font-medium text-sm mb-2">How to Earn</h4><ul className="space-y-1.5 text-sm text-muted-foreground"><li className="flex items-center gap-2"><Award className="w-3.5 h-3.5 text-primary shrink-0" />Complete Quest Cards</li><li className="flex items-center gap-2"><Gift className="w-3.5 h-3.5 text-primary shrink-0" />Maintain streaks</li><li className="flex items-center gap-2"><CreditCard className="w-3.5 h-3.5 text-primary shrink-0" />Institution grants</li></ul></div>
+            <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
+              <p className="text-xs text-muted-foreground text-center">Need more credits? Ask your institution's SPOC for a grant.</p>
+            </div>
           </div>
         </div>
       </div>

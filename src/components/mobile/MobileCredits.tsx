@@ -3,13 +3,11 @@ import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award,
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCredits } from "@/hooks/useCredits";
-import { usePurchaseCredits } from "@/hooks/usePurchaseCredits";
 import { format } from "date-fns";
 
 const MobileCredits = () => {
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
-  const { purchaseCredits, isPurchasing, purchasingCredits, PACKAGES } = usePurchaseCredits();
   const filtered = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
 
   const now = new Date();
@@ -52,31 +50,16 @@ const MobileCredits = () => {
           </div>
         </div>
 
-        {/* Top-up */}
-        <div>
-          <h3 className="font-semibold text-sm mb-2">Top-up</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {PACKAGES.map((pkg) => (
-              <button
-                key={pkg.credits}
-                onClick={() => purchaseCredits(pkg.credits)}
-                disabled={isPurchasing}
-                className={`p-4 rounded-2xl text-left border active:scale-[0.97] disabled:opacity-50 ${pkg.popular ? "bg-primary/10 border-primary" : "bg-card border-border"}`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold text-sm">{pkg.credits} ECC</span>
-                    {pkg.popular && <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px]">Popular</span>}
-                    <p className="text-xs text-muted-foreground mt-0.5">{pkg.price}</p>
-                  </div>
-                  {isPurchasing && purchasingCredits === pkg.credits ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  ) : (
-                    <Coins className="w-5 h-5 text-primary" />
-                  )}
-                </div>
-              </button>
-            ))}
+        {/* How to Get Credits */}
+        <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
+          <h3 className="font-semibold text-sm">How to Get Credits</h3>
+          <div>
+            <h4 className="text-xs font-medium flex items-center gap-1.5 mb-1"><Award className="w-3.5 h-3.5 text-primary" />Earn (5 ECC/day)</h4>
+            <p className="text-xs text-muted-foreground">Quest Cards, Wreck Buddy, Tibetan Bowl, Sound Therapy</p>
+          </div>
+          <div>
+            <h4 className="text-xs font-medium flex items-center gap-1.5 mb-1"><Gift className="w-3.5 h-3.5 text-primary" />Institution Grants</h4>
+            <p className="text-xs text-muted-foreground">Ask your SPOC for a credit grant</p>
           </div>
         </div>
 

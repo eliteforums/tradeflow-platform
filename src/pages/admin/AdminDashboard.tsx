@@ -20,8 +20,12 @@ import SPOCTools from "@/components/admin/SPOCTools";
 import RoleManager from "@/components/admin/RoleManager";
 import MemberManager from "@/components/admin/MemberManager";
 import CreditGrantTool from "@/components/admin/CreditGrantTool";
+import SoundManager from "@/components/admin/SoundManager";
+import AuditLogViewer from "@/components/admin/AuditLogViewer";
+import EscalationManager from "@/components/admin/EscalationManager";
+import AccountDeletion from "@/components/admin/AccountDeletion";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -130,6 +134,9 @@ const AdminDashboard = () => {
     { id: "sessions", label: "Sessions", icon: Calendar },
     { id: "spoc", label: "SPOC", icon: Building2 },
     { id: "roles", label: "Roles", icon: UserPlus },
+    { id: "sounds", label: "Sounds", icon: Music },
+    { id: "escalations", label: "Escalations", icon: AlertTriangle },
+    { id: "audit", label: "Audit Logs", icon: FileText },
   ];
 
   const roleFilterButtons: { id: RoleFilter; label: string }[] = [
@@ -373,6 +380,28 @@ const AdminDashboard = () => {
                 <MemberManager />
                 <RoleManager />
                 <CreditGrantTool />
+              </div>
+            )}
+
+            {/* ─── SOUNDS ─── */}
+            {activeTab === "sounds" && (
+              <div className="max-w-2xl">
+                <SoundManager />
+              </div>
+            )}
+
+            {/* ─── ESCALATIONS ─── */}
+            {activeTab === "escalations" && (
+              <div className="max-w-3xl">
+                <EscalationManager />
+              </div>
+            )}
+
+            {/* ─── AUDIT LOGS ─── */}
+            {activeTab === "audit" && (
+              <div className="max-w-4xl space-y-4">
+                <AuditLogViewer />
+                <AccountDeletion />
               </div>
             )}
           </>
