@@ -179,15 +179,71 @@ const SPOCDashboardContent = () => {
   });
 
   // ─── Helpers ───
-  const qrPayload = profile
-    ? `ETERNIA-SPOC-${institutionId}-${user?.id}-${Date.now()}`
-    : "";
+  const [grantAmount, setGrantAmount] = useState("10");
+  const [isGranting, setIsGranting] = useState(false);
+  const [resetDeviceStudent, setResetDeviceStudent] = useState<string | null>(null);
+  const [isResettingDevice, setIsResettingDevice] = useState(false);
 
-  const copyQRCode = () => {
-    navigator.clipboard.writeText(qrPayload);
-    setCopiedQR(true);
-    toast.success("QR code payload copied!");
-    setTimeout(() => setCopiedQR(false), 2000);
+  const generateQR = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
+      if (error) throw error;
+      if (data?.qr_payload) {
+        navigator.clipboard.writeText(data.qr_payload);
+        setCopiedQR(true);
+        toast.success("Secure QR code generated & copied!");
+        setTimeout(() => setCopiedQR(false), 2000);
+      }
+    } catch (err: any) {
+      // Fallback to legacy
+      const fallback = `ETERNIA-SPOC-${institutionId}-${user?.id}-${Date.now()}`;
+      navigator.clipboard.writeText(fallback);
+      setCopiedQR(true);
+      toast.success("QR code copied (legacy format)");
+      setTimeout(() => setCopiedQR(false), 2000);
+    }
+  };
+
+  const grantCreditsToStudents = async () => {
+    if (!user || !institutionId) return;
+    setIsGranting(true);
+    try {
+      const amount = parseInt(grantAmount);
+      if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
+      // Insert credit_transactions for all students
+      const inserts = students.map((s) => ({
+        user_id: s.id,
+        delta: amount,
+        type: "grant" as const,
+        notes: `SPOC bulk grant`,
+        institution_id: institutionId,
+      }));
+      // Batch insert (max 100 at a time)
+      for (let i = 0; i < inserts.length; i += 100) {
+        const batch = inserts.slice(i, i + 100);
+        const { error } = await supabase.from("credit_transactions").insert(batch);
+        if (error) throw error;
+      }
+      toast.success(`Granted ${amount} ECC to ${students.length} students`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setIsGranting(false);
+  };
+
+  const handleResetDevice = async (studentId: string) => {
+    setIsResettingDevice(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-device", {
+        body: { student_id: studentId },
+      });
+      if (error) throw error;
+      toast.success("Device binding reset successfully");
+      setResetDeviceStudent(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to reset device");
+    }
+    setIsResettingDevice(false);
   };
 
   const activeStudents = students.filter((s) => s.is_active).length;
