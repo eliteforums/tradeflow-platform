@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronLeft,
   Shield,
+  Headphones,
 } from "lucide-react";
 import EterniaLogo from "@/components/EterniaLogo";
 import { Button } from "@/components/ui/button";
