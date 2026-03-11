@@ -325,7 +325,7 @@ const Register = () => {
                         <AlertTriangle className="w-3.5 h-3.5 text-eternia-warning" />
                         Emergency Escalation Consent
                       </span>
-                      If the platform detects a high-risk situation, the system may notify your institution's SPOC and share your username and emergency contact.
+                      I consent to the platform sharing my username and emergency contact with my institution's SPOC (Single Point of Contact) if the system or a qualified professional detects a high-risk situation requiring immediate intervention. This disclosure will only occur when there is a credible threat to my safety or the safety of others.
                     </label>
                   </div>
                 </div>
