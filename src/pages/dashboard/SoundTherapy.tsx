@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useSoundTherapy } from "@/hooks/useSoundTherapy";
+import { useEccEarn } from "@/hooks/useEccEarn";
+import { supabase } from "@/integrations/supabase/client";
 
 const SoundTherapy = () => {
   const isMobile = useIsMobile();
