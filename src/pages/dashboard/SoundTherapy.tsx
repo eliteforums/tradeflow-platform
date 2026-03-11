@@ -102,7 +102,7 @@ const SoundTherapy = () => {
                 <p className="text-xs text-muted-foreground">{currentTrackData?.artist || ""}</p>
               </div>
               <div className="mb-4">
-                <Slider value={progress} onValueChange={setProgress} max={100} step={1} className="mb-1.5" />
+                <Slider value={progress} onValueChange={setProgress} onValueCommit={handleSeek} max={100} step={1} className="mb-1.5" />
                 <div className="flex justify-between text-[10px] text-muted-foreground">
                   <span>{currentTrackData ? formatDuration(Math.floor((progress[0] / 100) * (currentTrackData.duration_sec || 0))) : "0:00"}</span>
                   <span>{currentTrackData ? formatDuration(currentTrackData.duration_sec) : "0:00"}</span>
