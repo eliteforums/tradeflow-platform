@@ -22,12 +22,14 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate user
-    const authHeader = req.headers.get('Authorization');
-    console.log('Auth header present:', !!authHeader);
+    // --- Auth ---
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization') || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized', details: 'Missing or invalid Authorization header' }), {
+    console.log('Auth header present:', !!authHeader, 'Token segments:', token ? token.split('.').length : 0);
+
+    if (!token || token.split('.').length !== 3) {
+      return new Response(JSON.stringify({ error: 'SESSION_INVALID', details: 'Missing or malformed auth token. Please sign in again.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -36,45 +38,46 @@ Deno.serve(async (req) => {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
     );
 
-    const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     console.log('Auth result — user:', user?.id, 'error:', userError?.message);
 
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized', details: userError?.message || 'Invalid session' }), {
+      return new Response(JSON.stringify({ error: 'SESSION_INVALID', details: userError?.message || 'Invalid session. Please sign in again.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    // --- Parse body ---
     let body: { action?: string };
     try {
       body = await req.json();
     } catch {
-      return new Response(JSON.stringify({ error: 'Bad request', details: 'Invalid JSON body' }), {
+      return new Response(JSON.stringify({ error: 'BAD_REQUEST', details: 'Invalid JSON body' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const { action } = body;
-    console.log('Action requested:', action);
+    console.log('Action:', action, 'User:', user.id);
 
+    // --- VideoSDK credentials ---
     const VIDEOSDK_API_KEY = Deno.env.get('VIDEOSDK_API_KEY');
     const VIDEOSDK_API_SECRET = Deno.env.get('VIDEOSDK_API_SECRET');
 
     if (!VIDEOSDK_API_KEY || !VIDEOSDK_API_SECRET) {
       console.error('VideoSDK credentials missing');
-      return new Response(JSON.stringify({ error: 'VideoSDK not configured', details: 'API key or secret is missing from server configuration' }), {
+      return new Response(JSON.stringify({ error: 'VIDEOSDK_CONFIG_MISSING', details: 'Video service credentials are not configured on the server.' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Generate JWT token for VideoSDK
+    // --- Generate VideoSDK JWT ---
     const header = toBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
     const now = Math.floor(Date.now() / 1000);
     const payload = toBase64Url(JSON.stringify({
@@ -93,17 +96,12 @@ Deno.serve(async (req) => {
       ['sign']
     );
 
-    const signatureBytes = await crypto.subtle.sign(
-      'HMAC',
-      key,
-      encoder.encode(`${header}.${payload}`)
-    );
-
+    const signatureBytes = await crypto.subtle.sign('HMAC', key, encoder.encode(`${header}.${payload}`));
     const signature = arrayBufferToBase64Url(signatureBytes);
     const videosdkToken = `${header}.${payload}.${signature}`;
 
+    // --- Handle actions ---
     if (action === 'get-token') {
-      console.log('Returning token successfully');
       return new Response(JSON.stringify({ token: videosdkToken }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -113,29 +111,27 @@ Deno.serve(async (req) => {
       console.log('Creating VideoSDK room...');
       const roomResponse = await fetch('https://api.videosdk.live/v2/rooms', {
         method: 'POST',
-        headers: {
-          Authorization: videosdkToken,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: videosdkToken, 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
 
-      let roomData: any;
       const responseText = await roomResponse.text();
+      console.log('VideoSDK upstream status:', roomResponse.status);
+
+      let roomData: any;
       try {
         roomData = JSON.parse(responseText);
       } catch {
-        console.error('Non-JSON response from VideoSDK:', responseText.substring(0, 200));
-        return new Response(JSON.stringify({ error: 'Video provider error', details: `Upstream returned status ${roomResponse.status} with non-JSON body` }), {
+        console.error('Non-JSON upstream response:', responseText.substring(0, 200));
+        return new Response(JSON.stringify({ error: 'VIDEOSDK_UPSTREAM_ERROR', details: `Video provider returned status ${roomResponse.status} with non-JSON body` }), {
           status: 502,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      console.log('Room response status:', roomResponse.status, JSON.stringify(roomData));
-
       if (!roomResponse.ok) {
-        return new Response(JSON.stringify({ error: 'Failed to create room', details: roomData?.message || roomData?.error || `VideoSDK API returned ${roomResponse.status}` }), {
+        console.error('VideoSDK room creation failed:', JSON.stringify(roomData));
+        return new Response(JSON.stringify({ error: 'VIDEOSDK_UPSTREAM_ERROR', details: roomData?.message || roomData?.error || `Video provider returned ${roomResponse.status}` }), {
           status: 502,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -146,13 +142,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action', details: 'Use "get-token" or "create-room"' }), {
+    return new Response(JSON.stringify({ error: 'BAD_REQUEST', details: 'Invalid action. Use "get-token" or "create-room".' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Unhandled error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {
+    return new Response(JSON.stringify({ error: 'INTERNAL_ERROR', details: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
