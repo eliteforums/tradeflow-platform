@@ -45,12 +45,32 @@ const parseInvokeError = async (error: unknown): Promise<ParsedFunctionError> =>
 };
 
 const invokeRaw = async (action: VideoSDKAction): Promise<Record<string, any>> => {
+  console.log("[VideoSDK] Invoking edge function with action:", action);
   const { data, error } = await supabase.functions.invoke("videosdk-token", {
     body: { action },
   });
 
-  if (error) throw error;
-  return (data || {}) as Record<string, any>;
+  console.log("[VideoSDK] Response - data:", data, "error:", error);
+  
+  if (error) {
+    console.error("[VideoSDK] Edge function error:", error, "type:", typeof error, "constructor:", error?.constructor?.name);
+    throw error;
+  }
+  
+  if (!data) {
+    throw new Error("Empty response from video service");
+  }
+  
+  // Handle case where data might be returned as a string
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch {
+      throw new Error("Invalid response from video service");
+    }
+  }
+  
+  return data as Record<string, any>;
 };
 
 async function invokeVideoSDK(action: VideoSDKAction): Promise<Record<string, any>> {
