@@ -5,8 +5,6 @@ type VideoSDKAction = "get-token" | "create-room";
 
 interface ParsedFunctionError {
   message: string;
-  status?: number;
-  code?: string;
   retryableAuth: boolean;
 }
 
@@ -15,9 +13,9 @@ const isAuthErrorMessage = (message: string) =>
 
 const parseInvokeError = async (error: unknown): Promise<ParsedFunctionError> => {
   if (error instanceof FunctionsHttpError) {
-    const status = error.context?.status;
     let details = "Video service request failed";
     let code: string | undefined;
+    const status = error.context?.status;
 
     try {
       const raw = await error.context.text();
@@ -25,13 +23,12 @@ const parseInvokeError = async (error: unknown): Promise<ParsedFunctionError> =>
       details = json.details || json.message || json.error || details;
       code = json.error;
     } catch {
+      // Response body may already be consumed by the SDK
       if (error.message) details = error.message;
     }
 
     return {
       message: details,
-      status,
-      code,
       retryableAuth: status === 401 || code === "SESSION_INVALID" || isAuthErrorMessage(details),
     };
   }
@@ -43,59 +40,52 @@ const parseInvokeError = async (error: unknown): Promise<ParsedFunctionError> =>
   };
 };
 
-const invokeRaw = async (action: VideoSDKAction, accessToken: string): Promise<Record<string, any>> => {
-  const { data, error } = await supabase.functions.invoke("videosdk-token", {
-    body: { action, accessToken },
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  if (error) throw error;
-  if (!data) throw new Error("Empty response from video service");
-
-  if (typeof data === "string") {
-    try {
-      return JSON.parse(data);
-    } catch {
-      throw new Error("Invalid response from video service");
-    }
-  }
-
-  return data as Record<string, any>;
-};
-
-const requireAccessToken = async (): Promise<string> => {
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) throw new Error("Session expired. Please sign in again.");
-  if (session?.access_token) return session.access_token;
-
-  const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-  if (refreshError || !refreshedSession?.access_token) {
-    throw new Error("Session expired. Please sign in again.");
-  }
-
-  return refreshedSession.access_token;
-};
-
+/**
+ * Invoke the videosdk-token edge function.
+ * Auth is handled automatically by supabase.functions.invoke() — no custom headers needed.
+ */
 async function invokeVideoSDK(action: VideoSDKAction): Promise<Record<string, any>> {
-  let accessToken = await requireAccessToken();
+  // Pre-check: ensure we have a valid session before calling
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) throw new Error("Session expired. Please sign in again.");
+  }
+
+  const callFn = async () => {
+    const { data, error } = await supabase.functions.invoke("videosdk-token", {
+      body: { action },
+    });
+
+    if (error) throw error;
+    if (!data) throw new Error("Empty response from video service");
+
+    if (typeof data === "string") {
+      try {
+        return JSON.parse(data);
+      } catch {
+        throw new Error("Invalid response from video service");
+      }
+    }
+    return data as Record<string, any>;
+  };
 
   try {
-    return await invokeRaw(action, accessToken);
+    return await callFn();
   } catch (err) {
     const parsed = await parseInvokeError(err);
 
     if (parsed.retryableAuth) {
-      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
-      if (!refreshError && session?.access_token) {
-        accessToken = session.access_token;
-        try {
-          return await invokeRaw(action, accessToken);
-        } catch (retryErr) {
-          const retryParsed = await parseInvokeError(retryErr);
-          throw new Error(retryParsed.message);
-        }
+      // One retry after refreshing the session
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) throw new Error("Session expired. Please sign in again.");
+
+      try {
+        return await callFn();
+      } catch (retryErr) {
+        const retryParsed = await parseInvokeError(retryErr);
+        throw new Error(retryParsed.message);
       }
-      throw new Error("Session expired. Please sign in again.");
     }
 
     throw new Error(parsed.message);

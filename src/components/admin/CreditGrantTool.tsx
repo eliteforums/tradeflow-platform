@@ -14,43 +14,15 @@ export default function CreditGrantTool() {
 
   const grantMutation = useMutation({
     mutationFn: async () => {
-      const credits = parseInt(amount);
-      if (isNaN(credits) || credits <= 0) throw new Error("Invalid amount");
-      const normalizedUsername = username.trim();
-      const { data: profile, error: profileErr } = await supabase
-        .from("profiles")
-        .select("id, username")
-        .ilike("username", normalizedUsername)
-        .maybeSingle();
-      if (profileErr || !profile) throw new Error("User not found.");
-
-      const { data: isStudent, error: roleErr } = await supabase.rpc("has_role", {
-        _user_id: profile.id,
-        _role: "student",
+      const { data, error } = await supabase.functions.invoke("grant-credits", {
+        body: { username: username.trim(), amount: parseInt(amount), notes },
       });
-      if (roleErr) throw new Error("Unable to verify user role. Please try again.");
-      if (!isStudent) throw new Error("Credits can only be granted to students.");
-      const { error: creditErr } = await supabase.from("credit_transactions").insert({
-        user_id: profile.id,
-        delta: credits,
-        type: "grant" as const,
-        notes: notes || `Admin grant: ${credits} ECC`,
-      });
-      if (creditErr) throw creditErr;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from("audit_logs").insert({
-          actor_id: user.id,
-          action_type: "credit_grant_individual",
-          target_table: "credit_transactions",
-          target_id: profile.id,
-          metadata: { username: profile.username, amount: credits, notes },
-        });
-      }
-      return { username: profile.username, credits };
+      if (error) throw new Error(error.message || "Failed to grant credits");
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: (data) => {
-      toast.success(`${data.credits} ECC → ${data.username}`);
+      toast.success(`${data.amount} ECC → ${data.username}`);
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
       setUsername("");
       setAmount("50");
