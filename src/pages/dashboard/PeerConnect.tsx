@@ -5,7 +5,8 @@ import { MessageCircle, Search, Circle, Phone, Video, Send, X, Clock, Shield, Us
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import VideoCallModal from "@/components/videosdk/VideoCallModal";
+import { lazy, Suspense } from "react";
+const LazyVideoCallModal = lazy(() => import("@/components/videosdk/VideoCallModal"));
 import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
 import { format } from "date-fns";

@@ -29,7 +29,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       return !!data;
     },
     enabled: !!user && profile?.role === "student",
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 15,
   });
 
   if (isLoading || (profile?.role === "student" && isCheckingRecovery)) {

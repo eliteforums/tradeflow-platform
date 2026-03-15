@@ -66,18 +66,20 @@ const BlackBox = () => {
               </div>
               <Button variant="destructive" size="sm" onClick={endSession}>End Call</Button>
             </div>
-            <MeetingProvider
-              config={{
-                meetingId: activeSession.room_id,
-                micEnabled: true,
-                webcamEnabled: false,
-                name: profile?.username || "Anonymous",
-                debugMode: false,
-              }}
-              token={token}
-            >
-              <MeetingView meetingId={activeSession.room_id} onMeetingLeave={endSession} />
-            </MeetingProvider>
+            <Suspense fallback={<div className="p-8 text-center text-muted-foreground text-sm">Connecting...</div>}>
+              <LazyMeetingProvider
+                config={{
+                  meetingId: activeSession.room_id,
+                  micEnabled: true,
+                  webcamEnabled: false,
+                  name: profile?.username || "Anonymous",
+                  debugMode: false,
+                }}
+                token={token}
+              >
+                <LazyMeetingView meetingId={activeSession.room_id} onMeetingLeave={endSession} />
+              </LazyMeetingProvider>
+            </Suspense>
           </div>
         ) : (
           <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/30">

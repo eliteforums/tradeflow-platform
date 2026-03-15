@@ -88,6 +88,7 @@ async function invokeVideoSDK(action: VideoSDKAction): Promise<Record<string, an
       }
     }
 
+    console.error("[VideoSDK] Error:", err, "Parsed:", parsed.message);
     throw new Error(parsed.message);
   }
 }
