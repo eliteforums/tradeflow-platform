@@ -23,12 +23,14 @@ Deno.serve(async (req) => {
 
   try {
     // --- Auth ---
-    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization') || '';
+    const rawAuthHeader = req.headers.get('authorization') || req.headers.get('Authorization') || '';
+    const authHeader = rawAuthHeader.split(',')[0]?.trim() ?? '';
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const tokenSegments = token ? token.split('.').length : 0;
 
-    console.log('Auth header present:', !!authHeader, 'Token segments:', token ? token.split('.').length : 0);
+    console.log('Auth header present:', !!rawAuthHeader, 'Token segments:', tokenSegments);
 
-    if (!token || token.split('.').length !== 3) {
+    if (!token || tokenSegments !== 3) {
       return new Response(JSON.stringify({ error: 'SESSION_INVALID', details: 'Missing or malformed auth token. Please sign in again.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -123,7 +125,11 @@ Deno.serve(async (req) => {
         roomData = JSON.parse(responseText);
       } catch {
         console.error('Non-JSON upstream response:', responseText.substring(0, 200));
-        return new Response(JSON.stringify({ error: 'VIDEOSDK_UPSTREAM_ERROR', details: `Video provider returned status ${roomResponse.status} with non-JSON body` }), {
+        return new Response(JSON.stringify({
+          error: 'VIDEOSDK_UPSTREAM_ERROR',
+          details: `Video provider returned status ${roomResponse.status} with non-JSON body`,
+          upstream_status: roomResponse.status,
+        }), {
           status: 502,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -131,7 +137,11 @@ Deno.serve(async (req) => {
 
       if (!roomResponse.ok) {
         console.error('VideoSDK room creation failed:', JSON.stringify(roomData));
-        return new Response(JSON.stringify({ error: 'VIDEOSDK_UPSTREAM_ERROR', details: roomData?.message || roomData?.error || `Video provider returned ${roomResponse.status}` }), {
+        return new Response(JSON.stringify({
+          error: 'VIDEOSDK_UPSTREAM_ERROR',
+          details: roomData?.message || roomData?.error || `Video provider returned ${roomResponse.status}`,
+          upstream_status: roomResponse.status,
+        }), {
           status: 502,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

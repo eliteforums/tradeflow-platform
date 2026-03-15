@@ -128,7 +128,9 @@ const TherapistDashboardContent = () => {
           try {
             const t = await getVideoSDKToken();
             setToken(t);
-          } catch { /* silent */ }
+          } catch (error: any) {
+            toast.error(error.message || "Failed to reconnect to audio session");
+          }
         }
       }
     };
