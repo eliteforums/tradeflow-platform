@@ -16,18 +16,14 @@ function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
     .replace(/=+$/, "");
 }
 
-const extractBearerToken = (rawHeader: string): string => {
-  const withoutScheme = rawHeader.replace(/^Bearer\s+/i, "").trim();
-  return withoutScheme.split(",")[0]?.trim() ?? "";
-};
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    let body: { action?: string; accessToken?: string } = {};
+    // Parse body
+    let body: { action?: string } = {};
     if (req.method !== "GET") {
       try {
         body = await req.json();
@@ -39,70 +35,50 @@ Deno.serve(async (req) => {
       }
     }
 
-    const rawAuthHeader = req.headers.get("authorization") || req.headers.get("Authorization") || "";
-    const headerToken = extractBearerToken(rawAuthHeader);
-    const bodyToken = typeof body.accessToken === "string" ? body.accessToken.trim() : "";
-    const token = headerToken || bodyToken;
-    const tokenSegments = token ? token.split(".").length : 0;
+    // Extract auth token from standard Authorization header (sent automatically by SDK)
+    const authHeader = req.headers.get("authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
 
-    console.log(
-      "Auth header present:",
-      !!rawAuthHeader,
-      "Body token present:",
-      !!bodyToken,
-      "Token source:",
-      headerToken ? "header" : bodyToken ? "body" : "none",
-      "Token segments:",
-      tokenSegments,
-    );
+    console.log("Auth header present:", !!authHeader, "Token segments:", token ? token.split(".").length : 0);
 
-    if (!token || tokenSegments !== 3) {
+    if (!token || token.split(".").length !== 3) {
       return new Response(
         JSON.stringify({ error: "SESSION_INVALID", details: "Missing or malformed auth token. Please sign in again." }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
+    // Verify user with Supabase
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: `Bearer ${token}` } } },
     );
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(token);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
       return new Response(
         JSON.stringify({ error: "SESSION_INVALID", details: userError?.message || "Invalid session. Please sign in again." }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     const { action } = body;
     console.log("Action:", action, "User:", user.id);
 
+    // Get VideoSDK credentials
     const VIDEOSDK_API_KEY = Deno.env.get("VIDEOSDK_API_KEY");
     const VIDEOSDK_API_SECRET = Deno.env.get("VIDEOSDK_API_SECRET");
 
     if (!VIDEOSDK_API_KEY || !VIDEOSDK_API_SECRET) {
       return new Response(
         JSON.stringify({ error: "VIDEOSDK_CONFIG_MISSING", details: "Video service credentials are not configured on the server." }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
+    // Generate VideoSDK JWT
     const header = toBase64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
     const now = Math.floor(Date.now() / 1000);
     const payload = toBase64Url(
@@ -153,10 +129,7 @@ Deno.serve(async (req) => {
             details: `Video provider returned status ${roomResponse.status} with non-JSON body`,
             upstream_status: roomResponse.status,
           }),
-          {
-            status: 502,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -167,10 +140,7 @@ Deno.serve(async (req) => {
             details: roomData?.message || roomData?.error || `Video provider returned ${roomResponse.status}`,
             upstream_status: roomResponse.status,
           }),
-          {
-            status: 502,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 

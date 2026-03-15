@@ -72,29 +72,22 @@ const SPOCTools = () => {
       if (!user || !profile?.institution_id) throw new Error("Not authorized");
       const amount = parseInt(creditAmount);
       if (isNaN(amount) || amount <= 0) throw new Error("Invalid amount");
-      const inserts = institutionStudents
-        .filter((s) => s.is_active)
-        .map((student) => ({
-          user_id: student.id,
-          delta: amount,
-          type: "grant" as const,
+
+      const { data, error } = await supabase.functions.invoke("grant-credits", {
+        body: {
+          bulk: true,
           institution_id: profile.institution_id,
-          notes: `Institutional grant by SPOC`,
-        }));
-      if (inserts.length === 0) throw new Error("No active students found");
-      const { error } = await supabase.from("credit_transactions").insert(inserts);
-      if (error) throw error;
-      await supabase.from("audit_logs").insert({
-        actor_id: user.id,
-        action_type: "credit_grant",
-        target_table: "credit_transactions",
-        metadata: { amount, student_count: inserts.length },
+          amount,
+          notes: "Institutional grant by SPOC",
+        },
       });
-      return inserts.length;
+      if (error) throw new Error(error.message || "Failed to grant credits");
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
-    onSuccess: (count) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-stats"] });
-      toast.success(`Granted ${creditAmount} ECC to ${count} students`);
+      toast.success(`Granted ${data.amount} ECC to ${data.count} students`);
     },
     onError: (err: any) => toast.error(err.message || "Failed to grant credits"),
   });
