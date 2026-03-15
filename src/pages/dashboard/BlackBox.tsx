@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { MeetingProvider } from "@videosdk.live/react-sdk";
-import MeetingView from "@/components/videosdk/MeetingView";
+import { lazy, Suspense } from "react";
+
+const LazyMeetingProvider = lazy(() => import("@videosdk.live/react-sdk").then(m => ({ default: m.MeetingProvider })));
+const LazyMeetingView = lazy(() => import("@/components/videosdk/MeetingView"));
 import { useBlackBox } from "@/hooks/useBlackBox";
 import { useBlackBoxSession } from "@/hooks/useBlackBoxSession";
 import { useAuth } from "@/contexts/AuthContext";
