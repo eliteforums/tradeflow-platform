@@ -14,19 +14,23 @@ const isAuthErrorMessage = (message: string) =>
   /session|jwt|token|unauthorized|auth/i.test(message);
 
 const parseInvokeError = async (error: unknown): Promise<ParsedFunctionError> => {
+  console.log("[VideoSDK] Parsing error:", error, "instanceof FunctionsHttpError:", error instanceof FunctionsHttpError);
+  
   if (error instanceof FunctionsHttpError) {
-    const status = error.context.status;
-    const raw = await error.context.text();
-
+    const status = error.context?.status;
     let details = "Video service request failed";
     let code: string | undefined;
 
     try {
+      const raw = await error.context.text();
+      console.log("[VideoSDK] Error response body:", raw);
       const json = JSON.parse(raw) as { error?: string; details?: string; message?: string };
       details = json.details || json.message || json.error || details;
       code = json.error;
-    } catch {
-      if (raw?.trim()) details = raw;
+    } catch (parseErr) {
+      console.log("[VideoSDK] Could not parse error body:", parseErr);
+      // Try to get message from error itself
+      if (error.message) details = error.message;
     }
 
     return {
@@ -37,20 +41,42 @@ const parseInvokeError = async (error: unknown): Promise<ParsedFunctionError> =>
     };
   }
 
-  const message = error instanceof Error ? error.message : "Video service request failed";
+  // Handle generic Error objects (Supabase client may throw these)
+  const message = error instanceof Error ? error.message : String(error);
+  console.log("[VideoSDK] Generic error message:", message);
   return {
-    message,
+    message: message || "Video service request failed",
     retryableAuth: isAuthErrorMessage(message),
   };
 };
 
 const invokeRaw = async (action: VideoSDKAction): Promise<Record<string, any>> => {
+  console.log("[VideoSDK] Invoking edge function with action:", action);
   const { data, error } = await supabase.functions.invoke("videosdk-token", {
     body: { action },
   });
 
-  if (error) throw error;
-  return (data || {}) as Record<string, any>;
+  console.log("[VideoSDK] Response - data:", data, "error:", error);
+  
+  if (error) {
+    console.error("[VideoSDK] Edge function error:", error, "type:", typeof error, "constructor:", error?.constructor?.name);
+    throw error;
+  }
+  
+  if (!data) {
+    throw new Error("Empty response from video service");
+  }
+  
+  // Handle case where data might be returned as a string
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch {
+      throw new Error("Invalid response from video service");
+    }
+  }
+  
+  return data as Record<string, any>;
 };
 
 async function invokeVideoSDK(action: VideoSDKAction): Promise<Record<string, any>> {
