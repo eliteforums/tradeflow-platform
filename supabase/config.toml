@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.stability-pool-contribute]
 verify_jwt = false
+
+[functions.videosdk-token]
+verify_jwt = false
