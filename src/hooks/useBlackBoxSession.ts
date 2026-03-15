@@ -55,8 +55,8 @@ export const useBlackBoxSession = () => {
             try {
               const t = await getVideoSDKToken();
               setToken(t);
-            } catch {
-              toast.error("Failed to connect to session");
+            } catch (error: any) {
+              toast.error(error.message || "Failed to connect to session");
             }
           }
         }

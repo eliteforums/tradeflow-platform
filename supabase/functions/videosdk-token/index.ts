@@ -23,12 +23,14 @@ Deno.serve(async (req) => {
 
   try {
     // --- Auth ---
-    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization') || '';
+    const rawAuthHeader = req.headers.get('authorization') || req.headers.get('Authorization') || '';
+    const authHeader = rawAuthHeader.split(',')[0]?.trim() ?? '';
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const tokenSegments = token ? token.split('.').length : 0;
 
-    console.log('Auth header present:', !!authHeader, 'Token segments:', token ? token.split('.').length : 0);
+    console.log('Auth header present:', !!rawAuthHeader, 'Token segments:', tokenSegments);
 
-    if (!token || token.split('.').length !== 3) {
+    if (!token || tokenSegments !== 3) {
       return new Response(JSON.stringify({ error: 'SESSION_INVALID', details: 'Missing or malformed auth token. Please sign in again.' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
