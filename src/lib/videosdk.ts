@@ -11,11 +11,9 @@ interface ParsedFunctionError {
 }
 
 const isAuthErrorMessage = (message: string) =>
-  /session|jwt|token|unauthorized|auth/i.test(message);
+  /session|jwt|token|unauthorized|auth|expired/i.test(message);
 
 const parseInvokeError = async (error: unknown): Promise<ParsedFunctionError> => {
-  console.log("[VideoSDK] Parsing error:", error, "instanceof FunctionsHttpError:", error instanceof FunctionsHttpError);
-  
   if (error instanceof FunctionsHttpError) {
     const status = error.context?.status;
     let details = "Video service request failed";
@@ -23,13 +21,10 @@ const parseInvokeError = async (error: unknown): Promise<ParsedFunctionError> =>
 
     try {
       const raw = await error.context.text();
-      console.log("[VideoSDK] Error response body:", raw);
       const json = JSON.parse(raw) as { error?: string; details?: string; message?: string };
       details = json.details || json.message || json.error || details;
       code = json.error;
-    } catch (parseErr) {
-      console.log("[VideoSDK] Could not parse error body:", parseErr);
-      // Try to get message from error itself
+    } catch {
       if (error.message) details = error.message;
     }
 
@@ -41,65 +36,66 @@ const parseInvokeError = async (error: unknown): Promise<ParsedFunctionError> =>
     };
   }
 
-  // Handle generic Error objects (Supabase client may throw these)
   const message = error instanceof Error ? error.message : String(error);
-  console.log("[VideoSDK] Generic error message:", message);
   return {
     message: message || "Video service request failed",
     retryableAuth: isAuthErrorMessage(message),
   };
 };
 
-const invokeRaw = async (action: VideoSDKAction): Promise<Record<string, any>> => {
-  console.log("[VideoSDK] Invoking edge function with action:", action);
+const invokeRaw = async (action: VideoSDKAction, accessToken: string): Promise<Record<string, any>> => {
   const { data, error } = await supabase.functions.invoke("videosdk-token", {
-    body: { action },
+    body: { action, accessToken },
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 
-  console.log("[VideoSDK] Response - data:", data, "error:", error);
-  
-  if (error) {
-    console.error("[VideoSDK] Edge function error:", error, "type:", typeof error, "constructor:", error?.constructor?.name);
-    throw error;
-  }
-  
-  if (!data) {
-    throw new Error("Empty response from video service");
-  }
-  
-  // Handle case where data might be returned as a string
-  if (typeof data === 'string') {
+  if (error) throw error;
+  if (!data) throw new Error("Empty response from video service");
+
+  if (typeof data === "string") {
     try {
       return JSON.parse(data);
     } catch {
       throw new Error("Invalid response from video service");
     }
   }
-  
+
   return data as Record<string, any>;
 };
 
-async function invokeVideoSDK(action: VideoSDKAction): Promise<Record<string, any>> {
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
+const requireAccessToken = async (): Promise<string> => {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw new Error("Session expired. Please sign in again.");
+  if (session?.access_token) return session.access_token;
+
+  const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+  if (refreshError || !refreshedSession?.access_token) {
     throw new Error("Session expired. Please sign in again.");
   }
 
+  return refreshedSession.access_token;
+};
+
+async function invokeVideoSDK(action: VideoSDKAction): Promise<Record<string, any>> {
+  let accessToken = await requireAccessToken();
+
   try {
-    return await invokeRaw(action);
+    return await invokeRaw(action, accessToken);
   } catch (err) {
     const parsed = await parseInvokeError(err);
 
     if (parsed.retryableAuth) {
       const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
       if (!refreshError && session?.access_token) {
+        accessToken = session.access_token;
         try {
-          return await invokeRaw(action);
+          return await invokeRaw(action, accessToken);
         } catch (retryErr) {
           const retryParsed = await parseInvokeError(retryErr);
           throw new Error(retryParsed.message);
         }
       }
+      throw new Error("Session expired. Please sign in again.");
     }
 
     throw new Error(parsed.message);
