@@ -1,33 +1,83 @@
 import { supabase } from "@/integrations/supabase/client";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 
-async function invokeVideoSDK(action: string): Promise<Record<string, any>> {
-  // Pre-check session
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session?.access_token) {
-    throw new Error("Session expired. Please sign in again.");
+type VideoSDKAction = "get-token" | "create-room";
+
+interface ParsedFunctionError {
+  message: string;
+  status?: number;
+  code?: string;
+  retryableAuth: boolean;
+}
+
+const isAuthErrorMessage = (message: string) =>
+  /session|jwt|token|unauthorized|auth/i.test(message);
+
+const parseInvokeError = async (error: unknown): Promise<ParsedFunctionError> => {
+  if (error instanceof FunctionsHttpError) {
+    const status = error.context.status;
+    const raw = await error.context.text();
+
+    let details = "Video service request failed";
+    let code: string | undefined;
+
+    try {
+      const json = JSON.parse(raw) as { error?: string; details?: string; message?: string };
+      details = json.details || json.message || json.error || details;
+      code = json.error;
+    } catch {
+      if (raw?.trim()) details = raw;
+    }
+
+    return {
+      message: details,
+      status,
+      code,
+      retryableAuth: status === 401 || code === "SESSION_INVALID" || isAuthErrorMessage(details),
+    };
   }
 
-  // Let supabase client handle auth naturally - do NOT pass manual Authorization header
+  const message = error instanceof Error ? error.message : "Video service request failed";
+  return {
+    message,
+    retryableAuth: isAuthErrorMessage(message),
+  };
+};
+
+const invokeRaw = async (action: VideoSDKAction): Promise<Record<string, any>> => {
   const { data, error } = await supabase.functions.invoke("videosdk-token", {
     body: { action },
   });
 
-  if (error) {
-    if (error instanceof FunctionsHttpError) {
-      try {
-        const errBody = await error.context.json();
-        throw new Error(errBody.details || errBody.error || "Unknown server error");
-      } catch (parseErr) {
-        if (parseErr instanceof Error && parseErr.message !== "Unknown server error") {
-          throw parseErr;
+  if (error) throw error;
+  return (data || {}) as Record<string, any>;
+};
+
+async function invokeVideoSDK(action: VideoSDKAction): Promise<Record<string, any>> {
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    throw new Error("Session expired. Please sign in again.");
+  }
+
+  try {
+    return await invokeRaw(action);
+  } catch (err) {
+    const parsed = await parseInvokeError(err);
+
+    if (parsed.retryableAuth) {
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+      if (!refreshError && session?.access_token) {
+        try {
+          return await invokeRaw(action);
+        } catch (retryErr) {
+          const retryParsed = await parseInvokeError(retryErr);
+          throw new Error(retryParsed.message);
         }
       }
     }
-    throw new Error(error.message || "Failed to reach video service");
-  }
 
-  return data;
+    throw new Error(parsed.message);
+  }
 }
 
 export const getVideoSDKToken = async (): Promise<string> => {

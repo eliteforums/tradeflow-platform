@@ -18,11 +18,11 @@ export default function CreditGrantTool() {
       if (isNaN(credits) || credits <= 0) throw new Error("Invalid amount");
       const { data: profile, error: profileErr } = await supabase
         .from("profiles")
-        .select("id, username")
+        .select("id, username, role")
         .eq("username", username.trim())
         .single();
       if (profileErr || !profile) throw new Error("User not found.");
-      if ((profile as any).role !== "student") throw new Error("Credits can only be granted to students.");
+      if (profile.role !== "student") throw new Error("Credits can only be granted to students.");
       const { error: creditErr } = await supabase.from("credit_transactions").insert({
         user_id: profile.id,
         delta: credits,
