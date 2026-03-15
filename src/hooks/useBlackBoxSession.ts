@@ -117,7 +117,10 @@ export const useBlackBoxSession = () => {
       setActiveSession(data as unknown as BlackBoxSession);
       toast.success("You're in the queue. A therapist will connect shortly.");
     } catch (err: any) {
-      toast.error(err.message || "Failed to request session");
+      const message = /insufficient credits/i.test(err?.message || "")
+        ? "Insufficient credits for a BlackBox session (30 ECC required)."
+        : err.message || "Failed to request session";
+      toast.error(message);
     } finally {
       setIsRequesting(false);
     }
