@@ -16,13 +16,20 @@ export default function CreditGrantTool() {
     mutationFn: async () => {
       const credits = parseInt(amount);
       if (isNaN(credits) || credits <= 0) throw new Error("Invalid amount");
+      const normalizedUsername = username.trim();
       const { data: profile, error: profileErr } = await supabase
         .from("profiles")
-        .select("id, username, role")
-        .eq("username", username.trim())
-        .single();
+        .select("id, username")
+        .ilike("username", normalizedUsername)
+        .maybeSingle();
       if (profileErr || !profile) throw new Error("User not found.");
-      if (profile.role !== "student") throw new Error("Credits can only be granted to students.");
+
+      const { data: isStudent, error: roleErr } = await supabase.rpc("has_role", {
+        _user_id: profile.id,
+        _role: "student",
+      });
+      if (roleErr) throw new Error("Unable to verify user role. Please try again.");
+      if (!isStudent) throw new Error("Credits can only be granted to students.");
       const { error: creditErr } = await supabase.from("credit_transactions").insert({
         user_id: profile.id,
         delta: credits,
