@@ -101,19 +101,26 @@ export const useBlackBoxSession = () => {
     setIsRequesting(true);
     try {
       // Server-side atomic credit deduction (BlackBox session costs 30 ECC)
+      console.log("[BlackBox] Spending 30 ECC...");
       const spendResult = await spendCredits(30, "BlackBox Talk Now session");
+      console.log("[BlackBox] Spend result:", spendResult);
       if (!spendResult.success) {
         toast.error("Insufficient credits for a BlackBox session");
         return;
       }
 
+      console.log("[BlackBox] Creating session...");
       const { data, error } = await supabase
         .from("blackbox_sessions")
         .insert({ student_id: user.id, status: "queued" })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("[BlackBox] Session insert error:", error);
+        throw error;
+      }
+      console.log("[BlackBox] Session created:", data?.id);
       setActiveSession(data as unknown as BlackBoxSession);
       toast.success("You're in the queue. A therapist will connect shortly.");
     } catch (err: any) {

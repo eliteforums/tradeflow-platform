@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCredits } from "@/hooks/useCredits";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -27,8 +26,7 @@ const motivationalQuotes = [
 
 const Dashboard = () => {
   const isMobile = useIsMobile();
-  const { profile } = useAuth();
-  const { balance } = useCredits();
+  const { profile, creditBalance: balance } = useAuth();
 
   // Role-based redirect (must be before mobile check to avoid hook order issues)
   if (profile?.role === "admin" || profile?.role === "spoc") return <Navigate to="/admin" replace />;

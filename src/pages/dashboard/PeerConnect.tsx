@@ -5,7 +5,8 @@ import { MessageCircle, Search, Circle, Phone, Video, Send, X, Clock, Shield, Us
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import VideoCallModal from "@/components/videosdk/VideoCallModal";
+import { lazy, Suspense } from "react";
+const LazyVideoCallModal = lazy(() => import("@/components/videosdk/VideoCallModal"));
 import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
 import { format } from "date-fns";
@@ -124,7 +125,9 @@ const PeerConnect = () => {
         {creditBalance < 20 && <div className="flex items-center gap-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20 mb-6"><AlertCircle className="w-5 h-5 text-destructive shrink-0" /><p className="text-sm text-destructive">Insufficient credits. You need at least 20 ECC.</p></div>}
         <div className="grid grid-cols-3 gap-6"><div className="col-span-1"><InternList /></div><div className="col-span-2"><ChatArea /></div></div>
       </div>
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "audio" })} participantName={profile?.username || "Student"} mode={callModal.mode} />
+      <Suspense fallback={null}>
+        <LazyVideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "audio" })} participantName={profile?.username || "Student"} mode={callModal.mode} />
+      </Suspense>
     </DashboardLayout>
   );
 };
