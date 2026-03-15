@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCredits } from "@/hooks/useCredits";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
