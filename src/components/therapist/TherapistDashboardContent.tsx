@@ -47,7 +47,7 @@ interface EscalationRecord {
   session_notes_encrypted: string | null;
 }
 
-const TherapistDashboardContent = () => {
+const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
   const [activeTab, setActiveTab] = useState<Tab>("queue");
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
