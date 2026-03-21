@@ -19,7 +19,7 @@ const SPOCTools = () => {
   const [copiedQR, setCopiedQR] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
 
-  const { data: qrData, isLoading: qrLoading, refetch: regenerateQR } = useQuery({
+  const { data: qrData, isLoading: qrLoading, error: qrError, refetch: regenerateQR } = useQuery({
     queryKey: ["spoc-qr", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
@@ -29,6 +29,8 @@ const SPOCTools = () => {
     },
     enabled: !!user && profile?.role === "spoc",
     staleTime: 1000 * 60 * 60,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const qrPayload = qrData?.qr_payload || "";
