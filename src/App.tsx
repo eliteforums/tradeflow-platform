@@ -92,7 +92,7 @@ const App = () => (
               <Route path="/dashboard/therapist" element={<ProtectedRoute allowedRoles={["expert"]}><TherapistDashboard /></ProtectedRoute>} />
               
               {/* Admin Routes */}
-              <Route path="/admin" element={<ProtectedRoute allowedRoles={["spoc", "admin"]}><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
               <Route path="/dashboard/spoc" element={<ProtectedRoute allowedRoles={["spoc"]}><SPOCDashboard /></ProtectedRoute>} />
               
               {/* Catch-all */}
