@@ -753,6 +753,51 @@ export type Database = {
         }
         Relationships: []
       }
+      training_modules: {
+        Row: {
+          content: string
+          created_at: string
+          day_number: number
+          description: string
+          duration: string
+          has_quiz: boolean
+          id: string
+          is_active: boolean
+          objectives: Json
+          quiz_questions: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          day_number: number
+          description: string
+          duration?: string
+          has_quiz?: boolean
+          id?: string
+          is_active?: boolean
+          objectives?: Json
+          quiz_questions?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          day_number?: number
+          description?: string
+          duration?: string
+          has_quiz?: boolean
+          id?: string
+          is_active?: boolean
+          objectives?: Json
+          quiz_questions?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_private: {
         Row: {
           apaar_id_encrypted: string | null

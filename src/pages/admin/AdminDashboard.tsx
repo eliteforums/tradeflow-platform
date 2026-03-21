@@ -24,10 +24,10 @@ import SoundManager from "@/components/admin/SoundManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import EscalationManager from "@/components/admin/EscalationManager";
 import AccountDeletion from "@/components/admin/AccountDeletion";
-
+import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "institution-detail";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -137,6 +137,7 @@ const AdminDashboard = () => {
     { id: "sessions", label: "Sessions", icon: Calendar },
     { id: "spoc", label: "SPOC", icon: Building2 },
     { id: "roles", label: "Roles", icon: UserPlus },
+    { id: "training", label: "Training", icon: BookOpen },
     { id: "sounds", label: "Sounds", icon: Music },
     { id: "escalations", label: "Escalations", icon: AlertTriangle },
     { id: "audit", label: "Audit Logs", icon: FileText },
@@ -416,6 +417,13 @@ const AdminDashboard = () => {
               <div className="max-w-4xl space-y-4">
                 <AuditLogViewer />
                 <AccountDeletion />
+              </div>
+            )}
+
+            {/* ─── TRAINING ─── */}
+            {activeTab === "training" && (
+              <div className="max-w-3xl">
+                <TrainingModuleManager />
               </div>
             )}
           </>

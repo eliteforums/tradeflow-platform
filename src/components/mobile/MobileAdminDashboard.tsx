@@ -3,7 +3,7 @@ import {
   Users, Calendar, MessageCircle, AlertTriangle, Coins,
   Shield, Activity, BarChart3, Search, Loader2,
   UserPlus, Settings, Building2, Crown, Stethoscope,
-  GraduationCap, Zap, Eye, CheckCircle, Music, FileText,
+  GraduationCap, Zap, Eye, CheckCircle, Music, FileText, BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,9 @@ import EscalationManager from "@/components/admin/EscalationManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
+import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "institution-detail";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -98,6 +99,7 @@ const MobileAdminDashboard = () => {
     { id: "sessions", label: "Sessions", icon: Calendar },
     { id: "spoc", label: "SPOC", icon: Building2 },
     { id: "roles", label: "Roles", icon: UserPlus },
+    { id: "training", label: "Training", icon: BookOpen },
     { id: "sounds", label: "Sounds", icon: Music },
     { id: "escalations", label: "Escalations", icon: AlertTriangle },
     { id: "audit", label: "Audit", icon: FileText },
@@ -297,6 +299,11 @@ const MobileAdminDashboard = () => {
                 <AuditLogViewer />
                 <AccountDeletion />
               </div>
+            )}
+
+            {/* TRAINING */}
+            {activeTab === "training" && (
+              <div><TrainingModuleManager /></div>
             )}
 
             {/* INSTITUTION DETAIL */}

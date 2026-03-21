@@ -26,76 +26,17 @@ interface QuizQuestion {
 }
 
 interface TrainingModule {
-  day: number;
+  id: string;
+  day_number: number;
   title: string;
   description: string;
   duration: string;
   objectives: string[];
   content: string;
-  hasQuiz: boolean;
-  quizQuestions: QuizQuestion[];
+  has_quiz: boolean;
+  quiz_questions: QuizQuestion[];
+  is_active: boolean;
 }
-
-const MODULES: TrainingModule[] = [
-  {
-    day: 1, title: "Platform Overview + Assessment", description: "Eternia's mission, tools & intro quiz", duration: "45 min",
-    objectives: ["Understand Eternia's mission and peer support role", "Navigate platform features", "Complete intro assessment"],
-    content: `Welcome to Eternia's Intern Training.\n\n**Your Role**\nAs a peer support intern, you are the first point of contact for students seeking anonymous support via PeerConnect.\n\n**Platform Features**\n• BlackBox — Anonymous journaling with AI monitoring\n• PeerConnect — Text chat between students and interns\n• SoundTherapy — Audio content for relaxation\n• Quests — Daily wellbeing activities earning ECC\n• Appointments — Professional expert sessions\n\n**Privacy**\nAll data is encrypted. You never see real identities.`,
-    hasQuiz: true,
-    quizQuestions: [
-      { question: "What is the primary purpose of BlackBox?", options: ["Scheduling appointments", "Anonymous journaling with AI monitoring", "Video calling", "Managing credits"], correctIndex: 1 },
-      { question: "When should you escalate a session?", options: ["When it's too long", "When you identify high-risk situations", "When bored", "When credits run out"], correctIndex: 1 },
-      { question: "What does ECC stand for?", options: ["Electronic Credit Currency", "Eternia Care Credits", "Emergency Contact Credits", "Eternia Credit Currency"], correctIndex: 3 },
-    ],
-  },
-  {
-    day: 2, title: "Active Listening", description: "Empathetic communication for text-based support", duration: "60 min",
-    objectives: ["Master active listening for text", "Practice reflective responses", "Manage emotional responses"],
-    content: `**Reflective Responding**\nMirror back what the student expressed.\nExample: "It sounds like you're feeling isolated."\n\n**Open-Ended Questions**\n✅ "Can you tell me more?"\n❌ "Are you sad?" (closed)\n\n**Validation**\nAcknowledge emotions without judgment.\n\n**Self-Care**\n• Take breaks between sessions\n• Use SoundTherapy\n• Talk to your supervisor about difficult cases`,
-    hasQuiz: false, quizQuestions: [],
-  },
-  {
-    day: 3, title: "Mid-Training Assessment", description: "Quiz on Days 1-2 material", duration: "30 min",
-    objectives: ["Demonstrate platform knowledge", "Apply active listening concepts", "Identify appropriate responses"],
-    content: `This assessment covers Days 1 and 2. You must pass to continue.\n\n**Review:**\n• Platform features & privacy\n• Active listening techniques\n• Reflective responding\n• Emotional validation`,
-    hasQuiz: true,
-    quizQuestions: [
-      { question: "Best response to 'Everything feels pointless'?", options: ["Don't worry!", "Reflect feelings and ask more", "Try exercising", "See a professional"], correctIndex: 1 },
-      { question: "Which violates privacy protocols?", options: ["Encrypted notes", "Escalating via SPOC", "Asking for real name", "Summarizing for supervisor"], correctIndex: 2 },
-      { question: "Feeling overwhelmed after a session?", options: ["Keep going", "Take a break and discuss with supervisor", "Post on social media", "Ignore it"], correctIndex: 1 },
-    ],
-  },
-  {
-    day: 4, title: "Crisis Recognition", description: "Identifying and escalating high-risk situations", duration: "60 min",
-    objectives: ["Recognize crisis indicators", "Understand escalation pathway", "Document escalations accurately"],
-    content: `**Red Flags for Escalation**\n• Self-harm or suicidal ideation\n• Abuse disclosures\n• Substance abuse\n• Severe panic or dissociation\n• Violence threats\n\n**Escalation Pathway**\n1. Click ⚠ escalation button\n2. Write clear justification\n3. Routes to institution SPOC\n4. SPOC reviews and forwards if needed\n5. Expert intervenes\n\n**Don't:**\n• Promise to fix things\n• Share personal crisis experiences\n• Attempt therapy\n• Disconnect abruptly`,
-    hasQuiz: false, quizQuestions: [],
-  },
-  {
-    day: 5, title: "Ethics & Boundaries", description: "Professional boundaries in peer support", duration: "45 min",
-    objectives: ["Understand ethical guidelines", "Maintain appropriate boundaries", "Navigate tricky situations"],
-    content: `**Core Ethics**\n1. Confidentiality — Never discuss sessions outside platform\n2. Non-Maleficence — Do no harm\n3. Competence — Stay within training\n4. Respect Autonomy — Support decisions\n\n**Boundaries**\n• Never share contact info\n• No personal relationships with students\n• 20-30 min session length\n• No gifts or favors\n• Recuse if you recognize someone\n\n**Dependency**\nIf students seek you specifically, redirect to other resources.`,
-    hasQuiz: false, quizQuestions: [],
-  },
-  {
-    day: 6, title: "Final Assessment", description: "Comprehensive evaluation of all modules", duration: "45 min",
-    objectives: ["Demonstrate mastery of all topics", "Apply to complex scenarios", "Prove readiness for interview"],
-    content: `Final written assessment covering all material.\n\n**Topics:**\n• Platform & privacy\n• Active listening\n• Crisis recognition & escalation\n• Ethics & boundaries\n• Session management`,
-    hasQuiz: true,
-    quizQuestions: [
-      { question: "Student discloses self-harm. Your response?", options: ["Tell them to stop", "Stay calm, validate, escalate immediately", "Ask for details", "End session"], correctIndex: 1 },
-      { question: "Student asks for your Instagram. What do you do?", options: ["Share it", "Politely decline and explain why", "Give fake account", "Report student"], correctIndex: 1 },
-      { question: "You recognize a student from class. Action?", options: ["Continue normally", "Mention you know them", "Recuse yourself and notify supervisor", "End without explanation"], correctIndex: 2 },
-      { question: "You feel triggered during a session. What to do?", options: ["Push through", "Share your experience", "Ensure student safety, take break, talk to supervisor", "End abruptly"], correctIndex: 2 },
-    ],
-  },
-  {
-    day: 7, title: "Final Interview", description: "Live evaluation with supervising expert", duration: "30 min",
-    objectives: ["Demonstrate live communication skills", "Handle real-time pressure", "Receive feedback and certification"],
-    content: `Congratulations on completing all modules! 🎉\n\n**What to Expect**\nA live conversation with a supervising expert who will:\n• Present realistic scenarios\n• Evaluate response quality\n• Assess communication and boundaries\n• Provide feedback\n\n**After Interview**\n• Pass → Status updated to ACTIVE\n• Needs improvement → Specific feedback provided\n\nThis cannot be self-completed. An expert will schedule it.`,
-    hasQuiz: false, quizQuestions: [],
-  },
-];
 
 const MobileInternDashboard = () => {
   const { user, profile, signOut } = useAuth();
@@ -119,10 +60,22 @@ const MobileInternDashboard = () => {
   const [escalationReason, setEscalationReason] = useState("");
   const [notesSearch, setNotesSearch] = useState("");
 
+  const { data: trainingModules = [] } = useQuery({
+    queryKey: ["training-modules"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("training_modules")
+        .select("*")
+        .order("day_number", { ascending: true });
+      if (error) throw error;
+      return (data as any[]) as TrainingModule[];
+    },
+  });
+
   const trainingStatus = (profile as any)?.training_status || "not_started";
   const isTrainingComplete = trainingStatus === "active" || trainingStatus === "completed";
   const isInterviewPending = trainingStatus === "interview_pending";
-  const progress = isTrainingComplete ? 100 : isInterviewPending ? 95 : (completedModules.length / MODULES.length) * 100;
+  const progress = isTrainingComplete ? 100 : isInterviewPending ? 95 : trainingModules.length > 0 ? (completedModules.length / trainingModules.length) * 100 : 0;
   const lockedTabs: TabType[] = isTrainingComplete ? [] : ["sessions", "notes"];
 
   const { data: mySessions = [], isLoading } = useQuery({
@@ -152,23 +105,23 @@ const MobileInternDashboard = () => {
 
   const activeSessions = mySessions.filter((s) => s.status === "active");
   const completedSessions = mySessions.filter((s) => s.status === "completed");
-  const currentModule = activeModule !== null ? MODULES.find(m => m.day === activeModule) : null;
+  const currentModule = activeModule !== null ? trainingModules.find(m => m.day_number === activeModule) : null;
 
   const handleCompleteModule = async (mod: TrainingModule) => {
-    if (mod.hasQuiz && mod.quizQuestions.length > 0) {
-      const allCorrect = mod.quizQuestions.every((q, i) => quizAnswers[i] === q.correctIndex);
+    if (mod.has_quiz && mod.quiz_questions.length > 0) {
+      const allCorrect = mod.quiz_questions.every((q, i) => quizAnswers[i] === q.correctIndex);
       if (!allCorrect) { toast.error("Some answers are incorrect. Try again."); return; }
     }
-    const newModules = [...completedModules, mod.day];
+    const newModules = [...completedModules, mod.day_number];
     setCompletedModules(newModules);
     if (user) {
-      const newStatus = newModules.length >= MODULES.length ? "interview_pending" : "in_progress";
+      const newStatus = newModules.length >= trainingModules.length ? "interview_pending" : "in_progress";
       await supabase.from("profiles").update({ training_progress: newModules, training_status: newStatus }).eq("id", user.id);
     }
     setActiveModule(null);
     setQuizAnswers({});
     setQuizSubmitted(false);
-    toast.success(`Day ${mod.day} completed!`);
+    toast.success(`Day ${mod.day_number} completed!`);
   };
 
   const tabs: { key: TabType; icon: typeof Home; label: string }[] = [
@@ -219,30 +172,30 @@ const MobileInternDashboard = () => {
                 <p className="font-medium text-sm">{isTrainingComplete ? "Training Complete! 🎉" : isInterviewPending ? "Interview Pending" : "Training Required"}</p>
               </div>
               <Progress value={progress} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-1">{completedModules.length}/{MODULES.length} done</p>
+              <p className="text-xs text-muted-foreground mt-1">{completedModules.length}/{trainingModules.length} done</p>
             </div>
 
             <div className="space-y-2">
-              {MODULES.map((m) => {
-                const done = completedModules.includes(m.day);
-                const isNext = !done && completedModules.length + 1 === m.day;
+              {trainingModules.map((m) => {
+                const done = completedModules.includes(m.day_number);
+                const isNext = !done && completedModules.length + 1 === m.day_number;
                 const locked = !done && !isNext;
                 return (
-                  <div key={m.day} className={cn("p-3 rounded-2xl border", done ? "bg-eternia-success/5 border-eternia-success/20" : isNext ? "bg-primary/5 border-primary/20" : "bg-card border-border/50 opacity-50")}>
+                  <div key={m.day_number} className={cn("p-3 rounded-2xl border", done ? "bg-eternia-success/5 border-eternia-success/20" : isNext ? "bg-primary/5 border-primary/20" : "bg-card border-border/50 opacity-50")}>
                     <div className="flex items-center gap-3">
                       <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
                         done ? "bg-eternia-success/20 text-eternia-success" : isNext ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                      )}>{done ? <CheckCircle className="w-4 h-4" /> : locked ? <Lock className="w-3 h-3" /> : m.day}</div>
+                      )}>{done ? <CheckCircle className="w-4 h-4" /> : locked ? <Lock className="w-3 h-3" /> : m.day_number}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-xs font-semibold truncate">Day {m.day}: {m.title}</p>
-                          {m.hasQuiz && <span className="px-1 py-0.5 rounded text-[8px] bg-eternia-warning/10 text-eternia-warning">Quiz</span>}
+                          <p className="text-xs font-semibold truncate">Day {m.day_number}: {m.title}</p>
+                          {m.has_quiz && <span className="px-1 py-0.5 rounded text-[8px] bg-eternia-warning/10 text-eternia-warning">Quiz</span>}
                         </div>
                         <p className="text-[10px] text-muted-foreground">{m.duration}</p>
                       </div>
-                      {done && <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => { setActiveModule(m.day); setQuizAnswers({}); setQuizSubmitted(false); }}>Review</Button>}
-                      {isNext && m.day !== 7 && <Button size="sm" className="h-6 text-[10px] px-2 gap-0.5" onClick={() => { setActiveModule(m.day); setQuizAnswers({}); setQuizSubmitted(false); }}><Play className="w-2.5 h-2.5" />Start</Button>}
-                      {isNext && m.day === 7 && <span className="text-[10px] text-muted-foreground italic">Expert</span>}
+                      {done && <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => { setActiveModule(m.day_number); setQuizAnswers({}); setQuizSubmitted(false); }}>Review</Button>}
+                      {isNext && m.day_number !== 7 && <Button size="sm" className="h-6 text-[10px] px-2 gap-0.5" onClick={() => { setActiveModule(m.day_number); setQuizAnswers({}); setQuizSubmitted(false); }}><Play className="w-2.5 h-2.5" />Start</Button>}
+                      {isNext && m.day_number === 7 && <span className="text-[10px] text-muted-foreground italic">Expert</span>}
                     </div>
                   </div>
                 );
@@ -275,12 +228,12 @@ const MobileInternDashboard = () => {
 
             <div className="p-4 rounded-2xl bg-card border border-border/50">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">{currentModule.day}</div>
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">{currentModule.day_number}</div>
                 <div>
-                  <h2 className="text-base font-bold font-display">Day {currentModule.day}: {currentModule.title}</h2>
+                  <h2 className="text-base font-bold font-display">Day {currentModule.day_number}: {currentModule.title}</h2>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                     <Clock className="w-3 h-3" />{currentModule.duration}
-                    {currentModule.hasQuiz && <span className="px-1 py-0.5 rounded bg-eternia-warning/10 text-eternia-warning text-[10px]">Quiz</span>}
+                    {currentModule.has_quiz && <span className="px-1 py-0.5 rounded bg-eternia-warning/10 text-eternia-warning text-[10px]">Quiz</span>}
                   </div>
                 </div>
               </div>
@@ -312,11 +265,11 @@ const MobileInternDashboard = () => {
               </div>
 
               {/* Quiz */}
-              {currentModule.hasQuiz && currentModule.quizQuestions.length > 0 && (
+              {currentModule.has_quiz && currentModule.quiz_questions.length > 0 && (
                 <div className="border-t border-border pt-4">
                   <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><Award className="w-4 h-4 text-eternia-warning" />Quiz</h3>
                   <div className="space-y-4">
-                    {currentModule.quizQuestions.map((q, qi) => (
+                    {currentModule.quiz_questions.map((q, qi) => (
                       <div key={qi} className="p-3 rounded-lg bg-muted/20 border border-border/30">
                         <p className="text-xs font-medium mb-2">{qi + 1}. {q.question}</p>
                         <div className="space-y-1.5">
@@ -348,14 +301,14 @@ const MobileInternDashboard = () => {
 
               {/* Actions */}
               <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-border">
-                {completedModules.includes(currentModule.day) ? (
+                {completedModules.includes(currentModule.day_number) ? (
                   <span className="text-xs text-eternia-success flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" />Completed</span>
-                ) : currentModule.day === 7 ? (
+                ) : currentModule.day_number === 7 ? (
                   <span className="text-xs text-muted-foreground italic">Requires live interview</span>
-                ) : currentModule.hasQuiz && !quizSubmitted ? (
-                  <Button size="sm" onClick={() => setQuizSubmitted(true)} disabled={Object.keys(quizAnswers).length < currentModule.quizQuestions.length} className="text-xs h-8">Submit Quiz</Button>
-                ) : currentModule.hasQuiz && quizSubmitted ? (
-                  currentModule.quizQuestions.every((q, i) => quizAnswers[i] === q.correctIndex) ? (
+                ) : currentModule.has_quiz && !quizSubmitted ? (
+                  <Button size="sm" onClick={() => setQuizSubmitted(true)} disabled={Object.keys(quizAnswers).length < currentModule.quiz_questions.length} className="text-xs h-8">Submit Quiz</Button>
+                ) : currentModule.has_quiz && quizSubmitted ? (
+                  currentModule.quiz_questions.every((q, i) => quizAnswers[i] === q.correctIndex) ? (
                     <Button size="sm" onClick={() => handleCompleteModule(currentModule)} className="text-xs h-8 gap-1"><CheckCircle className="w-3 h-3" />Complete</Button>
                   ) : (
                     <Button size="sm" variant="outline" onClick={() => { setQuizAnswers({}); setQuizSubmitted(false); }} className="text-xs h-8">Retry</Button>
