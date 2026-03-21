@@ -76,7 +76,7 @@ const Navbar = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 6 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute top-full left-0 mt-1 w-56 rounded-xl bg-card/95 backdrop-blur-xl border border-border/30 shadow-2xl shadow-black/20 overflow-hidden"
+                      className="absolute top-full left-0 mt-1 w-56 rounded-xl bg-popover/95 backdrop-blur-xl border border-border shadow-2xl shadow-black/5 overflow-hidden"
                     >
                       <div className="py-1.5">
                         {item.children.map((child) => (
