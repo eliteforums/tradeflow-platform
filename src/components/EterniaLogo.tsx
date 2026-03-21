@@ -12,7 +12,7 @@ const EterniaLogo = ({ size = 32 }: { size?: number }) => (
         <stop offset="100%" stopColor="hsl(270, 60%, 65%)" />
       </linearGradient>
     </defs>
-    <rect width="512" height="512" rx="112" fill="hsl(240, 10%, 4%)" />
+    <rect width="512" height="512" rx="112" fill="hsl(230, 25%, 18%)" />
     <path
       d="M256 96 C256 96 310 180 310 240 C310 280 286 310 256 310 C226 310 202 280 202 240 C202 180 256 96 256 96Z"
       fill="url(#eternia-g)"
@@ -20,7 +20,7 @@ const EterniaLogo = ({ size = 32 }: { size?: number }) => (
     />
     <path
       d="M256 170 C256 170 290 220 290 256 C290 280 275 298 256 298 C237 298 222 280 222 256 C222 220 256 170 256 170Z"
-      fill="hsl(240, 10%, 4%)"
+      fill="hsl(230, 25%, 18%)"
       opacity="0.5"
     />
     <circle cx="256" cy="350" r="8" fill="url(#eternia-g)" />

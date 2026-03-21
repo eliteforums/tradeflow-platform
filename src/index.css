@@ -7,31 +7,31 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 210 20% 96%;
+    --foreground: 230 25% 18%;
 
-    --card: 220 13% 9%;
-    --card-foreground: 210 20% 96%;
+    --card: 230 20% 97%;
+    --card-foreground: 230 25% 18%;
 
-    --popover: 220 13% 9%;
-    --popover-foreground: 210 20% 96%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 25% 18%;
 
     --primary: 166 72% 46%;
-    --primary-foreground: 220 14% 6%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 262 52% 60%;
-    --secondary-foreground: 210 20% 96%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 12% 14%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 230 15% 94%;
+    --muted-foreground: 230 10% 42%;
 
     --accent: 262 52% 60%;
-    --accent-foreground: 210 20% 96%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 68% 55%;
-    --destructive-foreground: 210 20% 96%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 12% 16%;
-    --input: 220 12% 14%;
+    --border: 230 15% 88%;
+    --input: 230 15% 92%;
     --ring: 166 72% 46%;
 
     --radius: 0.875rem;
@@ -43,21 +43,21 @@
     --eternia-lavender-glow: 262 62% 72%;
     --eternia-violet: 275 70% 58%;
     --eternia-violet-glow: 275 80% 72%;
-    --eternia-dark: 220 14% 6%;
-    --eternia-dark-card: 220 13% 9%;
-    --eternia-dark-elevated: 220 13% 12%;
+    --eternia-dark: 230 25% 18%;
+    --eternia-dark-card: 230 20% 97%;
+    --eternia-dark-elevated: 230 15% 94%;
     --eternia-success: 158 64% 46%;
     --eternia-warning: 36 90% 56%;
     --eternia-gradient-start: 166 72% 46%;
     --eternia-gradient-end: 262 52% 60%;
 
-    --sidebar-background: 220 14% 5%;
-    --sidebar-foreground: 210 20% 96%;
+    --sidebar-background: 230 20% 97%;
+    --sidebar-foreground: 230 25% 18%;
     --sidebar-primary: 166 72% 46%;
-    --sidebar-primary-foreground: 220 14% 6%;
-    --sidebar-accent: 220 13% 12%;
-    --sidebar-accent-foreground: 210 20% 96%;
-    --sidebar-border: 220 12% 14%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 230 15% 92%;
+    --sidebar-accent-foreground: 230 25% 18%;
+    --sidebar-border: 230 15% 88%;
     --sidebar-ring: 166 72% 46%;
   }
 

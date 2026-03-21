@@ -42,16 +42,16 @@ const HeroSection = () => {
 
         {/* Large glow behind infinity */}
         <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.25, 0.1] }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.06, 0.15, 0.06] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[800px] h-[400px] sm:h-[600px] rounded-full"
-          style={{ background: "radial-gradient(ellipse, hsl(262 52% 60% / 0.2), transparent 70%)" }}
+          style={{ background: "radial-gradient(ellipse, hsl(262 52% 60% / 0.12), transparent 70%)" }}
         />
         <motion.div
-          animate={{ scale: [1, 1.1, 1], opacity: [0.06, 0.15, 0.06] }}
+          animate={{ scale: [1, 1.1, 1], opacity: [0.04, 0.1, 0.04] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
           className="absolute top-1/3 left-1/3 w-[300px] sm:w-[500px] h-[250px] sm:h-[400px] rounded-full"
-          style={{ background: "radial-gradient(ellipse, hsl(174 62% 47% / 0.12), transparent 70%)" }}
+          style={{ background: "radial-gradient(ellipse, hsl(166 72% 46% / 0.08), transparent 70%)" }}
         />
       </div>
 

@@ -50,7 +50,7 @@ const TrustLogos = () => {
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 p-3 rounded-lg bg-card/95 backdrop-blur-xl border border-border/30 shadow-xl z-20"
+                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 p-3 rounded-lg bg-popover/95 backdrop-blur-xl border border-border shadow-xl z-20"
                   >
                     <p className="text-xs font-medium text-foreground mb-0.5">{partner.name}</p>
                     <p className="text-[10px] text-muted-foreground">{partner.info}</p>

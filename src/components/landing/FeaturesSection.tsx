@@ -56,8 +56,8 @@ const FeaturesSection = () => {
                 className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br ${service.gradient} flex items-center justify-center cursor-pointer shadow-lg transition-shadow duration-300`}
                 style={{
                   boxShadow: hoveredIndex === index
-                    ? "0 0 30px 8px hsl(174 62% 47% / 0.2)"
-                    : "0 4px 20px -4px rgba(0,0,0,0.3)",
+                    ? "0 0 30px 8px hsl(166 72% 46% / 0.15)"
+                    : "0 4px 20px -4px rgba(0,0,0,0.1)",
                 }}
               >
                 <service.icon className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-md" />
@@ -65,7 +65,7 @@ const FeaturesSection = () => {
                 {/* Orbit ring on hover */}
                 <motion.div
                   className="absolute inset-[-6px] rounded-full border-2 border-dashed"
-                  style={{ borderColor: "hsl(174 62% 47% / 0.3)" }}
+                  style={{ borderColor: "hsl(166 72% 46% / 0.25)" }}
                   animate={hoveredIndex === index ? { rotate: 360 } : { rotate: 0 }}
                   transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                 />
@@ -84,7 +84,7 @@ const FeaturesSection = () => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute top-full mt-2 w-52 p-3.5 rounded-xl bg-card/95 backdrop-blur-xl border border-border/30 shadow-2xl shadow-black/20 z-20"
+                    className="absolute top-full mt-2 w-52 p-3.5 rounded-xl bg-popover/95 backdrop-blur-xl border border-border shadow-2xl shadow-black/5 z-20"
                   >
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-[13px] font-semibold text-foreground">{service.title}</span>
