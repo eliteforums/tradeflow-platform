@@ -1,70 +1,96 @@
 
 
-## Plan: Database-Driven Training Modules with Admin Management
+## Plan: Admin Sidebar Navigation + PWA Hardening for 60K Scale
 
-### Problem
-Training modules are hardcoded in both `InternDashboardContent.tsx` (7 detailed modules) and `MobileInternDashboard.tsx` (duplicate). Superadmins cannot add, edit, reorder, or remove modules without code changes.
+### Current Problem
+The admin dashboard uses horizontal pill tabs to switch between 9+ sections (Overview, Members, Sessions, SPOC, Roles, Training, Sounds, Escalations, Audit). This becomes cluttered and hard to navigate. All content renders inside a single page with conditional rendering.
 
-### Solution
+### Solution Overview
 
-#### 1. Database — `training_modules` table
+#### 1. Admin Dashboard — Sidebar Navigation (Desktop)
 
-Create a new table to store modules with all current fields:
+Replace the horizontal tab strip with a dedicated admin sidebar. Each section becomes a sidebar link instead of a pill button. The admin gets its own sidebar layout that replaces the generic `DashboardLayout` sidebar.
 
-```sql
-CREATE TABLE public.training_modules (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  day_number integer NOT NULL UNIQUE,
-  title text NOT NULL,
-  description text NOT NULL,
-  duration text NOT NULL DEFAULT '30 min',
-  objectives jsonb NOT NULL DEFAULT '[]',
-  content text NOT NULL DEFAULT '',
-  has_quiz boolean NOT NULL DEFAULT false,
-  quiz_questions jsonb NOT NULL DEFAULT '[]',
-  is_active boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+**Approach**: Rewrite `AdminDashboard.tsx` to use a custom admin sidebar with:
+- Grouped navigation: **Analytics** (Overview), **People** (Members, Roles), **Sessions**, **Institutions** (SPOC + detail), **Content** (Training, Sounds), **Safety** (Escalations, Audit)
+- Active state highlighting
+- Collapsible sidebar with icon-only mode
+- Content area renders the active section
+- Same conditional rendering logic, just driven by sidebar clicks instead of tabs
 
-ALTER TABLE public.training_modules ENABLE ROW LEVEL SECURITY;
+**Files**: `src/pages/admin/AdminDashboard.tsx` (rewrite layout structure)
 
--- Everyone can read active modules
-CREATE POLICY "Anyone can view active training modules"
-  ON public.training_modules FOR SELECT TO authenticated
-  USING (is_active = true);
+#### 2. Mobile Admin — Keep Scrollable Tabs
+Mobile stays with horizontal scrollable tabs (the current pattern works well for touch). No structural change needed for mobile.
 
--- Only admins can manage
-CREATE POLICY "Admins can manage training modules"
-  ON public.training_modules FOR ALL TO authenticated
-  USING (public.has_role(auth.uid(), 'admin'))
-  WITH CHECK (public.has_role(auth.uid(), 'admin'));
-```
+#### 3. PWA Hardening for 60K Concurrent Users
 
-Seed the 7 existing modules into the table via INSERT.
+Current PWA config is basic. Improvements:
 
-#### 2. Admin Panel — New "Training" Tab
+**vite.config.ts** changes:
+- Add `runtimeCaching` strategies for API calls (NetworkFirst with 5s timeout for Supabase API, CacheFirst for static assets/fonts)
+- Add `maximumFileSizeToCacheInBytes` to handle larger bundles
+- Add `skipWaiting: true` for faster SW activation
+- Add `clientsClaim: true` so new SW takes over immediately
+- Increase `navigationPreload` for faster navigation
 
-Add a `"training"` tab to the admin dashboard (desktop + mobile) with:
-- List of all modules ordered by `day_number`
-- Add/Edit module dialog with fields: title, description, duration, content (textarea), objectives (comma-separated or line-separated), quiz toggle, quiz questions editor
-- Reorder (change day_number), toggle active/inactive, delete
-- Only visible to superadmins
+**index.html** changes:
+- Add `<link rel="preload">` for critical JS chunks
+- Add `Connection: keep-alive` hint
 
-**Files**: `src/pages/admin/AdminDashboard.tsx`, `src/components/mobile/MobileAdminDashboard.tsx`, new `src/components/admin/TrainingModuleManager.tsx`
+**src/App.tsx** changes:
+- Add SW update notification so users get prompted when a new version is available
 
-#### 3. Intern Dashboard — Fetch from DB
+#### 4. README Update
 
-Replace hardcoded `TRAINING_MODULES` / `MODULES` arrays with a `useQuery` that fetches from `training_modules` table ordered by `day_number`. Both desktop and mobile components share the same query shape.
+Update README to reflect:
+- New admin sidebar navigation
+- PWA runtime caching strategies
+- 60K concurrency design notes
 
-**Files**: `src/components/intern/InternDashboardContent.tsx`, `src/components/mobile/MobileInternDashboard.tsx`
+---
 
-### Summary
+### Detailed File Changes
 
 | # | Change | Files |
 |---|--------|-------|
-| 1 | Create `training_modules` table + seed data | DB migration |
-| 2 | Admin TrainingModuleManager component | New `TrainingModuleManager.tsx` |
-| 3 | Add Training tab to admin dashboards | `AdminDashboard.tsx`, `MobileAdminDashboard.tsx` |
-| 4 | Fetch modules from DB in intern dashboards | `InternDashboardContent.tsx`, `MobileInternDashboard.tsx` |
+| 1 | Replace admin tab navigation with grouped sidebar | `AdminDashboard.tsx` |
+| 2 | PWA runtime caching + skipWaiting + clientsClaim | `vite.config.ts` |
+| 3 | Add SW update prompt component | New `src/components/PWAUpdatePrompt.tsx`, `App.tsx` |
+| 4 | Update README | `README.md` |
+
+### Admin Sidebar Structure
+
+```text
+┌─────────────────┐
+│ 🏛 Admin Panel   │
+│                 │
+│ ANALYTICS       │
+│  ▸ Overview     │
+│                 │
+│ PEOPLE          │
+│  ▸ Members      │
+│  ▸ Roles        │
+│                 │
+│ ACTIVITY        │
+│  ▸ Sessions     │
+│                 │
+│ INSTITUTIONS    │
+│  ▸ SPOC / Inst  │
+│                 │
+│ CONTENT         │
+│  ▸ Training     │
+│  ▸ Sounds       │
+│                 │
+│ SAFETY          │
+│  ▸ Escalations  │
+│  ▸ Audit Logs   │
+│                 │
+│ ─────────────── │
+│  ← Back to App  │
+│  ⎋ Logout       │
+└─────────────────┘
+```
+
+No database migrations required.
 
