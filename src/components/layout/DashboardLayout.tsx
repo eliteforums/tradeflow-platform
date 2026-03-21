@@ -77,8 +77,8 @@ const adminBottomNavItems = [
 ];
 
 const spocBottomNavItems = [
-  { icon: Home, label: "Home", path: "/dashboard/spoc" },
-  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc" },
+  { icon: Home, label: "Home", path: "/dashboard/spoc?tab=home" },
+  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc?tab=flags" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
