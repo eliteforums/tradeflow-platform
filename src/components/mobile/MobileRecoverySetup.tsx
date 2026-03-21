@@ -82,7 +82,14 @@ const MobileRecoverySetup = () => {
             {pairs.map((pair, i) => (
               <div key={i} className="p-4 rounded-2xl bg-muted/30 border border-border space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">Pair {i + 1}</p>
-                <Input placeholder="Hint word" value={pair.hint} onChange={(e) => handleChange(i, "hint", e.target.value)} className="bg-background h-10 text-sm" />
+                <Select value={pair.hint} onValueChange={(v) => handleChange(i, "hint", v)}>
+                  <SelectTrigger className="bg-background h-10 text-sm"><SelectValue placeholder="Select hint question" /></SelectTrigger>
+                  <SelectContent>
+                    {HINT_QUESTIONS.filter((q) => !pairs.some((p, idx) => idx !== i && p.hint === q)).map((q) => (
+                      <SelectItem key={q} value={q}>{q}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Input placeholder="Answer" value={pair.answer} onChange={(e) => handleChange(i, "answer", e.target.value)} className="bg-background h-10 text-sm" />
               </div>
             ))}

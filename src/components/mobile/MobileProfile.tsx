@@ -120,7 +120,7 @@ const MobileProfile = () => {
           <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
             {[
               { icon: Calendar, val: profile?.total_sessions || 0, label: "Sessions" },
-              { icon: Coins, val: balance, label: "Credits" },
+              ...(profile?.role === "student" ? [{ icon: Coins, val: balance, label: "Credits" }] : []),
               { icon: Shield, val: profile?.streak_days || 0, label: "Streak" },
             ].map((s) => (
               <div key={s.label} className="text-center">
@@ -130,6 +130,12 @@ const MobileProfile = () => {
               </div>
             ))}
           </div>
+          {(profile as any)?.student_id && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <p className="text-xs text-muted-foreground">Student ID</p>
+              <p className="text-sm font-mono font-medium text-primary">{(profile as any).student_id}</p>
+            </div>
+          )}
         </div>
 
         {/* APAAR / Student ID */}
