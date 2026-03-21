@@ -1,7 +1,10 @@
+# Memory: index.md
+Updated: 2026-03-21
+
 # Eternia Project Memory
 
 ## Project Overview
-- **Type**: Institutional Student Wellbeing Platform (PWA)
+- **Type**: Institutional Student Wellbeing Platform
 - **Design**: Dark + calming theme with teal/lavender accents
 - **Fonts**: Space Grotesk (headings), Inter (body)
 
@@ -9,29 +12,26 @@
 - Primary: Teal (174 62% 47%)
 - Secondary/Accent: Lavender (262 52% 60%)
 - Background: Dark blue (222 47% 6%)
+- Success: Green, Warning: Amber, Destructive: Red
 
-## Labels (PRD aligned)
-- "Expert Connect" not "Appointments"
-- "Wallet" not "Credits" (student-facing)
-- "Training" not "Home" (intern tabs)
-
-## Credit Costs
-- Expert Connect: 50 ECC
-- Peer Connect: 20 ECC
-- BlackBox Talk Now: 30 ECC
-- All enforced server-side via spend-credits edge function
-
-## Edge Functions
-- spend-credits, purchase-credits, generate-spoc-qr, validate-spoc-qr
-- reset-device, stability-pool-contribute, seed-admin
-- videosdk-token, ai-moderate, delete-account
-- add-member, bulk-add-members
+## AI Integration
+- **Groq AI** used for all AI moderation/transcription (GROQ_API_KEY secret)
+- Model: llama-3.3-70b-versatile
+- Edge functions: ai-moderate (BlackBox entries), ai-transcribe (voice keyword detection)
+- L1/L2/L3 escalation levels with trigger snippets
 
 ## Auth
 - Username-based login via @eternia.local emails
-- Auto-confirm enabled
-- Device fingerprint validated on app load (students)
+- Auto-confirm enabled (no email verification)
+- Profile auto-created on signup via trigger
+- 100 ECC welcome bonus on signup
+- Student IDs auto-generated: ETN-{INST}-{SEQ}
 
-## Intern Training
-- 7 modules, progress persisted to profiles.training_progress JSONB
-- Sessions/Notes tabs locked until training_status = "completed"
+## User Roles (RBAC)
+- Student, Intern, Expert, SPOC, Admin
+- Credits system: student-only (role-gated)
+- Recovery hints: predefined dropdown questions (not free text)
+
+## BlackBox
+- Strictly audio-only (audioOnly prop throughout VideoSDK tree)
+- No webcam toggle, no video rendering
