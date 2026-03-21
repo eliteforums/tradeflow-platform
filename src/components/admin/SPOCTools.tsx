@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   QrCode, Coins, Users, Copy, Check, Loader2,
-  BarChart3, TrendingUp, Activity, UserPlus,
+  BarChart3, TrendingUp, Activity, UserPlus, RefreshCw,
 } from "lucide-react";
 
 const SPOCTools = () => {
@@ -16,9 +16,21 @@ const SPOCTools = () => {
   const [creditAmount, setCreditAmount] = useState("50");
   const [copiedQR, setCopiedQR] = useState(false);
 
-  const qrPayload = profile
-    ? `ETERNIA-SPOC-${profile.institution_id}-${user?.id}-${Date.now()}`
-    : "";
+  // Fetch HMAC-signed QR payload from edge function
+  const { data: qrData, isLoading: qrLoading, refetch: regenerateQR } = useQuery({
+    queryKey: ["spoc-qr", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
+      if (error) throw new Error(error.message || "Failed to generate QR");
+      if (data?.error) throw new Error(data.error);
+      return data as { qr_payload: string; expires_at: number };
+    },
+    enabled: !!user && profile?.role === "spoc",
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+
+  const qrPayload = qrData?.qr_payload || "";
+  const qrExpiresAt = qrData?.expires_at ? new Date(qrData.expires_at) : null;
 
   const { data: institutionStudents = [] } = useQuery({
     queryKey: ["institution-students", profile?.institution_id],
@@ -93,6 +105,10 @@ const SPOCTools = () => {
   });
 
   const copyQRCode = () => {
+    if (!qrPayload) {
+      toast.error("No QR code generated yet");
+      return;
+    }
     navigator.clipboard.writeText(qrPayload);
     setCopiedQR(true);
     toast.success("SPOC QR payload copied!");
