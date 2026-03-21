@@ -171,6 +171,64 @@ export function usePeerConnect() {
     },
   });
 
+  // Flag/escalate session (intern only)
+  const flagSession = useMutation({
+    mutationFn: async ({ sessionId, reason }: { sessionId: string; reason?: string }) => {
+      if (!user) throw new Error("Not authenticated");
+
+      // Set is_flagged on peer_sessions
+      const { error: flagErr } = await supabase
+        .from("peer_sessions")
+        .update({ is_flagged: true, escalation_note_encrypted: reason || "Intern flagged session" })
+        .eq("id", sessionId);
+      if (flagErr) throw flagErr;
+
+      // Get session to find student's SPOC
+      const { data: session } = await supabase
+        .from("peer_sessions")
+        .select("student_id")
+        .eq("id", sessionId)
+        .single();
+
+      if (session) {
+        // Find student's institution SPOC
+        const { data: studentProfile } = await supabase
+          .from("profiles")
+          .select("institution_id")
+          .eq("id", session.student_id)
+          .single();
+
+        if (studentProfile?.institution_id) {
+          const { data: spocs } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("institution_id", studentProfile.institution_id)
+            .eq("role", "spoc")
+            .limit(1);
+
+          if (spocs && spocs.length > 0) {
+            await supabase.from("escalation_requests").insert({
+              session_id: sessionId,
+              spoc_id: spocs[0].id,
+              justification_encrypted: reason || "Intern flagged peer session for review",
+              escalation_level: 1,
+              trigger_timestamp: new Date().toISOString(),
+              trigger_snippet: "Peer Connect session flagged by intern",
+            });
+          }
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
+      toast.success("Session flagged for review");
+    },
+    onError: (error) => {
+      toast.error("Failed to flag session");
+      console.error(error);
+    },
+  });
+
   // End session
   const endSession = useMutation({
     mutationFn: async (sessionId: string) => {
