@@ -25,7 +25,7 @@ import SoundManager from "@/components/admin/SoundManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import EscalationManager from "@/components/admin/EscalationManager";
 import AccountDeletion from "@/components/admin/AccountDeletion";
-
+import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 
 type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "institution-detail";
