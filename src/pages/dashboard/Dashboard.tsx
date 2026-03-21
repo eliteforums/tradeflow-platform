@@ -29,7 +29,8 @@ const Dashboard = () => {
   const { profile, creditBalance: balance } = useAuth();
 
   // Role-based redirect (must be before mobile check to avoid hook order issues)
-  if (profile?.role === "admin" || profile?.role === "spoc") return <Navigate to="/admin" replace />;
+  if (profile?.role === "admin") return <Navigate to="/admin" replace />;
+  if (profile?.role === "spoc") return <Navigate to="/dashboard/spoc" replace />;
   if (profile?.role === "expert") return <Navigate to="/dashboard/expert" replace />;
   if (profile?.role === "intern") return <Navigate to="/dashboard/intern" replace />;
 

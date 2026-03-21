@@ -223,7 +223,7 @@ const InternDashboardContent = () => {
                           setCompletedModules(newModules);
                           // Persist to DB
                           if (user) {
-                            const newStatus = newModules.length >= TRAINING_MODULES.length ? "completed" : "in_progress";
+                            const newStatus = newModules.length >= TRAINING_MODULES.length ? "interview_pending" : "in_progress";
                             await supabase.from("profiles").update({ training_progress: newModules, training_status: newStatus }).eq("id", user.id);
                           }
                         }}>

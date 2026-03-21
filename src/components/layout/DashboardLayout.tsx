@@ -132,6 +132,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const isActive = (path: string) => {
     if (path === "/dashboard") return location.pathname === "/dashboard";
+    // For paths with query params, match pathname + search
+    if (path.includes("?")) {
+      const [pathname, search] = path.split("?");
+      return location.pathname === pathname && location.search === `?${search}`;
+    }
     return location.pathname.startsWith(path);
   };
 

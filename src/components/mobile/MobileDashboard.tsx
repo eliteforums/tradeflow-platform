@@ -64,7 +64,8 @@ const MobileDashboard = () => {
 
   if (isLoading) return <DashboardSkeleton />;
 
-  if (profile?.role === "admin" || profile?.role === "spoc") return <Navigate to="/admin" replace />;
+  if (profile?.role === "admin") return <Navigate to="/admin" replace />;
+  if (profile?.role === "spoc") return <Navigate to="/dashboard/spoc" replace />;
   if (profile?.role === "expert") return <Navigate to="/dashboard/expert" replace />;
   if (profile?.role === "intern") return <Navigate to="/dashboard/intern" replace />;
 

@@ -22,7 +22,16 @@ type SPOCTab = "home" | "onboarding" | "flags" | "reports" | "profile";
 const SPOCDashboardContent = () => {
   const { user, profile, signOut } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<SPOCTab>("home");
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get("tab") as SPOCTab | null;
+  const [activeTab, setActiveTab] = useState<SPOCTab>(tabFromUrl || "home");
+
+  // Sync tab when URL params change
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl]);
   const [copiedQR, setCopiedQR] = useState(false);
   const [showNewEscalation, setShowNewEscalation] = useState(false);
   const [escalationReason, setEscalationReason] = useState("");
