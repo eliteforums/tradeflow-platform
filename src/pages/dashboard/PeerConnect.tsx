@@ -18,7 +18,7 @@ const PeerConnect = () => {
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { interns, sessions, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, isRequesting, isSending } = usePeerConnect();
+  const { interns, sessions, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, flagSession, isRequesting, isSending, isFlagging } = usePeerConnect();
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
   useEffect(() => { if (activeSession && !activeSessionId) { setActiveSessionId(activeSession.id); setMobileView("chat"); } }, [activeSession, activeSessionId, setActiveSessionId]);
