@@ -9,6 +9,7 @@ import {
   Sparkles,
   Coins,
   User,
+  Users,
   LogOut,
   ChevronLeft,
   Shield,
