@@ -251,7 +251,7 @@ const MobileAdminDashboard = () => {
                 {institutionData.length === 0 ? (
                   <div className="text-center py-10 text-muted-foreground"><Building2 className="w-8 h-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No institutions</p></div>
                 ) : institutionData.map((inst: any) => (
-                  <div key={inst.id} className="p-4 rounded-2xl bg-card border border-border/50 space-y-3">
+                  <div key={inst.id} className="p-4 rounded-2xl bg-card border border-border/50 space-y-3 cursor-pointer active:scale-[0.98]" onClick={() => { setSelectedInstitution(inst); setActiveTab("institution-detail"); }}>
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold text-sm">{inst.name}</h4>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] ${inst.is_active ? "bg-eternia-success/10 text-eternia-success" : "bg-muted text-muted-foreground"}`}>{inst.is_active ? "Active" : "Inactive"}</span>
