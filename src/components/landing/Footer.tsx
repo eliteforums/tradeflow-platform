@@ -20,7 +20,7 @@ const footerLinks = {
 };
 
 const Footer = () => (
-  <footer className="border-t border-border/20">
+  <footer className="border-t border-border/20" role="contentinfo">
     <div className="container mx-auto px-4 sm:px-5 py-10 sm:py-14">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
         {/* Brand */}

@@ -17,7 +17,7 @@ const Landing = () => {
     <div className="min-h-screen bg-background overflow-hidden relative">
       {/* Snake gradient line running down the page */}
       <div className="absolute left-0 top-0 w-full h-full pointer-events-none overflow-hidden z-0">
-        <svg className="absolute top-0 left-0 w-full h-full opacity-[0.12]" preserveAspectRatio="none">
+        <svg className="absolute top-0 left-0 w-full h-full opacity-[0.12]" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <linearGradient id="snakeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="hsl(166 72% 46%)" />
@@ -39,16 +39,34 @@ const Landing = () => {
       <div className="relative z-10">
         <AnnouncementBanner />
         <Navbar />
-        <HeroSection />
-        <TrustLogos />
-        <FeaturesSection />
-        <HowItWorksSection />
-        <StatsSection />
-        <SecuritySection />
-        <AboutSection />
-        <TestimonialsSection />
-        <FAQSection />
-        <CTASection />
+        <main>
+          <HeroSection />
+          <TrustLogos />
+          <section aria-label="Platform features">
+            <FeaturesSection />
+          </section>
+          <section aria-label="How Eternia works">
+            <HowItWorksSection />
+          </section>
+          <section aria-label="Platform statistics">
+            <StatsSection />
+          </section>
+          <section aria-label="Security and privacy">
+            <SecuritySection />
+          </section>
+          <section aria-label="About Eternia">
+            <AboutSection />
+          </section>
+          <section aria-label="Student testimonials">
+            <TestimonialsSection />
+          </section>
+          <section aria-label="Frequently asked questions">
+            <FAQSection />
+          </section>
+          <section aria-label="Get started">
+            <CTASection />
+          </section>
+        </main>
         <Footer />
       </div>
     </div>
