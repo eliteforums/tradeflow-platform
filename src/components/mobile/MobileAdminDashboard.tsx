@@ -21,8 +21,9 @@ import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
+const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard"));
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail" | "analytics";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
