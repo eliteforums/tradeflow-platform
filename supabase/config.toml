@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.videosdk-token]
 verify_jwt = false
+
+[functions.ai-transcribe]
+verify_jwt = false
+
+[functions.ai-moderate]
+verify_jwt = false

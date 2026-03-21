@@ -66,7 +66,7 @@ const MobileBlackBox = () => {
               }}
               token={token}
             >
-              <MeetingView meetingId={activeSession.room_id} onMeetingLeave={endSession} />
+              <MeetingView meetingId={activeSession.room_id} onMeetingLeave={endSession} audioOnly={true} />
             </MeetingProvider>
           </div>
         ) : (

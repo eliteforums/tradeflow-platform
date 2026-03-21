@@ -4,6 +4,9 @@ import MobileRecoverySetup from "@/components/mobile/MobileRecoverySetup";
 import { useState } from "react";
 import { Shield, Key, Smile, Save, CheckCircle, Loader2, ArrowRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -12,6 +15,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const EMOJI_GRID = ["🌊","🔥","🌸","⚡","🌙","☀️","🍃","❄️","🦋","🌈","🎵","💎","🕊️","🌻","🍂","🌺","🐚","🌿","✨","🎯","🧿","🪷","🫧","🪻"];
+
+const HINT_QUESTIONS = [
+  "Favourite colour",
+  "First pet's name",
+  "Childhood nickname",
+  "Mother's maiden name",
+  "Favourite teacher",
+  "Birth city",
+  "Best friend in school",
+  "Favourite movie",
+  "First phone brand",
+  "Favourite food",
+];
 
 const RecoverySetup = () => {
   const isMobile = useIsMobile();
@@ -63,7 +79,16 @@ const RecoverySetup = () => {
             {fragmentPairs.map((pair, index) => (
               <div key={index} className="p-4 rounded-xl bg-muted/30 border border-border space-y-3">
                 <p className="text-sm font-medium text-muted-foreground">Pair {index + 1}</p>
-                <div><label className="text-xs text-muted-foreground mb-1 block">Hint Word</label><Input placeholder="e.g., childhood, favorite" value={pair.hint} onChange={(e) => handleFragmentChange(index, "hint", e.target.value)} className="bg-background" /></div>
+                <div><label className="text-xs text-muted-foreground mb-1 block">Hint Question</label>
+                  <Select value={pair.hint} onValueChange={(v) => handleFragmentChange(index, "hint", v)}>
+                    <SelectTrigger className="bg-background h-9 text-sm"><SelectValue placeholder="Select a hint question" /></SelectTrigger>
+                    <SelectContent>
+                      {HINT_QUESTIONS.filter((q) => !fragmentPairs.some((p, i) => i !== index && p.hint === q)).map((q) => (
+                        <SelectItem key={q} value={q}>{q}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div><label className="text-xs text-muted-foreground mb-1 block">Answer Word</label><Input placeholder="Your answer" value={pair.answer} onChange={(e) => handleFragmentChange(index, "answer", e.target.value)} className="bg-background" /></div>
               </div>
             ))}

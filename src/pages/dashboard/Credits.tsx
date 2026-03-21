@@ -2,18 +2,33 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import MobileCredits from "@/components/mobile/MobileCredits";
 
 import { useState } from "react";
-import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award, TrendingUp, Loader2, AlertCircle } from "lucide-react";
+import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award, TrendingUp, Loader2, AlertCircle, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCredits } from "@/hooks/useCredits";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 const Credits = () => {
   const isMobile = useIsMobile();
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
+  const { profile } = useAuth();
 
   if (isMobile) return <MobileCredits />;
+
+  // Only students can access credits
+  if (profile?.role && profile.role !== "student") {
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto text-center py-16">
+          <ShieldAlert className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+          <h1 className="text-2xl font-bold font-display mb-2">Credits — Student Only</h1>
+          <p className="text-muted-foreground">The ECC credit system is available for student accounts only.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const filteredTransactions = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
   const getIcon = (type: string) => { switch (type) { case "earn": return Award; case "spend": return Calendar; case "grant": return Gift; case "purchase": return CreditCard; default: return Coins; } };

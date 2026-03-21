@@ -7,7 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { UserPlus, Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight } from "lucide-react";
 
 const ROLES = [
   { value: "student", label: "Student" },
@@ -23,11 +23,24 @@ export default function MemberManager() {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState("student");
   const [selectedInstitution, setSelectedInstitution] = useState("");
+  const [expandedInstitution, setExpandedInstitution] = useState<string | null>(null);
 
   const { data: institutions = [] } = useQuery({
     queryKey: ["admin-institutions-list"],
     queryFn: async () => {
       const { data, error } = await supabase.from("institutions").select("id, name").eq("is_active", true).order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: allMembers = [], isLoading: membersLoading } = useQuery({
+    queryKey: ["admin-all-members"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, role, institution_id, is_active, student_id, created_at")
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -50,6 +63,7 @@ export default function MemberManager() {
     onSuccess: (data) => {
       toast.success(`"${data.username}" created as ${selectedRole}`);
       queryClient.invalidateQueries({ queryKey: ["admin-members"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-members"] });
       setUsername("");
       setPassword("");
     },
@@ -66,79 +80,155 @@ export default function MemberManager() {
     return map[role] || "";
   };
 
-  return (
-    <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
-      <h3 className="text-sm font-semibold flex items-center gap-2">
-        <UserPlus className="w-4 h-4 text-primary" />
-        Add Member
-      </h3>
-      <p className="text-xs text-muted-foreground">
-        Create a new account with a specific role.
-      </p>
+  // Group members by institution
+  const institutionMap = new Map<string, string>();
+  institutions.forEach((inst) => institutionMap.set(inst.id, inst.name));
 
-      <div className="grid grid-cols-1 gap-2.5">
-        <div>
-          <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Username *</label>
-          <Input placeholder="e.g. dr_sharma" value={username} onChange={(e) => setUsername(e.target.value)} className="h-9" />
-          <p className="text-[10px] text-muted-foreground mt-0.5">
-            Login: <code className="bg-muted px-1 rounded">{username.toLowerCase().replace(/\s+/g, '_') || 'username'}</code>
+  const grouped: Record<string, typeof allMembers> = {};
+  allMembers.forEach((m) => {
+    const key = m.institution_id || "independent";
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(m);
+  });
+
+  const sortedGroups = Object.entries(grouped).sort(([a], [b]) => {
+    if (a === "independent") return 1;
+    if (b === "independent") return -1;
+    return (institutionMap.get(a) || "").localeCompare(institutionMap.get(b) || "");
+  });
+
+  return (
+    <div className="space-y-4">
+      {/* Add Member Form */}
+      <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <UserPlus className="w-4 h-4 text-primary" />
+          Add Member
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Create a new account with a specific role.
+        </p>
+
+        <div className="grid grid-cols-1 gap-2.5">
+          <div>
+            <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Username *</label>
+            <Input placeholder="e.g. dr_sharma" value={username} onChange={(e) => setUsername(e.target.value)} className="h-9" />
+            <p className="text-[10px] text-muted-foreground mt-0.5">
+              Login: <code className="bg-muted px-1 rounded">{username.toLowerCase().replace(/\s+/g, '_') || 'username'}</code>
+            </p>
+          </div>
+          <div>
+            <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Password *</label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Min 6 chars"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-9 pr-9"
+              />
+              <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-9 w-9"
+                onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Role *</label>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Institution</label>
+              <Select value={selectedInstitution} onValueChange={setSelectedInstitution}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {institutions.map((inst) => <SelectItem key={inst.id} value={inst.id}>{inst.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-2.5 rounded-lg bg-muted/30 border border-border flex items-start gap-2">
+          <AlertCircle className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+          <p className="text-[10px] text-muted-foreground">
+            <span className="font-medium text-foreground capitalize">{selectedRole}:</span> {getRoleDesc(selectedRole)}
           </p>
         </div>
-        <div>
-          <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Password *</label>
-          <div className="relative">
-            <Input
-              type={showPassword ? "text" : "password"}
-              placeholder="Min 6 chars"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-9 pr-9"
-            />
-            <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-9 w-9"
-              onClick={() => setShowPassword(!showPassword)}>
-              {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </Button>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Role *</label>
-            <Select value={selectedRole} onValueChange={setSelectedRole}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Institution</label>
-            <Select value={selectedInstitution} onValueChange={setSelectedInstitution}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {institutions.map((inst) => <SelectItem key={inst.id} value={inst.id}>{inst.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+
+        <Button
+          onClick={() => addMutation.mutate()}
+          disabled={!username.trim() || !password || password.length < 6 || addMutation.isPending}
+          className="gap-1.5 h-8 text-xs w-full"
+          size="sm"
+        >
+          {addMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
+          Create Member
+        </Button>
       </div>
 
-      <div className="p-2.5 rounded-lg bg-muted/30 border border-border flex items-start gap-2">
-        <AlertCircle className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-        <p className="text-[10px] text-muted-foreground">
-          <span className="font-medium text-foreground capitalize">{selectedRole}:</span> {getRoleDesc(selectedRole)}
-        </p>
-      </div>
+      {/* Members grouped by institution */}
+      <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Users className="w-4 h-4 text-primary" />
+          Members by University
+        </h3>
 
-      <Button
-        onClick={() => addMutation.mutate()}
-        disabled={!username.trim() || !password || password.length < 6 || addMutation.isPending}
-        className="gap-1.5 h-8 text-xs w-full"
-        size="sm"
-      >
-        {addMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
-        Create Member
-      </Button>
+        {membersLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : sortedGroups.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">No members yet</p>
+        ) : (
+          <div className="space-y-2">
+            {sortedGroups.map(([instId, members]) => {
+              const instName = instId === "independent" ? "Independent (No Institution)" : institutionMap.get(instId) || "Unknown";
+              const isExpanded = expandedInstitution === instId;
+
+              return (
+                <div key={instId} className="rounded-lg border border-border/50 overflow-hidden">
+                  <button
+                    onClick={() => setExpandedInstitution(isExpanded ? null : instId)}
+                    className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs font-medium">{instName}</span>
+                      <span className="text-[10px] text-muted-foreground">({members.length})</span>
+                    </div>
+                    {isExpanded ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                  </button>
+
+                  {isExpanded && (
+                    <div className="border-t border-border/50">
+                      {members.map((m) => (
+                        <div key={m.id} className="flex items-center justify-between px-3 py-2 text-xs border-b border-border/30 last:border-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-medium truncate">{m.username}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary capitalize">{m.role}</span>
+                            {!m.is_active && <span className="px-1.5 py-0.5 rounded text-[10px] bg-destructive/10 text-destructive">Inactive</span>}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground font-mono shrink-0 ml-2">
+                            {m.student_id || "—"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

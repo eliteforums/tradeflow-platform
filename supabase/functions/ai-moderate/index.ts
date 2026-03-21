@@ -19,33 +19,33 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("AI gateway not configured");
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not configured");
 
-    // Classify risk level using Lovable AI
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Classify risk level using Groq AI
+    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "llama-3.3-70b-versatile",
         messages: [
           {
             role: "system",
             content: `You are a mental health content safety classifier for a student wellness platform. Classify the emotional risk level of user-submitted text. Respond with ONLY a single digit 0-3:
 
 0 = Normal/healthy expression (journaling, gratitude, mild stress)
-1 = Mild distress (frustration, sadness, anxiety, loneliness)  
-2 = Moderate concern (persistent hopelessness, isolation, self-harm ideation without plan)
-3 = Critical/crisis (explicit self-harm intent, suicidal ideation with plan, danger to self or others)
+1 = L1 Mild distress (frustration, sadness, anxiety, loneliness)  
+2 = L2 Moderate concern (persistent hopelessness, isolation, self-harm ideation without plan)
+3 = L3 Critical/crisis (explicit self-harm intent, suicidal ideation with plan, danger to self or others)
 
 Respond with ONLY the number. No explanation.`,
           },
           {
             role: "user",
-            content: content.substring(0, 2000), // Limit input size
+            content: content.substring(0, 2000),
           },
         ],
         max_tokens: 5,
@@ -54,8 +54,7 @@ Respond with ONLY the number. No explanation.`,
     });
 
     if (!aiResponse.ok) {
-      console.error("AI gateway error:", await aiResponse.text());
-      // Default to 0 on AI failure — don't block user
+      console.error("Groq API error:", await aiResponse.text());
       return new Response(JSON.stringify({ flag_level: 0, entry_id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -77,7 +77,7 @@ const BlackBox = () => {
                 }}
                 token={token}
               >
-                <LazyMeetingView meetingId={activeSession.room_id} onMeetingLeave={endSession} />
+                <LazyMeetingView meetingId={activeSession.room_id} onMeetingLeave={endSession} audioOnly={true} />
               </LazyMeetingProvider>
             </Suspense>
           </div>

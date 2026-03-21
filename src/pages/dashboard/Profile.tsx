@@ -162,11 +162,19 @@ const Profile = () => {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
+         <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
             <div className="text-center"><Calendar className="w-5 h-5 text-primary mx-auto mb-1" /><p className="text-2xl font-bold">{profile?.total_sessions || 0}</p><p className="text-sm text-muted-foreground">Sessions</p></div>
-            <div className="text-center"><Coins className="w-5 h-5 text-primary mx-auto mb-1" /><p className="text-2xl font-bold">{balance}</p><p className="text-sm text-muted-foreground">Credits</p></div>
+            {profile?.role === "student" && (
+              <div className="text-center"><Coins className="w-5 h-5 text-primary mx-auto mb-1" /><p className="text-2xl font-bold">{balance}</p><p className="text-sm text-muted-foreground">Credits</p></div>
+            )}
             <div className="text-center"><Shield className="w-5 h-5 text-primary mx-auto mb-1" /><p className="text-2xl font-bold">{profile?.streak_days || 0}</p><p className="text-sm text-muted-foreground">Streak</p></div>
           </div>
+          {(profile as any)?.student_id && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-xs text-muted-foreground">Student ID</p>
+              <p className="text-sm font-mono font-medium text-primary">{(profile as any).student_id}</p>
+            </div>
+          )}
         </div>
 
         {/* APAAR / Student ID Verification */}

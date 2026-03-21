@@ -1,14 +1,29 @@
 import { useState } from "react";
-import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award, TrendingUp, Loader2, AlertCircle } from "lucide-react";
+import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award, TrendingUp, Loader2, AlertCircle, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCredits } from "@/hooks/useCredits";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 const MobileCredits = () => {
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
+  const { profile } = useAuth();
   const filtered = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
+
+  // Only students can access credits
+  if (profile?.role && profile.role !== "student") {
+    return (
+      <DashboardLayout>
+        <div className="text-center py-16 pb-24">
+          <ShieldAlert className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+          <h1 className="text-lg font-bold font-display mb-1">Student Only</h1>
+          <p className="text-sm text-muted-foreground">Credits are for student accounts.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
