@@ -280,7 +280,7 @@ const MobileExpertDashboard = () => {
           <div className="space-y-3">
             <Popover>
               <PopoverTrigger asChild><Button variant="outline" className={cn("w-full justify-start h-10 text-sm", !slotDate && "text-muted-foreground")}><Calendar className="w-4 h-4 mr-2" />{slotDate ? format(slotDate, "PPP") : "Pick date"}</Button></PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start"><CalendarPicker mode="single" selected={slotDate} onSelect={setSlotDate} disabled={(d) => d < new Date()} initialFocus className={cn("p-3 pointer-events-auto")} /></PopoverContent>
+              <PopoverContent className="w-auto p-0" align="start"><CalendarPicker mode="single" selected={slotDate} onSelect={setSlotDate} disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))} initialFocus className={cn("p-3 pointer-events-auto")} /></PopoverContent>
             </Popover>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="text-xs text-muted-foreground mb-1 block">Start</label><Input type="time" value={slotStartTime} onChange={(e) => setSlotStartTime(e.target.value)} className="h-10 text-sm" /></div>
