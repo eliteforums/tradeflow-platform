@@ -1,7 +1,7 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobilePeerConnect from "@/components/mobile/MobilePeerConnect";
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, Search, Circle, Phone, Video, Send, X, Clock, Shield, Users, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { MessageCircle, Search, Circle, Phone, Video, Send, X, Clock, Shield, Users, Loader2, AlertCircle, ArrowLeft, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
