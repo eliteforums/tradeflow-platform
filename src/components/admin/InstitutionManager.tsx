@@ -52,6 +52,7 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPlan, setNewPlan] = useState("basic");
+  const [newType, setNewType] = useState("university");
   const [newCredits, setNewCredits] = useState("5000");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
