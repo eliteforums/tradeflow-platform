@@ -194,6 +194,7 @@ const ExpertDashboardContent = () => {
         justification_encrypted: escalationReason,
         session_id: null,
         entry_id: null,
+        trigger_timestamp: appointment?.slot_time || null,
       });
       if (error) throw error;
     },

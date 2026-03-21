@@ -39,11 +39,14 @@ const Dashboard = () => {
   const greeting = getGreeting();
   const quote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
 
-  const portals = [
-    { icon: Calendar, title: "Expert Connect", description: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500", bgClass: "bg-emerald-500/8" },
-    { icon: MessageCircle, title: "Peer Connect", description: "Talk to trained interns", path: "/dashboard/peer-connect", gradient: "from-pink-500 to-rose-500", bgClass: "bg-pink-500/8" },
-    { icon: Box, title: "BlackBox", description: "Express anonymously", path: "/dashboard/blackbox", gradient: "from-violet-500 to-purple-500", bgClass: "bg-violet-500/8" },
-    { icon: Music, title: "Sound Therapy", description: "Meditate & relax", path: "/dashboard/sound-therapy", gradient: "from-cyan-500 to-blue-500", bgClass: "bg-cyan-500/8" },
+  const connectPortals = [
+    { icon: Calendar, title: "Expert Connect", description: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500" },
+    { icon: MessageCircle, title: "Peer Connect", description: "Talk to trained interns", path: "/dashboard/peer-connect", gradient: "from-pink-500 to-rose-500" },
+    { icon: Box, title: "BlackBox", description: "Express anonymously", path: "/dashboard/blackbox", gradient: "from-violet-500 to-purple-500" },
+  ];
+
+  const wellnessPortals = [
+    { icon: Music, title: "Sound Therapy", description: "Meditate & relax", path: "/dashboard/sound-therapy", gradient: "from-cyan-500 to-blue-500" },
   ];
 
   const quickTools = [
@@ -108,9 +111,24 @@ const Dashboard = () => {
         </div>
 
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 px-0.5">Your Space</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 px-0.5">Connect</p>
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+            {connectPortals.map((portal) => (
+              <Link key={portal.path} to={portal.path} className="group rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all">
+                <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${portal.gradient} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
+                  <portal.icon className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-sm sm:text-[15px] font-semibold font-display mb-0.5">{portal.title}</h3>
+                <p className="text-[11px] sm:text-xs text-muted-foreground leading-snug">{portal.description}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 px-0.5">Wellness</p>
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-            {portals.map((portal) => (
+            {wellnessPortals.map((portal) => (
               <Link key={portal.path} to={portal.path} className="group rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all">
                 <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${portal.gradient} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
                   <portal.icon className="w-5 h-5 text-white" />
