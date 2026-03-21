@@ -1,96 +1,115 @@
 
 
-## Plan: Admin Sidebar Navigation + PWA Hardening for 60K Scale
+## Gap Analysis: PRD v2-22 + Change Request v1.3 vs Current Codebase
 
-### Current Problem
-The admin dashboard uses horizontal pill tabs to switch between 9+ sections (Overview, Members, Sessions, SPOC, Roles, Training, Sounds, Escalations, Audit). This becomes cluttered and hard to navigate. All content renders inside a single page with conditional rendering.
-
-### Solution Overview
-
-#### 1. Admin Dashboard — Sidebar Navigation (Desktop)
-
-Replace the horizontal tab strip with a dedicated admin sidebar. Each section becomes a sidebar link instead of a pill button. The admin gets its own sidebar layout that replaces the generic `DashboardLayout` sidebar.
-
-**Approach**: Rewrite `AdminDashboard.tsx` to use a custom admin sidebar with:
-- Grouped navigation: **Analytics** (Overview), **People** (Members, Roles), **Sessions**, **Institutions** (SPOC + detail), **Content** (Training, Sounds), **Safety** (Escalations, Audit)
-- Active state highlighting
-- Collapsible sidebar with icon-only mode
-- Content area renders the active section
-- Same conditional rendering logic, just driven by sidebar clicks instead of tabs
-
-**Files**: `src/pages/admin/AdminDashboard.tsx` (rewrite layout structure)
-
-#### 2. Mobile Admin — Keep Scrollable Tabs
-Mobile stays with horizontal scrollable tabs (the current pattern works well for touch). No structural change needed for mobile.
-
-#### 3. PWA Hardening for 60K Concurrent Users
-
-Current PWA config is basic. Improvements:
-
-**vite.config.ts** changes:
-- Add `runtimeCaching` strategies for API calls (NetworkFirst with 5s timeout for Supabase API, CacheFirst for static assets/fonts)
-- Add `maximumFileSizeToCacheInBytes` to handle larger bundles
-- Add `skipWaiting: true` for faster SW activation
-- Add `clientsClaim: true` so new SW takes over immediately
-- Increase `navigationPreload` for faster navigation
-
-**index.html** changes:
-- Add `<link rel="preload">` for critical JS chunks
-- Add `Connection: keep-alive` hint
-
-**src/App.tsx** changes:
-- Add SW update notification so users get prompted when a new version is available
-
-#### 4. README Update
-
-Update README to reflect:
-- New admin sidebar navigation
-- PWA runtime caching strategies
-- 60K concurrency design notes
+After a thorough comparison, here are the **remaining gaps** organized by priority. Items already implemented are excluded.
 
 ---
 
-### Detailed File Changes
+### Already Implemented (No Action Needed)
+- 5-step onboarding (institution code → QR → device binding → credentials → private profile)
+- Dual verification model (APAAR/ERP)
+- All 5 role dashboards (Student, Intern, Expert, Therapist, SPOC, Admin)
+- ECC credit system with immutable ledger
+- BlackBox with audio-only sessions + AI moderation
+- Peer Connect with training gate
+- Sound Therapy, Quest Cards, Wreck Buddy, Tibetan Bowl
+- Recovery Setup (fragment pairs + emoji pattern)
+- Escalation system (L1-L3)
+- Training modules (DB-driven, admin-managed)
+- Stability pool auto-contribution
+- Admin sidebar dashboard
+- PWA hardening
 
-| # | Change | Files |
-|---|--------|-------|
-| 1 | Replace admin tab navigation with grouped sidebar | `AdminDashboard.tsx` |
-| 2 | PWA runtime caching + skipWaiting + clientsClaim | `vite.config.ts` |
-| 3 | Add SW update prompt component | New `src/components/PWAUpdatePrompt.tsx`, `App.tsx` |
-| 4 | Update README | `README.md` |
+---
 
-### Admin Sidebar Structure
+### Remaining Gaps to Implement
 
-```text
-┌─────────────────┐
-│ 🏛 Admin Panel   │
-│                 │
-│ ANALYTICS       │
-│  ▸ Overview     │
-│                 │
-│ PEOPLE          │
-│  ▸ Members      │
-│  ▸ Roles        │
-│                 │
-│ ACTIVITY        │
-│  ▸ Sessions     │
-│                 │
-│ INSTITUTIONS    │
-│  ▸ SPOC / Inst  │
-│                 │
-│ CONTENT         │
-│  ▸ Training     │
-│  ▸ Sounds       │
-│                 │
-│ SAFETY          │
-│  ▸ Escalations  │
-│  ▸ Audit Logs   │
-│                 │
-│ ─────────────── │
-│  ← Back to App  │
-│  ⎋ Logout       │
-└─────────────────┘
+#### Phase A — Database Changes
+
+**1. `device_sessions` table** (PRD Section 12.1)
+Track refresh tokens per device for JWT rotation and multi-device management.
+
+```sql
+CREATE TABLE public.device_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  device_id_hash text NOT NULL,
+  refresh_token_hash text NOT NULL,
+  expires_at timestamptz NOT NULL,
+  revoked boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 ```
 
-No database migrations required.
+**2. Add `recurrence_rule` column to `expert_availability`** (PRD Section 12.1)
+Currently missing — allows recurring weekly slots.
+
+**3. Add missing DB indexes** (PRD Section 12.3)
+Create composite indexes on high-query tables for performance at scale.
+
+**4. Add `therapist` to `app_role` enum**
+The Change Request defines Therapist as a distinct role (currently using `expert` role for therapist route).
+
+#### Phase B — Change Request Items
+
+**5. Member grouping by institution in Admin dashboard** (CR 3.1)
+In the Members tab, group users under their institution name so bulk student IDs are visible per-institution.
+
+**6. BlackBox host-position switching on L3 escalation** (CR 6.1)
+When escalation hits L3 in BlackBox, transfer the session from current therapist to an M.Phil expert in real-time (host swap in VideoSDK room).
+
+**7. Recovery Setup — hint word as dropdown** (CR 10.1)
+Currently hint words are free-text `Select` dropdowns with predefined options. The CR wants the hint to be a strict dropdown (already implemented — confirmed matching).
+
+**8. Profile section — remove red extreme text** (CR 10.2)
+Review Profile page for any red/destructive-colored text that should be toned down.
+
+**9. Credits allotment restricted to students only** (CR 11.1)
+Ensure credit grant flows (admin grant tool, welcome bonus) only apply to student-role users.
+
+#### Phase C — PRD Features Not Yet Implemented
+
+**10. Escalation consent checkbox during registration** (PRD Section 3.4)
+During Step 5 (private profile), display the escalation consent statement and require acknowledgement before proceeding.
+
+**11. AI selective transcription monitoring** (PRD Section 19.1)
+Audio stream → temporary buffer → AI sentiment classifier → risk level. Store only 10s before + 10s after trigger. Currently only text-based AI moderation exists via `ai-moderate` edge function. Audio transcription for live sessions is not implemented.
+
+**12. Live session host replacement on L3** (PRD Section 18)
+When escalation L3 triggers during any live session, swap the current moderator with an M.Phil expert without breaking the student's connection. Update session metadata.
+
+**13. Escalation notification to SPOC with limited info** (PRD Section 14.2)
+L2: "A student in your institution may need support" — no content, no identity. Currently escalation_requests exist but no push/real-time notification to SPOC dashboard.
+
+**14. Account deletion flow** (PRD Section 15 / DPDP)
+Hard-delete `user_private`, soft-delete profile, anonymize `credit_transactions`. 30-day grace period. The `delete-account` edge function exists but the UI flow needs verification.
+
+**15. Intern training module locking** (PRD Section 19)
+Upon intern login, only the Training tab should be accessible. All other tabs (Peer Sessions, Notes, Profile) remain locked until `training_status = 'active'`. Currently all tabs are accessible regardless of training status.
+
+**16. SPOC QR code TTL / regeneration** (PRD Section 3.2)
+QR codes should have 24-hour validity with regeneration. Currently `generate-spoc-qr` edge function exists but TTL enforcement and auto-expiry need verification.
+
+---
+
+### Implementation Plan (Prioritized)
+
+| # | Task | Type | Files |
+|---|------|------|-------|
+| 1 | Add `device_sessions` table + indexes migration | DB migration | SQL |
+| 2 | Add `therapist` to `app_role` enum | DB migration | SQL |
+| 3 | Add escalation consent checkbox to Register Step 2 | Code | `Register.tsx` |
+| 4 | Lock intern tabs until training complete | Code | `InternDashboardContent.tsx`, `MobileInternDashboard.tsx` |
+| 5 | Group members by institution in admin Members tab | Code | `MemberManager.tsx` |
+| 6 | Restrict credit grants to students only | Code | `CreditGrantTool.tsx`, `grant-credits/index.ts` |
+| 7 | Add real-time escalation notification to SPOC dashboard | Code | `SPOCDashboardContent.tsx` |
+| 8 | Review & soften Profile page destructive text | Code | `Profile.tsx`, `MobileProfile.tsx` |
+| 9 | Add L3 host-swap logic for BlackBox sessions | Code | `TherapistDashboardContent.tsx`, `useBlackBoxSession.ts` |
+| 10 | Add missing DB indexes for scale | DB migration | SQL |
+
+Items 11 (AI audio transcription) and 12 (live host replacement) are complex real-time features requiring significant VideoSDK integration work and should be scoped as separate phases.
+
+### Scope Note
+This plan covers all actionable gaps that can be implemented within the current Lovable + Supabase architecture. Audio stream transcription (item 11) requires a dedicated media processing pipeline and is recommended as a Phase 2 deliverable.
 
