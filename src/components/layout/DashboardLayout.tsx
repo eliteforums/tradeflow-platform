@@ -9,6 +9,7 @@ import {
   Sparkles,
   Coins,
   User,
+  Users,
   LogOut,
   ChevronLeft,
   Shield,
@@ -42,6 +43,13 @@ const adminNavItems = [
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
+const spocNavItems = [
+  { icon: Home, label: "Home", path: "/dashboard/spoc" },
+  { icon: Users, label: "Onboarding", path: "/dashboard/spoc" },
+  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
 const expertNavItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard/expert" },
   { icon: Headphones, label: "BlackBox Queue", path: "/dashboard/therapist" },
@@ -65,6 +73,12 @@ const studentBottomNavItems = [
 
 const adminBottomNavItems = [
   { icon: Shield, label: "Admin", path: "/admin" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const spocBottomNavItems = [
+  { icon: Home, label: "Home", path: "/dashboard/spoc" },
+  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
@@ -95,14 +109,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const isCreditsPage = location.pathname === "/dashboard/credits";
 
   const navItems = useMemo(() => {
-    if (role === "admin" || role === "spoc") return adminNavItems;
+    if (role === "admin") return adminNavItems;
+    if (role === "spoc") return spocNavItems;
     if (role === "expert") return expertNavItems;
     if (role === "intern") return internNavItems;
     return studentNavItems;
   }, [role]);
 
   const bottomNavItems = useMemo(() => {
-    if (role === "admin" || role === "spoc") return adminBottomNavItems;
+    if (role === "admin") return adminBottomNavItems;
+    if (role === "spoc") return spocBottomNavItems;
     if (role === "expert") return expertBottomNavItems;
     if (role === "intern") return internBottomNavItems;
     return studentBottomNavItems;
