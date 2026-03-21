@@ -473,6 +473,9 @@ const AdminDashboard = () => {
 
               {/* ─── TRAINING ─── */}
               {activeTab === "training" && <div className="max-w-3xl"><TrainingModuleManager /></div>}
+
+              {/* ─── ANALYTICS ─── */}
+              {activeTab === "analytics" && <div className="max-w-5xl"><AnalyticsDashboard /></div>}
             </>
           )}
         </div>
