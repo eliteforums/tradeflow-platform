@@ -75,13 +75,13 @@ const MobileDashboard = () => {
     { icon: Box, title: "BlackBox", desc: "Express anonymously", path: "/dashboard/blackbox", gradient: "from-violet-500 to-purple-500" },
   ];
 
-  const wellnessPortals = [
+  const selfHelpTools = [
     { icon: Music, title: "Sound Therapy", desc: "Meditate & relax", path: "/dashboard/sound-therapy", gradient: "from-cyan-500 to-blue-500" },
+    { icon: Award, title: "Quest Cards", desc: "Daily wellbeing quests", path: "/dashboard/self-help", gradient: "from-amber-400 to-orange-500" },
+    { icon: Sparkles, title: "Wreck Buddy", desc: "Release stress", path: "/dashboard/self-help", gradient: "from-pink-400 to-rose-500" },
   ];
 
   const quickTools = [
-    { name: "Quest Cards", icon: Award, path: "/dashboard/self-help", color: "text-amber-400" },
-    { name: "Wreck Buddy", icon: Sparkles, path: "/dashboard/self-help", color: "text-pink-400" },
     { name: "Tibetan Bowl", icon: Music, path: "/dashboard/self-help", color: "text-violet-400" },
     { name: "Wallet", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
   ];
