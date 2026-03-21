@@ -1,39 +1,74 @@
 
 
-## Plan: Fix SPOC → Admin Redirect + Intern Dashboard Alignment
+## Plan: Enhance Intern Training Modules + BlackBox Voice-Only
 
-### Problem 1: SPOC users see Admin Dashboard
-**Root cause**: In `src/pages/dashboard/Dashboard.tsx` line 32, SPOC users are redirected to `/admin` instead of `/dashboard/spoc`:
+### Current Issues
+1. **Intern Dashboard training modules** exist but are shallow — clicking "Start" just marks a module complete instantly. There's no actual training content (descriptions, learning objectives, quiz questions). The PRD specifies a 7-day timeline with assessments.
+2. **BlackBox** already uses voice-only (`webcamEnabled: false`) in both desktop and mobile. However, the `VideoCallModal` component still supports `mode="video"` and the `MeetingControls` component still shows a webcam toggle button. Per the PRD, BlackBox should be strictly audio-only.
+
+### Changes
+
+#### 1. Intern Training — Add Real Module Content (2 files)
+**Files**: `src/components/intern/InternDashboardContent.tsx`, `src/components/mobile/MobileInternDashboard.tsx`
+
+- Expand each of the 7 training modules with:
+  - **Learning objectives** (2-3 bullet points per module)
+  - **Content sections** with descriptive text explaining the topic
+  - **Assessment quizzes** for Day 1, Day 3, and Day 6 modules (multiple-choice questions the intern must answer correctly to proceed)
+  - **Day 7**: Show "Interview Pending" state with info that an expert will conduct the live evaluation
+- Add a module detail view — clicking "Start" opens an expanded view within the training tab showing the module content, and a "Complete Module" button at the bottom
+- For assessment modules (Day 1, 3, 6): show quiz questions that must be answered before marking complete
+- Lock progression: can only start the next module after completing the previous one (already implemented)
+- Match PRD training status enum: `NOT_STARTED` → `IN_PROGRESS` → `ASSESSMENT_PENDING` → `INTERVIEW_PENDING` → `ACTIVE`
+
+#### 2. BlackBox — Enforce Voice-Only (3 files)
+**Files**: `src/components/videosdk/MeetingControls.tsx`, `src/components/videosdk/VideoCallModal.tsx`, `src/components/videosdk/ParticipantView.tsx`
+
+- **MeetingControls.tsx**: Add an `audioOnly` prop. When true, hide the webcam toggle button entirely. Pass this from BlackBox usage.
+- **MeetingView.tsx**: Accept and forward the `audioOnly` prop to `MeetingControls`.
+- **VideoCallModal.tsx**: When `mode="audio"`, pass `audioOnly={true}` to MeetingView so webcam toggle is hidden.
+- **ParticipantView.tsx**: When in audio-only mode, never render the VideoPlayer — always show the avatar circle. Hide the video on/off indicator.
+
+#### 3. Wire audioOnly through the component tree (1 file)
+**File**: `src/components/videosdk/MeetingView.tsx`
+
+- Accept `audioOnly?: boolean` prop, forward to `MeetingControls` and `ParticipantView`.
+
+### Technical Details
+
+**Training Module Content Structure**:
 ```typescript
-if (profile?.role === "admin" || profile?.role === "spoc") return <Navigate to="/admin" replace />;
+const TRAINING_MODULES = [
+  {
+    day: 1,
+    title: "Intro Module + Assessment",
+    description: "...",
+    duration: "45 min",
+    objectives: ["Understand Eternia's mission", "Learn platform navigation", "Complete intro assessment"],
+    content: "Detailed module content...",
+    hasQuiz: true,
+    quizQuestions: [
+      { question: "...", options: ["A", "B", "C", "D"], correctIndex: 2 }
+    ]
+  },
+  // ... remaining modules
+];
 ```
 
-**Fix**: Split the redirect so SPOC goes to `/dashboard/spoc`:
-```typescript
-if (profile?.role === "admin") return <Navigate to="/admin" replace />;
-if (profile?.role === "spoc") return <Navigate to="/dashboard/spoc" replace />;
+**Audio-only prop flow**:
+```
+VideoCallModal (mode="audio") 
+  → MeetingProvider (webcamEnabled: false)
+    → MeetingView (audioOnly={true})
+      → ParticipantView (audioOnly={true}) — no video player
+      → MeetingControls (audioOnly={true}) — no webcam button
 ```
 
-Also fix the same issue in `MobileDashboard` if it has the same redirect pattern.
-
-### Problem 2: Intern Training Status Enum
-Per the doc (Section 19), the training status enum should be: `NOT_STARTED`, `IN_PROGRESS`, `ASSESSMENT_PENDING`, `FAILED`, `INTERVIEW_PENDING`, `ACTIVE`. Currently the code uses `not_started`, `in_progress`, `completed`.
-
-**Fix**: Update both `InternDashboardContent.tsx` and `MobileInternDashboard.tsx`:
-- Change `"completed"` checks to `"active"` (matching doc's final state)
-- When all 7 modules are done, set `training_status` to `"interview_pending"` (not auto-complete — Day 7 is a live interview that needs expert approval)
-- Update the training timeline to match the doc: Day 1 (Intro + Assessment), Day 2-3 (Core Training), Day 3 (Assessment), Day 4-5 (Advanced), Day 6 (Final Assessment), Day 7 (Final Interview)
-
-### Problem 3: SPOC sidebar nav items
-All SPOC nav items in `DashboardLayout.tsx` point to `/dashboard/spoc` — they should use query params or state to switch tabs within SPOCDashboardContent.
-
-**Fix**: Use URL search params (`?tab=onboarding`, `?tab=flags`, etc.) so sidebar clicks navigate to the correct SPOC tab.
-
-### Files to change (5 files)
-1. `src/pages/dashboard/Dashboard.tsx` — Fix SPOC redirect from `/admin` to `/dashboard/spoc`
-2. `src/components/mobile/MobileDashboard.tsx` — Same redirect fix if applicable
-3. `src/components/layout/DashboardLayout.tsx` — Update SPOC nav items with `?tab=` query params
-4. `src/components/intern/InternDashboardContent.tsx` — Align training status enum and timeline with doc
-5. `src/components/mobile/MobileInternDashboard.tsx` — Same training status/timeline alignment
-6. `src/components/spoc/SPOCDashboardContent.tsx` — Read `?tab=` from URL to set initial active tab
+### Files to Change (6 files)
+1. `src/components/intern/InternDashboardContent.tsx` — Add module content, quizzes, expanded view
+2. `src/components/mobile/MobileInternDashboard.tsx` — Same module content for mobile
+3. `src/components/videosdk/MeetingControls.tsx` — Add `audioOnly` prop, hide webcam button
+4. `src/components/videosdk/MeetingView.tsx` — Forward `audioOnly` prop
+5. `src/components/videosdk/ParticipantView.tsx` — Add `audioOnly` prop, skip video rendering
+6. `src/components/videosdk/VideoCallModal.tsx` — Pass `audioOnly` when mode is audio
 
