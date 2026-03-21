@@ -109,7 +109,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const isCreditsPage = location.pathname === "/dashboard/credits";
 
   const navItems = useMemo(() => {
-    if (role === "admin" || role === "spoc") return adminNavItems;
+    if (role === "admin") return adminNavItems;
+    if (role === "spoc") return spocNavItems;
     if (role === "expert") return expertNavItems;
     if (role === "intern") return internNavItems;
     return studentNavItems;
