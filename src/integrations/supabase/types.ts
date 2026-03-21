@@ -427,6 +427,7 @@ export type Database = {
           credits_pool: number
           eternia_code_hash: string
           id: string
+          institution_type: string
           is_active: boolean
           name: string
           plan_type: string
@@ -437,6 +438,7 @@ export type Database = {
           credits_pool?: number
           eternia_code_hash: string
           id?: string
+          institution_type?: string
           is_active?: boolean
           name: string
           plan_type?: string
@@ -447,6 +449,7 @@ export type Database = {
           credits_pool?: number
           eternia_code_hash?: string
           id?: string
+          institution_type?: string
           is_active?: boolean
           name?: string
           plan_type?: string
@@ -752,34 +755,46 @@ export type Database = {
       }
       user_private: {
         Row: {
+          apaar_id_encrypted: string | null
+          apaar_verified: boolean | null
           contact_is_self: boolean | null
           created_at: string
           device_id_encrypted: string | null
           emergency_name_encrypted: string | null
           emergency_phone_encrypted: string | null
           emergency_relation: string | null
+          erp_id_encrypted: string | null
+          erp_verified: boolean | null
           student_id_encrypted: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          apaar_id_encrypted?: string | null
+          apaar_verified?: boolean | null
           contact_is_self?: boolean | null
           created_at?: string
           device_id_encrypted?: string | null
           emergency_name_encrypted?: string | null
           emergency_phone_encrypted?: string | null
           emergency_relation?: string | null
+          erp_id_encrypted?: string | null
+          erp_verified?: boolean | null
           student_id_encrypted?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          apaar_id_encrypted?: string | null
+          apaar_verified?: boolean | null
           contact_is_self?: boolean | null
           created_at?: string
           device_id_encrypted?: string | null
           emergency_name_encrypted?: string | null
           emergency_phone_encrypted?: string | null
           emergency_relation?: string | null
+          erp_id_encrypted?: string | null
+          erp_verified?: boolean | null
           student_id_encrypted?: string | null
           updated_at?: string
           user_id?: string
