@@ -56,8 +56,8 @@ const FeaturesSection = () => {
                 className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br ${service.gradient} flex items-center justify-center cursor-pointer shadow-lg transition-shadow duration-300`}
                 style={{
                   boxShadow: hoveredIndex === index
-                    ? "0 0 30px 8px hsl(174 62% 47% / 0.2)"
-                    : "0 4px 20px -4px rgba(0,0,0,0.3)",
+                    ? "0 0 30px 8px hsl(166 72% 46% / 0.15)"
+                    : "0 4px 20px -4px rgba(0,0,0,0.1)",
                 }}
               >
                 <service.icon className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-md" />
