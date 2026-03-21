@@ -110,6 +110,52 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchQueue]);
 
+  // Real-time session assignment listener (for L3 host-swap)
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("session-assignment")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "blackbox_sessions",
+          filter: `therapist_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          const updated = payload.new as any;
+          // If we're being assigned an active session we didn't create
+          if (
+            (updated.status === "active") &&
+            updated.room_id &&
+            !activeSession
+          ) {
+            toast.info("You've been assigned an escalated session!", {
+              description: "A student needs immediate support.",
+              action: {
+                label: "Accept",
+                onClick: async () => {
+                  try {
+                    const t = await getVideoSDKToken();
+                    setToken(t);
+                    setActiveSession(updated);
+                    setActiveTab("session");
+                  } catch (err: any) {
+                    toast.error(err.message || "Failed to join session");
+                  }
+                },
+              },
+              duration: 30000,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchQueue]);
+
   // Check for existing active session
   useEffect(() => {
     if (!user) return;
