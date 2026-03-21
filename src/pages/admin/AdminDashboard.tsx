@@ -85,18 +85,6 @@ const AdminDashboard = () => {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const { isAdmin, isSuperAdmin, members, stats, appointments, peerSessions, flaggedEntries, blackboxSessions, institutions, isLoading } = useAdmin();
-
-  if (isMobile) return <MobileAdminDashboard />;
-
-  if (!isAdmin) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="flex flex-col items-center justify-center h-64">
-        <Shield className="w-12 h-12 text-muted-foreground mb-3" />
-        <h2 className="text-lg font-semibold">Access Denied</h2>
-      </div>
-    </div>
-  );
-
   // Members filtering
   const filteredMembers = useMemo(() => {
     let filtered = members;
