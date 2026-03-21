@@ -139,11 +139,10 @@ const InternDashboardContent = () => {
   const currentModule = activeModule !== null ? trainingModules.find(m => m.day_number === activeModule) : null;
 
   const handleCompleteModule = async (mod: TrainingModule) => {
-    if (mod.hasQuiz && mod.quizQuestions.length > 0) {
-      const allCorrect = mod.quizQuestions.every((q, i) => quizAnswers[i] === q.correctIndex);
+    if (mod.has_quiz && mod.quiz_questions.length > 0) {
+      const allCorrect = mod.quiz_questions.every((q, i) => quizAnswers[i] === q.correctIndex);
       if (!allCorrect) {
-        // Day 3 & 6 are assessments — failing them sets status to "failed"
-        if (mod.day === 3 || mod.day === 6) {
+        if (mod.day_number === 3 || mod.day_number === 6) {
           if (user) {
             await supabase.from("profiles").update({ training_status: "failed" }).eq("id", user.id);
           }
@@ -153,24 +152,20 @@ const InternDashboardContent = () => {
         }
         return;
       }
-      // Day 3 passed = assessment_pending resolved; Day 6 passed = ready for interview
-      if (mod.day === 3 || mod.day === 6) {
-        // Assessment passed
-      }
     }
-    const newModules = [...completedModules, mod.day];
+    const newModules = [...completedModules, mod.day_number];
     setCompletedModules(newModules);
     if (user) {
       let newStatus = "in_progress";
-      if (mod.day === 3) newStatus = "assessment_pending";
-      else if (newModules.length >= TRAINING_MODULES.length) newStatus = "interview_pending";
-      else if (mod.day === 6) newStatus = "interview_pending";
+      if (mod.day_number === 3) newStatus = "assessment_pending";
+      else if (newModules.length >= trainingModules.length) newStatus = "interview_pending";
+      else if (mod.day_number === 6) newStatus = "interview_pending";
       await supabase.from("profiles").update({ training_progress: newModules, training_status: newStatus }).eq("id", user.id);
     }
     setActiveModule(null);
     setQuizAnswers({});
     setQuizSubmitted(false);
-    toast.success(`Day ${mod.day} completed!`);
+    toast.success(`Day ${mod.day_number} completed!`);
   };
 
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></DashboardLayout>;
