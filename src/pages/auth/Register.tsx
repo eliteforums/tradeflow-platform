@@ -27,6 +27,18 @@ const Register = () => {
   const [acceptedConsent, setAcceptedConsent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [institutionType, setInstitutionType] = useState<string>("university");
+
+  // Detect institution type on mount
+  useState(() => {
+    const instId = sessionStorage.getItem("eternia_institution_id");
+    if (instId) {
+      supabase.from("institutions").select("institution_type").eq("id", instId).single()
+        .then(({ data }) => {
+          if (data?.institution_type) setInstitutionType(data.institution_type);
+        });
+    }
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
