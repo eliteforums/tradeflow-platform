@@ -123,6 +123,17 @@ const AdminDashboard = () => {
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [appointments, peerSessions, blackboxSessions, sessionFilter]);
 
+  if (isMobile) return <MobileAdminDashboard />;
+
+  if (!isAdmin) return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex flex-col items-center justify-center h-64">
+        <Shield className="w-12 h-12 text-muted-foreground mb-3" />
+        <h2 className="text-lg font-semibold">Access Denied</h2>
+      </div>
+    </div>
+  );
+
   const roleCounts = {
     admin: members.filter(m => m.role === "admin").length,
     spoc: members.filter(m => m.role === "spoc").length,
