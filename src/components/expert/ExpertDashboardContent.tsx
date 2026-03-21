@@ -346,9 +346,16 @@ const ExpertDashboardContent = () => {
                             : <Phone className="w-5 h-5 text-white" />
                         }
                       </div>
-                      <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-semibold text-sm truncate">{apt.student?.username || "Student"}</p>
+                          {studentRiskMap[apt.student_id] && (
+                            <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-medium",
+                              studentRiskMap[apt.student_id] >= 3 ? "bg-destructive/10 text-destructive" : "bg-eternia-warning/10 text-eternia-warning"
+                            )}>
+                              AI Risk L{studentRiskMap[apt.student_id]}
+                            </span>
+                          )}
                           <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium",
                             apt.status === "completed" ? "bg-eternia-success/10 text-eternia-success"
                               : apt.status === "confirmed" ? "bg-primary/10 text-primary"
