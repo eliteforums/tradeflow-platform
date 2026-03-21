@@ -308,6 +308,13 @@ const MobileAdminDashboard = () => {
               <div><TrainingModuleManager /></div>
             )}
 
+            {/* ANALYTICS */}
+            {activeTab === "analytics" && (
+              <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+                <AnalyticsDashboard />
+              </Suspense>
+            )}
+
             {/* INSTITUTION DETAIL */}
             {activeTab === "institution-detail" && selectedInstitution && (
               <InstitutionDetailView
