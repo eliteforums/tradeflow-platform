@@ -20,6 +20,7 @@ import EscalationManager from "@/components/admin/EscalationManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
+import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 
 type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "institution-detail";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
