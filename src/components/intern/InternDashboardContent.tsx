@@ -85,7 +85,7 @@ const InternDashboardContent = () => {
   const isTrainingComplete = trainingStatus === "active" || trainingStatus === "completed";
   const isInterviewPending = trainingStatus === "interview_pending";
   const trainingProgress = isTrainingComplete ? 100 : isInterviewPending ? 95 : trainingModules.length > 0 ? (completedModules.length / trainingModules.length) * 100 : 0;
-  const lockedTabs: TabType[] = isTrainingComplete ? [] : ["sessions", "notes"];
+  const lockedTabs: TabType[] = isTrainingComplete ? [] : ["sessions", "notes", "profile"];
 
   const { data: mySessions = [], isLoading } = useQuery({
     queryKey: ["intern-sessions", user?.id],

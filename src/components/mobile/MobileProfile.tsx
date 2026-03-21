@@ -177,7 +177,7 @@ const MobileProfile = () => {
 
         {/* Emergency Contact */}
         <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
-          <h3 className="font-semibold text-sm flex items-center gap-2"><Phone className="w-4 h-4 text-destructive" />Emergency Contact</h3>
+          <h3 className="font-semibold text-sm flex items-center gap-2"><Phone className="w-4 h-4 text-primary" />Emergency Contact</h3>
           <p className="text-xs text-muted-foreground">Encrypted, only for escalation.</p>
 
           <div>

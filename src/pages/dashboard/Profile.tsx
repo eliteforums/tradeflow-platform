@@ -233,7 +233,7 @@ const Profile = () => {
         {/* Emergency Contact */}
         <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
           <h3 className="font-semibold font-display text-sm flex items-center gap-2">
-            <Phone className="w-4 h-4 text-destructive" />Emergency Contact
+            <Phone className="w-4 h-4 text-primary" />Emergency Contact
           </h3>
           <p className="text-xs text-muted-foreground">Encrypted and only accessible during escalation.</p>
 
