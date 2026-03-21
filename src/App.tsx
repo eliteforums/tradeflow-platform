@@ -63,6 +63,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <PWAUpdatePrompt />
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
             <Routes>
