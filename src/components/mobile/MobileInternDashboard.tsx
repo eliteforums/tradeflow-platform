@@ -54,8 +54,9 @@ const MobileInternDashboard = () => {
   const [notesSearch, setNotesSearch] = useState("");
 
   const trainingStatus = (profile as any)?.training_status || "not_started";
-  const isTrainingComplete = trainingStatus === "completed" || completedModules.length >= MODULES.length;
-  const progress = isTrainingComplete ? 100 : (completedModules.length / MODULES.length) * 100;
+  const isTrainingComplete = trainingStatus === "active" || trainingStatus === "completed";
+  const isInterviewPending = trainingStatus === "interview_pending";
+  const progress = isTrainingComplete ? 100 : isInterviewPending ? 95 : (completedModules.length / MODULES.length) * 100;
   const lockedTabs: TabType[] = isTrainingComplete ? [] : ["sessions", "notes"];
 
   const { data: mySessions = [], isLoading } = useQuery({
@@ -147,7 +148,7 @@ const MobileInternDashboard = () => {
                         const newModules = [...completedModules, m.day];
                         setCompletedModules(newModules);
                         if (user) {
-                          const newStatus = newModules.length >= MODULES.length ? "completed" : "in_progress";
+                          const newStatus = newModules.length >= MODULES.length ? "interview_pending" : "in_progress";
                           await supabase.from("profiles").update({ training_progress: newModules, training_status: newStatus }).eq("id", user.id);
                         }
                       }}><Play className="w-2.5 h-2.5" />Start</Button>}

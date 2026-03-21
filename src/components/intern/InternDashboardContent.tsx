@@ -65,8 +65,9 @@ const InternDashboardContent = () => {
 
   // training_status from DB
   const trainingStatus = (profile as any)?.training_status || "not_started";
-  const isTrainingComplete = trainingStatus === "completed" || completedModules.length >= TRAINING_MODULES.length;
-  const trainingProgress = isTrainingComplete ? 100 : (completedModules.length / TRAINING_MODULES.length) * 100;
+  const isTrainingComplete = trainingStatus === "active" || trainingStatus === "completed";
+  const isInterviewPending = trainingStatus === "interview_pending";
+  const trainingProgress = isTrainingComplete ? 100 : isInterviewPending ? 95 : (completedModules.length / TRAINING_MODULES.length) * 100;
 
   // Determine which tabs are locked
   const lockedTabs: TabType[] = isTrainingComplete ? [] : ["sessions", "notes"];
@@ -222,7 +223,7 @@ const InternDashboardContent = () => {
                           setCompletedModules(newModules);
                           // Persist to DB
                           if (user) {
-                            const newStatus = newModules.length >= TRAINING_MODULES.length ? "completed" : "in_progress";
+                            const newStatus = newModules.length >= TRAINING_MODULES.length ? "interview_pending" : "in_progress";
                             await supabase.from("profiles").update({ training_progress: newModules, training_status: newStatus }).eq("id", user.id);
                           }
                         }}>

@@ -44,9 +44,9 @@ const adminNavItems = [
 ];
 
 const spocNavItems = [
-  { icon: Home, label: "Home", path: "/dashboard/spoc" },
-  { icon: Users, label: "Onboarding", path: "/dashboard/spoc" },
-  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc" },
+  { icon: Home, label: "Home", path: "/dashboard/spoc?tab=home" },
+  { icon: Users, label: "Onboarding", path: "/dashboard/spoc?tab=onboarding" },
+  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc?tab=flags" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
@@ -77,8 +77,8 @@ const adminBottomNavItems = [
 ];
 
 const spocBottomNavItems = [
-  { icon: Home, label: "Home", path: "/dashboard/spoc" },
-  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc" },
+  { icon: Home, label: "Home", path: "/dashboard/spoc?tab=home" },
+  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc?tab=flags" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
@@ -132,6 +132,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const isActive = (path: string) => {
     if (path === "/dashboard") return location.pathname === "/dashboard";
+    // For paths with query params, match pathname + search
+    if (path.includes("?")) {
+      const [pathname, search] = path.split("?");
+      return location.pathname === pathname && location.search === `?${search}`;
+    }
     return location.pathname.startsWith(path);
   };
 
