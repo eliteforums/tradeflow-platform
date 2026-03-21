@@ -42,6 +42,13 @@ const adminNavItems = [
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
+const spocNavItems = [
+  { icon: Home, label: "Home", path: "/dashboard/spoc" },
+  { icon: Users, label: "Onboarding", path: "/dashboard/spoc" },
+  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
 const expertNavItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard/expert" },
   { icon: Headphones, label: "BlackBox Queue", path: "/dashboard/therapist" },
