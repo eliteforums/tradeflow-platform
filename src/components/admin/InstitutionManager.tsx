@@ -33,7 +33,12 @@ interface Institution {
   credits_pool: number;
   is_active: boolean;
   plan_type: string;
+  institution_type: string;
   created_at: string;
+}
+
+interface InstitutionManagerProps {
+  onSelectInstitution?: (inst: Institution) => void;
 }
 
 interface BulkMember {
