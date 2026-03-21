@@ -419,6 +419,13 @@ const AdminDashboard = () => {
                 <AccountDeletion />
               </div>
             )}
+
+            {/* ─── TRAINING ─── */}
+            {activeTab === "training" && (
+              <div className="max-w-3xl">
+                <TrainingModuleManager />
+              </div>
+            )}
           </>
         )}
       </div>

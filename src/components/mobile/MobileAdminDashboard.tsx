@@ -301,6 +301,11 @@ const MobileAdminDashboard = () => {
               </div>
             )}
 
+            {/* TRAINING */}
+            {activeTab === "training" && (
+              <div><TrainingModuleManager /></div>
+            )}
+
             {/* INSTITUTION DETAIL */}
             {activeTab === "institution-detail" && selectedInstitution && (
               <InstitutionDetailView
