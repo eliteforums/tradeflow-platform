@@ -307,34 +307,43 @@ export type Database = {
           admin_id: string | null
           created_at: string
           entry_id: string | null
+          escalation_level: number | null
           id: string
           justification_encrypted: string
           resolved_at: string | null
           session_id: string | null
           spoc_id: string
           status: string
+          trigger_snippet: string | null
+          trigger_timestamp: string | null
         }
         Insert: {
           admin_id?: string | null
           created_at?: string
           entry_id?: string | null
+          escalation_level?: number | null
           id?: string
           justification_encrypted: string
           resolved_at?: string | null
           session_id?: string | null
           spoc_id: string
           status?: string
+          trigger_snippet?: string | null
+          trigger_timestamp?: string | null
         }
         Update: {
           admin_id?: string | null
           created_at?: string
           entry_id?: string | null
+          escalation_level?: number | null
           id?: string
           justification_encrypted?: string
           resolved_at?: string | null
           session_id?: string | null
           spoc_id?: string
           status?: string
+          trigger_snippet?: string | null
+          trigger_timestamp?: string | null
         }
         Relationships: [
           {
@@ -548,6 +557,7 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
           specialty: string | null
           streak_days: number
+          student_id: string | null
           total_sessions: number
           training_progress: Json | null
           training_status: string
@@ -566,6 +576,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           specialty?: string | null
           streak_days?: number
+          student_id?: string | null
           total_sessions?: number
           training_progress?: Json | null
           training_status?: string
@@ -584,6 +595,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"]
           specialty?: string | null
           streak_days?: number
+          student_id?: string | null
           total_sessions?: number
           training_progress?: Json | null
           training_status?: string
