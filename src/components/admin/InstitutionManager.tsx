@@ -47,7 +47,7 @@ interface BulkMember {
   password: string;
 }
 
-const InstitutionManager = () => {
+const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {}) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState("");
