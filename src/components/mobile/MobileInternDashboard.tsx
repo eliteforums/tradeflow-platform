@@ -26,76 +26,17 @@ interface QuizQuestion {
 }
 
 interface TrainingModule {
-  day: number;
+  id: string;
+  day_number: number;
   title: string;
   description: string;
   duration: string;
   objectives: string[];
   content: string;
-  hasQuiz: boolean;
-  quizQuestions: QuizQuestion[];
+  has_quiz: boolean;
+  quiz_questions: QuizQuestion[];
+  is_active: boolean;
 }
-
-const trainingModules: TrainingModule[] = [
-  {
-    day: 1, title: "Platform Overview + Assessment", description: "Eternia's mission, tools & intro quiz", duration: "45 min",
-    objectives: ["Understand Eternia's mission and peer support role", "Navigate platform features", "Complete intro assessment"],
-    content: `Welcome to Eternia's Intern Training.\n\n**Your Role**\nAs a peer support intern, you are the first point of contact for students seeking anonymous support via PeerConnect.\n\n**Platform Features**\n• BlackBox — Anonymous journaling with AI monitoring\n• PeerConnect — Text chat between students and interns\n• SoundTherapy — Audio content for relaxation\n• Quests — Daily wellbeing activities earning ECC\n• Appointments — Professional expert sessions\n\n**Privacy**\nAll data is encrypted. You never see real identities.`,
-    hasQuiz: true,
-    quizQuestions: [
-      { question: "What is the primary purpose of BlackBox?", options: ["Scheduling appointments", "Anonymous journaling with AI monitoring", "Video calling", "Managing credits"], correctIndex: 1 },
-      { question: "When should you escalate a session?", options: ["When it's too long", "When you identify high-risk situations", "When bored", "When credits run out"], correctIndex: 1 },
-      { question: "What does ECC stand for?", options: ["Electronic Credit Currency", "Eternia Care Credits", "Emergency Contact Credits", "Eternia Credit Currency"], correctIndex: 3 },
-    ],
-  },
-  {
-    day: 2, title: "Active Listening", description: "Empathetic communication for text-based support", duration: "60 min",
-    objectives: ["Master active listening for text", "Practice reflective responses", "Manage emotional responses"],
-    content: `**Reflective Responding**\nMirror back what the student expressed.\nExample: "It sounds like you're feeling isolated."\n\n**Open-Ended Questions**\n✅ "Can you tell me more?"\n❌ "Are you sad?" (closed)\n\n**Validation**\nAcknowledge emotions without judgment.\n\n**Self-Care**\n• Take breaks between sessions\n• Use SoundTherapy\n• Talk to your supervisor about difficult cases`,
-    hasQuiz: false, quizQuestions: [],
-  },
-  {
-    day: 3, title: "Mid-Training Assessment", description: "Quiz on Days 1-2 material", duration: "30 min",
-    objectives: ["Demonstrate platform knowledge", "Apply active listening concepts", "Identify appropriate responses"],
-    content: `This assessment covers Days 1 and 2. You must pass to continue.\n\n**Review:**\n• Platform features & privacy\n• Active listening techniques\n• Reflective responding\n• Emotional validation`,
-    hasQuiz: true,
-    quizQuestions: [
-      { question: "Best response to 'Everything feels pointless'?", options: ["Don't worry!", "Reflect feelings and ask more", "Try exercising", "See a professional"], correctIndex: 1 },
-      { question: "Which violates privacy protocols?", options: ["Encrypted notes", "Escalating via SPOC", "Asking for real name", "Summarizing for supervisor"], correctIndex: 2 },
-      { question: "Feeling overwhelmed after a session?", options: ["Keep going", "Take a break and discuss with supervisor", "Post on social media", "Ignore it"], correctIndex: 1 },
-    ],
-  },
-  {
-    day: 4, title: "Crisis Recognition", description: "Identifying and escalating high-risk situations", duration: "60 min",
-    objectives: ["Recognize crisis indicators", "Understand escalation pathway", "Document escalations accurately"],
-    content: `**Red Flags for Escalation**\n• Self-harm or suicidal ideation\n• Abuse disclosures\n• Substance abuse\n• Severe panic or dissociation\n• Violence threats\n\n**Escalation Pathway**\n1. Click ⚠ escalation button\n2. Write clear justification\n3. Routes to institution SPOC\n4. SPOC reviews and forwards if needed\n5. Expert intervenes\n\n**Don't:**\n• Promise to fix things\n• Share personal crisis experiences\n• Attempt therapy\n• Disconnect abruptly`,
-    hasQuiz: false, quizQuestions: [],
-  },
-  {
-    day: 5, title: "Ethics & Boundaries", description: "Professional boundaries in peer support", duration: "45 min",
-    objectives: ["Understand ethical guidelines", "Maintain appropriate boundaries", "Navigate tricky situations"],
-    content: `**Core Ethics**\n1. Confidentiality — Never discuss sessions outside platform\n2. Non-Maleficence — Do no harm\n3. Competence — Stay within training\n4. Respect Autonomy — Support decisions\n\n**Boundaries**\n• Never share contact info\n• No personal relationships with students\n• 20-30 min session length\n• No gifts or favors\n• Recuse if you recognize someone\n\n**Dependency**\nIf students seek you specifically, redirect to other resources.`,
-    hasQuiz: false, quizQuestions: [],
-  },
-  {
-    day: 6, title: "Final Assessment", description: "Comprehensive evaluation of all modules", duration: "45 min",
-    objectives: ["Demonstrate mastery of all topics", "Apply to complex scenarios", "Prove readiness for interview"],
-    content: `Final written assessment covering all material.\n\n**Topics:**\n• Platform & privacy\n• Active listening\n• Crisis recognition & escalation\n• Ethics & boundaries\n• Session management`,
-    hasQuiz: true,
-    quizQuestions: [
-      { question: "Student discloses self-harm. Your response?", options: ["Tell them to stop", "Stay calm, validate, escalate immediately", "Ask for details", "End session"], correctIndex: 1 },
-      { question: "Student asks for your Instagram. What do you do?", options: ["Share it", "Politely decline and explain why", "Give fake account", "Report student"], correctIndex: 1 },
-      { question: "You recognize a student from class. Action?", options: ["Continue normally", "Mention you know them", "Recuse yourself and notify supervisor", "End without explanation"], correctIndex: 2 },
-      { question: "You feel triggered during a session. What to do?", options: ["Push through", "Share your experience", "Ensure student safety, take break, talk to supervisor", "End abruptly"], correctIndex: 2 },
-    ],
-  },
-  {
-    day: 7, title: "Final Interview", description: "Live evaluation with supervising expert", duration: "30 min",
-    objectives: ["Demonstrate live communication skills", "Handle real-time pressure", "Receive feedback and certification"],
-    content: `Congratulations on completing all modules! 🎉\n\n**What to Expect**\nA live conversation with a supervising expert who will:\n• Present realistic scenarios\n• Evaluate response quality\n• Assess communication and boundaries\n• Provide feedback\n\n**After Interview**\n• Pass → Status updated to ACTIVE\n• Needs improvement → Specific feedback provided\n\nThis cannot be self-completed. An expert will schedule it.`,
-    hasQuiz: false, quizQuestions: [],
-  },
-];
 
 const MobileInternDashboard = () => {
   const { user, profile, signOut } = useAuth();
