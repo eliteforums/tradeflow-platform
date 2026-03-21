@@ -593,6 +593,7 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          deletion_requested_at: string | null
           id: string
           institution_id: string | null
           is_active: boolean
@@ -612,6 +613,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          deletion_requested_at?: string | null
           id: string
           institution_id?: string | null
           is_active?: boolean
@@ -631,6 +633,7 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          deletion_requested_at?: string | null
           id?: string
           institution_id?: string | null
           is_active?: boolean
