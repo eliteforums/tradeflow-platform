@@ -106,6 +106,30 @@ const ExpertDashboardContent = () => {
     },
   });
 
+  // AI risk: fetch blackbox entries with flag levels for students in upcoming appointments
+  const studentIds = useMemo(() => [...new Set(myAppointments.filter(a => a.status !== "completed" && a.status !== "cancelled").map((a: any) => a.student_id))], [myAppointments]);
+  const { data: studentRiskMap = {} } = useQuery({
+    queryKey: ["expert-student-risk", studentIds],
+    queryFn: async () => {
+      if (studentIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("blackbox_entries")
+        .select("user_id, ai_flag_level")
+        .in("user_id", studentIds)
+        .gt("ai_flag_level", 0)
+        .order("ai_flag_level", { ascending: false });
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      (data || []).forEach((e: any) => {
+        if (!map[e.user_id] || e.ai_flag_level > map[e.user_id]) {
+          map[e.user_id] = e.ai_flag_level;
+        }
+      });
+      return map;
+    },
+    enabled: studentIds.length > 0,
+  });
+
   // Mutations
   const createSlot = useMutation({
     mutationFn: async () => {
