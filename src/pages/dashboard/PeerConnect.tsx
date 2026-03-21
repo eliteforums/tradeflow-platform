@@ -26,7 +26,7 @@ const PeerConnect = () => {
   // Gate: Interns must complete training before accessing Peer Connect
   const isIntern = profile?.role === "intern";
   const trainingStatus = (profile as any)?.training_status || "not_started";
-  const isTrainingComplete = trainingStatus === "completed";
+  const isTrainingComplete = trainingStatus === "active" || trainingStatus === "completed";
 
   if (isIntern && !isTrainingComplete) {
     return (

@@ -764,6 +764,39 @@ const SPOCDashboardContent = () => {
               </div>
             </div>
           </div>
+
+          {/* M.Phil Override Records */}
+          <div className="p-4 rounded-2xl bg-card border border-border/50">
+            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-primary" />
+              M.Phil Override Records
+            </h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              Escalations where level was elevated (L2→L3) or sessions transferred to experts.
+            </p>
+            {escalations.filter((e: any) => e.escalation_level >= 3).length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">No override records found</p>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {escalations.filter((e: any) => e.escalation_level >= 3).map((esc: any) => (
+                  <div key={esc.id} className="p-3 rounded-xl bg-destructive/5 border border-destructive/20">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-destructive text-destructive-foreground">
+                        L{esc.escalation_level}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {format(new Date(esc.created_at), "MMM d, h:mm a")}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{esc.justification_encrypted}</p>
+                    {esc.trigger_snippet && (
+                      <p className="text-[10px] text-destructive mt-1 italic">"{esc.trigger_snippet}"</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

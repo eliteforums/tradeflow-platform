@@ -27,6 +27,18 @@ const Register = () => {
   const [acceptedConsent, setAcceptedConsent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [institutionType, setInstitutionType] = useState<string>("university");
+
+  // Detect institution type on mount
+  useState(() => {
+    const instId = sessionStorage.getItem("eternia_institution_id");
+    if (instId) {
+      supabase.from("institutions").select("institution_type").eq("id", instId).single()
+        .then(({ data }) => {
+          if (data?.institution_type) setInstitutionType(data.institution_type);
+        });
+    }
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -107,6 +119,7 @@ const Register = () => {
           console.warn("Device fingerprint generation failed:", e);
         }
 
+        const isSchool = institutionType === "school";
         await supabase.from("user_private").insert({
           user_id: userId,
           emergency_name_encrypted: formData.emergencyName,
@@ -115,6 +128,8 @@ const Register = () => {
           student_id_encrypted: formData.studentId,
           contact_is_self: formData.contactIsSelf,
           device_id_encrypted: deviceFingerprint || null,
+          apaar_id_encrypted: !isSchool ? formData.studentId : null,
+          erp_id_encrypted: isSchool ? formData.studentId : null,
         });
 
         if (institutionId) {
@@ -312,11 +327,13 @@ const Register = () => {
                 )}
 
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Student ID (APAAR / ABC / ERP)</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">
+                    {institutionType === "school" ? "ERP ID" : "Student ID (APAAR / ABC ID)"}
+                  </label>
                   <Input
                     type="text"
                     name="studentId"
-                    placeholder="Your institutional ID"
+                    placeholder={institutionType === "school" ? "Your ERP ID" : "Your APAAR / ABC ID"}
                     value={formData.studentId}
                     onChange={handleChange}
                     className="h-11 rounded-xl bg-card/50 border-border/40 text-sm"

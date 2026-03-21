@@ -460,14 +460,29 @@ const InternDashboardContent = () => {
     if (mod.hasQuiz && mod.quizQuestions.length > 0) {
       const allCorrect = mod.quizQuestions.every((q, i) => quizAnswers[i] === q.correctIndex);
       if (!allCorrect) {
-        toast.error("Some answers are incorrect. Please review and try again.");
+        // Day 3 & 6 are assessments — failing them sets status to "failed"
+        if (mod.day === 3 || mod.day === 6) {
+          if (user) {
+            await supabase.from("profiles").update({ training_status: "failed" }).eq("id", user.id);
+          }
+          toast.error("Assessment failed. Review the material and try again.");
+        } else {
+          toast.error("Some answers are incorrect. Please review and try again.");
+        }
         return;
+      }
+      // Day 3 passed = assessment_pending resolved; Day 6 passed = ready for interview
+      if (mod.day === 3 || mod.day === 6) {
+        // Assessment passed
       }
     }
     const newModules = [...completedModules, mod.day];
     setCompletedModules(newModules);
     if (user) {
-      const newStatus = newModules.length >= TRAINING_MODULES.length ? "interview_pending" : "in_progress";
+      let newStatus = "in_progress";
+      if (mod.day === 3) newStatus = "assessment_pending";
+      else if (newModules.length >= TRAINING_MODULES.length) newStatus = "interview_pending";
+      else if (mod.day === 6) newStatus = "interview_pending";
       await supabase.from("profiles").update({ training_progress: newModules, training_status: newStatus }).eq("id", user.id);
     }
     setActiveModule(null);
