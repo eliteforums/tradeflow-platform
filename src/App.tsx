@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
+import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 
 // Eagerly load landing + auth (first paint)
 import Landing from "./pages/Landing";
