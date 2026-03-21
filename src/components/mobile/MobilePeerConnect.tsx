@@ -95,6 +95,12 @@ const MobilePeerConnect = () => {
                     <div><h3 className="font-semibold text-sm">{selectedIntern.username}</h3><p className="text-xs text-muted-foreground">{selectedIntern.specialty || "General"}</p></div>
                   </div>
                   <div className="flex items-center gap-1">
+                    {isIntern && activeSessionId && (
+                      <Button variant="ghost" size="icon" className="h-10 w-10 text-eternia-warning" title="Flag session" disabled={isFlagging || activeSession?.is_flagged}
+                        onClick={() => flagSession({ sessionId: activeSessionId, reason: "Intern flagged during session" })}>
+                        <Flag className={`w-4 h-4 ${activeSession?.is_flagged ? "fill-current" : ""}`} />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setCallModal({ open: true, mode: "audio" })}><Phone className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setCallModal({ open: true, mode: "video" })}><Video className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive" onClick={() => { endSession(activeSessionId); setMobileView("list"); }}><X className="w-4 h-4" /></Button>

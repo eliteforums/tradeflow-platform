@@ -103,6 +103,7 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
         eternia_code_hash: code,
         credits_pool: parseInt(newCredits) || 5000,
         plan_type: newPlan,
+        institution_type: newType,
       });
       if (error) throw error;
       return code;

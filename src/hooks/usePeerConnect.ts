@@ -267,7 +267,9 @@ export function usePeerConnect() {
     requestSession: requestSession.mutate,
     sendMessage: sendMessage.mutate,
     endSession: endSession.mutate,
+    flagSession: flagSession.mutate,
     isRequesting: requestSession.isPending,
     isSending: sendMessage.isPending,
+    isFlagging: flagSession.isPending,
   };
 }
