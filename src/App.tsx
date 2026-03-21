@@ -8,6 +8,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
+import { CookieConsent } from "@/components/CookieConsent";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 // Eagerly load landing + auth (first paint)
 import Landing from "./pages/Landing";
