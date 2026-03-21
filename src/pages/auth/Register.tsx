@@ -327,11 +327,13 @@ const Register = () => {
                 )}
 
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Student ID (APAAR / ABC / ERP)</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">
+                    {institutionType === "school" ? "ERP ID" : "Student ID (APAAR / ABC ID)"}
+                  </label>
                   <Input
                     type="text"
                     name="studentId"
-                    placeholder="Your institutional ID"
+                    placeholder={institutionType === "school" ? "Your ERP ID" : "Your APAAR / ABC ID"}
                     value={formData.studentId}
                     onChange={handleChange}
                     className="h-11 rounded-xl bg-card/50 border-border/40 text-sm"

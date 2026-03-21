@@ -128,10 +128,10 @@ const Dashboard = () => {
         </div>
 
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 px-0.5">Wellness</p>
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-            {wellnessPortals.map((portal) => (
-              <Link key={portal.path} to={portal.path} className="group rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 px-0.5">Self-Help Tools</p>
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+            {selfHelpTools.map((portal) => (
+              <Link key={portal.title} to={portal.path} className="group rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all">
                 <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${portal.gradient} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
                   <portal.icon className="w-5 h-5 text-white" />
                 </div>
@@ -141,19 +141,6 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
-
-        <Link to="/dashboard/self-help" className="block rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all group">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 sm:w-6 h-5 sm:h-6 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm sm:text-[15px] font-semibold font-display">Self-Help & Wellbeing</h3>
-              <p className="text-[11px] sm:text-xs text-muted-foreground">Quest cards, breathing exercises & more</p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-          </div>
-        </Link>
 
         <div className="rounded-xl bg-muted/30 p-3.5 sm:p-4">
           <p className="text-xs text-muted-foreground leading-relaxed">

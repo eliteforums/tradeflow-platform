@@ -148,33 +148,21 @@ const MobileDashboard = () => {
           </div>
         </div>
 
-        {/* Wellness */}
+        {/* Self-Help Tools */}
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Wellness</p>
-          <div className="grid grid-cols-2 gap-3">
-            {wellnessPortals.map((p) => (
-              <Link key={p.path} to={p.path} className="rounded-2xl bg-card border border-border/40 p-4 active:scale-[0.97] transition-transform min-h-[44px]">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center mb-3`}>
-                  <p.icon className="w-5 h-5 text-white" />
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Self-Help Tools</p>
+          <div className="grid grid-cols-3 gap-3">
+            {selfHelpTools.map((p) => (
+              <Link key={p.title} to={p.path} className="rounded-2xl bg-card border border-border/40 p-3 active:scale-[0.97] transition-transform min-h-[44px]">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center mb-2`}>
+                  <p.icon className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="text-sm font-semibold font-display mb-0.5">{p.title}</h3>
-                <p className="text-xs text-muted-foreground leading-snug">{p.desc}</p>
+                <h3 className="text-xs font-semibold font-display mb-0.5">{p.title}</h3>
+                <p className="text-[10px] text-muted-foreground leading-snug">{p.desc}</p>
               </Link>
             ))}
           </div>
         </div>
-
-        {/* Self-Help Banner */}
-        <Link to="/dashboard/self-help" className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border/40 active:scale-[0.98] transition-transform min-h-[44px]">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold font-display">Self-Help & Wellbeing</h3>
-            <p className="text-xs text-muted-foreground">Quest cards, breathing & more</p>
-          </div>
-          <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-        </Link>
       </div>
     </DashboardLayout>
   );
