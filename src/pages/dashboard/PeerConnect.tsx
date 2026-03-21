@@ -1,7 +1,7 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobilePeerConnect from "@/components/mobile/MobilePeerConnect";
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, Search, Circle, Phone, Video, Send, X, Clock, Shield, Users, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { MessageCircle, Search, Circle, Phone, Video, Send, X, Clock, Shield, Users, Loader2, AlertCircle, ArrowLeft, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -18,7 +18,7 @@ const PeerConnect = () => {
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { interns, sessions, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, isRequesting, isSending } = usePeerConnect();
+  const { interns, sessions, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, flagSession, isRequesting, isSending, isFlagging } = usePeerConnect();
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
   useEffect(() => { if (activeSession && !activeSessionId) { setActiveSessionId(activeSession.id); setMobileView("chat"); } }, [activeSession, activeSessionId, setActiveSessionId]);
@@ -83,6 +83,12 @@ const PeerConnect = () => {
           <div className="p-4 border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center"><Users className="w-5 h-5 text-white" /></div><div><h3 className="font-semibold text-sm">{selectedIntern.username}</h3><p className="text-[11px] text-muted-foreground">{selectedIntern.specialty || "General Support"}</p></div></div>
             <div className="flex items-center gap-1">
+              {isIntern && activeSessionId && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-eternia-warning" title="Flag session for review" disabled={isFlagging || activeSession?.is_flagged}
+                  onClick={() => flagSession({ sessionId: activeSessionId, reason: "Intern flagged during session" })}>
+                  <Flag className={`w-4 h-4 ${activeSession?.is_flagged ? "fill-current" : ""}`} />
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCallModal({ open: true, mode: "audio" })}><Phone className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCallModal({ open: true, mode: "video" })}><Video className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleEndSession}><X className="w-4 h-4" /></Button>

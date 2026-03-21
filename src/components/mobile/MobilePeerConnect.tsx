@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, Search, Circle, Phone, Video, Send, X, Shield, Users, Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { MessageCircle, Search, Circle, Phone, Video, Send, X, Shield, Users, Loader2, AlertCircle, ArrowLeft, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -15,7 +15,8 @@ const MobilePeerConnect = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { user, profile, creditBalance } = useAuth();
-  const { interns, sessions, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, isRequesting, isSending } = usePeerConnect();
+  const { interns, sessions, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, flagSession, isRequesting, isSending, isFlagging } = usePeerConnect();
+  const isIntern = profile?.role === "intern";
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
   useEffect(() => { if (activeSession && !activeSessionId) { setActiveSessionId(activeSession.id); setMobileView("chat"); } }, [activeSession, activeSessionId, setActiveSessionId]);
@@ -94,6 +95,12 @@ const MobilePeerConnect = () => {
                     <div><h3 className="font-semibold text-sm">{selectedIntern.username}</h3><p className="text-xs text-muted-foreground">{selectedIntern.specialty || "General"}</p></div>
                   </div>
                   <div className="flex items-center gap-1">
+                    {isIntern && activeSessionId && (
+                      <Button variant="ghost" size="icon" className="h-10 w-10 text-eternia-warning" title="Flag session" disabled={isFlagging || activeSession?.is_flagged}
+                        onClick={() => flagSession({ sessionId: activeSessionId, reason: "Intern flagged during session" })}>
+                        <Flag className={`w-4 h-4 ${activeSession?.is_flagged ? "fill-current" : ""}`} />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setCallModal({ open: true, mode: "audio" })}><Phone className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setCallModal({ open: true, mode: "video" })}><Video className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive" onClick={() => { endSession(activeSessionId); setMobileView("list"); }}><X className="w-4 h-4" /></Button>
