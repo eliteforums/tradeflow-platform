@@ -7,9 +7,10 @@ import MeetingControls from "./MeetingControls";
 interface MeetingViewProps {
   meetingId: string;
   onMeetingLeave: () => void;
+  audioOnly?: boolean;
 }
 
-const MeetingView = ({ meetingId, onMeetingLeave }: MeetingViewProps) => {
+const MeetingView = ({ meetingId, onMeetingLeave, audioOnly = false }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
 
   const { join, participants } = useMeeting({
@@ -50,7 +51,6 @@ const MeetingView = ({ meetingId, onMeetingLeave }: MeetingViewProps) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Video grid */}
       <div className="flex-1 p-4 overflow-y-auto">
         <div
           className={`grid gap-4 h-full ${
@@ -65,13 +65,12 @@ const MeetingView = ({ meetingId, onMeetingLeave }: MeetingViewProps) => {
             <ParticipantView
               key={participantId}
               participantId={participantId}
+              audioOnly={audioOnly}
             />
           ))}
         </div>
       </div>
-
-      {/* Controls */}
-      <MeetingControls />
+      <MeetingControls audioOnly={audioOnly} />
     </div>
   );
 };
