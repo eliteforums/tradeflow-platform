@@ -132,11 +132,27 @@ const MobileDashboard = () => {
           </div>
         </div>
 
-        {/* Portals */}
+        {/* Connect */}
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Your Space</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Connect</p>
+          <div className="grid grid-cols-3 gap-3">
+            {connectPortals.map((p) => (
+              <Link key={p.path} to={p.path} className="rounded-2xl bg-card border border-border/40 p-3 active:scale-[0.97] transition-transform min-h-[44px]">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center mb-2`}>
+                  <p.icon className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="text-xs font-semibold font-display mb-0.5">{p.title}</h3>
+                <p className="text-[10px] text-muted-foreground leading-snug">{p.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Wellness */}
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Wellness</p>
           <div className="grid grid-cols-2 gap-3">
-            {portals.map((p) => (
+            {wellnessPortals.map((p) => (
               <Link key={p.path} to={p.path} className="rounded-2xl bg-card border border-border/40 p-4 active:scale-[0.97] transition-transform min-h-[44px]">
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${p.gradient} flex items-center justify-center mb-3`}>
                   <p.icon className="w-5 h-5 text-white" />

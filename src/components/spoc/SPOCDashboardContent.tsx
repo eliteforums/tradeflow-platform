@@ -617,12 +617,21 @@ const SPOCDashboardContent = () => {
                   const config = statusConfig[esc.status] || statusConfig.pending;
                   const StatusIcon = config.icon;
                   return (
-                    <div key={esc.id} className="p-3 rounded-xl bg-card border border-border/50">
+                    <div key={esc.id} className={`p-3 rounded-xl border ${esc.escalation_level === 3 ? "bg-destructive/5 border-destructive/30" : "bg-card border-border/50"}`}>
                       <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-medium flex items-center gap-1 ${config.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {config.label}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-medium flex items-center gap-1 ${config.color}`}>
+                            <StatusIcon className="w-3 h-3" />
+                            {config.label}
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                            esc.escalation_level === 3 ? "bg-destructive text-destructive-foreground"
+                              : esc.escalation_level === 2 ? "bg-eternia-warning/20 text-eternia-warning"
+                              : "bg-muted text-muted-foreground"
+                          }`}>
+                            L{esc.escalation_level || 1}
+                          </span>
+                        </div>
                         <span className="text-[10px] text-muted-foreground shrink-0">
                           {format(new Date(esc.created_at), "MMM d, h:mm a")}
                         </span>
@@ -630,6 +639,18 @@ const SPOCDashboardContent = () => {
                       <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg line-clamp-3">
                         {esc.justification_encrypted}
                       </p>
+                      {esc.trigger_snippet && (
+                        <div className="mt-2 p-2 rounded-lg bg-destructive/5 border border-destructive/10">
+                          <p className="text-[10px] font-medium text-destructive mb-0.5">Trigger Snippet</p>
+                          <p className="text-[11px] text-muted-foreground italic">"{esc.trigger_snippet}"</p>
+                        </div>
+                      )}
+                      {esc.escalation_level === 3 && (
+                        <div className="mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-2">
+                          <Phone className="w-3.5 h-3.5 text-destructive shrink-0" />
+                          <p className="text-[10px] font-medium text-destructive">L3 Critical — Emergency contact shared with assigned expert</p>
+                        </div>
+                      )}
                       {esc.resolved_at && (
                         <p className="text-[10px] text-muted-foreground mt-1.5">
                           Resolved {format(new Date(esc.resolved_at), "MMM d, h:mm a")}

@@ -185,7 +185,7 @@ const InstitutionManager = () => {
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold flex items-center gap-2">
           <Building2 className="w-4 h-4 text-primary" />
-          Institutions ({institutions.length})
+          Institutions / Schools ({institutions.length})
         </h2>
         <Button onClick={() => setShowForm(!showForm)} className="gap-1.5 h-8 text-xs" size="sm">
           <Plus className="w-3.5 h-3.5" />Add
