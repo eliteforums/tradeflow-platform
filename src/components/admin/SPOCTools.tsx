@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   QrCode, Coins, Users, Copy, Check, Loader2,
-  BarChart3, TrendingUp, Activity, UserPlus,
+  BarChart3, TrendingUp, Activity, UserPlus, RefreshCw,
 } from "lucide-react";
 
 const SPOCTools = () => {
@@ -16,9 +16,21 @@ const SPOCTools = () => {
   const [creditAmount, setCreditAmount] = useState("50");
   const [copiedQR, setCopiedQR] = useState(false);
 
-  const qrPayload = profile
-    ? `ETERNIA-SPOC-${profile.institution_id}-${user?.id}-${Date.now()}`
-    : "";
+  // Fetch HMAC-signed QR payload from edge function
+  const { data: qrData, isLoading: qrLoading, refetch: regenerateQR } = useQuery({
+    queryKey: ["spoc-qr", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
+      if (error) throw new Error(error.message || "Failed to generate QR");
+      if (data?.error) throw new Error(data.error);
+      return data as { qr_payload: string; expires_at: number };
+    },
+    enabled: !!user && profile?.role === "spoc",
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+
+  const qrPayload = qrData?.qr_payload || "";
+  const qrExpiresAt = qrData?.expires_at ? new Date(qrData.expires_at) : null;
 
   const { data: institutionStudents = [] } = useQuery({
     queryKey: ["institution-students", profile?.institution_id],
@@ -93,6 +105,10 @@ const SPOCTools = () => {
   });
 
   const copyQRCode = () => {
+    if (!qrPayload) {
+      toast.error("No QR code generated yet");
+      return;
+    }
     navigator.clipboard.writeText(qrPayload);
     setCopiedQR(true);
     toast.success("SPOC QR payload copied!");
@@ -139,17 +155,35 @@ const SPOCTools = () => {
         </p>
         <div className="p-3 rounded-xl bg-muted/30 border border-border text-center">
           <div className="w-24 h-24 mx-auto bg-card rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center mb-2">
-            <QrCode className="w-12 h-12 text-primary/60" />
+            {qrLoading ? (
+              <Loader2 className="w-8 h-8 text-primary/60 animate-spin" />
+            ) : (
+              <QrCode className="w-12 h-12 text-primary/60" />
+            )}
           </div>
-          <code className="text-[10px] font-mono text-muted-foreground break-all block mb-2">
-            {qrPayload.slice(0, 36)}...
-          </code>
-          <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={copyQRCode}>
-            {copiedQR ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-            Copy Code
-          </Button>
+          {qrPayload ? (
+            <code className="text-[10px] font-mono text-muted-foreground break-all block mb-2">
+              {qrPayload.slice(0, 48)}...
+            </code>
+          ) : (
+            <p className="text-[10px] text-muted-foreground mb-2">
+              {qrLoading ? "Generating..." : "Failed to generate. Click regenerate."}
+            </p>
+          )}
+          <div className="flex gap-2 justify-center">
+            <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={copyQRCode} disabled={!qrPayload}>
+              {copiedQR ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              Copy Code
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={() => regenerateQR()} disabled={qrLoading}>
+              <RefreshCw className={`w-3.5 h-3.5 ${qrLoading ? "animate-spin" : ""}`} />
+              Regenerate
+            </Button>
+          </div>
         </div>
-        <p className="text-[10px] text-muted-foreground">Valid for 24 hours.</p>
+        <p className="text-[10px] text-muted-foreground">
+          {qrExpiresAt ? `Expires: ${qrExpiresAt.toLocaleString()}` : "Valid for 24 hours after generation."}
+        </p>
       </div>
 
       {/* Bulk Credit Allocation */}
