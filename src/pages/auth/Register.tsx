@@ -119,6 +119,7 @@ const Register = () => {
           console.warn("Device fingerprint generation failed:", e);
         }
 
+        const isSchool = institutionType === "school";
         await supabase.from("user_private").insert({
           user_id: userId,
           emergency_name_encrypted: formData.emergencyName,
@@ -127,6 +128,8 @@ const Register = () => {
           student_id_encrypted: formData.studentId,
           contact_is_self: formData.contactIsSelf,
           device_id_encrypted: deviceFingerprint || null,
+          apaar_id_encrypted: !isSchool ? formData.studentId : null,
+          erp_id_encrypted: isSchool ? formData.studentId : null,
         });
 
         if (institutionId) {
