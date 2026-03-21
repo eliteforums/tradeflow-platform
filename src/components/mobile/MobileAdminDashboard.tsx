@@ -3,7 +3,7 @@ import {
   Users, Calendar, MessageCircle, AlertTriangle, Coins,
   Shield, Activity, BarChart3, Search, Loader2,
   UserPlus, Settings, Building2, Crown, Stethoscope,
-  GraduationCap, Zap, Eye, CheckCircle, Music, FileText,
+  GraduationCap, Zap, Eye, CheckCircle, Music, FileText, BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
