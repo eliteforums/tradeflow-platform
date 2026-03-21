@@ -75,10 +75,10 @@ const TrainingModuleManager = () => {
         title: mod.title,
         description: mod.description,
         duration: mod.duration,
-        objectives: mod.objectives,
+        objectives: mod.objectives as any,
         content: mod.content,
         has_quiz: mod.has_quiz,
-        quiz_questions: mod.quiz_questions,
+        quiz_questions: mod.quiz_questions as any,
         is_active: mod.is_active,
         updated_at: new Date().toISOString(),
       };
@@ -86,7 +86,7 @@ const TrainingModuleManager = () => {
         const { error } = await supabase.from("training_modules").update(payload).eq("id", mod.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("training_modules").insert(payload);
+        const { error } = await supabase.from("training_modules").insert(payload as any);
         if (error) throw error;
       }
     },
