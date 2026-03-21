@@ -267,6 +267,44 @@ export type Database = {
           },
         ]
       }
+      device_sessions: {
+        Row: {
+          created_at: string
+          device_id_hash: string
+          expires_at: string
+          id: string
+          refresh_token_hash: string
+          revoked: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id_hash: string
+          expires_at: string
+          id?: string
+          refresh_token_hash: string
+          revoked?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id_hash?: string
+          expires_at?: string
+          id?: string
+          refresh_token_hash?: string
+          revoked?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ecc_stability_pool: {
         Row: {
           balance: number
@@ -384,6 +422,7 @@ export type Database = {
           id: string
           institution_id: string | null
           is_booked: boolean
+          recurrence_rule: string | null
           start_time: string
         }
         Insert: {
@@ -393,6 +432,7 @@ export type Database = {
           id?: string
           institution_id?: string | null
           is_booked?: boolean
+          recurrence_rule?: string | null
           start_time: string
         }
         Update: {
@@ -402,6 +442,7 @@ export type Database = {
           id?: string
           institution_id?: string | null
           is_booked?: boolean
+          recurrence_rule?: string | null
           start_time?: string
         }
         Relationships: [
@@ -890,7 +931,7 @@ export type Database = {
       increment_play_count: { Args: { _track_id: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "student" | "intern" | "expert" | "spoc" | "admin"
+      app_role: "student" | "intern" | "expert" | "spoc" | "admin" | "therapist"
       appointment_status: "pending" | "confirmed" | "completed" | "cancelled"
       content_type: "text" | "voice"
       credit_type: "earn" | "spend" | "grant" | "purchase"
@@ -1022,7 +1063,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["student", "intern", "expert", "spoc", "admin"],
+      app_role: ["student", "intern", "expert", "spoc", "admin", "therapist"],
       appointment_status: ["pending", "confirmed", "completed", "cancelled"],
       content_type: ["text", "voice"],
       credit_type: ["earn", "spend", "grant", "purchase"],

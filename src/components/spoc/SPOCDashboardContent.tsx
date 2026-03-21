@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -117,6 +117,34 @@ const SPOCDashboardContent = () => {
       return data;
     },
   });
+
+  // Real-time escalation notifications
+  const [newEscalationCount, setNewEscalationCount] = useState(0);
+  useEffect(() => {
+    const channel = supabase
+      .channel("spoc-escalation-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "escalation_requests" },
+        (payload) => {
+          const newEsc = payload.new as any;
+          // Only notify if it's for this SPOC or their institution
+          if (newEsc.spoc_id === user?.id || (newEsc.status === "critical")) {
+            setNewEscalationCount((c) => c + 1);
+            toast.warning(
+              newEsc.status === "critical"
+                ? "🚨 Critical escalation: A student may need immediate support"
+                : "⚠️ A student in your institution may need support",
+              { duration: 8000 }
+            );
+            queryClient.invalidateQueries({ queryKey: ["spoc-escalations"] });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, queryClient]);
 
   const { data: flaggedEntries = [] } = useQuery({
     queryKey: ["spoc-flagged"],

@@ -269,10 +269,57 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
     }
 
     if (level >= 3) {
+      // L3 Host-Swap: Find M.Phil expert to take over
+      const { data: studentProfile } = await supabase
+        .from("profiles")
+        .select("institution_id")
+        .eq("id", activeSession.student_id)
+        .single();
+
+      if (studentProfile?.institution_id) {
+        // Find available M.Phil expert (specialty contains 'M.Phil')
+        const { data: mphilExperts } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("role", "expert")
+          .eq("is_active", true)
+          .ilike("specialty", "%M.Phil%")
+          .neq("id", user?.id || "")
+          .limit(1);
+
+        if (mphilExperts && mphilExperts.length > 0) {
+          // Reassign session to M.Phil expert (keep room_id so student stays connected)
+          await supabase
+            .from("blackbox_sessions")
+            .update({
+              therapist_id: mphilExperts[0].id,
+              flag_level: level,
+              escalation_reason: escalationReason,
+              escalation_history: updatedHistory,
+              status: "active", // Keep active for the new therapist
+            })
+            .eq("id", activeSession.id);
+
+          toast.warning("Critical escalation — session transferred to M.Phil expert");
+        } else {
+          // No M.Phil available, mark as escalated
+          await supabase
+            .from("blackbox_sessions")
+            .update({ status: "escalated" })
+            .eq("id", activeSession.id);
+          toast.warning("Critical escalation submitted — no M.Phil expert available, session escalated");
+        }
+      } else {
+        await supabase
+          .from("blackbox_sessions")
+          .update({ status: "escalated" })
+          .eq("id", activeSession.id);
+        toast.warning("Critical escalation submitted — session transferred");
+      }
+
       setActiveSession(null);
       setToken(null);
       setActiveTab("queue");
-      toast.warning("Critical escalation submitted — session transferred");
     } else {
       setActiveSession({ ...activeSession, flag_level: level, escalation_history: updatedHistory });
       toast.info(`Escalation level ${level} recorded`);
