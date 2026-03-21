@@ -104,14 +104,14 @@ supabase/
 |-------|---------|
 | `profiles` | User identity (username, role, institution, training_status) |
 | `user_private` | Encrypted PII (emergency contacts, student ID, device fingerprint) |
-| `user_roles` | RBAC role assignments (student, intern, expert, spoc, admin) |
+| `user_roles` | RBAC role assignments (student, intern, expert, therapist, spoc, admin) |
 | `institutions` | Partnered institutions with Eternia codes + credit pools |
 | `appointments` | Expert session bookings with slot reference |
-| `expert_availability` | Expert schedule slots per institution |
+| `expert_availability` | Expert schedule slots per institution (with recurrence_rule) |
 | `peer_sessions` | Peer Connect session records |
 | `peer_messages` | Encrypted chat messages (realtime-enabled) |
 | `blackbox_entries` | Anonymous emotional entries with AI flag levels (0–3) |
-| `blackbox_sessions` | Crisis intervention sessions (expert ↔ student) |
+| `blackbox_sessions` | Crisis intervention sessions (expert ↔ student, L3 host-swap) |
 | `credit_transactions` | ECC economy ledger (earn, spend, grant, purchase) |
 | `ecc_stability_pool` | Shared emergency credit pool per institution |
 | `training_modules` | DB-driven intern training content (managed by superadmin) |
@@ -119,8 +119,9 @@ supabase/
 | `quest_completions` | User quest completion records |
 | `sound_content` | Audio therapy tracks (stored in Supabase Storage) |
 | `recovery_credentials` | Fragment pairs + emoji pattern (write-only) |
-| `escalation_requests` | SPOC/admin escalation requests with justification |
+| `escalation_requests` | SPOC/admin escalation requests with justification (realtime-enabled) |
 | `audit_logs` | Immutable action log for compliance |
+| `device_sessions` | JWT rotation & multi-device management per user |
 
 ## 🔐 Onboarding Flow
 
