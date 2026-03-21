@@ -201,7 +201,14 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
         <div className="p-3 rounded-xl bg-card border border-primary/20 space-y-3">
           <p className="font-medium text-sm">New Institution</p>
           <Input placeholder="Institution Name" value={newName} onChange={(e) => setNewName(e.target.value)} className="h-9" />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Type</label>
+              <select value={newType} onChange={(e) => setNewType(e.target.value)} className="w-full h-9 rounded-md border border-border bg-background px-2 text-xs">
+                <option value="university">University</option>
+                <option value="school">School</option>
+              </select>
+            </div>
             <div>
               <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Plan</label>
               <select value={newPlan} onChange={(e) => setNewPlan(e.target.value)} className="w-full h-9 rounded-md border border-border bg-background px-2 text-xs">
