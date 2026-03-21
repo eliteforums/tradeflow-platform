@@ -28,8 +28,9 @@ import EscalationManager from "@/components/admin/EscalationManager";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
+import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -41,7 +42,10 @@ interface SidebarGroup {
 const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     label: "Analytics",
-    items: [{ id: "overview", label: "Overview", icon: BarChart3 }],
+    items: [
+      { id: "overview", label: "Overview", icon: BarChart3 },
+      { id: "analytics", label: "Site Analytics", icon: Eye },
+    ],
   },
   {
     label: "People",
@@ -470,6 +474,9 @@ const AdminDashboard = () => {
 
               {/* ─── TRAINING ─── */}
               {activeTab === "training" && <div className="max-w-3xl"><TrainingModuleManager /></div>}
+
+              {/* ─── ANALYTICS ─── */}
+              {activeTab === "analytics" && <div className="max-w-5xl"><AnalyticsDashboard /></div>}
             </>
           )}
         </div>

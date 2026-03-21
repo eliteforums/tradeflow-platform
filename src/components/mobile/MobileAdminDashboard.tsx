@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import {
   Users, Calendar, MessageCircle, AlertTriangle, Coins,
   Shield, Activity, BarChart3, Search, Loader2,
@@ -21,8 +21,9 @@ import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
+const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard"));
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail" | "analytics";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -95,6 +96,7 @@ const MobileAdminDashboard = () => {
 
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: "overview", label: "Overview", icon: BarChart3 },
+    { id: "analytics", label: "Analytics", icon: Eye },
     { id: "members", label: "Members", icon: Users },
     { id: "sessions", label: "Sessions", icon: Calendar },
     { id: "spoc", label: "SPOC", icon: Building2 },
@@ -304,6 +306,13 @@ const MobileAdminDashboard = () => {
             {/* TRAINING */}
             {activeTab === "training" && (
               <div><TrainingModuleManager /></div>
+            )}
+
+            {/* ANALYTICS */}
+            {activeTab === "analytics" && (
+              <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+                <AnalyticsDashboard />
+              </Suspense>
             )}
 
             {/* INSTITUTION DETAIL */}

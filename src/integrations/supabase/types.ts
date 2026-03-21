@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_events: {
+        Row: {
+          country: string | null
+          created_at: string
+          event_type: string
+          id: string
+          page_path: string
+          referrer: string | null
+          screen_size: string | null
+          session_hash: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          page_path: string
+          referrer?: string | null
+          screen_size?: string | null
+          session_hash: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          page_path?: string
+          referrer?: string | null
+          screen_size?: string | null
+          session_hash?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           completed_at: string | null
@@ -592,6 +631,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          cookie_consent: string
           created_at: string
           deletion_requested_at: string | null
           id: string
@@ -612,6 +652,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          cookie_consent?: string
           created_at?: string
           deletion_requested_at?: string | null
           id: string
@@ -632,6 +673,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          cookie_consent?: string
           created_at?: string
           deletion_requested_at?: string | null
           id?: string
