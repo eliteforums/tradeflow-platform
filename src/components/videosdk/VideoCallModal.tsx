@@ -28,10 +28,11 @@ const VideoCallModal = ({
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const isAudioOnly = mode === "audio";
+
   const startCall = useCallback(async () => {
     setIsLoading(true);
     try {
-      // If we have an appointmentId, check if a room already exists for this appointment
       if (appointmentId) {
         const { data: apt } = await supabase
           .from("appointments")
@@ -40,14 +41,12 @@ const VideoCallModal = ({
           .single();
 
         if (apt?.room_id) {
-          // Room already exists — join it
           const t = await getVideoSDKToken();
           setToken(t);
           setMeetingId(apt.room_id);
           return;
         }
 
-        // No room yet — create one and save it to the appointment
         const { token: t, roomId } = await createVideoSDKRoom();
         await supabase
           .from("appointments")
@@ -59,7 +58,6 @@ const VideoCallModal = ({
         return;
       }
 
-      // Fallback: use existingRoomId or create a standalone room
       if (existingRoomId) {
         const t = await getVideoSDKToken();
         setToken(t);
@@ -94,13 +92,13 @@ const VideoCallModal = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">
-            {mode === "video" ? (
-              <Video className="w-5 h-5 text-primary" />
-            ) : (
+            {isAudioOnly ? (
               <Phone className="w-5 h-5 text-primary" />
+            ) : (
+              <Video className="w-5 h-5 text-primary" />
             )}
             <span className="font-semibold font-display">
-              {mode === "video" ? "Video" : "Audio"} Session
+              {isAudioOnly ? "Audio" : "Video"} Session
             </span>
             {meetingId && (
               <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
@@ -118,10 +116,10 @@ const VideoCallModal = ({
           {!token || !meetingId ? (
             <div className="flex flex-col items-center justify-center h-full gap-6">
               <div className="w-24 h-24 rounded-full bg-gradient-eternia flex items-center justify-center">
-                {mode === "video" ? (
-                  <Video className="w-12 h-12 text-primary-foreground" />
-                ) : (
+                {isAudioOnly ? (
                   <Phone className="w-12 h-12 text-primary-foreground" />
+                ) : (
+                  <Video className="w-12 h-12 text-primary-foreground" />
                 )}
               </div>
               <div className="text-center">
@@ -129,7 +127,7 @@ const VideoCallModal = ({
                   Ready to connect?
                 </h3>
                 <p className="text-muted-foreground text-sm">
-                  Start a secure, anonymous {mode} session
+                  Start a secure, anonymous {isAudioOnly ? "audio" : "video"} session
                 </p>
               </div>
               <Button
@@ -143,7 +141,7 @@ const VideoCallModal = ({
                     Connecting...
                   </>
                 ) : (
-                  `Start ${mode === "video" ? "Video" : "Audio"} Call`
+                  `Start ${isAudioOnly ? "Audio" : "Video"} Call`
                 )}
               </Button>
             </div>
@@ -152,13 +150,17 @@ const VideoCallModal = ({
               config={{
                 meetingId,
                 micEnabled: true,
-                webcamEnabled: mode === "video",
+                webcamEnabled: !isAudioOnly,
                 name: participantName,
                 debugMode: false,
               }}
               token={token}
             >
-              <MeetingView meetingId={meetingId} onMeetingLeave={handleLeave} />
+              <MeetingView
+                meetingId={meetingId}
+                onMeetingLeave={handleLeave}
+                audioOnly={isAudioOnly}
+              />
             </MeetingProvider>
           )}
         </div>

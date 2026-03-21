@@ -4,9 +4,10 @@ import { Mic, MicOff, Video, VideoOff } from "lucide-react";
 
 interface ParticipantViewProps {
   participantId: string;
+  audioOnly?: boolean;
 }
 
-const ParticipantView = ({ participantId }: ParticipantViewProps) => {
+const ParticipantView = ({ participantId, audioOnly = false }: ParticipantViewProps) => {
   const micRef = useRef<HTMLAudioElement>(null);
   const { micStream, webcamOn, micOn, isLocal, displayName } =
     useParticipant(participantId);
@@ -19,18 +20,18 @@ const ParticipantView = ({ participantId }: ParticipantViewProps) => {
         micRef.current.srcObject = mediaStream;
         micRef.current
           .play()
-          .catch((error) =>
-            console.error("Audio play failed", error)
-          );
+          .catch((error) => console.error("Audio play failed", error));
       } else {
         micRef.current.srcObject = null;
       }
     }
   }, [micStream, micOn]);
 
+  const showVideo = !audioOnly && webcamOn;
+
   return (
     <div className="relative rounded-2xl overflow-hidden bg-muted border border-border">
-      {webcamOn ? (
+      {showVideo ? (
         <VideoPlayer
           participantId={participantId}
           type="video"
@@ -65,10 +66,12 @@ const ParticipantView = ({ participantId }: ParticipantViewProps) => {
             ) : (
               <MicOff className="w-4 h-4 text-destructive" />
             )}
-            {webcamOn ? (
-              <Video className="w-4 h-4 text-primary" />
-            ) : (
-              <VideoOff className="w-4 h-4 text-destructive" />
+            {!audioOnly && (
+              webcamOn ? (
+                <Video className="w-4 h-4 text-primary" />
+              ) : (
+                <VideoOff className="w-4 h-4 text-destructive" />
+              )
             )}
           </div>
         </div>
