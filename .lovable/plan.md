@@ -1,71 +1,73 @@
 
 
-## Plan: Remaining PRD v2-23 + CR v1.4 Gaps Implementation
+## Plan: Bigger QR Code + Scalability + Deep SEO
 
-After comparing both documents against the current codebase, most features are already implemented. Here are the remaining actionable gaps:
+### 1. QR Code — Real QR Image, Bigger & Better
 
----
+**Problem**: Currently the SPOC QR section shows a static Lucide `QrCode` icon placeholder (24×24 box). No actual QR image is rendered from the payload.
 
-### What's Already Done (confirmed)
-- 5-step onboarding, dual verification, device binding
-- All 6 role dashboards (Student, Intern, Expert, Therapist, SPOC, Admin)
-- ECC system with immutable ledger, low balance prompt ("Your care energy is low"), stability pool
-- BlackBox audio sessions + AI moderation + L3 host-swap
-- Expert escalation button with timestamp + reason
-- Training modules (DB-driven), intern tab locking
-- Members grouped by institution, credit grants restricted to students
-- Recovery setup, SPOC QR generation, device sessions, performance indexes
-- SPOC real-time escalation notifications
-- Connect portals showing Expert Connect, Peer Connect, BlackBox separately (CR 8.3)
-- Account deletion (immediate) with DPDP compliance
+**Solution**: Install `qrcode.react` library and render an actual QR code from the `qrPayload` data. Make it large (200×200), styled with the Eternia brand colors (teal dots on dark background), with a polished card layout.
+
+**Files**: `src/components/admin/SPOCTools.tsx`
+
+Changes:
+- Replace the `w-24 h-24` placeholder div with a `QRCodeSVG` component from `qrcode.react` at `200×200`
+- Style with `fgColor` (teal) and `bgColor` (transparent/dark) to match the brand
+- Add a "Download QR" button that exports the QR as a PNG image
+- Add a proper card with gradient border and "Scan to Join" label
 
 ---
 
-### Remaining Gaps
+### 2. Scalability for Millions of Users
 
-#### 1. Peer Connect — Intern Escalation/Flag Button (CR 4.1)
-**Problem**: Interns have no UI button to flag/escalate a peer session. The `is_flagged` column exists on `peer_sessions` but there's no button in `PeerConnect.tsx` or `MobilePeerConnect.tsx`. CR 4.1 explicitly requires: "Escalation button click → escalation triggers and stores time slot."
+**Files**: `vite.config.ts`, `src/App.tsx`, `src/main.tsx`
 
-**Changes**:
-- Add `flagSession` mutation to `usePeerConnect.ts` (sets `is_flagged = true`, creates escalation_request with timestamp)
-- Add flag/escalation button to active chat UI in `PeerConnect.tsx` and `MobilePeerConnect.tsx`
-- Button visible only to intern role during active sessions
+Changes:
+- **Code splitting**: Already using `lazy()` — verify all heavy components are lazy-loaded
+- **React Query tuning**: Increase `staleTime` and `gcTime` defaults in the QueryClient for reduced refetching at scale
+- **Debounced subscriptions**: Add connection-aware realtime subscription management
+- **Bundle optimization**: Add `build.rollupOptions.output.manualChunks` to split vendor chunks (react, supabase, framer-motion, radix) for better caching
+- **Image optimization**: Add lazy loading to all images via intersection observer
 
-#### 2. Account Deletion — 30-Day Grace Period (PRD 15.1)
-**Problem**: Current flow is immediate deletion. PRD requires "30-day grace period before execution."
+---
 
-**Changes**:
-- Add `deletion_requested_at` column to `profiles` table (migration)
-- Modify `AccountDeletion.tsx` to set the flag instead of calling `delete-account` immediately
-- Update `delete-account` edge function to support both "request" and "execute" modes
-- Add a reactivation option in the login flow if user logs in during grace period
-- Create a `cleanup-deleted-accounts` edge function + cron job to execute deletions after 30 days
+### 3. Deep SEO Enhancement
 
-#### 3. SPOC QR Code — TTL Auto-Expiry Cron Job (PRD 3.2)
-**Problem**: QR codes have 24-hour TTL in the payload but no server-side enforcement or cleanup. The `validate-spoc-qr` edge function checks `expires_at` in the payload, which is already working. However, the PRD specifies server-side enforcement.
+**Files**: `index.html`, `public/robots.txt`, new `public/sitemap.xml`, `src/pages/Landing.tsx`, `src/components/landing/HeroSection.tsx`, `src/components/landing/Footer.tsx`, `src/components/landing/FAQSection.tsx`
 
-**Changes**:
-- Already functional via client-side TTL check in payload signature. No additional changes needed unless we want a separate DB-stored QR token table. Mark as complete.
+Changes:
 
-#### 4. Schools as Institutions (CR 9.1)
-**Problem**: CR says "Creating Schools same as Institutions." The `institution_type` column already supports `'school'` and `'university'`. The admin `InstitutionManager` needs to expose the type selector when creating institutions.
+**index.html**:
+- Add `og:locale`, `og:image:width`, `og:image:height`, `og:image:alt`
+- Add `twitter:site`, `twitter:creator`
+- Add `robots` meta tag with `index, follow, max-snippet:-1, max-image-preview:large`
+- Add additional JSON-LD: `Organization`, `FAQPage`, `BreadcrumbList`
+- Add `alternate` hreflang for future i18n readiness
+- Expand keywords meta with long-tail terms
 
-**Changes**:
-- Add `institution_type` dropdown (University/School) to the institution creation form in admin dashboard
+**public/sitemap.xml** (new):
+- Create a proper sitemap with all public routes (`/`, `/login`, `/privacy`, `/terms`, `/dpdp`, `/institution-code`)
+
+**public/robots.txt**:
+- Add `Disallow` for `/dashboard`, `/admin`, `/register` (private routes)
+- Keep `Allow: /` for public pages
+
+**Landing page SEO**:
+- Add semantic HTML landmarks (`<main>`, `<article>`, `<section>` with `aria-label`)
+- Add `<h1>` hierarchy check — ensure single h1 on landing
+- Add FAQ schema markup via JSON-LD from the FAQ data
+
+**Footer**:
+- Add `rel="noopener noreferrer"` to external links
+- Add social media links placeholder
 
 ---
 
 ### Implementation Summary
 
-| # | Task | Type | Files |
-|---|------|------|-------|
-| 1 | Add intern flag/escalate button for Peer Connect | Code | `usePeerConnect.ts`, `PeerConnect.tsx`, `MobilePeerConnect.tsx` |
-| 2 | Add `deletion_requested_at` to profiles | DB migration | SQL |
-| 3 | Implement 30-day grace period deletion flow | Code + Edge fn | `AccountDeletion.tsx`, `delete-account/index.ts`, new `cleanup-deleted-accounts/index.ts` |
-| 4 | Add institution type selector in admin | Code | `InstitutionManager.tsx` |
-| 5 | Update memory file with completion status | Memory | `prd-implementation.md` |
-
-### Items Confirmed as Phase 2 (Not in Scope)
-- AI selective audio transcription monitoring (requires media processing pipeline)
-- Full audio stream buffer + sentiment classification (requires dedicated infrastructure)
+| # | Task | Files |
+|---|------|-------|
+| 1 | Install `qrcode.react`, render real QR at 200×200 with brand styling + download button | `SPOCTools.tsx` |
+| 2 | Manual chunks + QueryClient tuning for scale | `vite.config.ts`, `src/App.tsx` |
+| 3 | Sitemap, robots.txt update, JSON-LD schemas, semantic HTML, meta tags | `index.html`, `sitemap.xml`, `robots.txt`, `Landing.tsx`, `FAQSection.tsx` |
 
