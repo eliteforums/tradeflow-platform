@@ -569,7 +569,20 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                     }}
                     token={token}
                   >
-                    <MeetingView meetingId={activeSession.room_id} onMeetingLeave={endSession} audioOnly={true} />
+                    <MeetingView
+                      meetingId={activeSession.room_id}
+                      onMeetingLeave={endSession}
+                      audioOnly={true}
+                      sessionId={activeSession.id}
+                      enableMonitoring={true}
+                      onRiskDetected={(level, snippet) => {
+                        if (level >= 2) {
+                          toast.warning(`AI detected risk level ${level}`, {
+                            description: "Review and consider escalating.",
+                          });
+                        }
+                      }}
+                    />
                   </MeetingProvider>
                 </div>
               ) : (
