@@ -229,17 +229,17 @@ const InternDashboardContent = () => {
                 </p>
               </div>
               <Progress value={trainingProgress} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-1">{completedModules.length}/{TRAINING_MODULES.length} completed</p>
+              <p className="text-xs text-muted-foreground mt-1">{completedModules.length}/{trainingModules.length} completed</p>
             </div>
 
             <div className="space-y-2">
-              {TRAINING_MODULES.map((mod) => {
-                const done = completedModules.includes(mod.day);
-                const isNext = !done && completedModules.length + 1 === mod.day;
+              {trainingModules.map((mod) => {
+                const done = completedModules.includes(mod.day_number);
+                const isNext = !done && completedModules.length + 1 === mod.day_number;
                 const locked = !done && !isNext;
-                const isDay7 = mod.day === 7;
+                const isDay7 = mod.day_number === 7;
                 return (
-                  <div key={mod.day} className={cn(
+                  <div key={mod.day_number} className={cn(
                     "p-4 rounded-xl border transition-all",
                     done ? "bg-eternia-success/5 border-eternia-success/20"
                       : isNext ? "bg-primary/5 border-primary/20"
@@ -249,12 +249,12 @@ const InternDashboardContent = () => {
                       <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-sm font-bold",
                         done ? "bg-eternia-success/20 text-eternia-success" : isNext ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                       )}>
-                        {done ? <CheckCircle className="w-5 h-5" /> : locked ? <Lock className="w-4 h-4" /> : mod.day}
+                        {done ? <CheckCircle className="w-5 h-5" /> : locked ? <Lock className="w-4 h-4" /> : mod.day_number}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-semibold">Day {mod.day}: {mod.title}</p>
-                          {mod.hasQuiz && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-eternia-warning/10 text-eternia-warning">Quiz</span>}
+                          <p className="text-sm font-semibold">Day {mod.day_number}: {mod.title}</p>
+                          {mod.has_quiz && <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-eternia-warning/10 text-eternia-warning">Quiz</span>}
                         </div>
                         <p className="text-xs text-muted-foreground mb-2">{mod.description}</p>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -264,11 +264,11 @@ const InternDashboardContent = () => {
                       </div>
                       <div className="shrink-0">
                         {done ? (
-                          <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => { setActiveModule(mod.day); setQuizAnswers({}); setQuizSubmitted(false); }}>
+                          <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => { setActiveModule(mod.day_number); setQuizAnswers({}); setQuizSubmitted(false); }}>
                             Review <ChevronRight className="w-3 h-3" />
                           </Button>
                         ) : isNext && !isDay7 ? (
-                          <Button size="sm" className="gap-1 text-xs" onClick={() => { setActiveModule(mod.day); setQuizAnswers({}); setQuizSubmitted(false); }}>
+                          <Button size="sm" className="gap-1 text-xs" onClick={() => { setActiveModule(mod.day_number); setQuizAnswers({}); setQuizSubmitted(false); }}>
                             <Play className="w-3 h-3" />Start
                           </Button>
                         ) : isNext && isDay7 ? (
@@ -309,14 +309,14 @@ const InternDashboardContent = () => {
             <div className="p-6 rounded-xl bg-card border border-border/50">
               <div className="flex items-start gap-4 mb-6">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold text-lg shrink-0">
-                  {currentModule.day}
+                  {currentModule.day_number}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold font-display mb-1">Day {currentModule.day}: {currentModule.title}</h2>
+                  <h2 className="text-xl font-bold font-display mb-1">Day {currentModule.day_number}: {currentModule.title}</h2>
                   <p className="text-sm text-muted-foreground">{currentModule.description}</p>
                   <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{currentModule.duration}</span>
-                    {currentModule.hasQuiz && <span className="px-1.5 py-0.5 rounded bg-eternia-warning/10 text-eternia-warning font-medium">Includes Quiz</span>}
+                    {currentModule.has_quiz && <span className="px-1.5 py-0.5 rounded bg-eternia-warning/10 text-eternia-warning font-medium">Includes Quiz</span>}
                   </div>
                 </div>
               </div>
@@ -359,13 +359,13 @@ const InternDashboardContent = () => {
               </div>
 
               {/* Quiz Section */}
-              {currentModule.hasQuiz && currentModule.quizQuestions.length > 0 && (
+              {currentModule.has_quiz && currentModule.quiz_questions.length > 0 && (
                 <div className="border-t border-border pt-6">
                   <h3 className="text-lg font-semibold font-display mb-4 flex items-center gap-2">
                     <Award className="w-5 h-5 text-eternia-warning" />Assessment Quiz
                   </h3>
                   <div className="space-y-6">
-                    {currentModule.quizQuestions.map((q, qi) => (
+                    {currentModule.quiz_questions.map((q, qi) => (
                       <div key={qi} className="p-4 rounded-lg bg-muted/20 border border-border/30">
                         <p className="text-sm font-medium mb-3">{qi + 1}. {q.question}</p>
                         <div className="space-y-2">
@@ -401,20 +401,20 @@ const InternDashboardContent = () => {
 
               {/* Action buttons */}
               <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-border">
-                {completedModules.includes(currentModule.day) ? (
+                {completedModules.includes(currentModule.day_number) ? (
                   <span className="text-sm text-eternia-success flex items-center gap-1"><CheckCircle className="w-4 h-4" />Completed</span>
-                ) : currentModule.day === 7 ? (
+                ) : currentModule.day_number === 7 ? (
                   <span className="text-sm text-muted-foreground italic">This module requires a live interview with an expert</span>
-                ) : currentModule.hasQuiz && !quizSubmitted ? (
+                ) : currentModule.has_quiz && !quizSubmitted ? (
                   <Button
                     onClick={() => setQuizSubmitted(true)}
-                    disabled={Object.keys(quizAnswers).length < currentModule.quizQuestions.length}
+                    disabled={Object.keys(quizAnswers).length < currentModule.quiz_questions.length}
                   >
                     Submit Quiz
                   </Button>
-                ) : currentModule.hasQuiz && quizSubmitted ? (
+                ) : currentModule.has_quiz && quizSubmitted ? (
                   <>
-                    {currentModule.quizQuestions.every((q, i) => quizAnswers[i] === q.correctIndex) ? (
+                    {currentModule.quiz_questions.every((q, i) => quizAnswers[i] === q.correctIndex) ? (
                       <Button onClick={() => handleCompleteModule(currentModule)} className="gap-1">
                         <CheckCircle className="w-4 h-4" />Complete Module
                       </Button>

@@ -36,7 +36,7 @@ interface TrainingModule {
   quizQuestions: QuizQuestion[];
 }
 
-const MODULES: TrainingModule[] = [
+const trainingModules: TrainingModule[] = [
   {
     day: 1, title: "Platform Overview + Assessment", description: "Eternia's mission, tools & intro quiz", duration: "45 min",
     objectives: ["Understand Eternia's mission and peer support role", "Navigate platform features", "Complete intro assessment"],
@@ -122,7 +122,7 @@ const MobileInternDashboard = () => {
   const trainingStatus = (profile as any)?.training_status || "not_started";
   const isTrainingComplete = trainingStatus === "active" || trainingStatus === "completed";
   const isInterviewPending = trainingStatus === "interview_pending";
-  const progress = isTrainingComplete ? 100 : isInterviewPending ? 95 : (completedModules.length / MODULES.length) * 100;
+  const progress = isTrainingComplete ? 100 : isInterviewPending ? 95 : (completedModules.length / trainingModules.length) * 100;
   const lockedTabs: TabType[] = isTrainingComplete ? [] : ["sessions", "notes"];
 
   const { data: mySessions = [], isLoading } = useQuery({
@@ -152,23 +152,23 @@ const MobileInternDashboard = () => {
 
   const activeSessions = mySessions.filter((s) => s.status === "active");
   const completedSessions = mySessions.filter((s) => s.status === "completed");
-  const currentModule = activeModule !== null ? MODULES.find(m => m.day === activeModule) : null;
+  const currentModule = activeModule !== null ? trainingModules.find(m => m.day_number === activeModule) : null;
 
   const handleCompleteModule = async (mod: TrainingModule) => {
-    if (mod.hasQuiz && mod.quizQuestions.length > 0) {
-      const allCorrect = mod.quizQuestions.every((q, i) => quizAnswers[i] === q.correctIndex);
+    if (mod.has_quiz && mod.quiz_questions.length > 0) {
+      const allCorrect = mod.quiz_questions.every((q, i) => quizAnswers[i] === q.correctIndex);
       if (!allCorrect) { toast.error("Some answers are incorrect. Try again."); return; }
     }
-    const newModules = [...completedModules, mod.day];
+    const newModules = [...completedModules, mod.day_number];
     setCompletedModules(newModules);
     if (user) {
-      const newStatus = newModules.length >= MODULES.length ? "interview_pending" : "in_progress";
+      const newStatus = newModules.length >= trainingModules.length ? "interview_pending" : "in_progress";
       await supabase.from("profiles").update({ training_progress: newModules, training_status: newStatus }).eq("id", user.id);
     }
     setActiveModule(null);
     setQuizAnswers({});
     setQuizSubmitted(false);
-    toast.success(`Day ${mod.day} completed!`);
+    toast.success(`Day ${mod.day_number} completed!`);
   };
 
   const tabs: { key: TabType; icon: typeof Home; label: string }[] = [
@@ -219,30 +219,30 @@ const MobileInternDashboard = () => {
                 <p className="font-medium text-sm">{isTrainingComplete ? "Training Complete! 🎉" : isInterviewPending ? "Interview Pending" : "Training Required"}</p>
               </div>
               <Progress value={progress} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-1">{completedModules.length}/{MODULES.length} done</p>
+              <p className="text-xs text-muted-foreground mt-1">{completedModules.length}/{trainingModules.length} done</p>
             </div>
 
             <div className="space-y-2">
-              {MODULES.map((m) => {
-                const done = completedModules.includes(m.day);
-                const isNext = !done && completedModules.length + 1 === m.day;
+              {trainingModules.map((m) => {
+                const done = completedModules.includes(m.day_number);
+                const isNext = !done && completedModules.length + 1 === m.day_number;
                 const locked = !done && !isNext;
                 return (
-                  <div key={m.day} className={cn("p-3 rounded-2xl border", done ? "bg-eternia-success/5 border-eternia-success/20" : isNext ? "bg-primary/5 border-primary/20" : "bg-card border-border/50 opacity-50")}>
+                  <div key={m.day_number} className={cn("p-3 rounded-2xl border", done ? "bg-eternia-success/5 border-eternia-success/20" : isNext ? "bg-primary/5 border-primary/20" : "bg-card border-border/50 opacity-50")}>
                     <div className="flex items-center gap-3">
                       <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0",
                         done ? "bg-eternia-success/20 text-eternia-success" : isNext ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                      )}>{done ? <CheckCircle className="w-4 h-4" /> : locked ? <Lock className="w-3 h-3" /> : m.day}</div>
+                      )}>{done ? <CheckCircle className="w-4 h-4" /> : locked ? <Lock className="w-3 h-3" /> : m.day_number}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-xs font-semibold truncate">Day {m.day}: {m.title}</p>
-                          {m.hasQuiz && <span className="px-1 py-0.5 rounded text-[8px] bg-eternia-warning/10 text-eternia-warning">Quiz</span>}
+                          <p className="text-xs font-semibold truncate">Day {m.day_number}: {m.title}</p>
+                          {m.has_quiz && <span className="px-1 py-0.5 rounded text-[8px] bg-eternia-warning/10 text-eternia-warning">Quiz</span>}
                         </div>
                         <p className="text-[10px] text-muted-foreground">{m.duration}</p>
                       </div>
-                      {done && <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => { setActiveModule(m.day); setQuizAnswers({}); setQuizSubmitted(false); }}>Review</Button>}
-                      {isNext && m.day !== 7 && <Button size="sm" className="h-6 text-[10px] px-2 gap-0.5" onClick={() => { setActiveModule(m.day); setQuizAnswers({}); setQuizSubmitted(false); }}><Play className="w-2.5 h-2.5" />Start</Button>}
-                      {isNext && m.day === 7 && <span className="text-[10px] text-muted-foreground italic">Expert</span>}
+                      {done && <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => { setActiveModule(m.day_number); setQuizAnswers({}); setQuizSubmitted(false); }}>Review</Button>}
+                      {isNext && m.day_number !== 7 && <Button size="sm" className="h-6 text-[10px] px-2 gap-0.5" onClick={() => { setActiveModule(m.day_number); setQuizAnswers({}); setQuizSubmitted(false); }}><Play className="w-2.5 h-2.5" />Start</Button>}
+                      {isNext && m.day_number === 7 && <span className="text-[10px] text-muted-foreground italic">Expert</span>}
                     </div>
                   </div>
                 );
@@ -275,12 +275,12 @@ const MobileInternDashboard = () => {
 
             <div className="p-4 rounded-2xl bg-card border border-border/50">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">{currentModule.day}</div>
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">{currentModule.day_number}</div>
                 <div>
-                  <h2 className="text-base font-bold font-display">Day {currentModule.day}: {currentModule.title}</h2>
+                  <h2 className="text-base font-bold font-display">Day {currentModule.day_number}: {currentModule.title}</h2>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                     <Clock className="w-3 h-3" />{currentModule.duration}
-                    {currentModule.hasQuiz && <span className="px-1 py-0.5 rounded bg-eternia-warning/10 text-eternia-warning text-[10px]">Quiz</span>}
+                    {currentModule.has_quiz && <span className="px-1 py-0.5 rounded bg-eternia-warning/10 text-eternia-warning text-[10px]">Quiz</span>}
                   </div>
                 </div>
               </div>
@@ -312,11 +312,11 @@ const MobileInternDashboard = () => {
               </div>
 
               {/* Quiz */}
-              {currentModule.hasQuiz && currentModule.quizQuestions.length > 0 && (
+              {currentModule.has_quiz && currentModule.quiz_questions.length > 0 && (
                 <div className="border-t border-border pt-4">
                   <h3 className="text-sm font-semibold mb-3 flex items-center gap-1.5"><Award className="w-4 h-4 text-eternia-warning" />Quiz</h3>
                   <div className="space-y-4">
-                    {currentModule.quizQuestions.map((q, qi) => (
+                    {currentModule.quiz_questions.map((q, qi) => (
                       <div key={qi} className="p-3 rounded-lg bg-muted/20 border border-border/30">
                         <p className="text-xs font-medium mb-2">{qi + 1}. {q.question}</p>
                         <div className="space-y-1.5">
@@ -348,14 +348,14 @@ const MobileInternDashboard = () => {
 
               {/* Actions */}
               <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-border">
-                {completedModules.includes(currentModule.day) ? (
+                {completedModules.includes(currentModule.day_number) ? (
                   <span className="text-xs text-eternia-success flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" />Completed</span>
-                ) : currentModule.day === 7 ? (
+                ) : currentModule.day_number === 7 ? (
                   <span className="text-xs text-muted-foreground italic">Requires live interview</span>
-                ) : currentModule.hasQuiz && !quizSubmitted ? (
-                  <Button size="sm" onClick={() => setQuizSubmitted(true)} disabled={Object.keys(quizAnswers).length < currentModule.quizQuestions.length} className="text-xs h-8">Submit Quiz</Button>
-                ) : currentModule.hasQuiz && quizSubmitted ? (
-                  currentModule.quizQuestions.every((q, i) => quizAnswers[i] === q.correctIndex) ? (
+                ) : currentModule.has_quiz && !quizSubmitted ? (
+                  <Button size="sm" onClick={() => setQuizSubmitted(true)} disabled={Object.keys(quizAnswers).length < currentModule.quiz_questions.length} className="text-xs h-8">Submit Quiz</Button>
+                ) : currentModule.has_quiz && quizSubmitted ? (
+                  currentModule.quiz_questions.every((q, i) => quizAnswers[i] === q.correctIndex) ? (
                     <Button size="sm" onClick={() => handleCompleteModule(currentModule)} className="text-xs h-8 gap-1"><CheckCircle className="w-3 h-3" />Complete</Button>
                   ) : (
                     <Button size="sm" variant="outline" onClick={() => { setQuizAnswers({}); setQuizSubmitted(false); }} className="text-xs h-8">Retry</Button>
