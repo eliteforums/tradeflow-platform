@@ -1,21 +1,57 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useMeeting } from "@videosdk.live/react-sdk";
-import { Loader2 } from "lucide-react";
+import { Loader2, Shield, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import ParticipantView from "./ParticipantView";
 import MeetingControls from "./MeetingControls";
+import { useAudioMonitor } from "@/hooks/useAudioMonitor";
 
 interface MeetingViewProps {
   meetingId: string;
   onMeetingLeave: () => void;
   audioOnly?: boolean;
+  sessionId?: string; // BlackBox session ID for AI monitoring
+  enableMonitoring?: boolean;
+  onRiskDetected?: (level: number, snippet: string) => void;
 }
 
-const MeetingView = ({ meetingId, onMeetingLeave, audioOnly = false }: MeetingViewProps) => {
+const riskColors: Record<number, string> = {
+  0: "bg-muted text-muted-foreground",
+  1: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  2: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  3: "bg-destructive/20 text-destructive border-destructive/30",
+};
+
+const riskLabels: Record<number, string> = {
+  0: "Normal",
+  1: "L1 — Mild",
+  2: "L2 — Moderate",
+  3: "L3 — Critical",
+};
+
+const MeetingView = ({
+  meetingId,
+  onMeetingLeave,
+  audioOnly = false,
+  sessionId,
+  enableMonitoring = false,
+  onRiskDetected,
+}: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
 
   const { join, participants } = useMeeting({
     onMeetingJoined: () => setJoined("JOINED"),
     onMeetingLeft: () => onMeetingLeave(),
+  });
+
+  // AI audio monitoring (only active when joined + monitoring enabled)
+  const audioMonitor = useAudioMonitor({
+    sessionId: sessionId || meetingId,
+    enabled: enableMonitoring && joined === "JOINED",
+    classifyIntervalMs: 15000,
+    onRiskDetected: useCallback((level: number, snippet: string) => {
+      onRiskDetected?.(level, snippet);
+    }, [onRiskDetected]),
   });
 
   const joinMeeting = () => {
@@ -51,6 +87,25 @@ const MeetingView = ({ meetingId, onMeetingLeave, audioOnly = false }: MeetingVi
 
   return (
     <div className="flex flex-col h-full">
+      {/* AI Monitoring Status Bar */}
+      {enableMonitoring && (
+        <div className="px-4 py-2 border-b border-border flex items-center justify-between bg-card/50">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-primary" />
+            <span className="text-xs text-muted-foreground">
+              AI Monitor {audioMonitor.isListening ? "Active" : "Inactive"}
+            </span>
+            {audioMonitor.isProcessing && (
+              <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
+            )}
+          </div>
+          <Badge className={`text-[10px] ${riskColors[audioMonitor.riskLevel]}`}>
+            {audioMonitor.riskLevel > 0 && <AlertTriangle className="w-3 h-3 mr-1" />}
+            {riskLabels[audioMonitor.riskLevel]}
+          </Badge>
+        </div>
+      )}
+
       <div className="flex-1 p-4 overflow-y-auto">
         <div
           className={`grid gap-4 h-full ${

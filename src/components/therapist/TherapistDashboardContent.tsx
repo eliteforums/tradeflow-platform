@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Users, Headphones, History, User, Phone, Loader2, AlertTriangle, Clock, Flag, Send, Shield, LogOut } from "lucide-react";
+import { Users, Headphones, History, User, Phone, Loader2, AlertTriangle, Clock, Flag, Send, Shield, LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +107,52 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
         fetchQueue();
       })
       .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchQueue]);
+
+  // Real-time session assignment listener (for L3 host-swap)
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("session-assignment")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "blackbox_sessions",
+          filter: `therapist_id=eq.${user.id}`,
+        },
+        async (payload) => {
+          const updated = payload.new as any;
+          // If we're being assigned an active session we didn't create
+          if (
+            (updated.status === "active") &&
+            updated.room_id &&
+            !activeSession
+          ) {
+            toast.info("You've been assigned an escalated session!", {
+              description: "A student needs immediate support.",
+              action: {
+                label: "Accept",
+                onClick: async () => {
+                  try {
+                    const t = await getVideoSDKToken();
+                    setToken(t);
+                    setActiveSession(updated);
+                    setActiveTab("session");
+                  } catch (err: any) {
+                    toast.error(err.message || "Failed to join session");
+                  }
+                },
+              },
+              duration: 30000,
+            });
+          }
+        }
+      )
+      .subscribe();
+
     return () => { supabase.removeChannel(channel); };
   }, [fetchQueue]);
 
@@ -523,7 +569,20 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                     }}
                     token={token}
                   >
-                    <MeetingView meetingId={activeSession.room_id} onMeetingLeave={endSession} audioOnly={true} />
+                    <MeetingView
+                      meetingId={activeSession.room_id}
+                      onMeetingLeave={endSession}
+                      audioOnly={true}
+                      sessionId={activeSession.id}
+                      enableMonitoring={true}
+                      onRiskDetected={(level, snippet) => {
+                        if (level >= 2) {
+                          toast.warning(`AI detected risk level ${level}`, {
+                            description: "Review and consider escalating.",
+                          });
+                        }
+                      }}
+                    />
                   </MeetingProvider>
                 </div>
               ) : (
