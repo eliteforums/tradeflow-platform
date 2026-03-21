@@ -98,6 +98,9 @@ const MobileAdminDashboard = () => {
     { id: "sessions", label: "Sessions", icon: Calendar },
     { id: "spoc", label: "SPOC", icon: Building2 },
     { id: "roles", label: "Roles", icon: UserPlus },
+    { id: "sounds", label: "Sounds", icon: Music },
+    { id: "escalations", label: "Escalations", icon: AlertTriangle },
+    { id: "audit", label: "Audit", icon: FileText },
   ];
 
   const getTypeBadge = (type: string) => {
