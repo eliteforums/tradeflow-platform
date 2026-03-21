@@ -44,9 +44,9 @@ const adminNavItems = [
 ];
 
 const spocNavItems = [
-  { icon: Home, label: "Home", path: "/dashboard/spoc" },
-  { icon: Users, label: "Onboarding", path: "/dashboard/spoc" },
-  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc" },
+  { icon: Home, label: "Home", path: "/dashboard/spoc?tab=home" },
+  { icon: Users, label: "Onboarding", path: "/dashboard/spoc?tab=onboarding" },
+  { icon: AlertCircle, label: "Flags", path: "/dashboard/spoc?tab=flags" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
