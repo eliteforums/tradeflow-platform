@@ -69,10 +69,22 @@ const InternDashboardContent = () => {
   const [notesSearch, setNotesSearch] = useState("");
   const [notesFilterInstitution, setNotesFilterInstitution] = useState<string>("all");
 
+  const { data: trainingModules = [], isLoading: modulesLoading } = useQuery({
+    queryKey: ["training-modules"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("training_modules")
+        .select("*")
+        .order("day_number", { ascending: true });
+      if (error) throw error;
+      return (data as any[]) as TrainingModule[];
+    },
+  });
+
   const trainingStatus = (profile as any)?.training_status || "not_started";
   const isTrainingComplete = trainingStatus === "active" || trainingStatus === "completed";
   const isInterviewPending = trainingStatus === "interview_pending";
-  const trainingProgress = isTrainingComplete ? 100 : isInterviewPending ? 95 : (completedModules.length / TRAINING_MODULES.length) * 100;
+  const trainingProgress = isTrainingComplete ? 100 : isInterviewPending ? 95 : trainingModules.length > 0 ? (completedModules.length / trainingModules.length) * 100 : 0;
   const lockedTabs: TabType[] = isTrainingComplete ? [] : ["sessions", "notes"];
 
   const { data: mySessions = [], isLoading } = useQuery({
