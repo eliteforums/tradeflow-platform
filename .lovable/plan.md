@@ -1,61 +1,125 @@
 
 
-## Plan: Implement Missing Change Document Items
+## Plan: Implement Missing PRD Modules & Features
 
-After thorough comparison, most items are already implemented. Here are the gaps:
-
----
-
-### 1. Remove "Red Extreme Text" from Profile (Section 10.2)
-**Issue**: Profile.tsx (desktop) still has a red "Withdraw Consent" section with destructive red styling (lines 361-371). The change doc explicitly says to remove this.
-**Fix**: Remove the red destructive-styled "Withdraw Consent" block from both `Profile.tsx` and verify `MobileProfile.tsx` (mobile doesn't have this block — confirmed clean).
-
-**Files**: `src/pages/dashboard/Profile.tsx`
+After thorough comparison of the TechSpec v2-20 PRD against the existing codebase, most core features are already implemented. Below are the remaining gaps that need to be built.
 
 ---
 
-### 2. SPOC Dashboard — Show L3 Escalations with Escalation Level + Emergency Contact (Section 5.3)
-**Issue**: The SPOC flags tab shows escalations but doesn't display the `escalation_level` or `trigger_snippet` columns that were added. L3 escalations should be prominently highlighted with emergency contact info.
-**Fix**: Update the escalation list in `SPOCDashboardContent.tsx` flags tab to:
-- Show `escalation_level` badge (L1/L2/L3) on each escalation
-- Show `trigger_snippet` if present
-- For L3 escalations, fetch and display emergency contact from `user_private` (via service role in an edge function, or display a "Contact shared" indicator)
+### Gap 1: Dual Student Verification Model (APAAR / ABC ID vs ERP ID)
+
+**PRD Section 3.3**: Registration must support two verification models based on institution type — APAAR/ABC ID for universities/colleges and ERP ID for schools. Currently, the registration form has a single generic "Student ID (APAAR / ABC / ERP)" field with no institution-type distinction.
+
+**Changes**:
+- Add `institution_type` column to `institutions` table (`university` or `school`)
+- Update `Register.tsx` to detect institution type and show appropriate label ("APAAR / ABC ID" vs "ERP ID")
+- Add `apaar_verified` and `erp_verified` boolean columns to `user_private` table
+- Store the ID in appropriate encrypted column (`apaar_id_encrypted` or `erp_id_encrypted`)
+
+**Files**: `src/pages/auth/Register.tsx`, DB migration
+
+---
+
+### Gap 2: ECC Low Balance Prompt ("Your care energy is low")
+
+**PRD Section 21**: When wallet balance < 5 ECC, show prompt: "Your care energy is low. Refill gently."
+
+**Status**: Already implemented in `Dashboard.tsx` (line 73-82). The exact text matches. **No action needed.**
+
+---
+
+### Gap 3: Training Status ENUM Alignment
+
+**PRD Section 19**: Training status should include: `NOT_STARTED`, `IN_PROGRESS`, `ASSESSMENT_PENDING`, `FAILED`, `INTERVIEW_PENDING`, `ACTIVE`.
+
+**Current**: Profile has `training_status` as text with default `not_started`. The intern dashboard manages progress but doesn't update status through all 6 states — only `not_started` → `completed`.
+
+**Changes**:
+- Update `InternDashboardContent.tsx` to set training_status through the full lifecycle: `not_started` → `in_progress` → `assessment_pending` → `interview_pending` → `active`
+- Add `FAILED` handling when quiz scores are insufficient
+- Change Peer Connect gate check from `training_status === "completed"` to `training_status === "active"`
+
+**Files**: `src/components/intern/InternDashboardContent.tsx`, `src/pages/dashboard/PeerConnect.tsx`, `src/components/mobile/MobilePeerConnect.tsx`
+
+---
+
+### Gap 4: Therapist Dashboard — Missing DashboardLayout Wrapper
+
+**PRD Section 20**: Therapist dashboard should have Queue, Active Session, Escalation History, Profile tabs. Currently implemented but `TherapistDashboard.tsx` wraps content in `DashboardLayout` while the content component itself doesn't have mobile detection.
+
+**Changes**:
+- Add mobile detection to `TherapistDashboard.tsx` (like Expert/Intern dashboards)
+- The tab structure matches PRD (queue, session, history, profile)
+
+**Files**: `src/pages/dashboard/TherapistDashboard.tsx`
+
+---
+
+### Gap 5: SPOC Dashboard — "Reports" Tab with Analytics
+
+**PRD Section 20**: SPOC Dashboard should have Home, Student Onboarding, Flags & Escalation, Reports, Profile tabs. Currently has all 5 tabs. Need to verify Reports tab has:
+- AI flags summary
+- Escalation logs
+- M.Phil override records
+
+**Status**: SPOC dashboard already has a reports tab with session analytics, credit analytics, and engagement metrics. The flags tab shows escalations with L1/L2/L3 badges. **Mostly implemented.**
+
+**Changes**:
+- Add M.Phil override records display to Reports tab (show escalations where level was changed from L2→L3 or sessions that were transferred to experts)
 
 **Files**: `src/components/spoc/SPOCDashboardContent.tsx`
 
 ---
 
-### 3. Expert Dashboard — Escalation Should Store Time Slot (Section 4.1)
-**Issue**: The expert escalation mutation doesn't include `trigger_timestamp` or the appointment's time slot in the escalation request.
-**Fix**: When expert submits escalation, include the appointment's `slot_time` as `trigger_timestamp` in the escalation request insert.
+### Gap 6: Self-Help Tools in Student Dashboard
 
-**Files**: `src/components/expert/ExpertDashboardContent.tsx`
+**PRD Section 4.5 & 20**: Self-Help Tools include Sound Therapy, Quest Cards, Tibetan Bowl, Wreck The Buddy. Currently Sound Therapy is under "Wellness" section and Quest Cards/Tibetan Bowl/Wreck Buddy are under "Self-Help & Wellbeing" link. The PRD groups Sound Therapy under Self-Help Tools.
 
----
-
-### 4. Dashboard Connect Section — Show Expert/Peer/BlackBox Together (Section 8.3)
-**Issue**: The doc says "Connect button should include Expert connect, Peer connect and Blackbox - not single." Currently these are separate cards. The doc wants a grouped "Connect" section.
-**Fix**: Group the three connect portals (Expert Connect, Peer Connect, BlackBox) under a single "Connect" heading on the student dashboard, making them visually grouped as sub-options of one section.
+**Changes**:
+- Move Sound Therapy into the Self-Help section grouping on the dashboard
+- Update "Wellness" section to "Self-Help Tools" and include Sound Therapy alongside Quest Cards, Tibetan Bowl, Wreck Buddy
 
 **Files**: `src/pages/dashboard/Dashboard.tsx`, `src/components/mobile/MobileDashboard.tsx`
 
 ---
 
-### 5. Institutions = Schools Module (Section 9.1)
-**Issue**: The doc says "Creating Schools same as Institutions" — this is already implemented via InstitutionManager. Just need to ensure the admin UI labels include "School / University" terminology.
-**Fix**: Update `InstitutionManager.tsx` heading to say "Institutions / Schools" for clarity.
+### Gap 7: Stability Pool Auto-Contribution (1 ECC/month)
 
-**Files**: `src/components/admin/InstitutionManager.tsx`
+**PRD Section 21**: Each student account contributes 1 ECC automatically per month to the stability pool. Currently the stability pool exists but no auto-contribution mechanism.
+
+**Changes**:
+- Create `stability-pool-auto-contribute` edge function that runs monthly
+- Deducts 1 ECC from each active student and adds to their institution's stability pool
+- Create a scheduled invocation or document manual triggering
+
+**Files**: `supabase/functions/stability-pool-auto-contribute/index.ts`
 
 ---
 
-### Summary of Changes (~5 files)
+### Gap 8: BlackBox ECC Spending
 
-| # | Change | File |
-|---|--------|------|
-| 1 | Remove red "Withdraw Consent" text | `Profile.tsx` |
-| 2 | Show escalation_level + trigger_snippet in SPOC flags | `SPOCDashboardContent.tsx` |
-| 3 | Store time slot in expert escalation | `ExpertDashboardContent.tsx` |
-| 4 | Group connect portals under one section | `Dashboard.tsx`, `MobileDashboard.tsx` |
-| 5 | Label institutions as "Schools / Universities" | `InstitutionManager.tsx` |
+**PRD Section 21**: BlackBox sessions should cost ECC credits. Currently BlackBox sessions don't deduct credits.
+
+**Changes**:
+- Add credit deduction when requesting a BlackBox voice session (similar to Peer Connect's 20 ECC check)
+- Define BlackBox session cost (e.g., 20 ECC like Peer Connect, or configurable)
+
+**Files**: `src/hooks/useBlackBoxSession.ts`
+
+---
+
+### Summary of Implementation (6 tasks)
+
+| # | Change | Files |
+|---|--------|-------|
+| 1 | Dual verification model (APAAR vs ERP) | `Register.tsx`, DB migration |
+| 2 | Training status full lifecycle | `InternDashboardContent.tsx`, `PeerConnect.tsx` |
+| 3 | Therapist mobile detection | `TherapistDashboard.tsx` |
+| 4 | Move Sound Therapy into Self-Help group | `Dashboard.tsx`, `MobileDashboard.tsx` |
+| 5 | Stability pool auto-contribution | New edge function |
+| 6 | BlackBox credit deduction | `useBlackBoxSession.ts` |
+
+### Database Migrations
+- Add `institution_type TEXT DEFAULT 'university'` to `institutions`
+- Add `apaar_id_encrypted TEXT`, `erp_id_encrypted TEXT`, `apaar_verified BOOLEAN DEFAULT false`, `erp_verified BOOLEAN DEFAULT false` to `user_private`
 
