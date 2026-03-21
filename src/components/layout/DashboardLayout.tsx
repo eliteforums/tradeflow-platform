@@ -117,7 +117,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }, [role]);
 
   const bottomNavItems = useMemo(() => {
-    if (role === "admin" || role === "spoc") return adminBottomNavItems;
+    if (role === "admin") return adminBottomNavItems;
+    if (role === "spoc") return spocBottomNavItems;
     if (role === "expert") return expertBottomNavItems;
     if (role === "intern") return internBottomNavItems;
     return studentBottomNavItems;
