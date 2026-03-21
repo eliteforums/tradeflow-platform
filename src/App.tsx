@@ -59,6 +59,11 @@ const queryClient = new QueryClient({
   },
 });
 
+const AnalyticsTracker = () => {
+  useAnalytics();
+  return null;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -66,7 +71,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <PWAUpdatePrompt />
+        <CookieConsent />
         <BrowserRouter>
+          <AnalyticsTracker />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public Routes */}
