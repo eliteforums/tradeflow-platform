@@ -96,6 +96,7 @@ const MobileAdminDashboard = () => {
 
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: "overview", label: "Overview", icon: BarChart3 },
+    { id: "analytics", label: "Analytics", icon: Eye },
     { id: "members", label: "Members", icon: Users },
     { id: "sessions", label: "Sessions", icon: Calendar },
     { id: "spoc", label: "SPOC", icon: Building2 },
