@@ -3,7 +3,7 @@ import {
   Users, Calendar, MessageCircle, AlertTriangle, Coins,
   Shield, Activity, BarChart3, Search, Loader2,
   UserPlus, Settings, Building2, Crown, Stethoscope,
-  GraduationCap, Zap, Eye, CheckCircle,
+  GraduationCap, Zap, Eye, CheckCircle, Music, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,11 @@ import { format } from "date-fns";
 import RoleManager from "@/components/admin/RoleManager";
 import MemberManager from "@/components/admin/MemberManager";
 import CreditGrantTool from "@/components/admin/CreditGrantTool";
+import SoundManager from "@/components/admin/SoundManager";
+import EscalationManager from "@/components/admin/EscalationManager";
+import AuditLogViewer from "@/components/admin/AuditLogViewer";
+import AccountDeletion from "@/components/admin/AccountDeletion";
+import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 
 type TabId = "overview" | "members" | "sessions" | "spoc" | "roles";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
