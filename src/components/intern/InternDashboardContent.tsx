@@ -136,7 +136,7 @@ const InternDashboardContent = () => {
   const activeSessions = mySessions.filter((s) => s.status === "active");
   const completedSessions = mySessions.filter((s) => s.status === "completed");
 
-  const currentModule = activeModule !== null ? TRAINING_MODULES.find(m => m.day === activeModule) : null;
+  const currentModule = activeModule !== null ? trainingModules.find(m => m.day_number === activeModule) : null;
 
   const handleCompleteModule = async (mod: TrainingModule) => {
     if (mod.hasQuiz && mod.quizQuestions.length > 0) {
