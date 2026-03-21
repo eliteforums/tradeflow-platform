@@ -718,7 +718,7 @@ const ExpertDashboardContent = () => {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
-                <CalendarPicker mode="single" selected={slotDate} onSelect={setSlotDate} disabled={(date) => date < new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
+                <CalendarPicker mode="single" selected={slotDate} onSelect={setSlotDate} disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))} initialFocus className={cn("p-3 pointer-events-auto")} />
               </PopoverContent>
             </Popover>
             <div className="grid grid-cols-2 gap-3">
