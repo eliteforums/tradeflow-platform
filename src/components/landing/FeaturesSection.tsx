@@ -65,7 +65,7 @@ const FeaturesSection = () => {
                 {/* Orbit ring on hover */}
                 <motion.div
                   className="absolute inset-[-6px] rounded-full border-2 border-dashed"
-                  style={{ borderColor: "hsl(174 62% 47% / 0.3)" }}
+                  style={{ borderColor: "hsl(166 72% 46% / 0.25)" }}
                   animate={hoveredIndex === index ? { rotate: 360 } : { rotate: 0 }}
                   transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                 />
