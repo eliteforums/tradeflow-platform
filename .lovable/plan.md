@@ -1,74 +1,103 @@
 
 
-## Plan: Enhance Intern Training Modules + BlackBox Voice-Only
+## Plan: Implement Change Document v1
 
-### Current Issues
-1. **Intern Dashboard training modules** exist but are shallow — clicking "Start" just marks a module complete instantly. There's no actual training content (descriptions, learning objectives, quiz questions). The PRD specifies a 7-day timeline with assessments.
-2. **BlackBox** already uses voice-only (`webcamEnabled: false`) in both desktop and mobile. However, the `VideoCallModal` component still supports `mode="video"` and the `MeetingControls` component still shows a webcam toggle button. Per the PRD, BlackBox should be strictly audio-only.
+This plan addresses the changes outlined in the Eternia Change Request Document, using Groq AI for all AI-related work.
 
-### Changes
+---
 
-#### 1. Intern Training — Add Real Module Content (2 files)
-**Files**: `src/components/intern/InternDashboardContent.tsx`, `src/components/mobile/MobileInternDashboard.tsx`
+### Phase 1: Groq AI Integration — Selective Transcription & Flagging
 
-- Expand each of the 7 training modules with:
-  - **Learning objectives** (2-3 bullet points per module)
-  - **Content sections** with descriptive text explaining the topic
-  - **Assessment quizzes** for Day 1, Day 3, and Day 6 modules (multiple-choice questions the intern must answer correctly to proceed)
-  - **Day 7**: Show "Interview Pending" state with info that an expert will conduct the live evaluation
-- Add a module detail view — clicking "Start" opens an expanded view within the training tab showing the module content, and a "Complete Module" button at the bottom
-- For assessment modules (Day 1, 3, 6): show quiz questions that must be answered before marking complete
-- Lock progression: can only start the next module after completing the previous one (already implemented)
-- Match PRD training status enum: `NOT_STARTED` → `IN_PROGRESS` → `ASSESSMENT_PENDING` → `INTERVIEW_PENDING` → `ACTIVE`
+**Current state**: AI moderation uses Lovable AI gateway (`ai-moderate` edge function). The doc requires Groq-based transcription with keyword detection and L1/L2/L3 flagging.
 
-#### 2. BlackBox — Enforce Voice-Only (3 files)
-**Files**: `src/components/videosdk/MeetingControls.tsx`, `src/components/videosdk/VideoCallModal.tsx`, `src/components/videosdk/ParticipantView.tsx`
+**Changes**:
 
-- **MeetingControls.tsx**: Add an `audioOnly` prop. When true, hide the webcam toggle button entirely. Pass this from BlackBox usage.
-- **MeetingView.tsx**: Accept and forward the `audioOnly` prop to `MeetingControls`.
-- **VideoCallModal.tsx**: When `mode="audio"`, pass `audioOnly={true}` to MeetingView so webcam toggle is hidden.
-- **ParticipantView.tsx**: When in audio-only mode, never render the VideoPlayer — always show the avatar circle. Hide the video on/off indicator.
+1. **Add Groq API secret** — Request user's Groq API key via `add_secret` tool
+2. **Create `ai-transcribe` edge function** — New function using Groq API (`https://api.groq.com/openai/v1/chat/completions`) to:
+   - Detect sensitive keywords (depression, self-harm, suicide, etc.)
+   - Classify into L1 (mild), L2 (moderate), L3 (critical)
+   - Store only 10s before + 10s after trigger word (not full conversation)
+   - Return flag level and trigger snippet
+3. **Update `ai-moderate` edge function** — Switch from Lovable AI to Groq API for BlackBox entry classification
+4. **Add escalation trigger storage** — Store trigger snippets (±10s context) in `escalation_requests` table
+5. **Wire AI monitoring into BlackBox sessions** — Call `ai-transcribe` during active BlackBox voice sessions for real-time keyword detection
+6. **Expert/Peer Connect** — Add manual escalation button (no automatic AI escalation), store escalation with time slot
 
-#### 3. Wire audioOnly through the component tree (1 file)
-**File**: `src/components/videosdk/MeetingView.tsx`
+### Phase 2: BlackBox — Enforce Audio-Only, No Chat
 
-- Accept `audioOnly?: boolean` prop, forward to `MeetingControls` and `ParticipantView`.
+**Current state**: BlackBox already uses `webcamEnabled: false` but MeetingView still shows video UI elements.
+
+**Changes**:
+1. **BlackBox page** — Pass `audioOnly={true}` to `LazyMeetingView` (already partially done)
+2. **Remove chat references** from BlackBox — ensure no text chat during voice sessions
+3. **Therapist Dashboard** — Ensure therapist side also enforces audio-only in `MeetingProvider`
+
+### Phase 3: Escalation System — Multi-Level L1→L2→L3
+
+**Changes**:
+1. **Database migration** — Add `escalation_level` (1/2/3), `trigger_snippet`, `trigger_timestamp` columns to `escalation_requests`
+2. **L3 Host Switching** — When L3 is triggered in BlackBox, allow switching host from intern/therapist to M.Phil expert
+3. **Emergency Contact sharing on escalation** — On L3, fetch and share emergency contact from `user_private`
+4. **SPOC Dashboard** — Show L3 escalations prominently with emergency contact info
+
+### Phase 4: Student ID System
+
+**Changes**:
+1. **Database migration** — Add `student_id` column to `profiles` table with auto-generation trigger (format: `ETN-{institution_code}-{sequence}`)
+2. **Profile page** — Display system-generated Student ID (read-only)
+3. **Admin Members view** — Show Student IDs, group by institution/university
+
+### Phase 5: Recovery Setup — Hint Word as Dropdown
+
+**Current state**: Free-text hint input fields.
+
+**Changes**:
+1. **RecoverySetup.tsx** — Replace free-text hint `Input` with `Select` dropdown containing predefined hint questions (e.g., "Favorite color", "First pet's name", "Childhood nickname", etc.)
+2. **MobileRecoverySetup.tsx** — Same dropdown change
+
+### Phase 6: Profile & Credits Fixes
+
+**Changes**:
+1. **Profile page** — Remove any red/extreme warning text
+2. **Credits system** — Add role check so only students can earn/spend credits; hide credit-related UI for interns, experts, and therapists
+
+### Phase 7: Admin Members — University Grouping
+
+**Changes**:
+1. **MemberManager.tsx** — Group members by institution/university in the members list
+2. **Show Student IDs** in the member list
+
+---
 
 ### Technical Details
 
-**Training Module Content Structure**:
-```typescript
-const TRAINING_MODULES = [
-  {
-    day: 1,
-    title: "Intro Module + Assessment",
-    description: "...",
-    duration: "45 min",
-    objectives: ["Understand Eternia's mission", "Learn platform navigation", "Complete intro assessment"],
-    content: "Detailed module content...",
-    hasQuiz: true,
-    quizQuestions: [
-      { question: "...", options: ["A", "B", "C", "D"], correctIndex: 2 }
-    ]
-  },
-  // ... remaining modules
-];
-```
+**Groq API integration**:
+- Endpoint: `https://api.groq.com/openai/v1/chat/completions`
+- Model: `llama-3.3-70b-versatile` (fast, good for classification)
+- Auth: `Bearer ${GROQ_API_KEY}` header
+- Used in edge functions only (server-side)
 
-**Audio-only prop flow**:
-```
-VideoCallModal (mode="audio") 
-  → MeetingProvider (webcamEnabled: false)
-    → MeetingView (audioOnly={true})
-      → ParticipantView (audioOnly={true}) — no video player
-      → MeetingControls (audioOnly={true}) — no webcam button
-```
+**Database migrations needed**:
+- Add `student_id TEXT UNIQUE` to `profiles`
+- Add `escalation_level INT DEFAULT 1`, `trigger_snippet TEXT`, `trigger_timestamp TIMESTAMPTZ` to `escalation_requests`
+- Create trigger for auto-generating student IDs on profile creation
 
-### Files to Change (6 files)
-1. `src/components/intern/InternDashboardContent.tsx` — Add module content, quizzes, expanded view
-2. `src/components/mobile/MobileInternDashboard.tsx` — Same module content for mobile
-3. `src/components/videosdk/MeetingControls.tsx` — Add `audioOnly` prop, hide webcam button
-4. `src/components/videosdk/MeetingView.tsx` — Forward `audioOnly` prop
-5. `src/components/videosdk/ParticipantView.tsx` — Add `audioOnly` prop, skip video rendering
-6. `src/components/videosdk/VideoCallModal.tsx` — Pass `audioOnly` when mode is audio
+**Files to create/modify** (~15 files):
+- `supabase/functions/ai-transcribe/index.ts` (new)
+- `supabase/functions/ai-moderate/index.ts` (update to Groq)
+- `src/pages/dashboard/BlackBox.tsx` (enforce audioOnly)
+- `src/components/mobile/MobileBlackBox.tsx` (enforce audioOnly)
+- `src/components/therapist/TherapistDashboardContent.tsx` (audioOnly + escalation levels)
+- `src/pages/dashboard/RecoverySetup.tsx` (hint dropdown)
+- `src/components/mobile/MobileRecoverySetup.tsx` (hint dropdown)
+- `src/pages/dashboard/Profile.tsx` (remove red text, show student ID)
+- `src/components/mobile/MobileProfile.tsx` (same)
+- `src/pages/dashboard/Credits.tsx` (role gate)
+- `src/components/mobile/MobileCredits.tsx` (role gate)
+- `src/components/admin/MemberManager.tsx` (university grouping)
+- `src/components/spoc/SPOCDashboardContent.tsx` (L3 escalation display)
+- `src/components/expert/ExpertDashboardContent.tsx` (manual escalation button)
+- DB migrations (2-3 migration calls)
+
+**Prerequisite**: User must provide Groq API key before AI changes can proceed.
 
