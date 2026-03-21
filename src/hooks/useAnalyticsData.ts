@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { subDays, startOfDay, format } from "date-fns";
+import { subDays, startOfDay } from "date-fns";
 
 export function useAnalyticsData() {
   const { profile } = useAuth();
@@ -10,12 +10,11 @@ export function useAnalyticsData() {
   const { data: pageViews = [], isLoading: isLoadingViews } = useQuery({
     queryKey: ["analytics-page-views"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("analytics_events")
+      const { data, error } = await (supabase.from("analytics_events" as any) as any)
         .select("*")
         .gte("created_at", subDays(new Date(), 30).toISOString())
         .order("created_at", { ascending: false })
-        .limit(1000) as any;
+        .limit(1000);
       if (error) throw error;
       return data || [];
     },
@@ -27,7 +26,7 @@ export function useAnalyticsData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("cookie_consent") as any;
+        .select("cookie_consent" as any);
       if (error) throw error;
       const stats = { accepted: 0, rejected: 0, pending: 0 };
       (data || []).forEach((p: any) => {
@@ -39,7 +38,6 @@ export function useAnalyticsData() {
     enabled: isAdmin,
   });
 
-  // Derived metrics
   const today = startOfDay(new Date()).toISOString();
   const week = subDays(new Date(), 7).toISOString();
 
@@ -49,7 +47,6 @@ export function useAnalyticsData() {
 
   const uniqueVisitors = new Set(pageViews.map((e: any) => e.session_hash)).size;
 
-  // Top pages
   const pageCounts: Record<string, number> = {};
   pageViews.forEach((e: any) => {
     pageCounts[e.page_path] = (pageCounts[e.page_path] || 0) + 1;
@@ -59,14 +56,12 @@ export function useAnalyticsData() {
     .slice(0, 10)
     .map(([path, count]) => ({ path, count }));
 
-  // Hourly distribution
   const hourlyData = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }));
   pageViews.forEach((e: any) => {
     const hour = new Date(e.created_at).getHours();
     hourlyData[hour].count++;
   });
 
-  // Device breakdown from screen_size
   const deviceCounts = { mobile: 0, tablet: 0, desktop: 0 };
   pageViews.forEach((e: any) => {
     if (!e.screen_size) return;
@@ -77,13 +72,8 @@ export function useAnalyticsData() {
   });
 
   return {
-    viewsToday,
-    viewsWeek,
-    viewsMonth,
-    uniqueVisitors,
-    topPages,
-    hourlyData,
-    deviceCounts,
+    viewsToday, viewsWeek, viewsMonth, uniqueVisitors,
+    topPages, hourlyData, deviceCounts,
     consentStats: consentStats || { accepted: 0, rejected: 0, pending: 0 },
     isLoading: isLoadingViews || isLoadingConsent,
   };

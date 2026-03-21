@@ -37,7 +37,7 @@ export function useAnalytics() {
         screen_size: `${window.innerWidth}x${window.innerHeight}`,
       };
 
-      supabase.from("analytics_events").insert(event as any).then();
+      (supabase.from("analytics_events" as any) as any).insert(event).then();
     }, 300);
 
     return () => clearTimeout(debounceRef.current);
