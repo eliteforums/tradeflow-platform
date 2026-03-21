@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import {
   Users, Calendar, MessageCircle, AlertTriangle, Coins,
   Shield, Activity, BarChart3, Search, Loader2,
