@@ -64,7 +64,7 @@ const TrainingModuleManager = () => {
         .select("*")
         .order("day_number", { ascending: true });
       if (error) throw error;
-      return data as TrainingModule[];
+      return (data as any[]) as TrainingModule[];
     },
   });
 
