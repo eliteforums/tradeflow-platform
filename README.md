@@ -1,6 +1,6 @@
 # Eternia — Anonymous Mental Wellness Platform
 
-**Eternia** is a privacy-first, institution-controlled mental wellness platform for college students in India. Built for scale (lakhs of concurrent users), it provides expert counselling, peer support, emotional tools, and sound therapy — all anonymously and DPDP-compliant.
+**Eternia** is a privacy-first, institution-controlled mental wellness platform for college students in India. Built for scale (60K+ concurrent users), it provides expert counselling, peer support, emotional tools, and sound therapy — all anonymously and DPDP-compliant.
 
 ## 🏗️ Architecture
 
@@ -36,9 +36,15 @@
 ### Role-Based Dashboards
 - **Student Dashboard** — Appointments, Peer Connect, BlackBox, Sounds, Self-Help, Credits, Profile
 - **Expert Dashboard** — Schedule management, session completion, encrypted notes, BlackBox crisis queue
-- **Intern Dashboard** — 7-day training module progression, peer session logs, training gate (Peer Connect locked until Day 7 approval)
+- **Intern Dashboard** — 7-day training module progression (DB-driven, managed by superadmin), peer session logs, training gate (Peer Connect locked until Day 7 approval)
 - **SPOC Dashboard** — Institution overview, member management, flagged entries, escalation management
-- **Admin Dashboard** — Full platform control, institution management, audit logs, role management
+- **Super Admin Dashboard** — Full platform control via grouped sidebar navigation:
+  - **Analytics**: Overview with role counts, session stats, flagged entries
+  - **People**: Members browser with role/search filters, Role & Credit management
+  - **Activity**: Unified session feed (appointments, peer, blackbox)
+  - **Institutions**: SPOC tools, institution detail views
+  - **Content**: Database-driven training modules (CRUD + quiz editor), sound management
+  - **Safety**: Escalation manager, audit logs, account deletion
 
 ### Privacy & Security
 - **Anonymous Identity**: Username-based auth, no email/phone required
@@ -56,9 +62,9 @@
 ```
 src/
 ├── components/
-│   ├── admin/          # Admin tools (RoleManager, MemberManager, AccountDeletion)
+│   ├── admin/          # Admin tools (RoleManager, MemberManager, TrainingModuleManager, SoundManager, etc.)
 │   ├── expert/         # Expert dashboard content
-│   ├── intern/         # Intern dashboard with training gate
+│   ├── intern/         # Intern dashboard with training gate (fetches modules from DB)
 │   ├── landing/        # Landing page sections (Hero, Features, CTA, etc.)
 │   ├── layout/         # DashboardLayout with sidebar + bottom nav
 │   ├── mobile/         # Mobile-optimized variants of all dashboard pages
@@ -66,7 +72,8 @@ src/
 │   ├── spoc/           # SPOC dashboard content
 │   ├── therapist/      # Therapist/BlackBox crisis queue
 │   ├── ui/             # shadcn/ui primitives
-│   └── videosdk/       # VideoSDK meeting components
+│   ├── videosdk/       # VideoSDK meeting components
+│   └── PWAUpdatePrompt.tsx  # Service worker update notification
 ├── contexts/
 │   └── AuthContext.tsx  # Auth state + credit balance + profile
 ├── hooks/              # Data hooks (useCredits, useQuests, useBlackBox, usePeerConnect, etc.)
@@ -77,7 +84,7 @@ src/
 ├── pages/
 │   ├── auth/           # InstitutionCode → QRScan → Register → Login
 │   ├── dashboard/      # All dashboard pages (lazy-loaded)
-│   ├── admin/          # Admin dashboard
+│   ├── admin/          # Admin dashboard (sidebar-driven layout)
 │   └── legal/          # Terms, Privacy, DPDP
 └── integrations/
     └── supabase/       # Auto-generated client + types
@@ -107,6 +114,7 @@ supabase/
 | `blackbox_sessions` | Crisis intervention sessions (expert ↔ student) |
 | `credit_transactions` | ECC economy ledger (earn, spend, grant, purchase) |
 | `ecc_stability_pool` | Shared emergency credit pool per institution |
+| `training_modules` | DB-driven intern training content (managed by superadmin) |
 | `quest_cards` | Daily wellbeing quest definitions |
 | `quest_completions` | User quest completion records |
 | `sound_content` | Audio therapy tracks (stored in Supabase Storage) |
@@ -120,10 +128,24 @@ supabase/
 2. **SPOC QR Scan** → Verified by institution's Grievance Officer
 3. **Registration** → Username + password + encrypted private data + device binding + escalation consent
 
-## 🚀 Performance Optimizations
+## 🚀 Performance & Scale (60K+ Concurrent Users)
 
+### PWA Service Worker Strategy
+- **skipWaiting + clientsClaim**: New service worker versions activate immediately — no stale tabs
+- **PWA Update Prompt**: Toast notification when a new version is available; one-tap update
+- **Navigation Preload**: Enabled for faster route transitions on supported browsers
+
+### Runtime Caching (Workbox)
+| Pattern | Strategy | TTL | Purpose |
+|---------|----------|-----|---------|
+| Supabase API (`/rest/`, `/auth/`, `/functions/`) | NetworkFirst (5s timeout) | 1 hour, 200 entries | API resilience — serves cached data on network failure |
+| Google Fonts CSS | StaleWhileRevalidate | 1 year | Font stylesheet always fresh |
+| Google Fonts WOFF2 | CacheFirst | 1 year | Immutable font files cached permanently |
+| Static images (png/svg/jpg) | CacheFirst | 30 days, 100 entries | Images rarely change |
+
+### Frontend Optimizations
 - **Code splitting** — All dashboard pages lazy-loaded via `React.lazy`
-- **Query optimization** — 2 min staleTime, window focus refetch disabled
+- **Query optimization** — 2 min staleTime, window focus refetch disabled, retry budget
 - **Memoized components** — `React.memo` on DashboardLayout + heavy list components
 - **Skeleton loaders** — Mobile-first loading states for perceived performance
 - **Debounced search** — 300ms debounce on all search inputs
@@ -131,8 +153,15 @@ supabase/
 - **Reduced motion** — Respects `prefers-reduced-motion` for accessibility
 - **Safe area insets** — Proper handling for notched devices (iPhone, etc.)
 - **Touch targets** — Minimum 44×44px on all interactive mobile elements
-- **Service worker** — PWA with offline support and runtime API caching
 - **Preconnect** — DNS prefetch to backend API for faster initial requests
+- **Max cache size** — 4 MB per precached file to handle larger production bundles
+
+### Concurrency Design Notes
+- **No thundering herd**: `refetchOnWindowFocus: false` prevents 60K simultaneous refetches when users tab back
+- **Retry budget**: Queries retry 2×, mutations 1× — prevents retry storms under load
+- **Stale-while-revalidate**: 2 min stale window means most reads are instant from cache
+- **Edge Functions**: Stateless, horizontally scalable — no session affinity required
+- **RLS at DB layer**: Authorization pushed to Postgres — no application-level auth bottleneck
 
 ## 🔒 DPDP Act 2023 Compliance
 
