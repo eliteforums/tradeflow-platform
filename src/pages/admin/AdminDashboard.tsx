@@ -25,7 +25,9 @@ import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import EscalationManager from "@/components/admin/EscalationManager";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations";
+import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
+
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "institution-detail";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -35,6 +37,7 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [sessionFilter, setSessionFilter] = useState<SessionFilter>("all");
+  const [selectedInstitution, setSelectedInstitution] = useState<any>(null);
   const { profile } = useAuth();
   const { isAdmin, isSuperAdmin, members, stats, appointments, peerSessions, flaggedEntries, blackboxSessions, institutions, isLoading } = useAdmin();
 
@@ -366,12 +369,23 @@ const AdminDashboard = () => {
             {activeTab === "spoc" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2">
-                  <InstitutionManager />
+                  <InstitutionManager onSelectInstitution={(inst) => {
+                    setSelectedInstitution(inst);
+                    setActiveTab("institution-detail");
+                  }} />
                 </div>
                 <div>
                   <RoleManager />
                 </div>
               </div>
+            )}
+
+            {/* ─── INSTITUTION DETAIL ─── */}
+            {activeTab === "institution-detail" && selectedInstitution && (
+              <InstitutionDetailView
+                institution={selectedInstitution}
+                onBack={() => setActiveTab("spoc")}
+              />
             )}
 
             {/* ─── ROLES ─── */}

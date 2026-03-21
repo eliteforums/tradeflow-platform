@@ -3,7 +3,7 @@ import {
   Users, Calendar, MessageCircle, AlertTriangle, Coins,
   Shield, Activity, BarChart3, Search, Loader2,
   UserPlus, Settings, Building2, Crown, Stethoscope,
-  GraduationCap, Zap, Eye, CheckCircle,
+  GraduationCap, Zap, Eye, CheckCircle, Music, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,13 @@ import { format } from "date-fns";
 import RoleManager from "@/components/admin/RoleManager";
 import MemberManager from "@/components/admin/MemberManager";
 import CreditGrantTool from "@/components/admin/CreditGrantTool";
+import SoundManager from "@/components/admin/SoundManager";
+import EscalationManager from "@/components/admin/EscalationManager";
+import AuditLogViewer from "@/components/admin/AuditLogViewer";
+import AccountDeletion from "@/components/admin/AccountDeletion";
+import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "institution-detail";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -25,6 +30,7 @@ const MobileAdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [sessionFilter, setSessionFilter] = useState<SessionFilter>("all");
+  const [selectedInstitution, setSelectedInstitution] = useState<any>(null);
   const { profile } = useAuth();
   const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, blackboxSessions, institutions, isLoading } = useAdmin();
 
@@ -92,6 +98,9 @@ const MobileAdminDashboard = () => {
     { id: "sessions", label: "Sessions", icon: Calendar },
     { id: "spoc", label: "SPOC", icon: Building2 },
     { id: "roles", label: "Roles", icon: UserPlus },
+    { id: "sounds", label: "Sounds", icon: Music },
+    { id: "escalations", label: "Escalations", icon: AlertTriangle },
+    { id: "audit", label: "Audit", icon: FileText },
   ];
 
   const getTypeBadge = (type: string) => {
@@ -242,7 +251,7 @@ const MobileAdminDashboard = () => {
                 {institutionData.length === 0 ? (
                   <div className="text-center py-10 text-muted-foreground"><Building2 className="w-8 h-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No institutions</p></div>
                 ) : institutionData.map((inst: any) => (
-                  <div key={inst.id} className="p-4 rounded-2xl bg-card border border-border/50 space-y-3">
+                  <div key={inst.id} className="p-4 rounded-2xl bg-card border border-border/50 space-y-3 cursor-pointer active:scale-[0.98]" onClick={() => { setSelectedInstitution(inst); setActiveTab("institution-detail"); }}>
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold text-sm">{inst.name}</h4>
                       <span className={`px-2 py-0.5 rounded-full text-[10px] ${inst.is_active ? "bg-eternia-success/10 text-eternia-success" : "bg-muted text-muted-foreground"}`}>{inst.is_active ? "Active" : "Inactive"}</span>
@@ -270,6 +279,32 @@ const MobileAdminDashboard = () => {
                 <RoleManager />
                 <CreditGrantTool />
               </div>
+            )}
+
+            {/* SOUNDS */}
+            {activeTab === "sounds" && (
+              <div><SoundManager /></div>
+            )}
+
+            {/* ESCALATIONS */}
+            {activeTab === "escalations" && (
+              <div><EscalationManager /></div>
+            )}
+
+            {/* AUDIT */}
+            {activeTab === "audit" && (
+              <div className="space-y-4">
+                <AuditLogViewer />
+                <AccountDeletion />
+              </div>
+            )}
+
+            {/* INSTITUTION DETAIL */}
+            {activeTab === "institution-detail" && selectedInstitution && (
+              <InstitutionDetailView
+                institution={selectedInstitution}
+                onBack={() => setActiveTab("spoc")}
+              />
             )}
           </>
         )}

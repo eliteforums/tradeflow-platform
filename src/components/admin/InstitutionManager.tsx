@@ -33,7 +33,12 @@ interface Institution {
   credits_pool: number;
   is_active: boolean;
   plan_type: string;
+  institution_type: string;
   created_at: string;
+}
+
+interface InstitutionManagerProps {
+  onSelectInstitution?: (inst: Institution) => void;
 }
 
 interface BulkMember {
@@ -42,7 +47,7 @@ interface BulkMember {
   password: string;
 }
 
-const InstitutionManager = () => {
+const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {}) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState("");
@@ -230,7 +235,7 @@ const InstitutionManager = () => {
       ) : (
         <div className="space-y-2">
           {institutions.map((inst) => (
-            <div key={inst.id} className={`p-3 rounded-xl bg-card border border-border/50 transition-all ${!inst.is_active ? "opacity-60" : ""}`}>
+            <div key={inst.id} className={`p-3 rounded-xl bg-card border border-border/50 transition-all ${!inst.is_active ? "opacity-60" : ""} ${onSelectInstitution ? "cursor-pointer hover:border-primary/40" : ""}`} onClick={() => onSelectInstitution?.(inst)}>
               <div className="flex items-center justify-between gap-2 mb-2">
                 <h3 className="font-semibold text-sm truncate">{inst.name}</h3>
                 <div className="flex items-center gap-1.5 shrink-0">
