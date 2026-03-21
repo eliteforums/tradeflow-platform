@@ -19,7 +19,7 @@ const SPOCTools = () => {
   const [copiedQR, setCopiedQR] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
 
-  const { data: qrData, isLoading: qrLoading, refetch: regenerateQR } = useQuery({
+  const { data: qrData, isLoading: qrLoading, error: qrError, refetch: regenerateQR } = useQuery({
     queryKey: ["spoc-qr", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
@@ -29,6 +29,8 @@ const SPOCTools = () => {
     },
     enabled: !!user && profile?.role === "spoc",
     staleTime: 1000 * 60 * 60,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   const qrPayload = qrData?.qr_payload || "";
@@ -205,7 +207,12 @@ const SPOCTools = () => {
             ) : (
               <div className="w-[200px] h-[200px] flex flex-col items-center justify-center gap-2">
                 <QrCode className="w-12 h-12 text-muted-foreground/30" />
-                <p className="text-xs text-muted-foreground">Failed to generate</p>
+                <p className="text-xs text-muted-foreground text-center px-4">
+                  {qrError?.message || "Failed to generate QR code"}
+                </p>
+                <Button size="sm" variant="outline" className="mt-1 text-xs h-7" onClick={() => regenerateQR()}>
+                  <RefreshCw className="w-3 h-3 mr-1" /> Try Again
+                </Button>
               </div>
             )}
 
