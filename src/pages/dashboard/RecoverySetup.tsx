@@ -16,6 +16,19 @@ import { toast } from "sonner";
 
 const EMOJI_GRID = ["🌊","🔥","🌸","⚡","🌙","☀️","🍃","❄️","🦋","🌈","🎵","💎","🕊️","🌻","🍂","🌺","🐚","🌿","✨","🎯","🧿","🪷","🫧","🪻"];
 
+const HINT_QUESTIONS = [
+  "Favourite colour",
+  "First pet's name",
+  "Childhood nickname",
+  "Mother's maiden name",
+  "Favourite teacher",
+  "Birth city",
+  "Best friend in school",
+  "Favourite movie",
+  "First phone brand",
+  "Favourite food",
+];
+
 const RecoverySetup = () => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
