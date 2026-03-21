@@ -280,6 +280,32 @@ const MobileAdminDashboard = () => {
                 <CreditGrantTool />
               </div>
             )}
+
+            {/* SOUNDS */}
+            {activeTab === "sounds" && (
+              <div><SoundManager /></div>
+            )}
+
+            {/* ESCALATIONS */}
+            {activeTab === "escalations" && (
+              <div><EscalationManager /></div>
+            )}
+
+            {/* AUDIT */}
+            {activeTab === "audit" && (
+              <div className="space-y-4">
+                <AuditLogViewer />
+                <AccountDeletion />
+              </div>
+            )}
+
+            {/* INSTITUTION DETAIL */}
+            {activeTab === "institution-detail" && selectedInstitution && (
+              <InstitutionDetailView
+                institution={selectedInstitution}
+                onBack={() => setActiveTab("spoc")}
+              />
+            )}
           </>
         )}
       </div>
