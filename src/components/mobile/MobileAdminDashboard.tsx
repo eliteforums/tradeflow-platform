@@ -30,6 +30,7 @@ const MobileAdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [sessionFilter, setSessionFilter] = useState<SessionFilter>("all");
+  const [selectedInstitution, setSelectedInstitution] = useState<any>(null);
   const { profile } = useAuth();
   const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, blackboxSessions, institutions, isLoading } = useAdmin();
 
