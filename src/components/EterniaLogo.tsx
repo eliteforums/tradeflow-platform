@@ -20,7 +20,7 @@ const EterniaLogo = ({ size = 32 }: { size?: number }) => (
     />
     <path
       d="M256 170 C256 170 290 220 290 256 C290 280 275 298 256 298 C237 298 222 280 222 256 C222 220 256 170 256 170Z"
-      fill="hsl(240, 10%, 4%)"
+      fill="hsl(230, 25%, 18%)"
       opacity="0.5"
     />
     <circle cx="256" cy="350" r="8" fill="url(#eternia-g)" />
