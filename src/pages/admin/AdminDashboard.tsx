@@ -68,6 +68,7 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
     items: [
       { id: "training", label: "Training", icon: BookOpen },
       { id: "sounds", label: "Sounds", icon: Music },
+      { id: "tools", label: "Quest Cards", icon: Gamepad2 },
     ],
   },
   {
