@@ -1,34 +1,41 @@
 
 
-## Plan: Beautify Quest Cards with Solitaire-Style Visual Design
+## Plan: Fix Intern Dashboard — Interview Flow, Verified Badge, and Remove BlackBox Queue
 
-### What Changes
-Redesign the Quest Cards page visually to feel like a premium solitaire card game — rich card backs with patterns, smooth flip animations, card shadows, a proper deck stack, and a felt-like table surface. All 2D with CSS.
+### Summary
+Three changes: (1) Show a meeting link on Day 7 instead of just "Expert scheduled", (2) Admin can verify interns to unlock Peer Connect, (3) Remove BlackBox Queue from intern nav.
 
-### Changes to `src/App.css`
-Add richer card animation utilities:
-- Card hover lift with shadow (`card-hover`)
-- Smoother flip transition with spring-like easing
-- Card deal stagger animation (cards slide in one by one on load)
-- Subtle card wobble on hover
-- Green felt-like table background class
+### Current State
+- Day 7 shows "Expert scheduled" text but no meeting link
+- `is_verified` field exists on profiles and is already used for experts
+- `training_status` goes to `interview_pending` after completing modules 1-6
+- BlackBox Queue appears in intern sidebar nav at `DashboardLayout.tsx` line 62
+- Peer Connect unlocks when `trainingStatus === "active" || "completed"` — but there's no admin action to set this after the interview
 
-### Changes to `src/pages/dashboard/QuestCards.tsx`
-- **Table surface**: Wrap card grid in a felt-green rounded container with inner shadow (like a card table)
-- **Card backs**: Replace emoji + plain gradient with a rich patterned design — ornate border pattern using CSS, a central logo/emblem, and a gradient back (teal-to-lavender). Add inner decorative border lines using `before`/`after` pseudo-elements or nested divs
-- **Card fronts**: Add a parchment-like light background, decorative corner ornaments (Unicode suits or symbols), cleaner typography
-- **Hover**: Cards lift up with shadow on hover, slight wobble
-- **Flip**: Smoother 600ms transition with ease-out-back curve
-- **Deal animation**: Cards stagger-animate in from the deck position on mount (translate + fade, 100ms stagger per card)
-- **Deck stack**: Make deck look more realistic — 5 stacked cards with slight offsets, card back pattern visible
-- **Completed cards**: Subtle golden glow border, checkmark overlay
-- **Answer panel**: Styled as a card-table overlay with glass effect
+### Changes
 
-### Changes to `src/index.css`
-Add a `.card-table` utility class with the felt-like green-dark background and inner shadow.
+**1. Remove BlackBox Queue from intern nav (`src/components/layout/DashboardLayout.tsx`)**
+- Remove the `{ icon: Headphones, label: "BlackBox Queue", path: "/dashboard/therapist" }` entry from `internNavItems` (line 62)
+
+**2. Day 7 interview meeting link (`src/components/intern/InternDashboardContent.tsx` + `MobileInternDashboard.tsx`)**
+- When Day 7 is the next module (all 6 prior completed, status is `interview_pending`):
+  - Show a card with "Final Interview" explanation
+  - Display a message: "Your expert will share a meeting link. Once the interview is complete and approved, your dashboard will be unlocked."
+  - Show the intern's `is_verified` status — if verified, show a success state
+- When admin sets `is_verified = true` AND `training_status = "active"`, the dashboard unlocks automatically (existing logic already handles this)
+
+**3. Admin intern verification flow (`src/components/admin/MemberManager.tsx`)**
+- For intern-role members with `training_status = "interview_pending"`, show a "Verify & Activate" button
+- Clicking it updates the profile: `{ is_verified: true, training_status: "active" }`
+- This unlocks Peer Connect on the intern's end (existing condition `trainingStatus === "active"` already handles tab unlocking)
 
 ### Files to modify
-- `src/pages/dashboard/QuestCards.tsx` — Visual redesign
-- `src/App.css` — Card animation utilities
-- `src/index.css` — Card table utility class
+- `src/components/layout/DashboardLayout.tsx` — Remove BlackBox Queue from `internNavItems`
+- `src/components/intern/InternDashboardContent.tsx` — Update Day 7 display with interview info card, show verified badge state
+- `src/components/mobile/MobileInternDashboard.tsx` — Same Day 7 changes for mobile
+- `src/components/admin/MemberManager.tsx` — Add verify/activate button for interview-pending interns
+
+### No database changes needed
+- `is_verified` and `training_status` columns already exist on `profiles`
+- Existing RLS policies allow admin updates
 
