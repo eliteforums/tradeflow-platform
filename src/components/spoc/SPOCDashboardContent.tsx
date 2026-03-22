@@ -179,6 +179,16 @@ const SPOCDashboardContent = () => {
     },
   });
 
+  const { data: stabilityPoolBalance = 0 } = useQuery({
+    queryKey: ["stability-pool", institutionId],
+    queryFn: async () => {
+      if (!institutionId) return 0;
+      const { data, error } = await supabase.rpc("get_pool_balance", { _institution_id: institutionId });
+      if (error) throw error;
+      return data || 0;
+    },
+    enabled: !!institutionId,
+  });
   const { data: auditLogs = [] } = useQuery({
     queryKey: ["spoc-audit-logs"],
     queryFn: async () => {
