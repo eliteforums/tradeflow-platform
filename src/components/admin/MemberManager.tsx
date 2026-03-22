@@ -82,6 +82,7 @@ export default function MemberManager() {
 
   const getRoleDesc = (role: string) => {
     const map: Record<string, string> = {
+      student: "Institution-specific — Self-help tools, peer sessions, quests",
       intern: "Universal — Peer sessions, escalation flagging",
       expert: "Universal — Appointments, session notes",
       spoc: "Institution-specific — QR onboarding, credits, analytics",
