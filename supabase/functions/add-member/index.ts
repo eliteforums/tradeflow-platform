@@ -16,7 +16,6 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Missing authorization header");
 
-    // Verify the caller is an admin
     const supabaseUser = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -26,7 +25,6 @@ serve(async (req) => {
     const { data: { user: caller } } = await supabaseUser.auth.getUser();
     if (!caller) throw new Error("Unauthorized");
 
-    // Check admin role
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -45,7 +43,7 @@ serve(async (req) => {
       throw new Error("username, password, and role are required");
     }
 
-    const validRoles = ["student", "intern", "expert", "spoc", "therapist"];
+    const validRoles = ["intern", "expert", "spoc", "therapist"];
     if (!validRoles.includes(role)) {
       throw new Error(`Invalid role. Must be one of: ${validRoles.join(", ")}`);
     }
@@ -54,9 +52,14 @@ serve(async (req) => {
       throw new Error("Password must be at least 6 characters");
     }
 
+    // SPOC requires institution_id; other roles are universal
+    if (role === "spoc" && !institution_id) {
+      throw new Error("SPOC role requires an institution");
+    }
+    const effectiveInstitutionId = role === "spoc" ? institution_id : null;
+
     const email = `${username.toLowerCase().replace(/\s+/g, "_")}@eternia.local`;
 
-    // Create user via admin API
     const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -71,18 +74,16 @@ serve(async (req) => {
       throw createErr;
     }
 
-    // Update profile with correct role and institution
     const { error: profileErr } = await supabaseAdmin
       .from("profiles")
       .update({
         role,
-        ...(institution_id ? { institution_id } : {}),
+        ...(effectiveInstitutionId ? { institution_id: effectiveInstitutionId } : {}),
       })
       .eq("id", newUser.user.id);
 
     if (profileErr) console.error("Profile update error:", profileErr);
 
-    // Add to user_roles table
     const { error: roleErr } = await supabaseAdmin.from("user_roles").insert({
       user_id: newUser.user.id,
       role,
@@ -91,13 +92,12 @@ serve(async (req) => {
       console.error("Role insert error:", roleErr);
     }
 
-    // Audit log
     await supabaseAdmin.from("audit_logs").insert({
       actor_id: caller.id,
       action_type: "member_created",
       target_table: "profiles",
       target_id: newUser.user.id,
-      metadata: { username, role, institution_id: institution_id || null },
+      metadata: { username, role, institution_id: effectiveInstitutionId },
     });
 
     return new Response(
