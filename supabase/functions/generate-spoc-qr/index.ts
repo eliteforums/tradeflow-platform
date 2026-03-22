@@ -6,21 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function hmacSign(key: string, message: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(key),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(message));
-  return Array.from(new Uint8Array(signature))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -48,27 +33,46 @@ Deno.serve(async (req) => {
     if (!profile || profile.role !== "spoc") throw new Error("Unauthorized: SPOC role required");
     if (!profile.institution_id) throw new Error("No institution linked");
 
-    const timestamp = Date.now();
+    // Pick one random unused temp credential from the institution
+    const { data: tempCred, error: credError } = await supabase
+      .from("temp_credentials")
+      .select("id, temp_username, temp_password_plain")
+      .eq("institution_id", profile.institution_id)
+      .eq("status", "unused")
+      .limit(1);
 
-    const payload = {
+    if (credError) throw new Error("Failed to fetch temp credentials");
+    if (!tempCred || tempCred.length === 0) {
+      throw new Error("No unused temp IDs available. Ask your admin to generate more.");
+    }
+
+    const picked = tempCred[0];
+
+    // Mark as assigned
+    const { error: updateError } = await supabase
+      .from("temp_credentials")
+      .update({
+        status: "assigned",
+        assigned_at: new Date().toISOString(),
+      })
+      .eq("id", picked.id);
+
+    if (updateError) throw new Error("Failed to assign temp credential");
+
+    // Build QR payload
+    const qrPayload = JSON.stringify({
+      temp_id: picked.temp_username,
+      temp_password: picked.temp_password_plain,
       institution_id: profile.institution_id,
-      spoc_id: user.id,
-      timestamp,
-    };
-
-    const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const message = `${payload.institution_id}|${payload.spoc_id}|${payload.timestamp}`;
-    const signature = await hmacSign(secret, message);
-
-    const qrPayload = JSON.stringify({ ...payload, signature });
+    });
 
     // Audit log
     await supabase.from("audit_logs").insert({
       actor_id: user.id,
       action_type: "spoc_qr_generated",
-      target_table: "institutions",
-      target_id: profile.institution_id,
-      metadata: { generated_at: new Date().toISOString() },
+      target_table: "temp_credentials",
+      target_id: picked.id,
+      metadata: { temp_username: picked.temp_username, generated_at: new Date().toISOString() },
     });
 
     return new Response(JSON.stringify({ qr_payload: qrPayload }), {
