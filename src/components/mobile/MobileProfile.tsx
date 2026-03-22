@@ -108,7 +108,7 @@ const MobileProfile = () => {
     finally { setIsSavingEmergency(false); }
   };
 
-  const trainingProgress = profile?.training_progress as number[] | null;
+  const trainingProgress = (profile as any)?.training_progress as number[] | null;
   const completedModules = trainingProgress || [];
   const trainingStatus = (profile as any)?.training_status || "not_started";
 
