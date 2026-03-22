@@ -1,87 +1,78 @@
 
 
-## Plan: Fix QR Code Generation + Comprehensive Legal Pages
+## Plan: PRD v2-24 + CR v1.5 Gap Analysis & Implementation
 
-### 1. QR Code Fix
+### Gap Analysis Summary
 
-The `QRCodeSVG` component and library are installed correctly. The likely issue is the edge function failing silently — the query catches errors but the fallback shows "Failed to generate" without a retry prompt. Two fixes:
-
-**a) Improve error handling in SPOCTools.tsx:**
-- Add `retry: 2` to the query config
-- Show the actual error message in the fallback state
-- Add a "Try Again" button in the error state
-
-**b) Edge function auth issue:**
-- The `generate-spoc-qr` function requires `Authorization` header. The Supabase client auto-attaches it, but the function reads it manually. Verify the function is deployed and accessible. The code itself looks correct — this is likely a deployment/network issue that the retry will help with.
+After comparing both documents against the existing codebase, the following gaps remain. I'm grouping them into two categories: **Profile Differentiation** (your explicit request) and **Missing Modules/Features**.
 
 ---
 
-### 2. Privacy Policy — Comprehensive Legal Document (~20 sections)
+### 1. Profile Section — Role-Based Differentiation
 
-Rewrite `Privacy.tsx` to be a full enterprise-grade privacy policy covering:
+**Problem**: Currently, `Profile.tsx` and `MobileProfile.tsx` show the same UI to ALL roles — including APAAR/Student verification, Student ID, emergency contacts, and credits for interns/experts/therapists/SPOCs. Per PRD, APAAR verification, Student ID, credits display, and ECC wallet are student-only features.
 
-1. Introduction & Scope
-2. Definitions (Data Controller, Data Subject, Processing, etc.)
-3. Information We Collect (categories: account data, usage data, device data, session data, cookie data)
-4. Legal Basis for Processing (consent, legitimate interest, contractual necessity)
-5. How We Use Your Information (12+ specific purposes)
-6. Data Retention Periods (table format with data type → retention period)
-7. Data Storage, Security & Encryption (AES-256, TLS 1.3, E2E encryption details)
-8. Data Sharing & Third Parties (sub-processors, institutional partners)
-9. International Data Transfers
-10. Cookie Policy (types: essential, analytics, preferences — with table)
-11. Your Rights Under GDPR/DPDP (access, rectification, erasure, portability, objection, restriction)
-12. Children's Privacy
-13. Automated Decision-Making & AI
-14. BlackBox & Session Data Handling
-15. Data Breach Notification Procedures
-16. Changes to This Policy
-17. Grievance Redressal & DPO Contact
-18. Governing Law & Jurisdiction
+Additionally, Expert/Intern/Therapist/SPOC dashboards have minimal inline profile tabs that don't match the full Profile page feature set.
 
-Add a table of contents at top with anchor links. Include styled subsections, bullet lists, and data tables.
+**Changes**:
+
+**a) `Profile.tsx` + `MobileProfile.tsx` — Conditional sections by role:**
+- **Student**: Show APAAR/ERP verification, Student ID, emergency contact, credits, wallet balance, recovery setup — full current UI
+- **Expert**: Show specialty, licence no., CRR verification status, total sessions, bio. Hide APAAR, Student ID, credits, emergency contact
+- **Intern**: Show training status, CRR verification, sessions completed, bio. Hide APAAR, Student ID, credits
+- **Therapist**: Show specialty, verification status, sessions, escalation history count. Hide APAAR, Student ID, credits
+- **SPOC**: Show institution info, total students onboarded, QR generation link, bio. Hide APAAR, Student ID, credits
+
+Common sections for ALL roles: username (read-only), bio, password change, recovery setup, notifications, privacy, logout, account deletion.
+
+**Files**: `src/pages/dashboard/Profile.tsx`, `src/components/mobile/MobileProfile.tsx`
 
 ---
 
-### 3. Terms of Service — Comprehensive Legal Document (~25 sections)
+### 2. Missing Modules from PRD
 
-Rewrite `Terms.tsx` to be a full legal ToS covering:
+**a) Recovery Setup — Hint Word Dropdown (CR v1.5 §10.1)**
+- Current `RecoverySetup` uses emoji pattern + fragment pairs. CR v1.5 says "Hint word as dropdown, Answer word"
+- Update the recovery flow to use a hint-word dropdown (predefined security questions) + answer word, keeping emoji pattern as a second layer
 
-1. Introduction & Definitions
-2. Acceptance of Terms
-3. Eligibility & Registration
-4. Account Security & Anonymity
-5. SPOC Verification & Institution Binding
-6. Platform Services Description (Peer Connect, BlackBox, Expert Sessions, Sound Therapy, Self-Help)
-7. Eternia Credits (ECC) — earning, spending, non-transferability, expiry
-8. Acceptable Use Policy (detailed prohibited conduct list)
-9. Content Standards & AI Moderation
-10. Intellectual Property Rights
-11. User-Generated Content License
-12. Privacy & Data Protection (cross-reference)
-13. Third-Party Services & Integrations
-14. Service Availability & Uptime
-15. Limitation of Liability
-16. Indemnification
-17. Disclaimer of Warranties
-18. Emergency & Crisis Disclaimer
-19. Termination & Suspension
-20. Account Deletion & 30-Day Grace Period
-21. Dispute Resolution & Arbitration
-22. Governing Law & Jurisdiction (India)
-23. Severability
-24. Force Majeure
-25. Contact Information
+**File**: `src/pages/dashboard/RecoverySetup.tsx`, `src/components/mobile/MobileRecoverySetup.tsx`
 
-Same table of contents with anchor links.
+**b) Connect Button Split (CR v1.5 §8.3)**
+- Home page "Connect" section should clearly separate: Expert Connect, Peer Connect, BlackBox as distinct portals — this is ALREADY implemented correctly in `Dashboard.tsx`. No change needed.
+
+**c) Low Balance Prompt (PRD §21)**
+- "Your care energy is low. Refill gently." when `wallet_balance < 5 ECC` — this is ALREADY implemented in `Dashboard.tsx` line 75-84. No change needed.
+
+**d) Daily ECC Earning Cap Display**
+- PRD specifies 5 ECC daily cap. The hook `useEccEarn.ts` likely enforces this. Add a visual indicator on the Credits page showing daily earned vs cap.
+
+**File**: `src/pages/dashboard/Credits.tsx`, `src/components/mobile/MobileCredits.tsx`
+
+**e) ECC Stability Pool Visibility for SPOC/Admin**
+- PRD says the pool exists (and we have the table + auto-contribute function). Add pool balance display to SPOC dashboard reports tab.
+
+**File**: `src/components/spoc/SPOCDashboardContent.tsx`
 
 ---
 
-### Files
+### 3. Implementation Plan
 
-| # | File | Change |
-|---|------|--------|
-| 1 | `src/components/admin/SPOCTools.tsx` | Add retry logic, better error/fallback states |
-| 2 | `src/pages/legal/Privacy.tsx` | Full rewrite — 18 sections with TOC, tables, anchor links |
-| 3 | `src/pages/legal/Terms.tsx` | Full rewrite — 25 sections with TOC, tables, anchor links |
+| # | Task | Files |
+|---|------|-------|
+| 1 | Make Profile.tsx role-aware: hide APAAR/StudentID/credits for non-students, show role-specific fields | `Profile.tsx` |
+| 2 | Make MobileProfile.tsx role-aware: same conditional logic | `MobileProfile.tsx` |
+| 3 | Update Expert profile tab with licence/specialty fields | `ExpertDashboardContent.tsx` |
+| 4 | Update Intern profile tab with training status details | `InternDashboardContent.tsx` |
+| 5 | Update Therapist profile tab with specialty/escalation stats | `TherapistDashboardContent.tsx` |
+| 6 | Add daily ECC cap indicator on Credits page | `Credits.tsx`, `MobileCredits.tsx` |
+| 7 | Add stability pool balance to SPOC reports | `SPOCDashboardContent.tsx` |
+| 8 | Update RecoverySetup with hint-word dropdown per CR v1.5 | `RecoverySetup.tsx`, `MobileRecoverySetup.tsx` |
+
+### Technical Details
+
+- Role check: `profile?.role === "student"` to gate APAAR, emergency contact, Student ID, and credits sections
+- Expert/Therapist get a "Specialty" editable field (already exists in DB as `profiles.specialty`)
+- Intern profile shows `training_status` from profile with progress bar
+- No database changes needed — all fields already exist in the schema
+- Recovery hint-word dropdown: predefined list of 10-15 security questions stored as the fragment key, with the user's answer as the fragment value
 
