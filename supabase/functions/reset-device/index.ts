@@ -5,10 +5,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limiter
+const rateStore = new Map<string, { count: number; resetAt: number }>();
+function rateLimit(key: string, max = 10, windowMs = 60000): boolean {
+  const now = Date.now();
+  const e = rateStore.get(key);
+  if (!e || now > e.resetAt) { rateStore.set(key, { count: 1, resetAt: now + windowMs }); return true; }
+  e.count++;
+  return e.count <= max;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(`reset-device:${ip}`, 10)) {
+      return new Response(JSON.stringify({ error: "Too many requests" }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -17,34 +34,37 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Not authenticated");
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (authError || !user) throw new Error("Not authenticated");
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: claimsErr } = await supabase.auth.getClaims(token);
+    if (claimsErr || !claims?.claims?.sub) throw new Error("Not authenticated");
+    const callerId = claims.claims.sub as string;
 
-    // Verify SPOC role
-    const { data: spocProfile } = await supabase
-      .from("profiles")
-      .select("role, institution_id")
-      .eq("id", user.id)
-      .single();
+    // Verify SPOC or admin role
+    const { data: isSpoc } = await supabase.rpc("has_role", { _user_id: callerId, _role: "spoc" });
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: callerId, _role: "admin" });
+    if (!isSpoc && !isAdmin) throw new Error("Unauthorized: SPOC or admin role required");
 
-    if (!spocProfile || spocProfile.role !== "spoc") {
-      throw new Error("Unauthorized: SPOC role required");
-    }
+    const body = await req.json();
+    const student_id = typeof body?.student_id === "string" && /^[0-9a-f-]{36}$/i.test(body.student_id) ? body.student_id : null;
+    if (!student_id) throw new Error("Invalid student_id");
 
-    const { student_id } = await req.json();
-    if (!student_id) throw new Error("Missing student_id");
+    // If SPOC, verify student belongs to same institution
+    if (isSpoc && !isAdmin) {
+      const { data: spocProfile } = await supabase
+        .from("profiles")
+        .select("institution_id")
+        .eq("id", callerId)
+        .single();
 
-    // Verify student belongs to same institution
-    const { data: studentProfile } = await supabase
-      .from("profiles")
-      .select("institution_id")
-      .eq("id", student_id)
-      .single();
+      const { data: studentProfile } = await supabase
+        .from("profiles")
+        .select("institution_id")
+        .eq("id", student_id)
+        .single();
 
-    if (!studentProfile || studentProfile.institution_id !== spocProfile.institution_id) {
-      throw new Error("Student not in your institution");
+      if (!spocProfile || !studentProfile || studentProfile.institution_id !== spocProfile.institution_id) {
+        throw new Error("Student not in your institution");
+      }
     }
 
     // Clear device fingerprint
@@ -57,11 +77,11 @@ Deno.serve(async (req) => {
 
     // Audit log
     await supabase.from("audit_logs").insert({
-      actor_id: user.id,
+      actor_id: callerId,
       action_type: "device_reset",
       target_table: "user_private",
       target_id: student_id,
-      metadata: { reason: "SPOC-initiated device reset" },
+      metadata: { reason: "SPOC/Admin-initiated device reset" },
     });
 
     return new Response(JSON.stringify({ success: true }), {

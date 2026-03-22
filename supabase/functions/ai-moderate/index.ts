@@ -5,13 +5,33 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limiter
+const rateStore = new Map<string, { count: number; resetAt: number }>();
+function rateLimit(key: string, max = 30, windowMs = 60000): boolean {
+  const now = Date.now();
+  const e = rateStore.get(key);
+  if (!e || now > e.resetAt) { rateStore.set(key, { count: 1, resetAt: now + windowMs }); return true; }
+  e.count++;
+  return e.count <= max;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { content, entry_id } = await req.json();
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(`ai-mod:${ip}`, 30)) {
+      return new Response(JSON.stringify({ error: "Too many requests" }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json();
+    const content = typeof body?.content === "string" ? body.content.trim().slice(0, 5000) : "";
+    const entry_id = typeof body?.entry_id === "string" && /^[0-9a-f-]{36}$/i.test(body.entry_id) ? body.entry_id : null;
+
     if (!content || !entry_id) {
       return new Response(JSON.stringify({ error: "content and entry_id required" }), {
         status: 400,
@@ -22,7 +42,6 @@ serve(async (req) => {
     const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
     if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not configured");
 
-    // Classify risk level using Groq AI
     const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -64,7 +83,6 @@ Respond with ONLY the number. No explanation.`,
     const rawLevel = aiData.choices?.[0]?.message?.content?.trim() || "0";
     const flag_level = Math.min(3, Math.max(0, parseInt(rawLevel, 10) || 0));
 
-    // Update the entry's flag level using service role
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -84,7 +102,7 @@ Respond with ONLY the number. No explanation.`,
     });
   } catch (error) {
     console.error("AI moderation error:", error);
-    return new Response(JSON.stringify({ error: error.message, flag_level: 0 }), {
+    return new Response(JSON.stringify({ error: (error as Error).message, flag_level: 0 }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

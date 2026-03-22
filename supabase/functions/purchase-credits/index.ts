@@ -8,11 +8,21 @@ const corsHeaders = {
 };
 
 const PACKAGES: Record<number, { credits: number; amount: number }> = {
-  50: { credits: 50, amount: 9900 }, // ₹99 in paise
+  50: { credits: 50, amount: 9900 },
   100: { credits: 100, amount: 17900 },
   250: { credits: 250, amount: 39900 },
   500: { credits: 500, amount: 69900 },
 };
+
+// Rate limiter
+const rateStore = new Map<string, { count: number; resetAt: number }>();
+function rateLimit(key: string, max = 10, windowMs = 60000): boolean {
+  const now = Date.now();
+  const e = rateStore.get(key);
+  if (!e || now > e.resetAt) { rateStore.set(key, { count: 1, resetAt: now + windowMs }); return true; }
+  e.count++;
+  return e.count <= max;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -20,6 +30,13 @@ serve(async (req) => {
   }
 
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(`purchase:${ip}`, 10)) {
+      return new Response(JSON.stringify({ error: "Too many requests" }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const RAZORPAY_KEY_ID = Deno.env.get("RAZORPAY_KEY_ID");
     const RAZORPAY_KEY_SECRET = Deno.env.get("RAZORPAY_KEY_SECRET");
 
@@ -33,8 +50,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -44,26 +60,25 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: claimsErr } = await supabase.auth.getClaims(token);
+    if (claimsErr || !claims?.claims?.sub) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claims.claims.sub as string;
 
-    const { action, credits, razorpay_payment_id, razorpay_order_id, razorpay_signature } =
-      await req.json();
+    const body = await req.json();
+    const action = typeof body?.action === "string" ? body.action : "";
 
     // ── Create Order ──
     if (action === "create_order") {
+      const credits = parseInt(body?.credits);
       const pkg = PACKAGES[credits];
       if (!pkg) {
         return new Response(JSON.stringify({ error: "Invalid package" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -76,17 +91,15 @@ serve(async (req) => {
         body: JSON.stringify({
           amount: pkg.amount,
           currency: "INR",
-          receipt: `ecc_${user.id.slice(0, 8)}_${Date.now()}`,
-          notes: { user_id: user.id, credits: pkg.credits },
+          receipt: `ecc_${userId.slice(0, 8)}_${Date.now()}`,
+          notes: { user_id: userId, credits: pkg.credits },
         }),
       });
 
       if (!orderRes.ok) {
-        const errText = await orderRes.text();
-        console.error("Razorpay order error:", orderRes.status, errText);
+        console.error("Razorpay order error:", orderRes.status);
         return new Response(JSON.stringify({ error: "Failed to create order" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -99,14 +112,17 @@ serve(async (req) => {
 
     // ── Verify Payment ──
     if (action === "verify_payment") {
+      const razorpay_payment_id = typeof body?.razorpay_payment_id === "string" ? body.razorpay_payment_id.slice(0, 100) : "";
+      const razorpay_order_id = typeof body?.razorpay_order_id === "string" ? body.razorpay_order_id.slice(0, 100) : "";
+      const razorpay_signature = typeof body?.razorpay_signature === "string" ? body.razorpay_signature.slice(0, 200) : "";
+
       if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
         return new Response(JSON.stringify({ error: "Missing payment details" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Verify signature using HMAC SHA256
+      // Verify HMAC signature
       const encoder = new TextEncoder();
       const key = await crypto.subtle.importKey(
         "raw",
@@ -123,12 +139,11 @@ serve(async (req) => {
 
       if (generatedSignature !== razorpay_signature) {
         return new Response(JSON.stringify({ error: "Payment verification failed" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Fetch order to get credits from notes
+      // Fetch order to get credits
       const orderRes = await fetch(`https://api.razorpay.com/v1/orders/${razorpay_order_id}`, {
         headers: {
           Authorization: `Basic ${btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`)}`,
@@ -137,42 +152,42 @@ serve(async (req) => {
 
       if (!orderRes.ok) {
         return new Response(JSON.stringify({ error: "Failed to verify order" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       const order = await orderRes.json();
-      const creditAmount = parseInt(order.notes?.credits || "0");
 
-      if (creditAmount <= 0) {
-        return new Response(JSON.stringify({ error: "Invalid credit amount" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+      // Verify the order belongs to this user
+      if (order.notes?.user_id !== userId) {
+        return new Response(JSON.stringify({ error: "Order does not belong to this user" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Use service role to insert credit transaction
-      const serviceClient = createClient(
-        supabaseUrl,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
+      const creditAmount = parseInt(order.notes?.credits || "0");
+      if (creditAmount <= 0 || !PACKAGES[creditAmount]) {
+        return new Response(JSON.stringify({ error: "Invalid credit amount" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
       const { error: insertError } = await serviceClient
         .from("credit_transactions")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           delta: creditAmount,
           type: "purchase",
-          notes: `Purchased ${creditAmount} ECC (Razorpay: ${razorpay_payment_id})`,
+          notes: `Purchased ${creditAmount} ECC (Razorpay: ${razorpay_payment_id.slice(0, 30)})`,
           reference_id: null,
         });
 
       if (insertError) {
         console.error("Insert error:", insertError);
         return new Response(JSON.stringify({ error: "Failed to credit account" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -183,13 +198,12 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ error: "Invalid action" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("purchase-credits error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
+      JSON.stringify({ error: "An error occurred" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
