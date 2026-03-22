@@ -3,7 +3,7 @@ import MobileDashboard from "@/components/mobile/MobileDashboard";
 import { Link, Navigate } from "react-router-dom";
 import {
   Calendar, MessageCircle, Box, Music, Sparkles, Coins,
-  ArrowRight, Award, Heart, AlertCircle, Sunrise, Sun, Moon,
+  ArrowRight, Award, Heart, AlertCircle, Sunrise, Sun, Moon, BarChart3,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
