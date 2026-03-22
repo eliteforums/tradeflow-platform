@@ -453,10 +453,13 @@ const AdminDashboard = () => {
 
               {/* ─── ROLES ─── */}
               {activeTab === "roles" && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-start">
                   <MemberManager />
-                  <RoleManager />
-                  <CreditGrantTool />
+                  <div className="space-y-4">
+                    <RoleManager />
+                    <CreditGrantTool />
+                    <ReferralCodesCard />
+                  </div>
                 </div>
               )}
 
