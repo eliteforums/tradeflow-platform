@@ -19,6 +19,7 @@ export interface QuestCompletion {
   quest_id: string;
   completed_date: string;
   completed_at: string;
+  answer: string | null;
 }
 
 export function useQuests() {
@@ -48,7 +49,7 @@ export function useQuests() {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("quest_completions")
-        .select("id, user_id, quest_id, completed_date, completed_at")
+        .select("id, user_id, quest_id, completed_date, completed_at, answer")
         .eq("user_id", user.id)
         .eq("completed_date", today);
 
@@ -60,7 +61,7 @@ export function useQuests() {
   });
 
   const completeQuest = useMutation({
-    mutationFn: async (quest: QuestCard) => {
+    mutationFn: async ({ quest, answer }: { quest: QuestCard; answer: string }) => {
       if (!user) throw new Error("Not authenticated");
 
       const alreadyCompleted = completions.some(c => c.quest_id === quest.id);
@@ -73,6 +74,7 @@ export function useQuests() {
         const { error: completionError } = await supabase.from("quest_completions").insert({
           user_id: user.id,
           quest_id: quest.id,
+          answer,
         });
         if (completionError) throw completionError;
         return { ...quest, xp_reward: 0 };
@@ -81,6 +83,7 @@ export function useQuests() {
       const { error: completionError } = await supabase.from("quest_completions").insert({
         user_id: user.id,
         quest_id: quest.id,
+        answer,
       });
       if (completionError) throw completionError;
 
@@ -116,7 +119,7 @@ export function useQuests() {
     completions,
     isLoading: isLoadingQuests || isLoadingCompletions,
     error: questsError || completionsError,
-    completeQuest: completeQuest.mutate,
+    completeQuest: (args: { quest: QuestCard; answer: string }) => completeQuest.mutate(args),
     isCompleting: completeQuest.isPending,
     completedToday: completions.length,
     totalXpToday,
