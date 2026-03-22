@@ -469,17 +469,6 @@ export default function MemberManager() {
           </div>
         )}
       </div>
-      {/* Referral Codes */}
-      <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Gift className="w-4 h-4 text-primary" />
-          Referral Codes
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Generate a referral code that allows an intern to skip training and immediately unlock their dashboard.
-        </p>
-        <ReferralCodeSection queryClient={queryClient} />
-      </div>
     </div>
   );
 }
@@ -491,7 +480,9 @@ function generateCode(): string {
   return result;
 }
 
-function ReferralCodeSection({ queryClient }: { queryClient: ReturnType<typeof useQueryClient> }) {
+export function ReferralCodesCard() {
+  const queryClient = useQueryClient();
+
   const { data: codes = [], isLoading } = useQuery({
     queryKey: ["admin-referral-codes"],
     queryFn: async () => {
@@ -526,17 +517,23 @@ function ReferralCodeSection({ queryClient }: { queryClient: ReturnType<typeof u
   });
 
   return (
-    <div className="space-y-3">
+    <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
+      <h3 className="text-sm font-semibold flex items-center gap-2">
+        <Gift className="w-4 h-4 text-primary" />
+        Referral Codes
+      </h3>
+      <p className="text-xs text-muted-foreground">
+        Generate a code to let an intern skip training.
+      </p>
       <Button
         size="sm"
-        className="gap-1.5 h-8 text-xs"
+        className="gap-1.5 h-8 text-xs w-full"
         onClick={() => createMutation.mutate()}
         disabled={createMutation.isPending}
       >
         {createMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
         Generate Code
       </Button>
-
       {isLoading ? (
         <div className="flex items-center justify-center py-4">
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -553,18 +550,16 @@ function ReferralCodeSection({ queryClient }: { queryClient: ReturnType<typeof u
                   {c.is_used ? "Used" : "Unused"}
                 </span>
               </div>
-              <div className="flex items-center gap-1">
-                {!c.is_used && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => { navigator.clipboard.writeText(c.code); toast.success("Copied!"); }}
-                  >
-                    <Copy className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
+              {!c.is_used && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => { navigator.clipboard.writeText(c.code); toast.success("Copied!"); }}
+                >
+                  <Copy className="w-3 h-3" />
+                </Button>
+              )}
             </div>
           ))}
         </div>

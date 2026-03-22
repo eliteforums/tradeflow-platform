@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 import SPOCTools from "@/components/admin/SPOCTools";
 import RoleManager from "@/components/admin/RoleManager";
-import MemberManager from "@/components/admin/MemberManager";
+import MemberManager, { ReferralCodesCard } from "@/components/admin/MemberManager";
 import CreditGrantTool from "@/components/admin/CreditGrantTool";
 import SoundManager from "@/components/admin/SoundManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
@@ -453,10 +453,13 @@ const AdminDashboard = () => {
 
               {/* ─── ROLES ─── */}
               {activeTab === "roles" && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 items-start">
                   <MemberManager />
-                  <RoleManager />
-                  <CreditGrantTool />
+                  <div className="space-y-4">
+                    <RoleManager />
+                    <CreditGrantTool />
+                    <ReferralCodesCard />
+                  </div>
                 </div>
               )}
 
