@@ -43,6 +43,7 @@ const MeetingView = ({
   const [joined, setJoined] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
   const hasAutoJoined = useRef(false);
+  const joinRef = useRef<() => void>();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { join, participants } = useMeeting({
@@ -54,14 +55,20 @@ const MeetingView = ({
     onMeetingLeft: () => onMeetingLeave(),
   });
 
-  // Auto-join on mount when autoJoin is true
+  // Keep join ref current
+  joinRef.current = join;
+
+  // Auto-join on mount with a small delay to let SDK initialize
   useEffect(() => {
-    if (autoJoin && !hasAutoJoined.current && joined === null) {
+    if (autoJoin && !hasAutoJoined.current) {
       hasAutoJoined.current = true;
-      setJoined("JOINING");
-      join();
+      const timer = setTimeout(() => {
+        setJoined("JOINING");
+        joinRef.current?.();
+      }, 300);
+      return () => clearTimeout(timer);
     }
-  }, [autoJoin, join, joined]);
+  }, [autoJoin]);
 
   // Timeout: if JOINING for > 15s, show retry
   useEffect(() => {
@@ -94,13 +101,8 @@ const MeetingView = ({
 
   const retryJoin = () => {
     setTimedOut(false);
-    setJoined(null);
-    hasAutoJoined.current = false;
-    setTimeout(() => {
-      setJoined("JOINING");
-      hasAutoJoined.current = true;
-      join();
-    }, 100);
+    setJoined("JOINING");
+    join();
   };
 
   if (joined === "JOINING") {

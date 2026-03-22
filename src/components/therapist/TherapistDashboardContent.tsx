@@ -594,7 +594,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
               {/* Audio session */}
               {token && activeSession.room_id ? (
                 <div className="rounded-xl bg-card border border-border overflow-hidden">
-                  <MeetingProvider
+                 <MeetingProvider
                     config={{
                       meetingId: activeSession.room_id,
                       micEnabled: true,
