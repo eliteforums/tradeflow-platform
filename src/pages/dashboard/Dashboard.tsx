@@ -49,14 +49,14 @@ const Dashboard = () => {
 
   const selfHelpTools = [
     { icon: Music, title: "Sound Therapy", description: "Meditate & relax", path: "/dashboard/sound-therapy", gradient: "from-cyan-500 to-blue-500" },
-    { icon: Award, title: "Quest Cards", description: "Daily wellbeing quests", path: "/dashboard/self-help", gradient: "from-amber-400 to-orange-500" },
-    { icon: Sparkles, title: "Wreck Buddy", description: "Release stress creatively", path: "/dashboard/self-help", gradient: "from-pink-400 to-rose-500" },
+    { icon: Award, title: "Quest Cards", description: "Daily wellbeing quests", path: "/dashboard/quest-cards", gradient: "from-amber-400 to-orange-500" },
+    { icon: Sparkles, title: "Journaling", description: "Reflective writing", path: "/dashboard/journaling", gradient: "from-emerald-400 to-teal-500" },
   ];
 
   const quickTools = [
-    { name: "Quest Cards", icon: Award, path: "/dashboard/self-help", color: "text-amber-400" },
-    { name: "Wreck Buddy", icon: Sparkles, path: "/dashboard/self-help", color: "text-pink-400" },
-    { name: "Tibetan Bowl", icon: Music, path: "/dashboard/self-help", color: "text-violet-400" },
+    { name: "Quest Cards", icon: Award, path: "/dashboard/quest-cards", color: "text-amber-400" },
+    { name: "Journaling", icon: Sparkles, path: "/dashboard/journaling", color: "text-emerald-400" },
+    { name: "Mood", icon: Music, path: "/dashboard/mood-tracker", color: "text-cyan-400" },
     { name: "Wallet", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
   ];
 

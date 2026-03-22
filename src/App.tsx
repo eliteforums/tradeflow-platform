@@ -25,6 +25,10 @@ const PeerConnect = lazy(() => import("./pages/dashboard/PeerConnect"));
 const BlackBox = lazy(() => import("./pages/dashboard/BlackBox"));
 const SoundTherapy = lazy(() => import("./pages/dashboard/SoundTherapy"));
 const SelfHelp = lazy(() => import("./pages/dashboard/SelfHelp"));
+const QuestCards = lazy(() => import("./pages/dashboard/QuestCards"));
+const Journaling = lazy(() => import("./pages/dashboard/Journaling"));
+const MoodTrackerPage = lazy(() => import("./pages/dashboard/MoodTracker"));
+const GratitudePage = lazy(() => import("./pages/dashboard/Gratitude"));
 const Credits = lazy(() => import("./pages/dashboard/Credits"));
 const Profile = lazy(() => import("./pages/dashboard/Profile"));
 const RecoverySetup = lazy(() => import("./pages/dashboard/RecoverySetup"));
@@ -93,6 +97,10 @@ const App = () => (
               <Route path="/dashboard/blackbox" element={<ProtectedRoute><BlackBox /></ProtectedRoute>} />
               <Route path="/dashboard/sound-therapy" element={<ProtectedRoute><SoundTherapy /></ProtectedRoute>} />
               <Route path="/dashboard/self-help" element={<ProtectedRoute><SelfHelp /></ProtectedRoute>} />
+              <Route path="/dashboard/quest-cards" element={<ProtectedRoute><QuestCards /></ProtectedRoute>} />
+              <Route path="/dashboard/journaling" element={<ProtectedRoute><Journaling /></ProtectedRoute>} />
+              <Route path="/dashboard/mood-tracker" element={<ProtectedRoute><MoodTrackerPage /></ProtectedRoute>} />
+              <Route path="/dashboard/gratitude" element={<ProtectedRoute><GratitudePage /></ProtectedRoute>} />
               <Route path="/dashboard/credits" element={<ProtectedRoute><Credits /></ProtectedRoute>} />
               <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/dashboard/recovery-setup" element={<ProtectedRoute><RecoverySetup /></ProtectedRoute>} />
