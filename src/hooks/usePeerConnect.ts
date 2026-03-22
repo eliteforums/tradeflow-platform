@@ -208,11 +208,11 @@ export function usePeerConnect(initialSessionId?: string | null) {
     // Check if session already has a room_id
     const { data: session } = await supabase
       .from("peer_sessions")
-      .select("room_id")
+      .select("room_id" as any)
       .eq("id", sessionId)
       .single();
 
-    if (session?.room_id) return session.room_id;
+    if ((session as any)?.room_id) return (session as any).room_id;
 
     // Create a new room and persist it
     try {
