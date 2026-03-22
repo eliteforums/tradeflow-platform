@@ -559,7 +559,7 @@ const SPOCDashboardContent = () => {
                 Regenerate
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground italic">HMAC-SHA256 signed · Regenerable · Audited</p>
+            <p className="text-[10px] text-muted-foreground italic">Single-use temp credential · Auto-assigned · Audited</p>
           </div>
 
           {/* Add Single Student */}
