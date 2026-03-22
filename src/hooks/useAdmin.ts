@@ -33,7 +33,7 @@ export function useAdmin() {
     queryFn: async () => {
       let query = supabase
         .from("profiles")
-        .select("*")
+        .select("id, username, role, is_active, is_verified, total_sessions, streak_days, created_at, institution_id, specialty")
         .order("created_at", { ascending: false });
 
       // SPOC only sees their own institution
