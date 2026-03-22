@@ -175,6 +175,37 @@ const MobileInternDashboard = () => {
               <p className="text-xs text-muted-foreground mt-1">{completedModules.length}/{trainingModules.length} done</p>
             </div>
 
+            {/* Final Interview Card */}
+            {isInterviewPending && (
+              <div className="p-4 rounded-2xl border border-primary/20 bg-primary/5 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Award className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Final Interview</h3>
+                    <p className="text-[10px] text-muted-foreground">Day 7 — Modules complete</p>
+                  </div>
+                </div>
+                {(profile as any)?.is_verified ? (
+                  <div className="p-2.5 rounded-lg bg-eternia-success/10 border border-eternia-success/20 flex items-center gap-2">
+                    <CheckCircle className="w-3.5 h-3.5 text-eternia-success" />
+                    <p className="text-xs font-medium text-eternia-success">Verified! Dashboard unlocking.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      An Eternia expert will share a meeting link. Once approved, an admin will verify your account and unlock Peer Connect.
+                    </p>
+                    <div className="p-2 rounded-lg bg-muted/30 border border-border/30 flex items-start gap-1.5">
+                      <Clock className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
+                      <p className="text-[10px] text-muted-foreground">Awaiting interview & verification</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               {trainingModules.map((m) => {
                 const done = completedModules.includes(m.day_number);
@@ -195,7 +226,7 @@ const MobileInternDashboard = () => {
                       </div>
                       {done && <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => { setActiveModule(m.day_number); setQuizAnswers({}); setQuizSubmitted(false); }}>Review</Button>}
                       {isNext && m.day_number !== 7 && <Button size="sm" className="h-6 text-[10px] px-2 gap-0.5" onClick={() => { setActiveModule(m.day_number); setQuizAnswers({}); setQuizSubmitted(false); }}><Play className="w-2.5 h-2.5" />Start</Button>}
-                      {isNext && m.day_number === 7 && <span className="text-[10px] text-muted-foreground italic">Expert</span>}
+                      {isNext && m.day_number === 7 && <span className="text-[10px] text-eternia-warning font-medium">Interview</span>}
                     </div>
                   </div>
                 );

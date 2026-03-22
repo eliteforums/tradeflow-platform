@@ -7,7 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight, Plus, Download, Key, CheckCircle, Clock, QrCode } from "lucide-react";
+import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight, Plus, Download, Key, CheckCircle, Clock, QrCode, ShieldCheck } from "lucide-react";
 
 const ROLES = [
   { value: "student", label: "Student" },
@@ -48,7 +48,7 @@ export default function MemberManager() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, role, institution_id, is_active, student_id, created_at")
+        .select("id, username, role, institution_id, is_active, is_verified, training_status, student_id, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -430,10 +430,35 @@ export default function MemberManager() {
                             <span className="font-medium truncate">{m.username}</span>
                             <span className="px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary capitalize">{m.role}</span>
                             {!m.is_active && <span className="px-1.5 py-0.5 rounded text-[10px] bg-destructive/10 text-destructive">Inactive</span>}
+                            {m.role === "intern" && m.is_verified && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] bg-eternia-success/10 text-eternia-success flex items-center gap-0.5">
+                                <ShieldCheck className="w-2.5 h-2.5" />Verified
+                              </span>
+                            )}
                           </div>
-                          <span className="text-[10px] text-muted-foreground font-mono shrink-0 ml-2">
-                            {m.student_id || "—"}
-                          </span>
+                          <div className="flex items-center gap-2 shrink-0 ml-2">
+                            {m.role === "intern" && m.training_status === "interview_pending" && !m.is_verified && (
+                              <Button
+                                size="sm"
+                                className="h-6 text-[10px] px-2 gap-0.5 bg-eternia-success hover:bg-eternia-success/90"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const { error } = await supabase
+                                    .from("profiles")
+                                    .update({ is_verified: true, training_status: "active" })
+                                    .eq("id", m.id);
+                                  if (error) { toast.error("Failed to verify"); return; }
+                                  toast.success(`${m.username} verified & activated`);
+                                  queryClient.invalidateQueries({ queryKey: ["admin-all-members"] });
+                                }}
+                              >
+                                <ShieldCheck className="w-2.5 h-2.5" />Verify & Activate
+                              </Button>
+                            )}
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              {m.student_id || "—"}
+                            </span>
+                          </div>
                         </div>
                       ))}
                     </div>

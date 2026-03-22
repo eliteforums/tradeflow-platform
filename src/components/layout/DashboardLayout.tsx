@@ -59,7 +59,6 @@ const expertNavItems = [
 const internNavItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard/intern" },
   { icon: MessageCircle, label: "Peer Connect", path: "/dashboard/peer-connect" },
-  { icon: Headphones, label: "BlackBox Queue", path: "/dashboard/therapist" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
@@ -96,7 +95,6 @@ const expertBottomNavItems = [
 const internBottomNavItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard/intern" },
   { icon: MessageCircle, label: "Connect", path: "/dashboard/peer-connect" },
-  { icon: Headphones, label: "Queue", path: "/dashboard/therapist" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
