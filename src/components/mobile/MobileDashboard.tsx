@@ -64,10 +64,12 @@ const MobileDashboard = () => {
 
   if (isLoading) return <DashboardSkeleton />;
 
-  if (profile?.role === "admin") return <Navigate to="/admin" replace />;
-  if (profile?.role === "spoc") return <Navigate to="/dashboard/spoc" replace />;
-  if (profile?.role === "expert") return <Navigate to="/dashboard/expert" replace />;
-  if (profile?.role === "intern") return <Navigate to="/dashboard/intern" replace />;
+  const role = profile?.role as string | undefined;
+  if (role === "admin") return <Navigate to="/admin" replace />;
+  if (role === "spoc") return <Navigate to="/dashboard/spoc" replace />;
+  if (role === "expert") return <Navigate to="/dashboard/expert" replace />;
+  if (role === "therapist") return <Navigate to="/dashboard/therapist" replace />;
+  if (role === "intern") return <Navigate to="/dashboard/intern" replace />;
 
   const connectPortals = [
     { icon: Calendar, title: "Expert Connect", desc: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500" },
