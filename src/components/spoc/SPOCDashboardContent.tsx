@@ -503,7 +503,7 @@ const SPOCDashboardContent = () => {
               QR Onboarding Code
             </h3>
             <p className="text-xs text-muted-foreground">
-              Each QR code assigns one unused temp ID to a student. Students scan it to set up their account.
+              Students scan this QR to verify your institution during onboarding.
             </p>
             <div className="flex flex-col items-center">
               <div
@@ -540,7 +540,7 @@ const SPOCDashboardContent = () => {
                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary/40 rounded-br-lg" />
               </div>
               <p className="text-[10px] text-muted-foreground mt-2">
-                Each QR is single-use · {tempCredStats?.unused || 0} temp IDs available
+                Institution verification · Regenerable anytime
               </p>
             </div>
 
@@ -558,7 +558,7 @@ const SPOCDashboardContent = () => {
                 Regenerate
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground italic">Single-use temp credential · Auto-assigned · Audited</p>
+            <p className="text-[10px] text-muted-foreground italic">HMAC-signed · Institution verification · Audited</p>
           </div>
 
           {/* Temp Credential Pool Stats */}
@@ -568,7 +568,7 @@ const SPOCDashboardContent = () => {
               Temp ID Pool
             </h3>
             <p className="text-xs text-muted-foreground">
-              Temp IDs are created by admin. Each QR assigns one to a student.
+              Temp IDs are created by admin for bulk onboarding (separate from QR verification).
             </p>
             <div className="grid grid-cols-3 gap-2">
               <div className="p-2.5 rounded-lg bg-muted/30 text-center">
