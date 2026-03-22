@@ -43,17 +43,25 @@ export const useBlackBoxSession = () => {
       !tokenRef.current
     ) {
       setIsConnecting(true);
-      try {
-        console.log("[BlackBox] Fetching VideoSDK token for room:", session.room_id);
-        const t = await getVideoSDKToken();
-        console.log("[BlackBox] Token obtained, length:", t?.length);
-        setToken(t);
-      } catch (error: any) {
-        console.error("[BlackBox] Token fetch failed:", error);
-        toast.error(error.message || "Failed to connect to session");
-      } finally {
-        setIsConnecting(false);
+      const MAX_RETRIES = 3;
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          console.log(`[BlackBox] Fetching VideoSDK token (attempt ${attempt}/${MAX_RETRIES}) for room:`, session.room_id);
+          const t = await getVideoSDKToken();
+          console.log("[BlackBox] Token obtained, length:", t?.length);
+          setToken(t);
+          setIsConnecting(false);
+          return;
+        } catch (error: any) {
+          console.error(`[BlackBox] Token fetch attempt ${attempt} failed:`, error);
+          if (attempt < MAX_RETRIES) {
+            await new Promise((r) => setTimeout(r, 2000));
+          } else {
+            toast.error(error.message || "Failed to connect to session. Please try again.");
+          }
+        }
       }
+      setIsConnecting(false);
     }
   }, []);
 
