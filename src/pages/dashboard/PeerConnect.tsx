@@ -84,6 +84,10 @@ const PeerConnect = () => {
 
   const statusColors: Record<string, string> = { online: "bg-eternia-success", busy: "bg-eternia-warning", offline: "bg-muted-foreground" };
   const selectedIntern = activeSessionId ? interns.find((i) => i.id === activeSession?.intern_id) : null;
+  // For intern view, resolve the student name from the session
+  const chatPartnerName = isIntern
+    ? (activeSession as any)?.student?.username || "Student"
+    : selectedIntern?.username || "Intern";
 
   if (isMobile) return <MobilePeerConnect />;
 
