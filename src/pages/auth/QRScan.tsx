@@ -19,7 +19,6 @@ const QRScan = () => {
     if (scannerRef.current) {
       try {
         const state = scannerRef.current.getState();
-        // 2 = SCANNING, 3 = PAUSED
         if (state === 2 || state === 3) {
           await scannerRef.current.stop();
         }
@@ -94,14 +93,60 @@ const QRScan = () => {
     setIsVerifying(false);
   };
 
+  const isInsideIframe = () => {
+    try {
+      return window.self !== window.top;
+    } catch {
+      return true;
+    }
+  };
+
   const startScanner = async () => {
+    // Check if mediaDevices API is available
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const inIframe = isInsideIframe();
+      if (inIframe) {
+        toast.error(
+          "Camera access is blocked inside this preview. Please open this page directly in your browser.",
+          { duration: 6000 }
+        );
+      } else if (location.protocol !== "https:" && location.hostname !== "localhost") {
+        toast.error(
+          "Camera requires a secure (HTTPS) connection. Please access this page via HTTPS.",
+          { duration: 6000 }
+        );
+      } else {
+        toast.error("Camera is not available on this device. Please enter the code manually.");
+      }
+      setUseManual(true);
+      return;
+    }
+
     setIsScanning(true);
     try {
+      // Enumerate cameras first to give a better error
+      const cameras = await Html5Qrcode.getCameras();
+      if (!cameras || cameras.length === 0) {
+        toast.error("No camera detected on this device. Please enter the code manually.");
+        setIsScanning(false);
+        setUseManual(true);
+        return;
+      }
+
+      // Prefer back camera
+      const backCamera = cameras.find(
+        (c) => /back|rear|environment/i.test(c.label)
+      );
+
       const scanner = new Html5Qrcode(scannerContainerId);
       scannerRef.current = scanner;
 
+      const cameraConfig = backCamera
+        ? { deviceId: { exact: backCamera.id } }
+        : { facingMode: "environment" as const };
+
       await scanner.start(
-        { facingMode: "environment" },
+        cameraConfig,
         { fps: 10, qrbox: { width: 220, height: 220 } },
         async (decodedText) => {
           await stopScanner();
@@ -117,7 +162,14 @@ const QRScan = () => {
       scannerRef.current = null;
 
       if (err?.name === "NotAllowedError" || /permission/i.test(err?.message || "")) {
-        toast.error("Camera permission denied. Please allow camera access and try again, or enter the code manually.");
+        toast.error(
+          "Camera permission denied. Please allow camera access in your browser settings and try again.",
+          { duration: 6000 }
+        );
+      } else if (err?.name === "NotFoundError" || /no.*camera/i.test(err?.message || "")) {
+        toast.error("No camera found. Please enter the code manually.");
+      } else if (err?.name === "NotReadableError") {
+        toast.error("Camera is in use by another app. Close other apps using the camera and try again.");
       } else {
         toast.error("Could not access camera. Please enter the code manually.");
       }

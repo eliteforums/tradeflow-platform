@@ -9,11 +9,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import NovaOrb from "@/components/blackbox/NovaOrb";
 
 const MobileBlackBox = () => {
-  const { activeSession, isRequesting, token, requestSession, cancelSession, endSession } = useBlackBoxSession();
+  const { activeSession, isRequesting, isConnecting, token, requestSession, cancelSession, endSession } = useBlackBoxSession();
   const { profile } = useAuth();
 
   const isQueued = activeSession && activeSession.status === "queued";
   const isInSession = activeSession && activeSession.room_id && token && (activeSession.status === "accepted" || activeSession.status === "active");
+  const isConnectingToSession = activeSession && activeSession.room_id && !token && (activeSession.status === "accepted" || activeSession.status === "active");
 
   return (
     <DashboardLayout>
@@ -22,12 +23,19 @@ const MobileBlackBox = () => {
         <div className="flex-1 flex flex-col items-center justify-center gap-5 w-full">
           <NovaOrb
             isActive={!!isInSession}
-            isPulsing={!!isQueued || isRequesting}
+            isPulsing={!!isQueued || isRequesting || !!isConnectingToSession}
             size={200}
           />
 
           {/* Status pill */}
-          {isQueued && (
+          {isConnectingToSession && (
+            <div className="px-4 py-1.5 rounded-full border border-border bg-card/60 backdrop-blur text-xs text-muted-foreground flex items-center gap-1.5">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Connecting…
+            </div>
+          )}
+
+          {isQueued && !isConnectingToSession && (
             <button
               onClick={cancelSession}
               className="px-4 py-1.5 rounded-full border border-border bg-card/60 backdrop-blur text-xs text-muted-foreground"
@@ -54,6 +62,10 @@ const MobileBlackBox = () => {
             {isInSession ? (
               <p className="text-base font-semibold font-display leading-relaxed text-foreground">
                 Hello! I am Nova. How can I help you today?
+              </p>
+            ) : isConnectingToSession ? (
+              <p className="text-sm text-muted-foreground">
+                A therapist accepted. Setting up secure connection…
               </p>
             ) : isQueued ? (
               <p className="text-sm text-muted-foreground">

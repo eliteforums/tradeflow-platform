@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { createVideoSDKRoom, getVideoSDKToken } from "@/lib/videosdk";
+import { getVideoSDKToken } from "@/lib/videosdk";
 import { toast } from "sonner";
 import { spendCredits } from "./useSpendCredits";
 
@@ -27,8 +27,37 @@ export const useBlackBoxSession = () => {
   const [activeSession, setActiveSession] = useState<BlackBoxSession | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const tokenRef = useRef<string | null>(null);
 
-  // Subscribe to changes on the active session
+  // Keep ref in sync
+  useEffect(() => {
+    tokenRef.current = token;
+  }, [token]);
+
+  // Fetch token when session has room_id but no token yet
+  const fetchTokenIfNeeded = useCallback(async (session: BlackBoxSession) => {
+    if (
+      (session.status === "accepted" || session.status === "active") &&
+      session.room_id &&
+      !tokenRef.current
+    ) {
+      setIsConnecting(true);
+      try {
+        console.log("[BlackBox] Fetching VideoSDK token for room:", session.room_id);
+        const t = await getVideoSDKToken();
+        console.log("[BlackBox] Token obtained, length:", t?.length);
+        setToken(t);
+      } catch (error: any) {
+        console.error("[BlackBox] Token fetch failed:", error);
+        toast.error(error.message || "Failed to connect to session");
+      } finally {
+        setIsConnecting(false);
+      }
+    }
+  }, []);
+
+  // Subscribe to realtime changes on the active session
   useEffect(() => {
     if (!activeSession?.id) return;
 
@@ -43,22 +72,10 @@ export const useBlackBoxSession = () => {
           filter: `id=eq.${activeSession.id}`,
         },
         async (payload) => {
-          const updated = payload.new as BlackBoxSession;
+          console.log("[BlackBox] Realtime update:", payload.new?.status, "room:", payload.new?.room_id);
+          const updated = payload.new as unknown as BlackBoxSession;
           setActiveSession(updated);
-
-          // Auto-join when therapist accepts and provides room_id
-          if (
-            (updated.status === "accepted" || updated.status === "active") &&
-            updated.room_id &&
-            !token
-          ) {
-            try {
-              const t = await getVideoSDKToken();
-              setToken(t);
-            } catch (error: any) {
-              toast.error(error.message || "Failed to connect to session");
-            }
-          }
+          await fetchTokenIfNeeded(updated);
         }
       )
       .subscribe();
@@ -66,7 +83,41 @@ export const useBlackBoxSession = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeSession?.id]);
+  }, [activeSession?.id, fetchTokenIfNeeded]);
+
+  // Polling fallback: check session status every 5s while queued/accepted without token
+  useEffect(() => {
+    if (!activeSession?.id) return;
+    // Only poll if we're waiting (queued, or accepted/active without token)
+    const needsPoll =
+      activeSession.status === "queued" ||
+      ((activeSession.status === "accepted" || activeSession.status === "active") &&
+        activeSession.room_id &&
+        !token);
+
+    if (!needsPoll) return;
+
+    console.log("[BlackBox] Starting poll fallback for session:", activeSession.id);
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from("blackbox_sessions")
+        .select("id, student_id, therapist_id, status, room_id, flag_level, escalation_reason, escalation_history, session_notes_encrypted, started_at, ended_at, created_at")
+        .eq("id", activeSession.id)
+        .single();
+
+      if (!data) return;
+      const session = data as unknown as BlackBoxSession;
+
+      // If status or room changed, update
+      if (session.status !== activeSession.status || session.room_id !== activeSession.room_id) {
+        console.log("[BlackBox] Poll detected change:", session.status, "room:", session.room_id);
+        setActiveSession(session);
+        await fetchTokenIfNeeded(session);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [activeSession?.id, activeSession?.status, activeSession?.room_id, token, fetchTokenIfNeeded]);
 
   // Check for existing active session on mount
   useEffect(() => {
@@ -83,27 +134,16 @@ export const useBlackBoxSession = () => {
       if (data && data.length > 0) {
         const session = data[0] as unknown as BlackBoxSession;
         setActiveSession(session);
-        if (session.room_id && (session.status === "accepted" || session.status === "active")) {
-          console.log("[BlackBox] Reconnecting to session:", session.id, "room:", session.room_id);
-          try {
-            const t = await getVideoSDKToken();
-            console.log("[BlackBox] Token obtained, length:", t?.length);
-            setToken(t);
-          } catch (error: any) {
-            console.error("[BlackBox] Token fetch failed:", error);
-            toast.error(error.message || "Failed to reconnect to session");
-          }
-        }
+        await fetchTokenIfNeeded(session);
       }
     };
     checkExisting();
-  }, [user]);
+  }, [user, fetchTokenIfNeeded]);
 
   const requestSession = useCallback(async () => {
     if (!user) return;
     setIsRequesting(true);
     try {
-      // Server-side atomic credit deduction (BlackBox session costs 30 ECC)
       console.log("[BlackBox] Spending 30 ECC...");
       const spendResult = await spendCredits(30, "BlackBox Talk Now session");
       console.log("[BlackBox] Spend result:", spendResult);
@@ -160,6 +200,7 @@ export const useBlackBoxSession = () => {
   return {
     activeSession,
     isRequesting,
+    isConnecting,
     token,
     requestSession,
     cancelSession,

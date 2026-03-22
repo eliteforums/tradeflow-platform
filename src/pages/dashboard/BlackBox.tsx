@@ -13,13 +13,14 @@ import MobileBlackBox from "@/components/mobile/MobileBlackBox";
 
 const BlackBox = () => {
   const isMobile = useIsMobile();
-  const { activeSession, isRequesting, token, requestSession, cancelSession, endSession } = useBlackBoxSession();
+  const { activeSession, isRequesting, isConnecting, token, requestSession, cancelSession, endSession } = useBlackBoxSession();
   const { profile } = useAuth();
 
   if (isMobile) return <MobileBlackBox />;
 
   const isQueued = activeSession && activeSession.status === "queued";
   const isInSession = activeSession && activeSession.room_id && token && (activeSession.status === "accepted" || activeSession.status === "active");
+  const isConnectingToSession = activeSession && activeSession.room_id && !token && (activeSession.status === "accepted" || activeSession.status === "active");
 
   return (
     <DashboardLayout>
@@ -28,12 +29,19 @@ const BlackBox = () => {
         <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full max-w-lg">
           <NovaOrb
             isActive={!!isInSession}
-            isPulsing={!!isQueued || isRequesting}
+            isPulsing={!!isQueued || isRequesting || !!isConnectingToSession}
             size={260}
           />
 
           {/* Status pill */}
-          {isQueued && (
+          {isConnectingToSession && (
+            <div className="px-5 py-2 rounded-full border border-border bg-card/60 backdrop-blur text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Connecting…
+            </div>
+          )}
+
+          {isQueued && !isConnectingToSession && (
             <button
               onClick={cancelSession}
               className="px-5 py-2 rounded-full border border-border bg-card/60 backdrop-blur text-sm text-muted-foreground hover:bg-card transition-colors"
@@ -60,6 +68,10 @@ const BlackBox = () => {
             {isInSession ? (
               <p className="text-lg font-semibold font-display leading-relaxed text-foreground">
                 Hello! I am Nova. How can I help you today?
+              </p>
+            ) : isConnectingToSession ? (
+              <p className="text-base text-muted-foreground leading-relaxed">
+                A therapist accepted. Setting up secure connection…
               </p>
             ) : isQueued ? (
               <p className="text-base text-muted-foreground leading-relaxed">
