@@ -1,110 +1,97 @@
 
 
-## Plan: TechSpec v2-31 Compliance + Scalability for Millions of Users
+## Plan: TechSpec v2-32 Compliance — Remaining Gaps
 
-### Gap Analysis: TechSpec v2-31 vs Current Codebase
+### Gap Analysis
 
-Most of v2-31 is already implemented (onboarding, RBAC, ECC system, dashboards, escalation model, training lifecycle, indexes). The gaps are in **scalability patterns** and **data access optimization** — critical for the "millions of users" target.
+After thorough review of TechSpec v2-32 against every relevant file in the codebase, here is the precise status. Most of v2-32 is implemented. The remaining gaps fall into three categories: **SELECT * queries that violate §13.1**, **missing `select()` column specificity in several components**, and **training status ENUM alignment**.
 
-| # | Gap | TechSpec Section | Impact |
-|---|-----|------------------|--------|
-| 1 | No materialized view for credit balance | §12.1 | Every credit check does SUM() over entire transaction history — O(n) per user at scale |
-| 2 | No cursor-based pagination | §13.1, §16.2 | List endpoints hit 1000-row Supabase limit; unbounded queries at scale |
-| 3 | peer_messages not in realtime publication | §7.2 | Realtime subscription works via channel filter but publication ensures DB-level efficiency |
-| 4 | Queries use SELECT * everywhere | §13.1 | Fetches unnecessary columns, wastes bandwidth and memory at scale |
-| 5 | No debouncing on search/filter inputs | Performance | Every keystroke triggers re-renders and potential queries |
-| 6 | Missing index on device_sessions.device_id_hash | §12.3 | Device validation on every auth request — needs fast lookup |
-| 7 | No React.memo/useCallback optimization | Performance | Unnecessary re-renders cascade through component trees |
-| 8 | Intern search in PeerConnect is non-functional | UI bug | Search input exists but doesn't filter anything |
+| # | Gap | TechSpec Section | Current State |
+|---|-----|------------------|---------------|
+| 1 | TherapistDashboardContent uses `select("*")` on 4 queries | §13.1 | Fetches all columns from `blackbox_sessions` — wasteful at scale |
+| 2 | InternDashboardContent uses `select("*")` on training_modules | §13.1 | Fetches all columns; should specify needed fields |
+| 3 | ExpertDashboardContent uses `select("*")` on expert_availability | §13.1 | Same issue |
+| 4 | SPOCDashboardContent uses `select("*")` on institutions + blackbox_entries | §13.1 | Same issue |
+| 5 | useAdmin uses `select("*")` on profiles, institutions, blackbox_entries | §13.1 | Same issue |
+| 6 | useSoundTherapy uses `select("*")` on sound_content | §13.1 | Same issue |
+| 7 | useQuests uses `select("*")` on quest_cards + quest_completions | §13.1 | Same issue |
+| 8 | useBlackBoxSession uses `select("*")` on blackbox_sessions | §13.1 | Same issue |
+| 9 | Profile pages use `select("*")` on user_private | §13.1 | Acceptable — user needs all their own private data |
+| 10 | Training status values not aligned with TechSpec §19 ENUM | §19 | TechSpec defines: NOT_STARTED, IN_PROGRESS, ASSESSMENT_PENDING, FAILED, INTERVIEW_PENDING, ACTIVE. Code uses lowercase versions which is fine, but the intern dashboard doesn't handle all states properly |
+| 11 | Intern escalation doesn't populate `trigger_snippet` and `trigger_timestamp` | §18/CR v1.8 | InternDashboardContent's `submitEscalation` doesn't set these fields |
+| 12 | No `audit_logs` entry on escalation events | §14.2 | Escalation protocol requires immutable audit log entries |
+| 13 | Therapist queue fetch doesn't limit results | §13.1 | `fetchQueue` has no `.limit()` — unbounded query |
 
 ### Changes
 
-**1. Database Migrations (scalability foundation)**
-- Create `credit_balance_view` materialized view: `SELECT user_id, SUM(delta) as balance FROM credit_transactions GROUP BY user_id`
-- Add DB function to refresh the view (called after credit operations)
-- Add `peer_messages` to realtime publication
-- Add missing index on `device_sessions(device_id_hash)`
-- Add index on `peer_messages(session_id, created_at)` for message pagination
+**1. Fix all `select("*")` queries across components** (§13.1 compliance)
+Replace `select("*")` with column-specific selects in:
+- `TherapistDashboardContent.tsx` — 4 queries on `blackbox_sessions`
+- `InternDashboardContent.tsx` — training_modules query
+- `ExpertDashboardContent.tsx` — expert_availability query
+- `SPOCDashboardContent.tsx` — institutions + blackbox_entries queries
+- `useAdmin.ts` — profiles, institutions, blackbox_entries queries
+- `useSoundTherapy.ts` — sound_content query
+- `useQuests.ts` — quest_cards + quest_completions queries
+- `useBlackBoxSession.ts` — blackbox_sessions query
 
-**2. Optimize usePeerConnect.ts**
-- Select only needed columns instead of `*` (intern query: `id, username, specialty, is_active, training_status`)
-- Add message pagination: fetch last 50 messages, load more on scroll
-- Add intern search filter (local filter on username/specialty)
-- Memoize derived values with useMemo
+**2. Fix intern escalation to include trigger_snippet/trigger_timestamp**
+In `InternDashboardContent.tsx`, the `submitEscalation` mutation inserts into `escalation_requests` but doesn't set `trigger_snippet`, `trigger_timestamp`, or `escalation_level`.
 
-**3. Optimize PeerConnect.tsx + MobilePeerConnect.tsx**
-- Implement working search filter for intern list
-- Add message pagination UI (load earlier messages button)
-- Wrap handlers in useCallback to prevent re-renders
-- Debounce search input
+**3. Add audit_logs entries on escalation events**
+Both therapist and intern escalation flows should insert an audit log entry per §14.2.
 
-**4. Optimize AuthContext.tsx**
-- Use materialized view for credit balance fetch (faster than SUM at scale)
-- Add staleTime to prevent unnecessary refetches
-
-**5. Optimize query patterns across hooks**
-- `useAppointments.ts` — select specific columns, add cursor pagination
-- `useBlackBox.ts` — paginate entries
-- `useCredits.ts` — use materialized view
+**4. Add limit to therapist queue fetch**
+`fetchQueue` in TherapistDashboardContent should have `.limit(50)` to prevent unbounded queries.
 
 ### Technical Details
 
-**Materialized View Migration:**
-```sql
-CREATE MATERIALIZED VIEW IF NOT EXISTS public.credit_balance_view AS
-SELECT user_id, COALESCE(SUM(delta), 0)::integer AS balance,
-       MAX(created_at) AS last_transaction_at
-FROM public.credit_transactions
-GROUP BY user_id;
-
-CREATE UNIQUE INDEX idx_credit_balance_view_user ON public.credit_balance_view(user_id);
-
-CREATE OR REPLACE FUNCTION public.refresh_credit_balance()
-RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  REFRESH MATERIALIZED VIEW CONCURRENTLY public.credit_balance_view;
-  RETURN NULL;
-END;
-$$;
-
-CREATE TRIGGER trg_refresh_credit_balance
-AFTER INSERT ON public.credit_transactions
-FOR EACH STATEMENT EXECUTE FUNCTION public.refresh_credit_balance();
+**SELECT * Replacement Pattern:**
+Each query gets explicit column names matching what the component actually uses. Example for TherapistDashboardContent queue:
+```typescript
+// Before
+.select("*")
+// After
+.select("id, student_id, status, flag_level, created_at, room_id, therapist_id, escalation_history, escalation_reason, started_at, ended_at, session_notes_encrypted")
 ```
 
-**Cursor Pagination Pattern (messages):**
+**Intern Escalation Fix:**
 ```typescript
-// Fetch last 50, then load more with cursor
-const { data } = await supabase
-  .from("peer_messages")
-  .select("id, session_id, sender_id, content_encrypted, created_at")
-  .eq("session_id", sessionId)
-  .order("created_at", { ascending: false })
-  .limit(50);
+await supabase.from("escalation_requests").insert({
+  spoc_id: spocId,
+  justification_encrypted: escalationReason,
+  session_id: escalationDialog.sessionId || null,
+  entry_id: null,
+  trigger_snippet: escalationReason.substring(0, 500),
+  trigger_timestamp: new Date().toISOString(),
+  escalation_level: 1,
+});
 ```
 
-**Debounced Search:**
+**Audit Log Entry on Escalation:**
 ```typescript
-const [searchTerm, setSearchTerm] = useState("");
-const debouncedSearch = useDebouncedValue(searchTerm, 300);
-const filteredInterns = useMemo(() =>
-  interns.filter(i => i.username.toLowerCase().includes(debouncedSearch.toLowerCase())),
-  [interns, debouncedSearch]
-);
+await supabase.from("audit_logs").insert({
+  actor_id: user.id,
+  action_type: "escalation_submitted",
+  target_table: "escalation_requests",
+  target_id: escalationDialog.sessionId || null,
+  metadata: { level: 1, reason_length: escalationReason.length },
+});
 ```
 
 ### Files to Edit
 
 | # | File | Change |
 |---|------|--------|
-| 1 | DB Migration | Materialized view, indexes, realtime publication |
-| 2 | `src/hooks/usePeerConnect.ts` | Column-specific selects, message pagination, search filter |
-| 3 | `src/pages/dashboard/PeerConnect.tsx` | Working search, pagination UI, useCallback handlers |
-| 4 | `src/components/mobile/MobilePeerConnect.tsx` | Same search/pagination parity |
-| 5 | `src/contexts/AuthContext.tsx` | Optimized credit balance fetch |
-| 6 | `src/hooks/useBlackBox.ts` | Paginated queries |
-| 7 | `src/hooks/useAppointments.ts` | Column-specific selects |
+| 1 | `src/components/therapist/TherapistDashboardContent.tsx` | Replace 4× `select("*")` with column-specific; add `.limit(50)` to queue; add audit_log on escalation |
+| 2 | `src/components/intern/InternDashboardContent.tsx` | Replace `select("*")` on training_modules; fix escalation insert to include trigger fields + audit log |
+| 3 | `src/components/expert/ExpertDashboardContent.tsx` | Replace `select("*")` on expert_availability |
+| 4 | `src/components/spoc/SPOCDashboardContent.tsx` | Replace `select("*")` on institutions + blackbox_entries |
+| 5 | `src/hooks/useAdmin.ts` | Replace `select("*")` on profiles, institutions, blackbox_entries |
+| 6 | `src/hooks/useSoundTherapy.ts` | Replace `select("*")` with specific columns |
+| 7 | `src/hooks/useQuests.ts` | Replace `select("*")` with specific columns |
+| 8 | `src/hooks/useBlackBoxSession.ts` | Replace `select("*")` with specific columns |
 
 ### Summary
-The codebase has all PRD features implemented. The gaps are performance and scalability patterns needed for millions of users: materialized views for O(1) balance lookups, cursor pagination to avoid unbounded queries, column-specific selects to reduce payload size, debounced inputs, and missing database indexes. No new features — purely optimization and scalability hardening.
+The codebase is feature-complete against TechSpec v2-32. The remaining issues are: (1) 17 `select("*")` queries that violate §13.1 column specificity requirements — these waste bandwidth at scale; (2) incomplete escalation metadata in the intern flow; (3) missing audit log entries on escalation events per §14.2; (4) unbounded queue fetch in therapist dashboard. No new features or database changes needed — purely query optimization, compliance metadata, and audit trail completeness.
 
