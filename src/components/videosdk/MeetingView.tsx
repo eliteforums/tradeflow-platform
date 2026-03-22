@@ -22,6 +22,8 @@ interface MeetingViewProps {
   onError?: (error: string) => void;
   isTherapistView?: boolean;
   onSilenceAutoEnd?: () => void;
+  onJoined?: () => void;
+  onJoinError?: (error: string) => void;
 }
 
 const riskColors: Record<number, string> = {
@@ -49,6 +51,8 @@ const MeetingView = ({
   onError,
   isTherapistView = false,
   onSilenceAutoEnd,
+  onJoined,
+  onJoinError,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
@@ -67,6 +71,7 @@ const MeetingView = ({
       joinAttempts.current = 0;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      onJoined?.();
     },
     onMeetingLeft: () => {
       console.log("[MeetingView] onMeetingLeft fired");
@@ -81,6 +86,7 @@ const MeetingView = ({
       setJoined(null);
       setTimedOut(true);
       onError?.(msg);
+      onJoinError?.(msg);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     },
@@ -89,7 +95,7 @@ const MeetingView = ({
     },
   });
 
-  // Auto-join: wait for SDK readiness (sdkMeetingId populated), then retry up to 3 times
+  // Auto-join
   useEffect(() => {
     if (!autoJoin || hasAutoJoined.current) return;
     if (!sdkMeetingId) return;
@@ -98,38 +104,36 @@ const MeetingView = ({
     joinAttempts.current = 0;
 
     const attemptJoin = () => {
-      if (joinAttempts.current >= 3) return;
+      if (joinAttempts.current >= 3) {
+        const msg = "Failed to join after 3 attempts";
+        onJoinError?.(msg);
+        return;
+      }
       joinAttempts.current += 1;
       console.log(`[MeetingView] Join attempt ${joinAttempts.current}, meetingId: ${sdkMeetingId}`);
       setJoined("JOINING");
       join();
 
       retryTimerRef.current = setTimeout(() => {
-        if (joinAttempts.current < 3) {
-          attemptJoin();
-        }
+        if (joinAttempts.current < 3) attemptJoin();
       }, 5000);
     };
 
     attemptJoin();
+    return () => { if (retryTimerRef.current) clearTimeout(retryTimerRef.current); };
+  }, [autoJoin, sdkMeetingId, join, onJoinError]);
 
-    return () => {
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-    };
-  }, [autoJoin, sdkMeetingId, join]);
-
-  // Timeout: if JOINING for > 20s, show retry
+  // Timeout
   useEffect(() => {
     if (joined === "JOINING") {
       timeoutRef.current = setTimeout(() => {
         console.warn("[MeetingView] Join timed out after 20s");
         setTimedOut(true);
+        onJoinError?.("Connection timed out");
       }, 20000);
-      return () => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      };
+      return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
     }
-  }, [joined]);
+  }, [joined, onJoinError]);
 
   // AI audio monitoring
   const audioMonitor = useAudioMonitor({
@@ -141,7 +145,7 @@ const MeetingView = ({
     }, [onRiskDetected]),
   });
 
-  // Silence detection for therapist view
+  // Silence detection
   const handleSilenceAutoEnd = useCallback(async () => {
     if (!sessionId) return;
     try {
@@ -214,10 +218,7 @@ const MeetingView = ({
           <p className="text-sm text-muted-foreground mb-1">Session ID</p>
           <p className="text-lg font-mono text-foreground">{meetingId}</p>
         </div>
-        <button
-          onClick={joinMeeting}
-          className="btn-primary text-lg px-10 py-4 rounded-xl"
-        >
+        <button onClick={joinMeeting} className="btn-primary text-lg px-10 py-4 rounded-xl">
           Join Session
         </button>
       </div>
@@ -245,21 +246,11 @@ const MeetingView = ({
       )}
 
       <div className="flex-1 p-4 overflow-y-auto">
-        <div
-          className={`grid gap-4 h-full ${
-            participants.size <= 1
-              ? "grid-cols-1"
-              : participants.size <= 4
-              ? "grid-cols-2"
-              : "grid-cols-3"
-          }`}
-        >
+        <div className={`grid gap-4 h-full ${
+          participants.size <= 1 ? "grid-cols-1" : participants.size <= 4 ? "grid-cols-2" : "grid-cols-3"
+        }`}>
           {[...participants.keys()].map((participantId) => (
-            <ParticipantView
-              key={participantId}
-              participantId={participantId}
-              audioOnly={audioOnly}
-            />
+            <ParticipantView key={participantId} participantId={participantId} audioOnly={audioOnly} />
           ))}
         </div>
       </div>

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { spendCredits } from "./useSpendCredits";
 
 export type BlackBoxSessionStatus = "queued" | "accepted" | "active" | "escalated" | "completed" | "cancelled";
+export type CallState = "idle" | "waiting" | "ready" | "joining" | "joined" | "failed";
 
 export interface BlackBoxSession {
   id: string;
@@ -20,119 +21,136 @@ export interface BlackBoxSession {
   started_at: string | null;
   ended_at: string | null;
   created_at: string;
+  student_joined_at: string | null;
+  therapist_joined_at: string | null;
+  last_join_error: string | null;
 }
+
+const SESSION_COLUMNS = "id, student_id, therapist_id, status, room_id, flag_level, escalation_reason, escalation_history, session_notes_encrypted, started_at, ended_at, created_at, student_joined_at, therapist_joined_at, last_join_error";
 
 export const useBlackBoxSession = () => {
   const { user } = useAuth();
   const [activeSession, setActiveSession] = useState<BlackBoxSession | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
   const [token, setToken] = useState<string | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [callState, setCallState] = useState<CallState>("idle");
   const tokenRef = useRef<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
 
-  // Keep ref in sync
+  // Keep refs in sync
+  useEffect(() => { tokenRef.current = token; }, [token]);
   useEffect(() => {
-    tokenRef.current = token;
-  }, [token]);
+    const prevId = sessionIdRef.current;
+    sessionIdRef.current = activeSession?.id || null;
+    // Clear token when session changes
+    if (prevId && prevId !== activeSession?.id) {
+      setToken(null);
+      tokenRef.current = null;
+      setCallState("idle");
+    }
+  }, [activeSession?.id]);
 
-  // Fetch token when session has room_id but no token yet
-  const fetchTokenIfNeeded = useCallback(async (session: BlackBoxSession) => {
-    if (
-      (session.status === "accepted" || session.status === "active") &&
-      session.room_id &&
-      !tokenRef.current
-    ) {
-      setIsConnecting(true);
-      const MAX_RETRIES = 3;
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          console.log(`[BlackBox] Fetching VideoSDK token (attempt ${attempt}/${MAX_RETRIES}) for room:`, session.room_id);
-          const t = await getVideoSDKToken();
-          console.log("[BlackBox] Token obtained, length:", t?.length);
-          setToken(t);
-          setIsConnecting(false);
-          return;
-        } catch (error: any) {
-          console.error(`[BlackBox] Token fetch attempt ${attempt} failed:`, error);
-          if (attempt < MAX_RETRIES) {
-            await new Promise((r) => setTimeout(r, 2000));
-          } else {
-            toast.error(error.message || "Failed to connect to session. Please try again.");
+  // Derive callState from session status
+  useEffect(() => {
+    if (!activeSession) { setCallState("idle"); return; }
+    const { status, room_id } = activeSession;
+
+    if (["completed", "cancelled", "escalated"].includes(status)) {
+      setCallState("idle");
+      setToken(null);
+      tokenRef.current = null;
+      return;
+    }
+    if (status === "queued") { setCallState("waiting"); return; }
+    if ((status === "accepted" || status === "active") && room_id && !tokenRef.current) {
+      setCallState("ready"); // therapist ready, student can fetch token & join
+      return;
+    }
+    // If we have token, callState is managed by MeetingView callbacks
+  }, [activeSession?.status, activeSession?.room_id, token]);
+
+  // Fetch token for the current session
+  const fetchToken = useCallback(async () => {
+    if (!activeSession?.room_id) return;
+    setCallState("joining");
+    const MAX_RETRIES = 3;
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        console.log(`[BlackBox] Fetching token attempt ${attempt}/${MAX_RETRIES}`);
+        const t = await getVideoSDKToken();
+        setToken(t);
+        // callState will be set to "joined" by MeetingView onJoined callback
+        return;
+      } catch (error: any) {
+        console.error(`[BlackBox] Token fetch attempt ${attempt} failed:`, error);
+        if (attempt === MAX_RETRIES) {
+          const msg = error.message || "Failed to connect to session";
+          setCallState("failed");
+          // Persist error
+          if (activeSession?.id) {
+            await supabase.from("blackbox_sessions")
+              .update({ last_join_error: msg } as any)
+              .eq("id", activeSession.id);
           }
+          toast.error(msg);
+        } else {
+          await new Promise((r) => setTimeout(r, 2000));
         }
       }
-      setIsConnecting(false);
     }
-  }, []);
+  }, [activeSession?.id, activeSession?.room_id]);
 
-  // Subscribe to realtime changes on the active session
+  // Called by MeetingView when join succeeds
+  const onCallJoined = useCallback(async () => {
+    setCallState("joined");
+    if (activeSession?.id) {
+      await supabase.from("blackbox_sessions")
+        .update({ student_joined_at: new Date().toISOString(), last_join_error: null } as any)
+        .eq("id", activeSession.id);
+    }
+  }, [activeSession?.id]);
+
+  // Called by MeetingView when join fails
+  const onCallError = useCallback(async (errorMsg: string) => {
+    setCallState("failed");
+    if (activeSession?.id) {
+      await supabase.from("blackbox_sessions")
+        .update({ last_join_error: errorMsg } as any)
+        .eq("id", activeSession.id);
+    }
+  }, [activeSession?.id]);
+
+  // Subscribe to realtime changes
   useEffect(() => {
     if (!activeSession?.id) return;
-
     const channel = supabase
       .channel(`blackbox-session-${activeSession.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "blackbox_sessions",
-          filter: `id=eq.${activeSession.id}`,
-        },
-        async (payload) => {
-          console.log("[BlackBox] Realtime update:", payload.new?.status, "room:", payload.new?.room_id);
-          const updated = payload.new as unknown as BlackBoxSession;
-          setActiveSession(updated);
-          await fetchTokenIfNeeded(updated);
-        }
-      )
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "blackbox_sessions",
+        filter: `id=eq.${activeSession.id}`,
+      }, (payload) => {
+        console.log("[BlackBox] Realtime update:", payload.new?.status, "room:", payload.new?.room_id);
+        setActiveSession(payload.new as unknown as BlackBoxSession);
+      })
       .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeSession?.id]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [activeSession?.id, fetchTokenIfNeeded]);
-
-  // Polling fallback: check session status every 3s while queued or missing token
+  // Polling fallback while queued
   useEffect(() => {
-    if (!activeSession?.id) return;
-    const needsPoll =
-      activeSession.status === "queued" ||
-      ((activeSession.status === "accepted" || activeSession.status === "active") &&
-        activeSession.room_id &&
-        !token);
-
-    if (!needsPoll) return;
-
-    console.log("[BlackBox] Starting poll fallback for session:", activeSession.id);
+    if (!activeSession?.id || activeSession.status !== "queued") return;
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from("blackbox_sessions")
-        .select("id, student_id, therapist_id, status, room_id, flag_level, escalation_reason, escalation_history, session_notes_encrypted, started_at, ended_at, created_at")
+        .select(SESSION_COLUMNS)
         .eq("id", activeSession.id)
         .single();
-
-      if (!data) return;
-      const session = data as unknown as BlackBoxSession;
-
-      // Always update state if data changed
-      if (session.status !== activeSession.status || session.room_id !== activeSession.room_id) {
-        console.log("[BlackBox] Poll detected change:", session.status, "room:", session.room_id);
-        setActiveSession(session);
-      }
-
-      // Always retry token fetch if we still need one
-      if (
-        (session.status === "accepted" || session.status === "active") &&
-        session.room_id &&
-        !tokenRef.current
-      ) {
-        await fetchTokenIfNeeded(session);
+      if (data && (data as any).status !== activeSession.status) {
+        setActiveSession(data as unknown as BlackBoxSession);
       }
     }, 3000);
-
     return () => clearInterval(interval);
-  }, [activeSession?.id, activeSession?.status, activeSession?.room_id, token, fetchTokenIfNeeded]);
+  }, [activeSession?.id, activeSession?.status]);
 
   // Check for existing active session on mount
   useEffect(() => {
@@ -140,63 +158,50 @@ export const useBlackBoxSession = () => {
     const checkExisting = async () => {
       const { data } = await supabase
         .from("blackbox_sessions")
-        .select("id, student_id, therapist_id, status, room_id, flag_level, escalation_reason, escalation_history, session_notes_encrypted, started_at, ended_at, created_at")
+        .select(SESSION_COLUMNS)
         .eq("student_id", user.id)
         .in("status", ["queued", "accepted", "active"])
         .order("created_at", { ascending: false })
         .limit(1);
-
       if (data && data.length > 0) {
-        const session = data[0] as unknown as BlackBoxSession;
-        setActiveSession(session);
-        await fetchTokenIfNeeded(session);
+        setActiveSession(data[0] as unknown as BlackBoxSession);
       }
     };
     checkExisting();
-  }, [user, fetchTokenIfNeeded]);
+  }, [user]);
 
   const requestSession = useCallback(async () => {
     if (!user) return;
     setIsRequesting(true);
     try {
-      // Check for existing open session first — reuse instead of creating duplicate
+      // Check for existing open session
       const { data: existing } = await supabase
         .from("blackbox_sessions")
-        .select("id, student_id, therapist_id, status, room_id, flag_level, escalation_reason, escalation_history, session_notes_encrypted, started_at, ended_at, created_at")
+        .select(SESSION_COLUMNS)
         .eq("student_id", user.id)
         .in("status", ["queued", "accepted", "active"])
         .order("created_at", { ascending: false })
         .limit(1);
 
       if (existing && existing.length > 0) {
-        const session = existing[0] as unknown as BlackBoxSession;
-        console.log("[BlackBox] Reusing existing session:", session.id, session.status);
-        setActiveSession(session);
-        await fetchTokenIfNeeded(session);
+        setActiveSession(existing[0] as unknown as BlackBoxSession);
         toast.info("Reconnecting to your existing session…");
         return;
       }
 
-      console.log("[BlackBox] Spending 30 ECC...");
       const spendResult = await spendCredits(30, "BlackBox Talk Now session");
-      console.log("[BlackBox] Spend result:", spendResult);
       if (!spendResult.success) {
         toast.error("Insufficient credits for a BlackBox session");
         return;
       }
 
-      console.log("[BlackBox] Creating session...");
       const { data, error } = await supabase
         .from("blackbox_sessions")
         .insert({ student_id: user.id, status: "queued" })
         .select()
         .single();
 
-      if (error) {
-        console.error("[BlackBox] Session insert error:", error);
-        throw error;
-      }
-      console.log("[BlackBox] Session created:", data?.id);
+      if (error) throw error;
       setActiveSession(data as unknown as BlackBoxSession);
       toast.success("You're in the queue. A therapist will connect shortly.");
     } catch (err: any) {
@@ -207,7 +212,7 @@ export const useBlackBoxSession = () => {
     } finally {
       setIsRequesting(false);
     }
-  }, [user, fetchTokenIfNeeded]);
+  }, [user]);
 
   const cancelSession = useCallback(async () => {
     if (!activeSession) return;
@@ -217,6 +222,7 @@ export const useBlackBoxSession = () => {
       .eq("id", activeSession.id);
     setActiveSession(null);
     setToken(null);
+    setCallState("idle");
     toast.info("Session cancelled");
   }, [activeSession]);
 
@@ -228,23 +234,26 @@ export const useBlackBoxSession = () => {
       .eq("id", activeSession.id);
     setActiveSession(null);
     setToken(null);
+    setCallState("idle");
   }, [activeSession]);
 
   const retryConnection = useCallback(async () => {
-    if (!activeSession) return;
     setToken(null);
     tokenRef.current = null;
-    await fetchTokenIfNeeded(activeSession);
-  }, [activeSession, fetchTokenIfNeeded]);
+    await fetchToken();
+  }, [fetchToken]);
 
   return {
     activeSession,
     isRequesting,
-    isConnecting,
+    callState,
     token,
     requestSession,
     cancelSession,
     endSession,
     retryConnection,
+    fetchToken,
+    onCallJoined,
+    onCallError,
   };
 };

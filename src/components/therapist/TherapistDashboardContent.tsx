@@ -216,29 +216,28 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
     setIsAccepting(true);
     try {
       const { token: t, roomId } = await createVideoSDKRoom();
-      const { error } = await supabase
+
+      // Set status to "accepted" first (not "active") — active only after both join
+      const { data: updated, error } = await supabase
         .from("blackbox_sessions")
         .update({
           therapist_id: user.id,
-          status: "active",
+          status: "accepted",
           room_id: roomId,
           started_at: new Date().toISOString(),
         })
         .eq("id", sessionId)
-        .eq("status", "queued");
-
-      if (error) throw error;
-
-      const { data } = await supabase
-        .from("blackbox_sessions")
+        .eq("status", "queued")
         .select("id, student_id, therapist_id, status, flag_level, room_id, escalation_history, escalation_reason, session_notes_encrypted, started_at, ended_at, created_at")
-        .eq("id", sessionId)
         .single();
 
+      if (error) throw error;
+      if (!updated) throw new Error("Session was already claimed by another therapist");
+
       setToken(t);
-      setActiveSession(data);
+      setActiveSession(updated);
       setActiveTab("session");
-      toast.success("Session accepted — connecting...");
+      toast.success("Session accepted — waiting for student to join…");
     } catch (err: any) {
       toast.error(err.message || "Failed to accept session");
     } finally {
