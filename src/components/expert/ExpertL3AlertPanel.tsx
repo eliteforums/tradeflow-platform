@@ -21,7 +21,11 @@ interface L3Session {
   created_at: string;
 }
 
-const ExpertL3AlertPanel = () => {
+interface ExpertL3AlertPanelProps {
+  captureEscalationSnippet?: () => string;
+}
+
+const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProps) => {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const [l3Sessions, setL3Sessions] = useState<L3Session[]>([]);
