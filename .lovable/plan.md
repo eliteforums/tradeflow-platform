@@ -1,36 +1,28 @@
 
 
-## Plan: Fix Quest Cards Loading Issue
+## Plan: Clean Up Sound Therapy
 
-### Root Cause Analysis
-
-The Quest Cards page has two potential loading issues:
-
-1. **3D Canvas hanging**: The `QuestCard3D` component uses `@react-three/fiber` Canvas with external Google Fonts loading. If the Canvas fails to initialize or fonts fail to load, the entire page appears frozen with no error feedback.
-
-2. **No error boundary**: If the Three.js canvas throws, there's no fallback — React unmounts everything and the user sees a blank/stuck page.
+### Problem
+The single track in the database has corrupted data — `cover_emoji` contains `"🎵Tibetan bowl "` instead of just `"🎵"`, causing text overflow in both the track list and now-playing panel.
 
 ### Changes
 
-#### 1. `src/components/selfhelp/QuestCard3D.tsx`
-- Wrap the Canvas in a React error boundary with fallback to 2D cards
-- Add a loading timeout — if the Canvas doesn't render within 5 seconds, fall back to 2D cards
-- Always render the 2D fallback grid if the 3D canvas fails
+#### 1. Database: Delete seed/test sound data
+- Run a migration or direct query to delete all existing rows from `sound_content` table (just 1 row currently)
+- The page will show a clean empty state until admin adds real tracks
 
-#### 2. `src/pages/dashboard/QuestCards.tsx`
-- Add an empty state when `quests.length === 0` after loading completes
-- Add error handling display if the queries fail
-- Show a loading indicator on quest buttons during completion (`isCompleting` state)
+#### 2. `SoundTherapy.tsx` — Improve empty state
+- Show a proper empty state when no tracks exist: icon + "No sounds yet" message + note that sounds are managed via admin panel
+- Hide the now-playing sidebar when there are no tracks
 
-#### 3. `src/hooks/useQuests.ts`
-- Add `retry: 1` to both queries to prevent indefinite retries on failure
-- Add error state to the return value so the page can display errors
+#### 3. `MobileSoundTherapy.tsx` — Same empty state treatment
 
-### Files Modified
+#### 4. UI resilience: truncate `cover_emoji` display
+- In both desktop and mobile, limit the emoji display to first 2 characters max as a safety measure against bad data
 
 | File | Change |
 |------|--------|
-| `src/components/selfhelp/QuestCard3D.tsx` | Add error boundary + timeout fallback to 2D cards |
-| `src/pages/dashboard/QuestCards.tsx` | Add empty state, error display, button loading states |
-| `src/hooks/useQuests.ts` | Add retry limits, expose error state |
+| Database | Delete all rows from `sound_content` |
+| `src/pages/dashboard/SoundTherapy.tsx` | Better empty state, hide player when no tracks, truncate emoji |
+| `src/components/mobile/MobileSoundTherapy.tsx` | Same empty state + emoji truncation |
 
