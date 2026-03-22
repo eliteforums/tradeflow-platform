@@ -208,7 +208,7 @@ const MobileInternDashboard = () => {
 
             {/* Referral Code Skip */}
             {!isTrainingComplete && !isInterviewPending && (
-              <MobileReferralCodeInput user={user} queryClient={queryClient} />
+              <MobileReferralCodeInput user={user} queryClient={queryClient} refreshProfile={refreshProfile} />
             )}
 
             <div className="space-y-2">
