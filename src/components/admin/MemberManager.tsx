@@ -193,10 +193,10 @@ export default function MemberManager() {
               </SelectContent>
             </Select>
           </div>
-          {(selectedRole === "spoc" || selectedRole === "student") && (
+          {selectedRole === "spoc" && (
             <div>
               <label className="text-[10px] font-medium text-muted-foreground mb-1 block">
-                Institution {selectedRole === "spoc" ? "*" : "(optional)"}
+                Institution *
               </label>
               <Select value={selectedInstitution} onValueChange={setSelectedInstitution}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select institution" /></SelectTrigger>
