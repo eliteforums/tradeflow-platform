@@ -16,21 +16,17 @@ const QuestCards = () => {
   // Pick 6 random quests, stable per day
   const dealtCards = useMemo(() => {
     if (quests.length === 0) return [];
-    const shuffled = [...quests].sort(() => {
-      // Seed based on today's date for consistent daily shuffle
-      const today = new Date().toISOString().split("T")[0];
-      const seed = today.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-      return Math.sin(seed * quests.indexOf(quests.find(q => q === quests[0])!)) - 0.5;
-    });
-    // Use a seeded shuffle
-    const todaySeed = new Date().toISOString().split("T")[0];
-    const seedNum = todaySeed.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-    const seededShuffle = [...quests].sort((a, b) => {
-      const ha = (seedNum * a.id.charCodeAt(0) + a.id.charCodeAt(1)) % 1000;
-      const hb = (seedNum * b.id.charCodeAt(0) + b.id.charCodeAt(1)) % 1000;
-      return ha - hb;
-    });
-    return seededShuffle.slice(0, 6);
+    // Seeded shuffle: consistent per day, good distribution via simple hash
+    const today = new Date().toISOString().split("T")[0];
+    const seed = today.split("").reduce((acc, ch, i) => acc + ch.charCodeAt(0) * (i + 1), 0);
+    const hashId = (id: string) => {
+      let h = seed;
+      for (let i = 0; i < id.length; i++) {
+        h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+      }
+      return h;
+    };
+    return [...quests].sort((a, b) => hashId(a.id) - hashId(b.id)).slice(0, 6);
   }, [quests]);
 
   const [flippedId, setFlippedId] = useState<string | null>(null);
