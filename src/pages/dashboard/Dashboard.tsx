@@ -32,6 +32,7 @@ const Dashboard = () => {
   if (profile?.role === "admin") return <Navigate to="/admin" replace />;
   if (profile?.role === "spoc") return <Navigate to="/dashboard/spoc" replace />;
   if (profile?.role === "expert") return <Navigate to="/dashboard/expert" replace />;
+  if (profile?.role === "therapist") return <Navigate to="/dashboard/therapist" replace />;
   if (profile?.role === "intern") return <Navigate to="/dashboard/intern" replace />;
 
   if (isMobile) return <MobileDashboard />;
