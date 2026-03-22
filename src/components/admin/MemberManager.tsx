@@ -469,17 +469,6 @@ export default function MemberManager() {
           </div>
         )}
       </div>
-      {/* Referral Codes */}
-      <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Gift className="w-4 h-4 text-primary" />
-          Referral Codes
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          Generate a referral code that allows an intern to skip training and immediately unlock their dashboard.
-        </p>
-        <ReferralCodeSection queryClient={queryClient} />
-      </div>
     </div>
   );
 }
