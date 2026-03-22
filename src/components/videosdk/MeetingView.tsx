@@ -78,19 +78,13 @@ const MeetingView = ({
   const joinMeeting = () => {
     setJoined("JOINING");
     setTimedOut(false);
-    hasAutoJoined.current = true;
     join();
   };
 
   const retryJoin = () => {
     setTimedOut(false);
-    setJoined(null);
-    hasAutoJoined.current = false;
-    setTimeout(() => {
-      setJoined("JOINING");
-      hasAutoJoined.current = true;
-      join();
-    }, 100);
+    setJoined("JOINING");
+    join();
   };
 
   if (joined === "JOINING") {
