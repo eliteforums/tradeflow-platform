@@ -389,9 +389,12 @@ const MobileInternDashboard = () => {
                         s.is_flagged ? "bg-destructive/10 text-destructive" : s.status === "active" ? "bg-eternia-success/10 text-eternia-success" : "bg-primary/10 text-primary"
                       )}>{s.is_flagged ? "⚠" : s.status}</span>
                       {s.status === "active" && !s.is_flagged && (
-                        <Button size="sm" variant="ghost" className="text-destructive h-7 px-1.5" onClick={() => setEscalationDialog({ open: true, sessionId: s.id })}>
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                        </Button>
+                        <>
+                          <Button size="sm" className="h-7 text-[10px] px-2" onClick={() => navigate("/dashboard/peer-connect")}>Join</Button>
+                          <Button size="sm" variant="ghost" className="text-destructive h-7 px-1.5" onClick={() => setEscalationDialog({ open: true, sessionId: s.id })}>
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
