@@ -479,6 +479,9 @@ const AdminDashboard = () => {
 
               {/* ─── ANALYTICS ─── */}
               {activeTab === "analytics" && <div className="max-w-5xl"><AnalyticsDashboard /></div>}
+
+              {/* ─── TOOLS (Quest Cards) ─── */}
+              {activeTab === "tools" && <div className="max-w-4xl"><QuestCardManager /></div>}
             </>
           )}
         </div>
