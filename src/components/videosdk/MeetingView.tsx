@@ -95,6 +95,7 @@ const MeetingView = ({
   const joinMeeting = () => {
     setJoined("JOINING");
     setTimedOut(false);
+    hasAutoJoined.current = true;
     join();
   };
 

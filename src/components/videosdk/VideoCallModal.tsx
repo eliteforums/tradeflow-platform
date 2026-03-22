@@ -159,7 +159,6 @@ const VideoCallModal = ({
                 webcamEnabled: !isAudioOnly,
                 name: participantName,
                 debugMode: false,
-                joinWithoutUserInteraction: true,
               }}
               token={token}
             >

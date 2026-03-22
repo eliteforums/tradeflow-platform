@@ -601,7 +601,6 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                       webcamEnabled: false,
                       name: profile?.username || "Therapist",
                       debugMode: false,
-                      joinWithoutUserInteraction: true,
                     }}
                     token={token}
                   >
