@@ -233,8 +233,38 @@ export function usePeerConnect(initialSessionId?: string | null) {
     mutationFn: async (internId: string) => {
       if (!user) throw new Error("Not authenticated");
       if (isIntern) throw new Error("Interns cannot request peer sessions");
+
+      // 1. Check if student already has an active/pending session
+      const { data: existingStudentSession } = await supabase
+        .from("peer_sessions")
+        .select("*")
+        .eq("student_id", user.id)
+        .in("status", ["pending", "active"])
+        .limit(1)
+        .maybeSingle();
+
+      if (existingStudentSession) {
+        // Reuse existing session instead of creating a duplicate
+        return existingStudentSession;
+      }
+
+      // 2. Check if the target intern already has an active/pending session
+      const { data: existingInternSession } = await supabase
+        .from("peer_sessions")
+        .select("id")
+        .eq("intern_id", internId)
+        .in("status", ["pending", "active"])
+        .limit(1)
+        .maybeSingle();
+
+      if (existingInternSession) {
+        throw new Error("This intern is currently in a session. Please try another intern or wait.");
+      }
+
+      // 3. Spend credits
       await spendCredits(20, "Peer Connect session");
 
+      // 4. Insert new session
       const { data, error } = await supabase
         .from("peer_sessions")
         .insert({
@@ -246,7 +276,13 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // User-friendly message for constraint violations
+        if (error.code === "23505") {
+          throw new Error("You or this intern already have an active session.");
+        }
+        throw error;
+      }
       return data;
     },
     onSuccess: (session) => {
