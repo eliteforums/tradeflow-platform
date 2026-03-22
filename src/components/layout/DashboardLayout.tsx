@@ -210,9 +210,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       {/* Mobile Top Bar */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/30 flex items-center justify-between px-4 h-12">
-        <Link to="/dashboard" className="flex items-center gap-2">
-          <EterniaLogo size={22} />
-          <span className="text-sm font-bold font-display">Eternia</span>
+        <Link to="/dashboard" className="flex items-center">
+          <EterniaLogo size={28} />
         </Link>
         <Button
           variant="ghost"

@@ -163,9 +163,8 @@ const Login = () => {
           </Link>
 
           {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-6 lg:hidden">
-            <EterniaLogo size={36} />
-            <span className="text-lg font-bold font-display">Eternia</span>
+          <div className="flex items-center mb-6 lg:hidden">
+            <EterniaLogo size={44} />
           </div>
 
           <div className="mb-6">

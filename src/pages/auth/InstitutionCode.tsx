@@ -142,9 +142,8 @@ const InstitutionCode = () => {
           </Link>
 
           {/* Mobile logo + progress */}
-          <div className="flex items-center gap-2.5 mb-5 lg:hidden">
-            <EterniaLogo size={36} />
-            <span className="text-lg font-bold font-display">Eternia</span>
+          <div className="flex items-center mb-5 lg:hidden">
+            <EterniaLogo size={44} />
           </div>
 
           {/* Progress bar */}
