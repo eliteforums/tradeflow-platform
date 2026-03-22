@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Lock, Award, PenLine, BarChart3, Heart } from "lucide-react";
+import { Award, PenLine, BarChart3, Heart } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 const activeTools = [
