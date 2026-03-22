@@ -88,7 +88,7 @@ const ExpertDashboardContent = () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from("expert_availability")
-        .select("*")
+        .select("id, expert_id, start_time, end_time, is_booked, institution_id, recurrence_rule")
         .eq("expert_id", user.id)
         .order("start_time", { ascending: true });
       if (error) throw error;
