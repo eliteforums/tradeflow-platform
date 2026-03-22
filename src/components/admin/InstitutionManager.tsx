@@ -69,7 +69,7 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("institutions")
-        .select("*")
+        .select("id, name, eternia_code_hash, plan_type, credits_pool, is_active, institution_type, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Institution[];

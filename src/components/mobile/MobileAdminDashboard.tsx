@@ -270,11 +270,12 @@ const MobileAdminDashboard = () => {
                     <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/30 border border-border/30">
                       <div>
                         <p className="text-[10px] font-medium text-muted-foreground mb-0.5">Eternia Code</p>
-                        <code className="text-sm font-mono font-bold tracking-widest">{inst.eternia_code_hash}</code>
+                        <code className="text-sm font-mono font-bold tracking-widest">{inst.eternia_code_hash || "Code unavailable"}</code>
                       </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (!inst.eternia_code_hash) return;
                           navigator.clipboard.writeText(inst.eternia_code_hash);
                           setCopiedId(inst.id);
                           setTimeout(() => setCopiedId(null), 2000);
