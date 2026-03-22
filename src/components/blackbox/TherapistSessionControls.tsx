@@ -9,12 +9,14 @@ interface TherapistSessionControlsProps {
   sessionId: string;
   silenceDurationSec: number;
   onSessionEnded: () => void;
+  captureEscalationSnippet?: (windowMs?: number) => string;
 }
 
 const TherapistSessionControls = ({
   sessionId,
   silenceDurationSec,
   onSessionEnded,
+  captureEscalationSnippet,
 }: TherapistSessionControlsProps) => {
   const [isRefunding, setIsRefunding] = useState(false);
   const silenceMin = Math.floor(silenceDurationSec / 60);
