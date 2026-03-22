@@ -1,39 +1,46 @@
 
-Goal: Fix the missing “Eternia Code” display in Institution Detail and related admin screens.
 
-What’s actually broken:
-- The code exists in backend data (e.g., Elite Forums has a valid code), but the UI sometimes receives institution objects without `eternia_code_hash`.
-- Main cause: shared React Query key collision.
-  - `useAdmin` uses `queryKey: ["admin-institutions"]` but selects a limited field list (currently missing `eternia_code_hash`).
-  - `InstitutionManager` also uses `queryKey: ["admin-institutions"]`.
-  - Because the cache is shared, components can receive the “no code field” version, causing blank code UI.
+## Plan: Fix VideoSDK Session Joining & BlackBox Call Flow
 
-Implementation plan:
+### Problems Identified
 
-1) Align institution query payload for shared cache
-- Update `src/hooks/useAdmin.ts` institutions query to include `eternia_code_hash` in `.select(...)`.
-- Add a typed institution interface in `useAdmin` so missing fields are caught earlier in TypeScript.
+1. **`display: none` kills media** — Both `BlackBox.tsx` and `MobileBlackBox.tsx` wrap the `MeetingProvider` in `<div className="hidden">` (which is `display: none`). Browsers block `getUserMedia` and WebRTC connections inside hidden elements. This is why audio never connects for the student.
 
-2) Make InstitutionManager query shape explicit (no wildcard drift)
-- Update `src/components/admin/InstitutionManager.tsx` from `.select("*")` to explicit select fields including:
-  `id, name, eternia_code_hash, plan_type, credits_pool, is_active, institution_type, created_at`
-- Keep consistent shape with `useAdmin` so shared cache is stable.
+2. **Auto-join is unreliable** — The 300ms delay in `MeetingView` before calling `join()` is arbitrary. The VideoSDK `useMeeting` hook may not have a ready `join` function yet. There's no retry if the initial join silently fails (the 15s timeout exists but only shows UI — the retry just calls `join()` once more without checking SDK state).
 
-3) Add defensive UI fallback (so it never looks blank again)
-- In `src/components/admin/InstitutionDetailView.tsx`:
-  - Render a clear fallback text like “Code unavailable” when code is missing.
-  - Disable or guard copy action when code is absent, with user-friendly toast.
-- In `src/components/mobile/MobileAdminDashboard.tsx` and Institution cards, show same fallback instead of empty space.
+3. **Realtime subscription re-created unnecessarily** — In `useBlackBoxSession.ts`, the channel subscription depends on `[activeSession?.id, token]`. When the token is set (after room_id arrives), the channel is torn down and re-created, potentially missing the very update that triggered it.
 
-4) Keep cache refresh behavior correct
-- Ensure all institution create/toggle actions still invalidate the same institutions query key so fresh code appears immediately after updates.
+4. **Therapist MeetingProvider also fragile** — The therapist side uses `autoJoin={true}` but faces the same 300ms timing issue.
 
-Validation (end-to-end):
-- Desktop: `/admin` → SPOC/Institutions → open “Elite Forums” detail → verify code is visible and copy works.
-- Mobile admin view: institution card and detail should also show code (or explicit fallback, never blank).
-- Create a new institution, then open detail immediately and confirm code appears without manual refresh.
+### Changes
 
-Technical details:
-- No database migration required.
-- No RLS change required.
-- This is a frontend data-shape/cache consistency fix + UI fallback hardening.
+| File | Change |
+|------|--------|
+| `src/pages/dashboard/BlackBox.tsx` | Replace `<div className="hidden">` with visually-hidden but layout-present wrapper (`position: fixed; opacity: 0; pointer-events: none; width: 1px; height: 1px`) so WebRTC stays alive |
+| `src/components/mobile/MobileBlackBox.tsx` | Same fix — replace `className="hidden"` with offscreen positioning |
+| `src/components/videosdk/MeetingView.tsx` | Improve auto-join: use `useMeeting`'s `meetingId` availability as readiness signal; add retry loop (3 attempts, 1s apart) instead of single 300ms shot; track join state via `onMeetingJoined` callback (already done) |
+| `src/hooks/useBlackBoxSession.ts` | Remove `token` from realtime subscription deps — the subscription should persist regardless of token state. Only depend on `activeSession?.id`. |
+
+### Technical Details
+
+**MeetingView auto-join fix:**
+```text
+Current:  setTimeout(300ms) → join()  → hope it works
+Proposed: useEffect watches SDK readiness → attempt join → if not JOINED after 3s, retry up to 3 times → then show timeout UI
+```
+
+The `useMeeting` hook returns a `meetingId` that's only populated once the SDK is initialized. We'll use this as the readiness gate instead of an arbitrary timer.
+
+**Hidden div fix:**
+```css
+/* Instead of display: none */
+position: fixed;
+top: -9999px;
+opacity: 0;
+pointer-events: none;
+```
+This keeps the DOM present and WebRTC active while being invisible to the user.
+
+**Realtime subscription fix:**
+Remove `token` from the dependency array of the realtime `useEffect` in `useBlackBoxSession.ts`. The subscription only needs `activeSession?.id` — the token fetch happens inside the callback, not as part of the subscription lifecycle.
+
