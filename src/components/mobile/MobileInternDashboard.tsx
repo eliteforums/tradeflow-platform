@@ -39,7 +39,7 @@ interface TrainingModule {
 }
 
 const MobileInternDashboard = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("training");
   const [activeModule, setActiveModule] = useState<number | null>(null);
@@ -208,7 +208,7 @@ const MobileInternDashboard = () => {
 
             {/* Referral Code Skip */}
             {!isTrainingComplete && !isInterviewPending && (
-              <MobileReferralCodeInput user={user} queryClient={queryClient} />
+              <MobileReferralCodeInput user={user} queryClient={queryClient} refreshProfile={refreshProfile} />
             )}
 
             <div className="space-y-2">
@@ -446,7 +446,7 @@ const MobileInternDashboard = () => {
 
 export default MobileInternDashboard;
 
-function MobileReferralCodeInput({ user, queryClient }: { user: any; queryClient: any }) {
+function MobileReferralCodeInput({ user, queryClient, refreshProfile }: { user: any; queryClient: any; refreshProfile: () => Promise<void> }) {
   const [showInput, setShowInput] = useState(false);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -464,19 +464,24 @@ function MobileReferralCodeInput({ user, queryClient }: { user: any; queryClient
       if (codeRow.is_used) { toast.error("This code has already been used"); return; }
       if (codeRow.expires_at && new Date(codeRow.expires_at) < new Date()) { toast.error("This code has expired"); return; }
 
+      // Update profile FIRST — if this fails, the code stays unused
+      const { error: profileError } = await supabase.from("profiles").update({
+        training_status: "active",
+        is_verified: true,
+        training_progress: [1, 2, 3, 4, 5, 6, 7],
+      }).eq("id", user.id);
+
+      if (profileError) throw profileError;
+
+      // Only mark code as used after profile update succeeds
       await supabase.from("intern_referral_codes").update({
         is_used: true,
         assigned_to: user.id,
         used_at: new Date().toISOString(),
       }).eq("id", codeRow.id);
 
-      await supabase.from("profiles").update({
-        training_status: "active",
-        is_verified: true,
-        training_progress: [1, 2, 3, 4, 5, 6, 7],
-      }).eq("id", user.id);
-
       toast.success("Referral code applied! Dashboard unlocked.");
+      await refreshProfile();
       queryClient.invalidateQueries({ queryKey: ["user-profile"] });
       window.location.reload();
     } catch (e: any) {
