@@ -137,7 +137,15 @@ const PeerConnect = () => {
                           <Flag className={`w-4 h-4 ${activeSession?.is_flagged ? "fill-current" : ""}`} />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCallModal({ open: true, mode: "audio" })}><Phone className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={async () => {
+                        if (!activeSessionId) return;
+                        const roomId = await ensureSessionRoom(activeSessionId);
+                        if (roomId) {
+                          setCallModal({ open: true, mode: "audio", roomId });
+                        } else {
+                          toast.error("Failed to create call room");
+                        }
+                      }}><Phone className="w-4 h-4" /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleEndSession}><X className="w-4 h-4" /></Button>
                     </div>
                   </div>
