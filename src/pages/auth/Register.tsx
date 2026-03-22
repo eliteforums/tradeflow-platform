@@ -103,20 +103,34 @@ const Register = () => {
 
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.emergencyName) {
-      toast.error("Emergency contact name is required");
+    
+    const emergencyName = formData.emergencyName.trim();
+    const emergencyContact = formData.emergencyContact.trim();
+    const studentId = formData.studentId.trim();
+    
+    if (!emergencyName || emergencyName.length < 2 || emergencyName.length > 100) {
+      toast.error("Emergency contact name must be 2-100 characters");
       return;
     }
-    if (!formData.emergencyContact) {
+    if (!/^[a-zA-Z\s.'-]+$/.test(emergencyName)) {
+      toast.error("Emergency contact name contains invalid characters");
+      return;
+    }
+    if (!emergencyContact) {
       toast.error("Emergency contact number is required");
       return;
     }
-    if (!formData.contactIsSelf && !formData.emergencyRelation) {
+    // Indian phone number validation
+    if (!/^(\+91[\s-]?)?[6-9]\d{9}$/.test(emergencyContact.replace(/[\s-]/g, ""))) {
+      toast.error("Please enter a valid Indian phone number");
+      return;
+    }
+    if (!formData.contactIsSelf && !formData.emergencyRelation?.trim()) {
       toast.error("Please specify the relationship to the contact person");
       return;
     }
-    if (!formData.studentId) {
-      toast.error("Student verification ID is required");
+    if (!studentId || studentId.length < 3 || studentId.length > 50) {
+      toast.error("Student verification ID must be 3-50 characters");
       return;
     }
     if (!acceptedConsent) {
