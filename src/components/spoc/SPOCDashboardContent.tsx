@@ -469,13 +469,59 @@ const SPOCDashboardContent = () => {
             <p className="text-xs text-muted-foreground">
               Generate HMAC-signed QR code for student onboarding (24h TTL).
             </p>
-            <div className="p-4 rounded-xl bg-muted/30 border border-border text-center">
-              <div className="w-28 h-28 mx-auto bg-card rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center mb-3">
-                <QrCode className="w-14 h-14 text-primary/60" />
+            <div className="flex flex-col items-center">
+              <div
+                ref={qrRef}
+                className="relative p-5 rounded-2xl bg-background border-2 border-primary/15 shadow-lg shadow-primary/5"
+              >
+                {qrLoading ? (
+                  <div className="w-[200px] h-[200px] flex items-center justify-center">
+                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                  </div>
+                ) : qrPayload ? (
+                  <QRCodeSVG
+                    value={qrPayload}
+                    size={200}
+                    bgColor="transparent"
+                    fgColor="hsl(174, 62%, 47%)"
+                    level="H"
+                    includeMargin={false}
+                  />
+                ) : (
+                  <div className="w-[200px] h-[200px] flex flex-col items-center justify-center gap-2">
+                    <QrCode className="w-12 h-12 text-muted-foreground/30" />
+                    <p className="text-xs text-muted-foreground text-center px-4">
+                      {qrError?.message || "Failed to generate QR code"}
+                    </p>
+                    <Button size="sm" variant="outline" className="mt-1 text-xs h-7" onClick={() => regenerateQR()}>
+                      <RefreshCw className="w-3 h-3 mr-1" /> Try Again
+                    </Button>
+                  </div>
+                )}
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary/40 rounded-tl-lg" />
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary/40 rounded-tr-lg" />
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary/40 rounded-bl-lg" />
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary/40 rounded-br-lg" />
               </div>
-              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={generateQR}>
-                {copiedQR ? <Check className="w-3.5 h-3.5 text-eternia-success" /> : <Copy className="w-3.5 h-3.5" />}
-                {copiedQR ? "Copied!" : "Generate & Copy"}
+              {qrExpiresAt && (
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Expires {qrExpiresAt.toLocaleTimeString()} · Scan to join
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={copyQRPayload} disabled={!qrPayload}>
+                {copiedQR ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                Copy
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={downloadQR} disabled={!qrPayload}>
+                <Download className="w-3.5 h-3.5" />
+                Download
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={() => regenerateQR()} disabled={qrLoading}>
+                <RefreshCw className={`w-3.5 h-3.5 ${qrLoading ? "animate-spin" : ""}`} />
+                Regenerate
               </Button>
             </div>
             <p className="text-[10px] text-muted-foreground italic">HMAC-SHA256 signed · Valid for 24 hours · Audited</p>
