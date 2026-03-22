@@ -288,7 +288,7 @@ const InternDashboardContent = () => {
                             <Play className="w-3 h-3" />Start
                           </Button>
                         ) : isNext && isDay7 ? (
-                          <span className="text-xs text-muted-foreground italic">Expert scheduled</span>
+                          <span className="text-xs text-eternia-warning font-medium">Interview</span>
                         ) : null}
                       </div>
                     </div>
