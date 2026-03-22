@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, Component, ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Text, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
@@ -17,7 +17,21 @@ interface QuestCard3DProps {
   onComplete: (id: string) => void;
 }
 
-/* ── Mobile 2D cards — full-width grid ── */
+/* ── Error Boundary ── */
+class CanvasErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
+
+/* ── Mobile / fallback 2D cards ── */
 function QuestCards2D({ quests, completedIds, onComplete }: QuestCard3DProps) {
   return (
     <div className="grid grid-cols-3 gap-2">
@@ -113,7 +127,6 @@ function QuestCardMesh({
         textAlign="center"
         color="white"
         anchorY="top"
-        font="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
       >
         {quest.title.length > 40 ? quest.title.slice(0, 37) + "..." : quest.title}
       </Text>
@@ -125,7 +138,6 @@ function QuestCardMesh({
           position={[0, 0, 0.04]}
           fontSize={0.13}
           color="white"
-          font="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiA.woff2"
         >
           {isCompleted ? "✓ Done" : `+${quest.xp_reward} XP`}
         </Text>
@@ -134,10 +146,24 @@ function QuestCardMesh({
   );
 }
 
+/* ── Canvas readiness tracker ── */
+function ReadyTracker({ onReady }: { onReady: () => void }) {
+  useEffect(() => { onReady(); }, []);
+  return null;
+}
+
 export default function QuestCard3D(props: QuestCard3DProps) {
   const isMobile = useIsMobile();
+  const [canvasReady, setCanvasReady] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
-  if (isMobile) return <QuestCards2D {...props} />;
+  useEffect(() => {
+    if (canvasReady) return;
+    const timer = setTimeout(() => setTimedOut(true), 5000);
+    return () => clearTimeout(timer);
+  }, [canvasReady]);
+
+  if (isMobile || timedOut) return <QuestCards2D {...props} />;
 
   const visibleQuests = props.quests.slice(0, 3);
   const positions: [number, number, number][] =
@@ -148,21 +174,24 @@ export default function QuestCard3D(props: QuestCard3DProps) {
       : [[-2.3, 0, 0], [0, 0, 0], [2.3, 0, 0]];
 
   return (
-    <div className="w-full h-[280px] rounded-2xl overflow-hidden bg-gradient-to-b from-amber-950/20 to-background border border-border/50">
-      <Canvas camera={{ position: [0, 0, 6.5], fov: 40 }}>
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[3, 4, 5]} intensity={0.7} />
-        <pointLight position={[-3, 2, 2]} intensity={0.3} color="#f59e0b" />
-        {visibleQuests.map((quest, i) => (
-          <QuestCardMesh
-            key={quest.id}
-            quest={quest}
-            isCompleted={props.completedIds.includes(quest.id)}
-            onComplete={() => props.onComplete(quest.id)}
-            position={positions[i] || [0, 0, 0]}
-          />
-        ))}
-      </Canvas>
-    </div>
+    <CanvasErrorBoundary fallback={<QuestCards2D {...props} />}>
+      <div className="w-full h-[280px] rounded-2xl overflow-hidden bg-gradient-to-b from-amber-950/20 to-background border border-border/50">
+        <Canvas camera={{ position: [0, 0, 6.5], fov: 40 }}>
+          <ReadyTracker onReady={() => setCanvasReady(true)} />
+          <ambientLight intensity={0.6} />
+          <directionalLight position={[3, 4, 5]} intensity={0.7} />
+          <pointLight position={[-3, 2, 2]} intensity={0.3} color="#f59e0b" />
+          {visibleQuests.map((quest, i) => (
+            <QuestCardMesh
+              key={quest.id}
+              quest={quest}
+              isCompleted={props.completedIds.includes(quest.id)}
+              onComplete={() => props.onComplete(quest.id)}
+              position={positions[i] || [0, 0, 0]}
+            />
+          ))}
+        </Canvas>
+      </div>
+    </CanvasErrorBoundary>
   );
 }

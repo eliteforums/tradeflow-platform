@@ -1,13 +1,12 @@
-import { useIsMobile } from "@/hooks/use-mobile";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useQuests } from "@/hooks/useQuests";
 import QuestCard3D from "@/components/selfhelp/QuestCard3D";
-import { Award, ArrowLeft } from "lucide-react";
+import { Award, ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const QuestCards = () => {
-  const { quests, completions, isLoading, completeQuest, completedToday, totalXpToday } = useQuests();
+  const { quests, completions, isLoading, error, completeQuest, isCompleting, completedToday, totalXpToday } = useQuests();
   const completedIds = completions.map((c) => c.quest_id);
 
   return (
@@ -38,8 +37,20 @@ const QuestCards = () => {
           </div>
         </div>
 
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/30 p-3 text-sm text-destructive">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>Failed to load quests. Please refresh the page.</span>
+          </div>
+        )}
+
         {isLoading ? (
           <Skeleton className="h-[280px] w-full rounded-2xl" />
+        ) : quests.length === 0 && !error ? (
+          <div className="rounded-2xl border border-border/50 bg-card p-8 text-center">
+            <Award className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">No quests available right now. Check back later!</p>
+          </div>
         ) : (
           <QuestCard3D
             quests={quests}
@@ -58,16 +69,20 @@ const QuestCards = () => {
             return (
               <button
                 key={quest.id}
-                onClick={() => !done && completeQuest(quest)}
-                disabled={done}
+                onClick={() => !done && !isCompleting && completeQuest(quest)}
+                disabled={done || isCompleting}
                 className={`w-full text-left rounded-xl border p-3 flex items-center gap-3 transition-all ${
                   done ? "bg-emerald-500/10 border-emerald-500/30" : "bg-card border-border/40 hover:border-primary/30 active:scale-[0.99]"
-                }`}
+                } ${isCompleting && !done ? "opacity-60" : ""}`}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                   done ? "bg-emerald-500/20" : "bg-gradient-to-br from-amber-500 to-orange-500"
                 }`}>
-                  <Award className={`w-5 h-5 ${done ? "text-emerald-500" : "text-white"}`} />
+                  {isCompleting && !done ? (
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  ) : (
+                    <Award className={`w-5 h-5 ${done ? "text-emerald-500" : "text-white"}`} />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{quest.title}</p>

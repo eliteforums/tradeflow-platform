@@ -26,7 +26,7 @@ export function useQuests() {
   const queryClient = useQueryClient();
   const { remainingToday, canEarn } = useEccEarn();
 
-  const { data: quests = [], isLoading: isLoadingQuests } = useQuery({
+  const { data: quests = [], isLoading: isLoadingQuests, error: questsError } = useQuery({
     queryKey: ["quest-cards"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -38,16 +38,14 @@ export function useQuests() {
       if (error) throw error;
       return data as QuestCard[];
     },
+    retry: 1,
   });
 
-  const { data: completions = [], isLoading: isLoadingCompletions } = useQuery({
+  const { data: completions = [], isLoading: isLoadingCompletions, error: completionsError } = useQuery({
     queryKey: ["quest-completions", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      
-      // Get today's completions
       const today = new Date().toISOString().split("T")[0];
-      
       const { data, error } = await supabase
         .from("quest_completions")
         .select("id, user_id, quest_id, completed_date, completed_at")
@@ -58,6 +56,7 @@ export function useQuests() {
       return data as QuestCompletion[];
     },
     enabled: !!user,
+    retry: 1,
   });
 
   const completeQuest = useMutation({
@@ -69,10 +68,8 @@ export function useQuests() {
         throw new Error("Quest already completed today");
       }
 
-      // Enforce daily ECC cap
       const actualReward = Math.min(quest.xp_reward, remainingToday);
       if (!canEarn || actualReward <= 0) {
-        // Still mark quest as completed but no ECC
         const { error: completionError } = await supabase.from("quest_completions").insert({
           user_id: user.id,
           quest_id: quest.id,
@@ -109,10 +106,6 @@ export function useQuests() {
     },
   });
 
-  const getQuestStatus = (questId: string) => {
-    return completions.some(c => c.quest_id === questId);
-  };
-
   const totalXpToday = completions.reduce((sum, c) => {
     const quest = quests.find(q => q.id === c.quest_id);
     return sum + (quest?.xp_reward || 0);
@@ -122,9 +115,9 @@ export function useQuests() {
     quests,
     completions,
     isLoading: isLoadingQuests || isLoadingCompletions,
+    error: questsError || completionsError,
     completeQuest: completeQuest.mutate,
     isCompleting: completeQuest.isPending,
-    getQuestStatus,
     completedToday: completions.length,
     totalXpToday,
   };
