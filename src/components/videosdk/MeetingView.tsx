@@ -47,6 +47,8 @@ const MeetingView = ({
   onRiskDetected,
   autoJoin = false,
   onError,
+  isTherapistView = false,
+  onSilenceAutoEnd,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
