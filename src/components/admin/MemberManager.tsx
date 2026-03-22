@@ -7,7 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight, Plus, Download, Key, CheckCircle, Clock, QrCode } from "lucide-react";
+import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight, Plus, Download, Key, CheckCircle, Clock, QrCode, ShieldCheck } from "lucide-react";
 
 const ROLES = [
   { value: "student", label: "Student" },
