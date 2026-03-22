@@ -33,7 +33,7 @@ export function useAdmin() {
     queryFn: async () => {
       let query = supabase
         .from("profiles")
-        .select("*")
+        .select("id, username, role, is_active, is_verified, total_sessions, streak_days, created_at, institution_id, specialty")
         .order("created_at", { ascending: false });
 
       // SPOC only sees their own institution
@@ -54,7 +54,7 @@ export function useAdmin() {
     queryFn: async () => {
       let studentQuery = supabase
         .from("profiles")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("role", "student");
 
       if (!isSuperAdmin && profile?.institution_id) {
@@ -119,7 +119,7 @@ export function useAdmin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("blackbox_entries")
-        .select("*")
+        .select("id, user_id, content_type, ai_flag_level, is_private, created_at")
         .gt("ai_flag_level", 0)
         .order("ai_flag_level", { ascending: false })
         .limit(20);
@@ -152,7 +152,7 @@ export function useAdmin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("institutions")
-        .select("*")
+        .select("id, name, plan_type, credits_pool, is_active, institution_type, created_at")
         .order("name");
 
       if (error) throw error;

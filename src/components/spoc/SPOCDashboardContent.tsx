@@ -49,7 +49,7 @@ const SPOCDashboardContent = () => {
       if (!institutionId) return null;
       const { data, error } = await supabase
         .from("institutions")
-        .select("*")
+        .select("id, name, plan_type, credits_pool, is_active, institution_type")
         .eq("id", institutionId)
         .single();
       if (error) throw error;
@@ -153,7 +153,7 @@ const SPOCDashboardContent = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("blackbox_entries")
-        .select("*")
+        .select("id, user_id, content_type, ai_flag_level, is_private, created_at")
         .gt("ai_flag_level", 0)
         .order("ai_flag_level", { ascending: false })
         .limit(50);

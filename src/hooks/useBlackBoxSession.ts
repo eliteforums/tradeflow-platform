@@ -74,7 +74,7 @@ export const useBlackBoxSession = () => {
     const checkExisting = async () => {
       const { data } = await supabase
         .from("blackbox_sessions")
-        .select("*")
+        .select("id, student_id, therapist_id, status, room_id, flag_level, escalation_reason, escalation_history, session_notes_encrypted, started_at, ended_at, created_at")
         .eq("student_id", user.id)
         .in("status", ["queued", "accepted", "active"])
         .order("created_at", { ascending: false })

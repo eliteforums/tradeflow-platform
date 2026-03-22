@@ -20,7 +20,7 @@ export function useSoundTherapy() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sound_content")
-        .select("*")
+        .select("id, title, artist, category, description, duration_sec, cover_emoji, file_url, is_active, play_count")
         .eq("is_active", true)
         .order("play_count", { ascending: false });
 

@@ -75,9 +75,10 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
   const fetchQueue = useCallback(async () => {
     const { data } = await supabase
       .from("blackbox_sessions")
-      .select("*")
+      .select("id, student_id, status, flag_level, created_at")
       .eq("status", "queued")
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true })
+      .limit(50);
 
     if (data) {
       // Fetch student usernames
@@ -162,7 +163,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
     const checkActive = async () => {
       const { data } = await supabase
         .from("blackbox_sessions")
-        .select("*")
+        .select("id, student_id, therapist_id, status, flag_level, room_id, escalation_history, escalation_reason, session_notes_encrypted, started_at, ended_at, created_at")
         .eq("therapist_id", user.id)
         .in("status", ["accepted", "active"])
         .limit(1);
@@ -199,7 +200,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
     const fetchHistory = async () => {
       const { data } = await supabase
         .from("blackbox_sessions")
-        .select("*")
+        .select("id, flag_level, escalation_reason, escalation_history, started_at, ended_at, created_at, session_notes_encrypted")
         .eq("therapist_id", user.id)
         .in("status", ["completed", "escalated"])
         .order("created_at", { ascending: false })
@@ -230,7 +231,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
 
       const { data } = await supabase
         .from("blackbox_sessions")
-        .select("*")
+        .select("id, student_id, therapist_id, status, flag_level, room_id, escalation_history, escalation_reason, session_notes_encrypted, started_at, ended_at, created_at")
         .eq("id", sessionId)
         .single();
 
@@ -320,6 +321,17 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
           });
         }
       }
+    }
+
+    // §14.2: Audit log for escalation
+    if (user) {
+      await supabase.from("audit_logs").insert({
+        actor_id: user.id,
+        action_type: "escalation_submitted",
+        target_table: "blackbox_sessions",
+        target_id: activeSession.id,
+        metadata: { level, reason_length: escalationReason.length },
+      });
     }
 
     if (level >= 3) {
