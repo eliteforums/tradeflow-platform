@@ -23,7 +23,7 @@ const MobileBlackBox = () => {
         <div className="flex-1 flex flex-col items-center justify-center gap-5 w-full">
           <NovaOrb
             isActive={!!isInSession}
-            isPulsing={!!isQueued || isRequesting}
+            isPulsing={!!isQueued || isRequesting || !!isConnectingToSession}
             size={200}
           />
 
