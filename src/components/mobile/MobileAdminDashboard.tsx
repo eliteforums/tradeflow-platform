@@ -105,6 +105,7 @@ const MobileAdminDashboard = () => {
     { id: "roles", label: "Roles", icon: UserPlus },
     { id: "training", label: "Training", icon: BookOpen },
     { id: "sounds", label: "Sounds", icon: Music },
+    { id: "tools", label: "Quest Cards", icon: Gamepad2 },
     { id: "escalations", label: "Escalations", icon: AlertTriangle },
     { id: "audit", label: "Audit", icon: FileText },
   ];
