@@ -206,6 +206,11 @@ const MobileInternDashboard = () => {
               </div>
             )}
 
+            {/* Referral Code Skip */}
+            {!isTrainingComplete && !isInterviewPending && (
+              <MobileReferralCodeInput user={user} queryClient={queryClient} />
+            )}
+
             <div className="space-y-2">
               {trainingModules.map((m) => {
                 const done = completedModules.includes(m.day_number);
