@@ -14,8 +14,9 @@ import {
   MessageCircle, Coins, Bell, Eye, Loader2,
   CheckCircle, Clock, XCircle, FileText, Plus,
   Search, Filter, Download, LogOut, Lock, Settings,
-  TrendingUp, Music, Gamepad2, Phone,
+  TrendingUp, Music, Gamepad2, Phone, RefreshCw,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 type SPOCTab = "home" | "onboarding" | "flags" | "reports" | "profile";
 
