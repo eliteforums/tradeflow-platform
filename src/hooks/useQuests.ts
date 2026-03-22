@@ -50,7 +50,7 @@ export function useQuests() {
       
       const { data, error } = await supabase
         .from("quest_completions")
-        .select("*")
+        .select("id, user_id, quest_id, completed_date, completed_at")
         .eq("user_id", user.id)
         .eq("completed_date", today);
 

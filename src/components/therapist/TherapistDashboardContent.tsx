@@ -323,6 +323,17 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
       }
     }
 
+    // §14.2: Audit log for escalation
+    if (user) {
+      await supabase.from("audit_logs").insert({
+        actor_id: user.id,
+        action_type: "escalation_submitted",
+        target_table: "blackbox_sessions",
+        target_id: activeSession.id,
+        metadata: { level, reason_length: escalationReason.length },
+      });
+    }
+
     if (level >= 3) {
       // L3 Host-Swap: Find M.Phil expert to take over
       const { data: studentProfile } = await supabase

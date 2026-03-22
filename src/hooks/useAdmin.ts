@@ -152,7 +152,7 @@ export function useAdmin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("institutions")
-        .select("*")
+        .select("id, name, plan_type, credits_pool, is_active, institution_type, created_at")
         .order("name");
 
       if (error) throw error;

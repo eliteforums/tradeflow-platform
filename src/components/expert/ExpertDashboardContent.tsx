@@ -190,12 +190,26 @@ const ExpertDashboardContent = () => {
           .limit(1);
         if (spocs && spocs.length > 0) spocId = spocs[0].id;
       }
+      const triggerSnippet = escalationReason.length > 500
+        ? escalationReason.substring(0, 500)
+        : escalationReason;
       const { error } = await supabase.from("escalation_requests").insert({
         spoc_id: spocId,
         justification_encrypted: escalationReason,
         session_id: null,
         entry_id: null,
-        trigger_timestamp: appointment?.slot_time || null,
+        trigger_snippet: triggerSnippet,
+        trigger_timestamp: appointment?.slot_time || new Date().toISOString(),
+        escalation_level: 1,
+      });
+      if (error) throw error;
+      // §14.2: Audit log
+      await supabase.from("audit_logs").insert({
+        actor_id: user.id,
+        action_type: "escalation_submitted",
+        target_table: "escalation_requests",
+        target_id: escalationDialog.appointmentId || null,
+        metadata: { level: 1, reason_length: escalationReason.length },
       });
       if (error) throw error;
     },

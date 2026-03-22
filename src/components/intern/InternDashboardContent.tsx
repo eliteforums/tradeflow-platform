@@ -123,11 +123,27 @@ const InternDashboardContent = () => {
           .eq("role", "spoc").limit(1);
         if (spocs && spocs.length > 0) spocId = spocs[0].id;
       }
+      const triggerSnippet = escalationReason.length > 500
+        ? escalationReason.substring(0, 500)
+        : escalationReason;
       const { error } = await supabase.from("escalation_requests").insert({
-        spoc_id: spocId, justification_encrypted: escalationReason,
-        session_id: escalationDialog.sessionId || null, entry_id: null,
+        spoc_id: spocId,
+        justification_encrypted: escalationReason,
+        session_id: escalationDialog.sessionId || null,
+        entry_id: null,
+        trigger_snippet: triggerSnippet,
+        trigger_timestamp: new Date().toISOString(),
+        escalation_level: 1,
       });
       if (error) throw error;
+      // §14.2: Audit log
+      await supabase.from("audit_logs").insert({
+        actor_id: user.id,
+        action_type: "escalation_submitted",
+        target_table: "escalation_requests",
+        target_id: escalationDialog.sessionId || null,
+        metadata: { level: 1, reason_length: escalationReason.length },
+      });
     },
     onSuccess: () => { toast.success("Escalation submitted"); setEscalationDialog({ open: false }); setEscalationReason(""); },
     onError: (e) => toast.error(e.message),
