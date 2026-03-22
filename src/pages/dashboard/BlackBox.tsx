@@ -29,7 +29,7 @@ const BlackBox = () => {
         <div className="flex-1 flex flex-col items-center justify-center gap-6 w-full max-w-lg">
           <NovaOrb
             isActive={!!isInSession}
-            isPulsing={!!isQueued || isRequesting}
+            isPulsing={!!isQueued || isRequesting || !!isConnectingToSession}
             size={260}
           />
 
