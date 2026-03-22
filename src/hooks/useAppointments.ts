@@ -45,8 +45,7 @@ export function useAppointments() {
         .from("profiles")
         .select("id, username, specialty, bio, total_sessions, is_active")
         .eq("role", "expert")
-        .eq("is_active", true)
-        .eq("is_verified", true);
+        .eq("is_active", true);
       if (error) throw error;
       return data as Expert[];
     },

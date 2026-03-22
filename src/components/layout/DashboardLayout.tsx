@@ -65,6 +65,7 @@ const internNavItems = [
 
 const therapistNavItems = [
   { icon: Headphones, label: "Queue", path: "/dashboard/therapist" },
+  { icon: Box, label: "BlackBox", path: "/dashboard/blackbox" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
