@@ -7,7 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight, Plus, Download } from "lucide-react";
+import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight, Plus, Download, Key, CheckCircle, Clock, QrCode } from "lucide-react";
 
 const ROLES = [
   { value: "intern", label: "Intern" },
@@ -24,13 +24,14 @@ export default function MemberManager() {
   const [selectedRole, setSelectedRole] = useState("intern");
   const [selectedInstitution, setSelectedInstitution] = useState("");
   const [expandedInstitution, setExpandedInstitution] = useState<string | null>(null);
-  // Bulk creation state
+  // Bulk temp ID creation state
   const [showBulkDialog, setShowBulkDialog] = useState(false);
   const [bulkInstitution, setBulkInstitution] = useState("");
   const [bulkCount, setBulkCount] = useState("10");
   const [bulkPrefix, setBulkPrefix] = useState("");
-  const [bulkRole, setBulkRole] = useState("student");
   const [bulkResults, setBulkResults] = useState<{ username: string; password: string }[] | null>(null);
+  // Temp credentials view
+  const [viewCredInstitution, setViewCredInstitution] = useState("");
 
   const { data: institutions = [] } = useQuery({
     queryKey: ["admin-institutions-list"],
@@ -51,6 +52,23 @@ export default function MemberManager() {
       if (error) throw error;
       return data;
     },
+  });
+
+  // Fetch temp credentials for selected institution
+  const { data: tempCredentials = [], isLoading: tempCredsLoading } = useQuery({
+    queryKey: ["admin-temp-credentials", viewCredInstitution],
+    queryFn: async () => {
+      if (!viewCredInstitution) return [];
+      const { data, error } = await supabase
+        .from("temp_credentials")
+        .select("id, temp_username, status, assigned_at, activated_at, created_at")
+        .eq("institution_id", viewCredInstitution)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!viewCredInstitution,
   });
 
   const addMutation = useMutation({
@@ -86,15 +104,14 @@ export default function MemberManager() {
     onError: (err: any) => toast.error(err.message),
   });
 
-  // Bulk create mutation
+  // Bulk create temp IDs mutation
   const bulkMutation = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("bulk-add-members", {
+      const { data, error } = await supabase.functions.invoke("create-bulk-temp-ids", {
         body: {
           institution_id: bulkInstitution,
           count: parseInt(bulkCount),
           prefix: bulkPrefix || undefined,
-          role: bulkRole,
         },
       });
       if (error) throw new Error(error.message || "Failed to bulk create");
@@ -102,8 +119,8 @@ export default function MemberManager() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success(`${data.created_count} members created`);
-      queryClient.invalidateQueries({ queryKey: ["admin-all-members"] });
+      toast.success(`${data.created_count} temp IDs created`);
+      queryClient.invalidateQueries({ queryKey: ["admin-temp-credentials"] });
       setBulkResults(data.members);
     },
     onError: (err: any) => toast.error(err.message),
@@ -111,11 +128,11 @@ export default function MemberManager() {
 
   const downloadBulkCSV = () => {
     if (!bulkResults) return;
-    const csv = "Username,Password\n" + bulkResults.map((m: any) => `${m.username},${m.password}`).join("\n");
+    const csv = "Temp_Username,Temp_Password\n" + bulkResults.map((m: any) => `${m.username},${m.password}`).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "bulk-credentials.csv";
+    a.download = "temp-credentials.csv";
     a.click();
     toast.success("Credentials CSV downloaded");
   };
@@ -148,16 +165,21 @@ export default function MemberManager() {
     return (institutionMap.get(a) || "").localeCompare(institutionMap.get(b) || "");
   });
 
+  // Temp credential stats
+  const unusedCount = tempCredentials.filter(c => c.status === "unused").length;
+  const assignedCount = tempCredentials.filter(c => c.status === "assigned").length;
+  const activatedCount = tempCredentials.filter(c => c.status === "activated").length;
+
   return (
     <div className="space-y-4">
-      {/* Add Member Form */}
+      {/* Add Staff Member Form */}
       <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
         <h3 className="text-sm font-semibold flex items-center gap-2">
           <UserPlus className="w-4 h-4 text-primary" />
-          Add Member
+          Add Staff Member
         </h3>
         <p className="text-xs text-muted-foreground">
-          Create a new staff account. Students are added via bulk institution onboarding.
+          Create a new staff account. Students are onboarded via Bulk Temp IDs + SPOC QR.
         </p>
 
         <div className="grid grid-cols-1 gap-2.5">
@@ -226,26 +248,26 @@ export default function MemberManager() {
         </Button>
       </div>
 
-      {/* Bulk ID Creation */}
+      {/* Bulk Temp ID Creation */}
       <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
         <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Users className="w-4 h-4 text-primary" />
-          Bulk ID Creation
+          <Key className="w-4 h-4 text-primary" />
+          Bulk Temp ID Creation
         </h3>
         <p className="text-xs text-muted-foreground">
-          Auto-generate multiple student accounts with random passwords for an institution.
+          Generate temporary credential pools for student onboarding. SPOCs will use these to create QR codes for individual students.
         </p>
 
         {!showBulkDialog ? (
           <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowBulkDialog(true)}>
             <Plus className="w-3.5 h-3.5" />
-            Bulk Create Members
+            Create Temp IDs
           </Button>
         ) : bulkResults ? (
           <div className="space-y-3">
             <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-              <p className="text-sm font-medium text-primary">{bulkResults.length} accounts created!</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Download credentials CSV before closing.</p>
+              <p className="text-sm font-medium text-primary">{bulkResults.length} temp IDs created!</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Download credentials CSV before closing. SPOCs can now use these for QR onboarding.</p>
             </div>
             <div className="max-h-[200px] overflow-y-auto space-y-1">
               {bulkResults.map((m, i) => (
@@ -293,14 +315,76 @@ export default function MemberManager() {
                 onClick={() => bulkMutation.mutate()}
                 disabled={!bulkInstitution || bulkMutation.isPending}
               >
-                {bulkMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />}
-                Create {bulkCount} Students
+                {bulkMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Key className="w-3.5 h-3.5" />}
+                Create {bulkCount} Temp IDs
               </Button>
               <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowBulkDialog(false)}>
                 Cancel
               </Button>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* Temp Credential Pool View */}
+      <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <QrCode className="w-4 h-4 text-primary" />
+          Temp Credential Pool
+        </h3>
+        <div>
+          <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Select Institution</label>
+          <Select value={viewCredInstitution} onValueChange={setViewCredInstitution}>
+            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select institution" /></SelectTrigger>
+            <SelectContent>
+              {institutions.map((inst) => <SelectItem key={inst.id} value={inst.id}>{inst.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {viewCredInstitution && (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="p-2.5 rounded-lg bg-muted/30 text-center">
+                <p className="text-lg font-bold text-primary">{unusedCount}</p>
+                <p className="text-[10px] text-muted-foreground">Unused</p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-muted/30 text-center">
+                <p className="text-lg font-bold text-eternia-warning">{assignedCount}</p>
+                <p className="text-[10px] text-muted-foreground">Assigned</p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-muted/30 text-center">
+                <p className="text-lg font-bold text-eternia-success">{activatedCount}</p>
+                <p className="text-[10px] text-muted-foreground">Activated</p>
+              </div>
+            </div>
+
+            {tempCredsLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : tempCredentials.length === 0 ? (
+              <p className="text-xs text-muted-foreground py-4 text-center">No temp credentials created yet for this institution.</p>
+            ) : (
+              <div className="max-h-[250px] overflow-y-auto space-y-1">
+                {tempCredentials.slice(0, 100).map((cred) => (
+                  <div key={cred.id} className="flex items-center justify-between text-xs px-2 py-1.5 bg-muted/30 rounded">
+                    <span className="font-mono truncate">{cred.temp_username}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] flex items-center gap-1 ${
+                      cred.status === "unused" ? "bg-primary/10 text-primary" :
+                      cred.status === "assigned" ? "bg-eternia-warning/10 text-eternia-warning" :
+                      "bg-eternia-success/10 text-eternia-success"
+                    }`}>
+                      {cred.status === "unused" && <Clock className="w-2.5 h-2.5" />}
+                      {cred.status === "assigned" && <QrCode className="w-2.5 h-2.5" />}
+                      {cred.status === "activated" && <CheckCircle className="w-2.5 h-2.5" />}
+                      {cred.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
