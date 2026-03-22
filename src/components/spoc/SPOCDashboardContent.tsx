@@ -502,11 +502,9 @@ const SPOCDashboardContent = () => {
                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary/40 rounded-bl-lg" />
                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary/40 rounded-br-lg" />
               </div>
-              {qrExpiresAt && (
-                <p className="text-[10px] text-muted-foreground mt-2">
-                  Expires {qrExpiresAt.toLocaleTimeString()} · Scan to join
-                </p>
-              )}
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Scan to join · Regenerate anytime
+              </p>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
