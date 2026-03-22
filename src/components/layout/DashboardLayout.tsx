@@ -63,6 +63,11 @@ const internNavItems = [
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
+const therapistNavItems = [
+  { icon: Headphones, label: "Queue", path: "/dashboard/therapist" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
 const studentBottomNavItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: MessageCircle, label: "Connect", path: "/dashboard/peer-connect" },
@@ -95,13 +100,18 @@ const internBottomNavItems = [
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
+const therapistBottomNavItems = [
+  { icon: Headphones, label: "Queue", path: "/dashboard/therapist" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, profile, creditBalance } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const role = profile?.role || "student";
+  const role: string = profile?.role || "student";
   const isStudent = role === "student";
   const showLowBalance = isStudent && creditBalance < 5;
 
@@ -113,6 +123,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     if (role === "spoc") return spocNavItems;
     if (role === "expert") return expertNavItems;
     if (role === "intern") return internNavItems;
+    if (role === "therapist") return therapistNavItems;
     return studentNavItems;
   }, [role]);
 
@@ -121,6 +132,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     if (role === "spoc") return spocBottomNavItems;
     if (role === "expert") return expertBottomNavItems;
     if (role === "intern") return internBottomNavItems;
+    if (role === "therapist") return therapistBottomNavItems;
     return studentBottomNavItems;
   }, [role]);
 

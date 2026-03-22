@@ -14,6 +14,7 @@ const ROLES = [
   { value: "intern", label: "Intern" },
   { value: "expert", label: "Expert" },
   { value: "spoc", label: "SPOC" },
+  { value: "therapist", label: "Therapist" },
 ] as const;
 
 export default function MemberManager() {
@@ -76,6 +77,7 @@ export default function MemberManager() {
       intern: "Peer sessions, escalation flagging",
       expert: "Appointments, session notes",
       spoc: "QR onboarding, credits, analytics, alerts",
+      therapist: "BlackBox queue, escalation, session notes",
     };
     return map[role] || "";
   };
