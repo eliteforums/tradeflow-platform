@@ -13,7 +13,7 @@ import MobileBlackBox from "@/components/mobile/MobileBlackBox";
 
 const BlackBox = () => {
   const isMobile = useIsMobile();
-  const { activeSession, isRequesting, isConnecting, token, requestSession, cancelSession, endSession } = useBlackBoxSession();
+  const { activeSession, isRequesting, isConnecting, token, requestSession, cancelSession, endSession, retryConnection } = useBlackBoxSession();
   const { profile } = useAuth();
 
   if (isMobile) return <MobileBlackBox />;
