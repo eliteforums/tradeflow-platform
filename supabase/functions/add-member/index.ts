@@ -44,7 +44,7 @@ serve(async (req) => {
       throw new Error("username, password, and role are required");
     }
 
-    const validRoles = ["student", "intern", "expert", "spoc"];
+    const validRoles = ["student", "intern", "expert", "spoc", "therapist"];
     if (!validRoles.includes(role)) {
       throw new Error(`Invalid role. Must be one of: ${validRoles.join(", ")}`);
     }

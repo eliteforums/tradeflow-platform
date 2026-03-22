@@ -13,6 +13,7 @@ const ASSIGNABLE_ROLES = [
   { value: "spoc", label: "SPOC" },
   { value: "expert", label: "Expert" },
   { value: "intern", label: "Intern" },
+  { value: "therapist", label: "Therapist" },
 ] as const;
 
 export default function RoleManager() {

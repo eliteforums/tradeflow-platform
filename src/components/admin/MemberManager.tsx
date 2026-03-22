@@ -77,6 +77,7 @@ export default function MemberManager() {
       intern: "Peer sessions, escalation flagging",
       expert: "Appointments, session notes",
       spoc: "QR onboarding, credits, analytics, alerts",
+      therapist: "BlackBox queue, escalation, session notes",
     };
     return map[role] || "";
   };
