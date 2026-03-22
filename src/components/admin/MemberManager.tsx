@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight } from "lucide-react";
 
 const ROLES = [
-  { value: "student", label: "Student" },
   { value: "intern", label: "Intern" },
   { value: "expert", label: "Expert" },
   { value: "spoc", label: "SPOC" },
@@ -22,7 +21,7 @@ export default function MemberManager() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("student");
+  const [selectedRole, setSelectedRole] = useState("intern");
   const [selectedInstitution, setSelectedInstitution] = useState("");
   const [expandedInstitution, setExpandedInstitution] = useState<string | null>(null);
 
@@ -54,7 +53,7 @@ export default function MemberManager() {
           username: username.trim(),
           password,
           role: selectedRole,
-          institution_id: selectedInstitution && selectedInstitution !== "none" ? selectedInstitution : null,
+          institution_id: selectedRole === "spoc" && selectedInstitution && selectedInstitution !== "none" ? selectedInstitution : null,
         },
       });
       if (error) {
@@ -82,11 +81,10 @@ export default function MemberManager() {
 
   const getRoleDesc = (role: string) => {
     const map: Record<string, string> = {
-      student: "BlackBox, Peer Connect, Self-Help, Appointments",
-      intern: "Peer sessions, escalation flagging",
-      expert: "Appointments, session notes",
-      spoc: "QR onboarding, credits, analytics, alerts",
-      therapist: "BlackBox queue, escalation, session notes",
+      intern: "Universal — Peer sessions, escalation flagging",
+      expert: "Universal — Appointments, session notes",
+      spoc: "Institution-specific — QR onboarding, credits, analytics",
+      therapist: "Universal — BlackBox queue, escalation, session notes",
     };
     return map[role] || "";
   };
@@ -117,7 +115,7 @@ export default function MemberManager() {
           Add Member
         </h3>
         <p className="text-xs text-muted-foreground">
-          Create a new account with a specific role.
+          Create a new staff account. Students are added via bulk institution onboarding.
         </p>
 
         <div className="grid grid-cols-1 gap-2.5">
@@ -144,27 +142,26 @@ export default function MemberManager() {
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Role *</label>
+            <Select value={selectedRole} onValueChange={(v) => { setSelectedRole(v); if (v !== "spoc") setSelectedInstitution(""); }}>
+              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedRole === "spoc" && (
             <div>
-              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Role *</label>
-              <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Institution</label>
+              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Institution *</label>
               <Select value={selectedInstitution} onValueChange={setSelectedInstitution}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select institution" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
                   {institutions.map((inst) => <SelectItem key={inst.id} value={inst.id}>{inst.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="p-2.5 rounded-lg bg-muted/30 border border-border flex items-start gap-2">
@@ -176,7 +173,7 @@ export default function MemberManager() {
 
         <Button
           onClick={() => addMutation.mutate()}
-          disabled={!username.trim() || !password || password.length < 6 || addMutation.isPending}
+          disabled={!username.trim() || !password || password.length < 6 || (selectedRole === "spoc" && !selectedInstitution) || addMutation.isPending}
           className="gap-1.5 h-8 text-xs w-full"
           size="sm"
         >
