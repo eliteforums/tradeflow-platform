@@ -164,7 +164,7 @@ const InstitutionDetailView = ({ institution, onBack, onBulkAllocate }: Institut
       <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-1">Eternia Code</p>
-          <code className="text-lg font-mono font-bold tracking-widest">{institution.eternia_code_hash}</code>
+          <code className="text-lg font-mono font-bold tracking-widest">{institution.eternia_code_hash || "Code unavailable"}</code>
         </div>
         <Button variant="outline" size="sm" className="gap-1.5 h-8" onClick={copyCode}>
           {codeCopied ? <Check className="w-3.5 h-3.5 text-eternia-success" /> : <Copy className="w-3.5 h-3.5" />}
