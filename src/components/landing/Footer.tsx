@@ -63,10 +63,10 @@ const Footer = () => (
 
     <div className="border-t border-border/10">
       <div className="container mx-auto px-4 sm:px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <p className="text-[10px] sm:text-[11px] text-muted-foreground/30">
+        <p className="text-[11px] sm:text-xs text-muted-foreground/70">
           © {new Date().getFullYear()} Eternia
         </p>
-        <p className="text-[10px] sm:text-[11px] text-muted-foreground/30">
+        <p className="text-[11px] sm:text-xs text-muted-foreground/70">
           Built with ❤️ for student wellbeing
         </p>
       </div>
