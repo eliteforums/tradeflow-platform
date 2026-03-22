@@ -16,7 +16,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/auth/Login";
 
 // Lazy load everything else
-// InstitutionCode removed — onboarding now goes directly through QR scan
+const InstitutionCode = lazy(() => import("./pages/auth/InstitutionCode"));
 const QRScan = lazy(() => import("./pages/auth/QRScan"));
 const Register = lazy(() => import("./pages/auth/Register"));
 const Dashboard = lazy(() => import("./pages/dashboard/Dashboard"));
