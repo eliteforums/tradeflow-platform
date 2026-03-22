@@ -57,7 +57,16 @@ export default function MemberManager() {
           institution_id: selectedInstitution && selectedInstitution !== "none" ? selectedInstitution : null,
         },
       });
-      if (error) throw new Error(error.message || "Failed");
+      if (error) {
+        let msg = "Failed to create member";
+        try {
+          const json = await (error as any).context?.json();
+          if (json?.error) msg = json.error;
+        } catch {
+          if (error.message) msg = error.message;
+        }
+        throw new Error(msg);
+      }
       if (data?.error) throw new Error(data.error);
       return data;
     },
