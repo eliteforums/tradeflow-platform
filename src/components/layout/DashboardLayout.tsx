@@ -63,6 +63,11 @@ const internNavItems = [
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
 
+const therapistNavItems = [
+  { icon: Headphones, label: "Queue", path: "/dashboard/therapist" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
 const studentBottomNavItems = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: MessageCircle, label: "Connect", path: "/dashboard/peer-connect" },
@@ -91,6 +96,11 @@ const expertBottomNavItems = [
 const internBottomNavItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard/intern" },
   { icon: MessageCircle, label: "Connect", path: "/dashboard/peer-connect" },
+  { icon: Headphones, label: "Queue", path: "/dashboard/therapist" },
+  { icon: User, label: "Profile", path: "/dashboard/profile" },
+];
+
+const therapistBottomNavItems = [
   { icon: Headphones, label: "Queue", path: "/dashboard/therapist" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
