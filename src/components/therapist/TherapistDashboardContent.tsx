@@ -592,7 +592,9 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
 
               {/* Audio session */}
               {token && activeSession.room_id ? (
-                <div className="rounded-xl bg-card border border-border overflow-hidden">
+                <div className="rounded-xl bg-card border border-border overflow-hidden"
+                  key={`${activeSession.id}-${activeSession.room_id}`}
+                >
                  <MeetingProvider
                     config={{
                       meetingId: activeSession.room_id,
@@ -610,6 +612,13 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                       sessionId={activeSession.id}
                       enableMonitoring={true}
                       autoJoin={true}
+                      isTherapistView={true}
+                      onJoined={async () => {
+                        // Write therapist join timestamp
+                        await supabase.from("blackbox_sessions")
+                          .update({ therapist_joined_at: new Date().toISOString() } as any)
+                          .eq("id", activeSession.id);
+                      }}
                       onRiskDetected={(level, snippet) => {
                         if (level >= 2) {
                           toast.warning(`AI detected risk level ${level}`, {
