@@ -20,6 +20,8 @@ interface MeetingViewProps {
   onRiskDetected?: (level: number, snippet: string) => void;
   autoJoin?: boolean;
   onError?: (error: string) => void;
+  isTherapistView?: boolean;
+  onSilenceAutoEnd?: () => void;
 }
 
 const riskColors: Record<number, string> = {
