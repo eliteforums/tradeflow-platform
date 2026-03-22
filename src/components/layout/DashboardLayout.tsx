@@ -111,7 +111,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { signOut, profile, creditBalance } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const role = profile?.role || "student";
+  const role: string = profile?.role || "student";
   const isStudent = role === "student";
   const showLowBalance = isStudent && creditBalance < 5;
 
