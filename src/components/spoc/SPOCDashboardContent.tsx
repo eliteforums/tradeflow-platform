@@ -40,6 +40,14 @@ const SPOCDashboardContent = () => {
   const [escalationReason, setEscalationReason] = useState("");
   const [reportDateFilter, setReportDateFilter] = useState("30");
   const [searchQuery, setSearchQuery] = useState("");
+  // Student creation state
+  const [newStudentUsername, setNewStudentUsername] = useState("");
+  const [newStudentPassword, setNewStudentPassword] = useState("");
+  const [showStudentPassword, setShowStudentPassword] = useState(false);
+  const [bulkCount, setBulkCount] = useState("10");
+  const [bulkPrefix, setBulkPrefix] = useState("");
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [bulkResults, setBulkResults] = useState<{ username: string; password: string }[] | null>(null);
 
   const institutionId = profile?.institution_id;
 
