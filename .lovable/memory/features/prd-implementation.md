@@ -1,4 +1,4 @@
-# PRD v2-22 + CR v1.3 Implementation Status — Updated 2026-03-21
+# PRD v2-28 + CR v1.7 Implementation Status — Updated 2026-03-22
 
 ## Completed Gaps
 1. **Dual Verification Model** — institution_type column, APAAR/ERP fields, Register.tsx detects type
@@ -19,6 +19,12 @@
 16. **SPOC real-time escalation notifications** — realtime subscription + toast alerts
 17. **L3 host-swap** — BlackBox sessions transfer to M.Phil expert on L3 escalation
 18. **Escalation requests realtime** — enabled via supabase_realtime publication
+19. **Therapist role in admin tools** — MemberManager, RoleManager, add-member, bulk-add-members edge functions
+20. **Therapist DashboardLayout nav** — Queue + Profile nav items for therapist role
+21. **Therapist redirect from /dashboard** — Dashboard.tsx + MobileDashboard.tsx redirect to /dashboard/therapist
+22. **Therapist RLS on blackbox_sessions** — SELECT + UPDATE policies for therapist and intern roles
+23. **AI model updated** — Groq API (GPT OSS 20B 128k) for content moderation
+24. **Peer Connect audio-only** — video removed, audio + chat only per CR v1.7
 
 ## Phase 2 (Not Yet Implemented)
 - AI selective audio transcription monitoring (PRD 19.1) — requires media processing pipeline
