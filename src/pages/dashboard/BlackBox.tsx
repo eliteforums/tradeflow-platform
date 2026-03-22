@@ -34,7 +34,14 @@ const BlackBox = () => {
           />
 
           {/* Status pill */}
-          {isQueued && (
+          {isConnectingToSession && (
+            <div className="px-5 py-2 rounded-full border border-border bg-card/60 backdrop-blur text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Connecting…
+            </div>
+          )}
+
+          {isQueued && !isConnectingToSession && (
             <button
               onClick={cancelSession}
               className="px-5 py-2 rounded-full border border-border bg-card/60 backdrop-blur text-sm text-muted-foreground hover:bg-card transition-colors"
