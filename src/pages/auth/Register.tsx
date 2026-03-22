@@ -30,7 +30,7 @@ const Register = () => {
   const [institutionType, setInstitutionType] = useState<string>("university");
 
   // Detect institution type on mount
-  useState(() => {
+  useEffect(() => {
     const instId = sessionStorage.getItem("eternia_institution_id");
     if (instId) {
       supabase.from("institutions").select("institution_type").eq("id", instId).single()
@@ -38,7 +38,7 @@ const Register = () => {
           if (data?.institution_type) setInstitutionType(data.institution_type);
         });
     }
-  });
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
