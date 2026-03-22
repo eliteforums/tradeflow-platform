@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import ParticipantView from "./ParticipantView";
 import MeetingControls from "./MeetingControls";
 import { useAudioMonitor } from "@/hooks/useAudioMonitor";
+import { useSilenceDetection } from "@/hooks/useSilenceDetection";
+import TherapistSessionControls from "@/components/blackbox/TherapistSessionControls";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MeetingViewProps {
   meetingId: string;
