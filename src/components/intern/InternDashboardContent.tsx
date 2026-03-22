@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Home, MessageCircle, FileText, User, Clock, CheckCircle,
   AlertTriangle, Loader2, Search, Shield, LogOut, Lock,
