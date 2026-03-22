@@ -250,7 +250,7 @@ const InternDashboardContent = () => {
 
             {/* Referral Code Skip */}
             {!isTrainingComplete && !isInterviewPending && (
-              <ReferralCodeInput user={user} queryClient={queryClient} />
+              <ReferralCodeInput user={user} queryClient={queryClient} refreshProfile={refreshProfile} />
             )}
 
             {/* Final Interview Card */}
