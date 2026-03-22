@@ -19,7 +19,7 @@ const PeerConnect = () => {
   const { user, profile, creditBalance } = useAuth();
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
+  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; roomId?: string }>({ open: false, mode: "audio" });
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {

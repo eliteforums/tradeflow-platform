@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { spendCredits } from "./useSpendCredits";
+import { createVideoSDKRoom, getVideoSDKToken } from "@/lib/videosdk";
 
 export interface Intern {
   id: string;
@@ -22,7 +23,9 @@ export interface PeerSession {
   started_at: string | null;
   ended_at: string | null;
   created_at: string;
+  room_id: string | null;
   intern?: Intern;
+  student?: { id: string; username: string; specialty: string | null; role: string };
 }
 
 export interface PeerMessage {
@@ -88,7 +91,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
     return statuses;
   }, [interns, activeSessions]);
 
-  // Get user's sessions (both as student AND as intern)
+  // Get user's sessions (both as student AND as intern) — include student relation for intern view
   const { data: sessions = [], isLoading: isLoadingSessions } = useQuery({
     queryKey: ["peer-sessions", user?.id, isIntern],
     queryFn: async () => {
@@ -96,7 +99,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
       let query = supabase
         .from("peer_sessions")
-        .select("id, student_id, intern_id, status, is_flagged, started_at, ended_at, created_at, intern:profiles!peer_sessions_intern_id_fkey(id, username, specialty, is_active, training_status)")
+        .select("id, student_id, intern_id, status, is_flagged, started_at, ended_at, created_at, room_id, intern:profiles!peer_sessions_intern_id_fkey(id, username, specialty, is_active, training_status), student:profiles!peer_sessions_student_id_fkey(id, username, specialty, role)")
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -108,14 +111,26 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as PeerSession[];
+      return data as unknown as PeerSession[];
     },
     enabled: !!user,
     staleTime: 10_000,
   });
 
-  // Get active session
-  const activeSession = useMemo(() => sessions.find((s) => s.status === "active"), [sessions]);
+  // Get active session — prefer initialSessionId if provided
+  const activeSession = useMemo(() => {
+    if (initialSessionId) {
+      return sessions.find((s) => s.id === initialSessionId) || null;
+    }
+    return sessions.find((s) => s.status === "active") || null;
+  }, [sessions, initialSessionId]);
+
+  // Sync activeSessionId from activeSession
+  useEffect(() => {
+    if (activeSession && !activeSessionId) {
+      setActiveSessionId(activeSession.id);
+    }
+  }, [activeSession, activeSessionId]);
 
   // Fetch messages with pagination
   const fetchMessages = useCallback(async (sessionId: string, before?: string) => {
@@ -188,10 +203,36 @@ export function usePeerConnect(initialSessionId?: string | null) {
     };
   }, [activeSessionId, fetchMessages]);
 
+  // Helper: ensure a shared room_id exists on the session
+  const ensureSessionRoom = useCallback(async (sessionId: string): Promise<string | null> => {
+    // Check if session already has a room_id
+    const { data: session } = await supabase
+      .from("peer_sessions")
+      .select("room_id")
+      .eq("id", sessionId)
+      .single();
+
+    if (session?.room_id) return session.room_id;
+
+    // Create a new room and persist it
+    try {
+      const { roomId } = await createVideoSDKRoom();
+      await supabase
+        .from("peer_sessions")
+        .update({ room_id: roomId } as any)
+        .eq("id", sessionId);
+      return roomId;
+    } catch (err) {
+      console.error("[PeerConnect] Failed to create room:", err);
+      return null;
+    }
+  }, []);
+
   // Request session with intern
   const requestSession = useMutation({
     mutationFn: async (internId: string) => {
       if (!user) throw new Error("Not authenticated");
+      if (isIntern) throw new Error("Interns cannot request peer sessions");
       await spendCredits(20, "Peer Connect session");
 
       const { data, error } = await supabase
@@ -334,5 +375,6 @@ export function usePeerConnect(initialSessionId?: string | null) {
     isRequesting: requestSession.isPending,
     isSending: sendMessage.isPending,
     isFlagging: flagSession.isPending,
+    ensureSessionRoom,
   };
 }
