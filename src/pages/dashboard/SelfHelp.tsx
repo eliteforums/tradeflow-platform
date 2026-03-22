@@ -36,33 +36,6 @@ const SelfHelp = () => {
           ))}
         </div>
 
-        <div className="rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-            <Lock className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold">Coming Soon</p>
-            <p className="text-xs text-muted-foreground">More tools are being crafted with care!</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {comingSoonTools.map((tool) => (
-            <div
-              key={tool.name}
-              className="relative overflow-hidden rounded-2xl bg-card border border-border/40 p-4 opacity-50 pointer-events-none select-none"
-            >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center text-2xl mb-3 grayscale`}>
-                {tool.emoji}
-              </div>
-              <h3 className="text-sm font-semibold font-display mb-0.5">{tool.name}</h3>
-              <p className="text-xs text-muted-foreground leading-snug">{tool.description}</p>
-              <div className="absolute top-3 right-3">
-                <Lock className="w-4 h-4 text-muted-foreground/50" />
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </DashboardLayout>
   );
