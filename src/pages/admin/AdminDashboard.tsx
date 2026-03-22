@@ -29,6 +29,7 @@ import AccountDeletion from "@/components/admin/AccountDeletion";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
+import QuestCardManager from "@/components/admin/QuestCardManager";
 
 type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics" | "tools";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
