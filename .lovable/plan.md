@@ -1,41 +1,42 @@
 
 
-## Plan: Fix Intern Dashboard — Interview Flow, Verified Badge, and Remove BlackBox Queue
+## Plan: Add Referral Code to Skip Intern Training
 
 ### Summary
-Three changes: (1) Show a meeting link on Day 7 instead of just "Expert scheduled", (2) Admin can verify interns to unlock Peer Connect, (3) Remove BlackBox Queue from intern nav.
+Admin generates a referral code for an intern. The intern enters this code on their dashboard to skip all training modules and immediately unlock Peer Connect.
 
-### Current State
-- Day 7 shows "Expert scheduled" text but no meeting link
-- `is_verified` field exists on profiles and is already used for experts
-- `training_status` goes to `interview_pending` after completing modules 1-6
-- BlackBox Queue appears in intern sidebar nav at `DashboardLayout.tsx` line 62
-- Peer Connect unlocks when `trainingStatus === "active" || "completed"` — but there's no admin action to set this after the interview
+### Database Changes
 
-### Changes
+**New table: `intern_referral_codes`**
+- `id` uuid PK
+- `code` text unique (e.g. "REF-ABC123")
+- `created_by` uuid (admin who created it)
+- `assigned_to` uuid nullable (intern who used it)
+- `used_at` timestamptz nullable
+- `expires_at` timestamptz nullable
+- `is_used` boolean default false
+- `created_at` timestamptz default now()
+- RLS: admins can CRUD, authenticated can SELECT (to validate codes)
 
-**1. Remove BlackBox Queue from intern nav (`src/components/layout/DashboardLayout.tsx`)**
-- Remove the `{ icon: Headphones, label: "BlackBox Queue", path: "/dashboard/therapist" }` entry from `internNavItems` (line 62)
+### Code Changes
 
-**2. Day 7 interview meeting link (`src/components/intern/InternDashboardContent.tsx` + `MobileInternDashboard.tsx`)**
-- When Day 7 is the next module (all 6 prior completed, status is `interview_pending`):
-  - Show a card with "Final Interview" explanation
-  - Display a message: "Your expert will share a meeting link. Once the interview is complete and approved, your dashboard will be unlocked."
-  - Show the intern's `is_verified` status — if verified, show a success state
-- When admin sets `is_verified = true` AND `training_status = "active"`, the dashboard unlocks automatically (existing logic already handles this)
+**1. Admin side — `src/components/admin/MemberManager.tsx`**
+- Add a new card section "Referral Codes" below the existing sections
+- Admin enters an intern's username or selects from a dropdown, clicks "Generate Code"
+- System creates a random code (e.g. `REF-` + 8 alphanumeric chars) in the `intern_referral_codes` table
+- Show list of generated codes with status (unused/used, assigned intern)
+- Copy-to-clipboard button for each code
 
-**3. Admin intern verification flow (`src/components/admin/MemberManager.tsx`)**
-- For intern-role members with `training_status = "interview_pending"`, show a "Verify & Activate" button
-- Clicking it updates the profile: `{ is_verified: true, training_status: "active" }`
-- This unlocks Peer Connect on the intern's end (existing condition `trainingStatus === "active"` already handles tab unlocking)
+**2. Intern side — `src/components/intern/InternDashboardContent.tsx` + `MobileInternDashboard.tsx`**
+- When training is not complete, show a small "Have a referral code?" link/button above the module list
+- Clicking it opens an input field where the intern enters the code
+- On submit: validate the code exists, is unused, and not expired
+- If valid: update the intern's profile to `training_status: "active"`, `is_verified: true`, `training_progress: [1,2,3,4,5,6,7]` and mark the code as used
+- Dashboard immediately unlocks all tabs
 
 ### Files to modify
-- `src/components/layout/DashboardLayout.tsx` — Remove BlackBox Queue from `internNavItems`
-- `src/components/intern/InternDashboardContent.tsx` — Update Day 7 display with interview info card, show verified badge state
-- `src/components/mobile/MobileInternDashboard.tsx` — Same Day 7 changes for mobile
-- `src/components/admin/MemberManager.tsx` — Add verify/activate button for interview-pending interns
-
-### No database changes needed
-- `is_verified` and `training_status` columns already exist on `profiles`
-- Existing RLS policies allow admin updates
+- Database: create `intern_referral_codes` table with RLS
+- `src/components/admin/MemberManager.tsx` — add referral code generation section
+- `src/components/intern/InternDashboardContent.tsx` — add referral code input
+- `src/components/mobile/MobileInternDashboard.tsx` — same for mobile
 
