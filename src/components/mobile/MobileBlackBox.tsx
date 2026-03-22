@@ -14,6 +14,7 @@ const MobileBlackBox = () => {
 
   const isQueued = activeSession && activeSession.status === "queued";
   const isInSession = activeSession && activeSession.room_id && token && (activeSession.status === "accepted" || activeSession.status === "active");
+  const isConnectingToSession = activeSession && activeSession.room_id && !token && (activeSession.status === "accepted" || activeSession.status === "active");
 
   return (
     <DashboardLayout>
