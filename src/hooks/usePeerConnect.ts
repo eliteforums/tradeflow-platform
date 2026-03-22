@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
 import { spendCredits } from "./useSpendCredits";
 
@@ -10,6 +10,7 @@ export interface Intern {
   username: string;
   specialty: string | null;
   is_active: boolean;
+  training_status?: string;
 }
 
 export interface PeerSession {
@@ -32,13 +33,16 @@ export interface PeerMessage {
   created_at: string;
 }
 
+export type InternStatus = "online" | "busy" | "offline";
+
 export function usePeerConnect() {
-  const { user, refreshCredits } = useAuth();
+  const { user, profile, refreshCredits } = useAuth();
   const queryClient = useQueryClient();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<PeerMessage[]>([]);
+  const isIntern = profile?.role === "intern";
 
-  // Get available interns
+  // Get available interns (only trained ones per PRD §4.2)
   const { data: interns = [], isLoading: isLoadingInterns } = useQuery({
     queryKey: ["interns"],
     queryFn: async () => {
@@ -46,25 +50,56 @@ export function usePeerConnect() {
         .from("profiles")
         .select("*")
         .eq("role", "intern")
-        .eq("is_active", true);
+        .eq("is_active", true)
+        .in("training_status", ["active", "completed"]);
 
       if (error) throw error;
       return data as Intern[];
     },
   });
 
-  // Get user's sessions
+  // Get active peer sessions to derive busy status
+  const { data: activeSessions = [] } = useQuery({
+    queryKey: ["active-peer-sessions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("peer_sessions")
+        .select("intern_id")
+        .eq("status", "active");
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 15000, // refresh every 15s
+  });
+
+  // Derive real intern statuses
+  const internStatuses = useMemo<Record<string, InternStatus>>(() => {
+    const busyInternIds = new Set(activeSessions.map((s) => s.intern_id).filter(Boolean));
+    const statuses: Record<string, InternStatus> = {};
+    for (const intern of interns) {
+      statuses[intern.id] = busyInternIds.has(intern.id) ? "busy" : "online";
+    }
+    return statuses;
+  }, [interns, activeSessions]);
+
+  // Get user's sessions (both as student AND as intern)
   const { data: sessions = [], isLoading: isLoadingSessions } = useQuery({
-    queryKey: ["peer-sessions", user?.id],
+    queryKey: ["peer-sessions", user?.id, isIntern],
     queryFn: async () => {
       if (!user) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("peer_sessions")
         .select("*, intern:profiles!peer_sessions_intern_id_fkey(*)")
-        .eq("student_id", user.id)
         .order("created_at", { ascending: false });
 
+      if (isIntern) {
+        query = query.or(`student_id.eq.${user.id},intern_id.eq.${user.id}`);
+      } else {
+        query = query.eq("student_id", user.id);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as PeerSession[];
     },
@@ -92,13 +127,11 @@ export function usePeerConnect() {
         console.error("Error fetching messages:", error);
         return;
       }
-
       setMessages(data as PeerMessage[]);
     };
 
     fetchMessages();
 
-    // Subscribe to realtime messages
     const channel = supabase
       .channel(`peer-messages-${activeSessionId}`)
       .on(
@@ -124,8 +157,6 @@ export function usePeerConnect() {
   const requestSession = useMutation({
     mutationFn: async (internId: string) => {
       if (!user) throw new Error("Not authenticated");
-
-      // Deduct credits on session start (PRD requirement)
       await spendCredits(20, "Peer Connect session");
 
       const { data, error } = await supabase
@@ -144,6 +175,7 @@ export function usePeerConnect() {
     },
     onSuccess: (session) => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["active-peer-sessions"] });
       setActiveSessionId(session.id);
       toast.success("Session started!");
     },
@@ -156,13 +188,11 @@ export function usePeerConnect() {
   const sendMessage = useMutation({
     mutationFn: async ({ sessionId, content }: { sessionId: string; content: string }) => {
       if (!user) throw new Error("Not authenticated");
-
       const { error } = await supabase.from("peer_messages").insert({
         session_id: sessionId,
         sender_id: user.id,
         content_encrypted: content,
       });
-
       if (error) throw error;
     },
     onError: (error) => {
@@ -171,19 +201,17 @@ export function usePeerConnect() {
     },
   });
 
-  // Flag/escalate session (intern only)
+  // Flag/escalate session
   const flagSession = useMutation({
     mutationFn: async ({ sessionId, reason }: { sessionId: string; reason?: string }) => {
       if (!user) throw new Error("Not authenticated");
 
-      // Set is_flagged on peer_sessions
       const { error: flagErr } = await supabase
         .from("peer_sessions")
         .update({ is_flagged: true, escalation_note_encrypted: reason || "Intern flagged session" })
         .eq("id", sessionId);
       if (flagErr) throw flagErr;
 
-      // Get session to find student's SPOC
       const { data: session } = await supabase
         .from("peer_sessions")
         .select("student_id")
@@ -191,7 +219,6 @@ export function usePeerConnect() {
         .single();
 
       if (session) {
-        // Find student's institution SPOC
         const { data: studentProfile } = await supabase
           .from("profiles")
           .select("institution_id")
@@ -207,13 +234,14 @@ export function usePeerConnect() {
             .limit(1);
 
           if (spocs && spocs.length > 0) {
+            const triggerSnippet = (reason || "Peer Connect session flagged by intern").substring(0, 500);
             await supabase.from("escalation_requests").insert({
               session_id: sessionId,
               spoc_id: spocs[0].id,
               justification_encrypted: reason || "Intern flagged peer session for review",
               escalation_level: 1,
               trigger_timestamp: new Date().toISOString(),
-              trigger_snippet: "Peer Connect session flagged by intern",
+              trigger_snippet: triggerSnippet,
             });
           }
         }
@@ -233,19 +261,15 @@ export function usePeerConnect() {
   const endSession = useMutation({
     mutationFn: async (sessionId: string) => {
       if (!user) throw new Error("Not authenticated");
-
       const { error } = await supabase
         .from("peer_sessions")
-        .update({
-          status: "completed",
-          ended_at: new Date().toISOString(),
-        })
+        .update({ status: "completed", ended_at: new Date().toISOString() })
         .eq("id", sessionId);
-
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["active-peer-sessions"] });
       queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
       refreshCredits();
       setActiveSessionId(null);
@@ -261,6 +285,7 @@ export function usePeerConnect() {
     sessions,
     activeSession,
     messages,
+    internStatuses,
     isLoading: isLoadingInterns || isLoadingSessions,
     activeSessionId,
     setActiveSessionId,
