@@ -1,48 +1,60 @@
 
 
-## Plan: Fix VideoSDK join timeout across BlackBox, Expert Connect, and Peer Connect
+## Plan: Fix QR Camera Scanning + Add BlackBox Silent User Handling
 
-### Root Cause Analysis
+### Issue 1: QR Scanner — Camera Never Opens
 
-The `join()` call from VideoSDK never triggers `onMeetingJoined` — the SDK silently fails, and after 15 seconds the UI shows "Connection timed out." No mic/camera permission prompt appears, meaning the SDK isn't establishing a WebRTC connection at all.
+The current `handleScan` in `QRScan.tsx` is a **fake stub** — it just waits 2 seconds and shows "Camera not available." There is no actual camera/QR scanning implementation.
 
-Two issues found:
+**Fix**: Integrate a real browser-based QR scanner library (`html5-qrcode`) that uses the device camera via the MediaDevices API.
 
-1. **Missing `onError` callback** — `MeetingView` listens for `onMeetingJoined` and `onMeetingLeft` but does NOT handle `onError`. When the SDK fails to connect (WebSocket failure, invalid room, network issue), the error is swallowed and the component just spins until the 15s timeout.
+**Changes to `src/pages/auth/QRScan.tsx`:**
+- Install `html5-qrcode` package
+- Replace the fake `handleScan` with a real camera-based QR scanner using `Html5Qrcode`
+- On successful scan, pass the decoded text through `parseQRPayload` and verify it (same logic as manual entry)
+- Add a scanner container div that the library renders into
+- Keep the manual fallback for browsers that block camera access
+- Add proper cleanup (stop scanner on unmount or when switching to manual)
 
-2. **`Cross-Origin-Opener-Policy: same-origin`** in `vercel.json` — this header isolates the browsing context and can break WebRTC peer connections that VideoSDK relies on. It prevents cross-origin communication needed for WebRTC signaling.
+---
 
-### Changes
+### Issue 2: BlackBox — User Won't Talk to Therapist
 
-**1. `src/components/videosdk/MeetingView.tsx`** — Add proper error handling
-- Add `onError` callback to `useMeeting` to capture SDK errors (e.g., `JOIN_ROOM_FAILED`, `WEBSOCKET_DISCONNECTED`)
-- Add `onMeetingStateChanged` to track connection state
-- Show the actual error message instead of generic "Connection timed out"
-- Add console logging for debugging
-- Increase the join timeout to 20s and show a more informative message on failure
+Currently there's no silence detection or therapist controls for unresponsive users.
 
-**2. `src/components/videosdk/VideoCallModal.tsx`** — Better error surfacing
-- Add error state display when token/room creation succeeds but SDK join fails
-- Pass error details from MeetingView up to modal
+**Changes:**
 
-**3. `vercel.json`** — Remove `Cross-Origin-Opener-Policy`
-- Remove `Cross-Origin-Opener-Policy: same-origin` header entirely — it blocks WebRTC cross-origin signaling that VideoSDK needs
+**A. Silence detection in `MeetingView.tsx`**
+- Track when the last audio was detected from the student's mic
+- After 2 minutes of silence, emit a "user_silent" event/callback
+- Show a subtle "User has been silent" indicator in the therapist's view
 
-**4. `src/hooks/useBlackBoxSession.ts`** — Add error logging
-- Log token and room_id values when session is accepted to aid debugging
+**B. Therapist alert in therapist's BlackBox dashboard**
+- When silence is detected, show a notification/badge: "Student hasn't spoken for 2+ minutes"
+- Give the therapist an "End & Refund" button that:
+  1. Sets session status to `completed`
+  2. Refunds the student's 30 ECC via a credit transaction insert
 
-### Technical Details
+**C. Auto-end after extended silence**
+- If no audio detected for 5 minutes total, auto-end the session
+- Refund the student's credits automatically
+- Show toast to both sides: "Session ended due to inactivity"
 
-VideoSDK's `useMeeting` hook provides an `onError` callback with `{ code, message }`:
-- Code `1001` = WebSocket disconnected
-- Code `1103` = JOIN_ROOM_FAILED
-- Code `3001-3xxx` = various media/network errors
+**D. New edge function: `refund-blackbox-session`**
+- Takes `session_id`, verifies the caller is the assigned therapist
+- Inserts a +30 ECC `grant` credit transaction for the student
+- Updates session status to `completed` with metadata noting the refund reason
 
-Currently none of these are caught. The fix captures them and displays the actual failure reason, and removes the header that likely causes the WebSocket/WebRTC failure in the first place.
+**E. Database migration**
+- Add `refunded` boolean column to `blackbox_sessions` (default false)
+- Add `silence_duration_sec` integer column (nullable) to track silence metrics
 
-### Files Modified
-- `src/components/videosdk/MeetingView.tsx`
-- `src/components/videosdk/VideoCallModal.tsx`
-- `src/hooks/useBlackBoxSession.ts`
-- `vercel.json`
+### Files to create/modify
+- `package.json` — add `html5-qrcode`
+- `src/pages/auth/QRScan.tsx` — real camera scanner
+- `src/components/videosdk/MeetingView.tsx` — silence detection logic
+- `src/hooks/useBlackBoxSession.ts` — add refund + auto-end capability
+- `src/components/blackbox/TherapistSessionControls.tsx` — new component for therapist end/refund UI
+- `supabase/functions/refund-blackbox-session/index.ts` — new edge function
+- Database migration — add `refunded` and `silence_duration_sec` columns
 
