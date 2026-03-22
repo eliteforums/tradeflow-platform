@@ -23,7 +23,16 @@ const SPOCTools = () => {
     queryKey: ["spoc-qr", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
-      if (error) throw new Error(error.message || "Failed to generate QR");
+      if (error) {
+        // Try to extract real error from response context
+        try {
+          const ctx = await (error as any).context?.json?.();
+          if (ctx?.error) throw new Error(ctx.error);
+        } catch (e) {
+          if (e instanceof Error && e.message !== error.message) throw e;
+        }
+        throw new Error(error.message || "Failed to generate QR");
+      }
       if (data?.error) throw new Error(data.error);
       return data as { qr_payload: string };
     },
