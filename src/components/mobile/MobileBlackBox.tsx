@@ -70,9 +70,20 @@ const MobileBlackBox = () => {
           </div>
         </div>
 
-        {/* Hidden meeting view for audio */}
+        {/* MeetingProvider — offscreen but DOM-present so WebRTC stays alive */}
         {isInSession && (
-          <div className="hidden">
+          <div
+            style={{
+              position: "fixed",
+              top: -9999,
+              left: -9999,
+              width: 1,
+              height: 1,
+              opacity: 0,
+              pointerEvents: "none",
+            }}
+            aria-hidden="true"
+          >
             <MeetingProvider
               config={{
                 meetingId: activeSession.room_id!,

@@ -66,7 +66,7 @@ export const useBlackBoxSession = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeSession?.id, token]);
+  }, [activeSession?.id]);
 
   // Check for existing active session on mount
   useEffect(() => {

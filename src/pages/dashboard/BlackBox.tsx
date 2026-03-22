@@ -80,8 +80,19 @@ const BlackBox = () => {
         <div className="pb-8 pt-6 flex items-center justify-center gap-4">
           {isInSession ? (
             <>
-              {/* Hidden MeetingProvider for audio */}
-              <div className="hidden">
+              {/* MeetingProvider — offscreen but DOM-present so WebRTC stays alive */}
+              <div
+                style={{
+                  position: "fixed",
+                  top: -9999,
+                  left: -9999,
+                  width: 1,
+                  height: 1,
+                  opacity: 0,
+                  pointerEvents: "none",
+                }}
+                aria-hidden="true"
+              >
                 <Suspense fallback={null}>
                   <LazyMeetingProvider
                     config={{
