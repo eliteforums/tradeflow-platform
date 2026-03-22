@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import NovaOrb from "@/components/blackbox/NovaOrb";
 
 const MobileBlackBox = () => {
-  const { activeSession, isRequesting, token, requestSession, cancelSession, endSession } = useBlackBoxSession();
+  const { activeSession, isRequesting, isConnecting, token, requestSession, cancelSession, endSession } = useBlackBoxSession();
   const { profile } = useAuth();
 
   const isQueued = activeSession && activeSession.status === "queued";
