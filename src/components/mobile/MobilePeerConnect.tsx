@@ -24,7 +24,7 @@ const MobilePeerConnect = () => {
     interns, activeSession, messages: chatMessages, isLoading,
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses,
-    hasMoreMessages, isLoadingMore, loadMoreMessages,
+    hasMoreMessages, isLoadingMore, loadMoreMessages, ensureSessionRoom,
   } = usePeerConnect(urlSessionId);
   const isIntern = profile?.role === "intern";
 
