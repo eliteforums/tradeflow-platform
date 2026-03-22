@@ -23,7 +23,7 @@ export function useCredits() {
       
       const { data, error } = await supabase
         .from("credit_transactions")
-        .select("*")
+        .select("id, user_id, delta, type, notes, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -32,6 +32,7 @@ export function useCredits() {
       return data as CreditTransaction[];
     },
     enabled: !!user,
+    staleTime: 15_000,
   });
 
   const spendCredits = useMutation({

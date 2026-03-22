@@ -43,13 +43,14 @@ export function useAppointments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, username, specialty, bio, total_sessions, is_active")
         .eq("role", "expert")
         .eq("is_active", true)
         .eq("is_verified", true);
       if (error) throw error;
       return data as Expert[];
     },
+    staleTime: 30_000,
   });
 
   const { data: slots = [], isLoading: isLoadingSlots } = useQuery({
@@ -57,13 +58,15 @@ export function useAppointments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("expert_availability")
-        .select("*, expert:profiles!expert_availability_expert_id_fkey(*)")
+        .select("id, expert_id, start_time, end_time, is_booked, expert:profiles!expert_availability_expert_id_fkey(id, username, specialty, bio, total_sessions, is_active)")
         .eq("is_booked", false)
         .gte("start_time", new Date().toISOString())
-        .order("start_time", { ascending: true });
+        .order("start_time", { ascending: true })
+        .limit(100);
       if (error) throw error;
       return data as ExpertSlot[];
     },
+    staleTime: 15_000,
   });
 
   const { data: appointments = [], isLoading: isLoadingAppointments } = useQuery({
@@ -72,13 +75,15 @@ export function useAppointments() {
       if (!user) return [];
       const { data, error } = await supabase
         .from("appointments")
-        .select("*, expert:profiles!appointments_expert_id_fkey(*)")
+        .select("id, student_id, expert_id, slot_time, status, session_type, credits_charged, created_at, expert:profiles!appointments_expert_id_fkey(id, username, specialty, bio, total_sessions, is_active)")
         .eq("student_id", user.id)
-        .order("slot_time", { ascending: false });
+        .order("slot_time", { ascending: false })
+        .limit(50);
       if (error) throw error;
       return data as Appointment[];
     },
     enabled: !!user,
+    staleTime: 15_000,
   });
 
   const bookAppointment = useMutation({
@@ -90,11 +95,9 @@ export function useAppointments() {
     }) => {
       if (!user) throw new Error("Not authenticated");
 
-      // Server-side atomic credit deduction
       const result = await spendCredits(creditCost, "Expert Connect booking");
       if (!result.success) throw new Error("Insufficient credits");
 
-      // Create appointment
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
         .insert({
@@ -110,7 +113,6 @@ export function useAppointments() {
         .single();
       if (appointmentError) throw appointmentError;
 
-      // Mark slot as booked
       await supabase.from("expert_availability").update({ is_booked: true }).eq("id", slotId);
 
       return appointment;

@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { spendCredits } from "./useSpendCredits";
 
@@ -35,20 +35,24 @@ export interface PeerMessage {
 
 export type InternStatus = "online" | "busy" | "offline";
 
+const MESSAGE_PAGE_SIZE = 50;
+
 export function usePeerConnect() {
   const { user, profile, refreshCredits } = useAuth();
   const queryClient = useQueryClient();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<PeerMessage[]>([]);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const isIntern = profile?.role === "intern";
 
-  // Get available interns (only trained ones per PRD §4.2)
+  // Get available interns — column-specific select, training filter (PRD §4.2)
   const { data: interns = [], isLoading: isLoadingInterns } = useQuery({
     queryKey: ["interns"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, username, specialty, is_active, training_status")
         .eq("role", "intern")
         .eq("is_active", true)
         .in("training_status", ["active", "completed"]);
@@ -56,9 +60,10 @@ export function usePeerConnect() {
       if (error) throw error;
       return data as Intern[];
     },
+    staleTime: 30_000,
   });
 
-  // Get active peer sessions to derive busy status
+  // Get active peer sessions for busy status derivation
   const { data: activeSessions = [] } = useQuery({
     queryKey: ["active-peer-sessions"],
     queryFn: async () => {
@@ -69,7 +74,8 @@ export function usePeerConnect() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 15000, // refresh every 15s
+    refetchInterval: 15000,
+    staleTime: 10_000,
   });
 
   // Derive real intern statuses
@@ -90,8 +96,9 @@ export function usePeerConnect() {
 
       let query = supabase
         .from("peer_sessions")
-        .select("*, intern:profiles!peer_sessions_intern_id_fkey(*)")
-        .order("created_at", { ascending: false });
+        .select("id, student_id, intern_id, status, is_flagged, started_at, ended_at, created_at, intern:profiles!peer_sessions_intern_id_fkey(id, username, specialty, is_active, training_status)")
+        .order("created_at", { ascending: false })
+        .limit(50);
 
       if (isIntern) {
         query = query.or(`student_id.eq.${user.id},intern_id.eq.${user.id}`);
@@ -104,33 +111,61 @@ export function usePeerConnect() {
       return data as PeerSession[];
     },
     enabled: !!user,
+    staleTime: 10_000,
   });
 
   // Get active session
-  const activeSession = sessions.find((s) => s.status === "active");
+  const activeSession = useMemo(() => sessions.find((s) => s.status === "active"), [sessions]);
+
+  // Fetch messages with pagination
+  const fetchMessages = useCallback(async (sessionId: string, before?: string) => {
+    let query = supabase
+      .from("peer_messages")
+      .select("id, session_id, sender_id, content_encrypted, created_at")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: false })
+      .limit(MESSAGE_PAGE_SIZE);
+
+    if (before) {
+      query = query.lt("created_at", before);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("Error fetching messages:", error);
+      return [];
+    }
+    return (data as PeerMessage[]).reverse();
+  }, []);
+
+  // Load more messages
+  const loadMoreMessages = useCallback(async () => {
+    if (!activeSessionId || messages.length === 0 || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const oldest = messages[0];
+      const older = await fetchMessages(activeSessionId, oldest.created_at);
+      if (older.length < MESSAGE_PAGE_SIZE) setHasMoreMessages(false);
+      if (older.length > 0) setMessages((prev) => [...older, ...prev]);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [activeSessionId, messages, isLoadingMore, fetchMessages]);
 
   // Fetch messages for active session
   useEffect(() => {
     if (!activeSessionId) {
       setMessages([]);
+      setHasMoreMessages(false);
       return;
     }
 
-    const fetchMessages = async () => {
-      const { data, error } = await supabase
-        .from("peer_messages")
-        .select("*")
-        .eq("session_id", activeSessionId)
-        .order("created_at", { ascending: true });
-
-      if (error) {
-        console.error("Error fetching messages:", error);
-        return;
-      }
-      setMessages(data as PeerMessage[]);
+    const load = async () => {
+      const msgs = await fetchMessages(activeSessionId);
+      setMessages(msgs);
+      setHasMoreMessages(msgs.length >= MESSAGE_PAGE_SIZE);
     };
-
-    fetchMessages();
+    load();
 
     const channel = supabase
       .channel(`peer-messages-${activeSessionId}`)
@@ -151,7 +186,7 @@ export function usePeerConnect() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [activeSessionId]);
+  }, [activeSessionId, fetchMessages]);
 
   // Request session with intern
   const requestSession = useMutation({
@@ -286,6 +321,9 @@ export function usePeerConnect() {
     activeSession,
     messages,
     internStatuses,
+    hasMoreMessages,
+    isLoadingMore,
+    loadMoreMessages,
     isLoading: isLoadingInterns || isLoadingSessions,
     activeSessionId,
     setActiveSessionId,

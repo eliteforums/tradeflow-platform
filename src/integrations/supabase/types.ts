@@ -960,10 +960,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      credit_balance_view: {
+        Row: {
+          balance: number | null
+          last_transaction_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_credit_balance: { Args: { _user_id: string }; Returns: number }
+      get_credit_balance_fast: { Args: { _user_id: string }; Returns: number }
       get_daily_earn_total: { Args: { _user_id: string }; Returns: number }
       get_pool_balance: { Args: { _institution_id: string }; Returns: number }
       has_role: {

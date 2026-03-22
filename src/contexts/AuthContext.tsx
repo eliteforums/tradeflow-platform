@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, username, role, institution_id, is_active, is_verified, avatar_url, specialty, bio, total_sessions, streak_days, created_at")
         .eq("id", userId)
         .single();
 
@@ -57,11 +57,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchCreditBalance = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase.rpc("get_credit_balance", {
+      // Use fast materialized view function for O(1) lookups
+      const { data, error } = await supabase.rpc("get_credit_balance_fast", {
         _user_id: userId,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Fallback to original function if materialized view not ready
+        const { data: fallback, error: fbErr } = await supabase.rpc("get_credit_balance", {
+          _user_id: userId,
+        });
+        if (fbErr) throw fbErr;
+        setCreditBalance(fallback || 0);
+        return;
+      }
       setCreditBalance(data || 0);
     } catch (error) {
       console.error("Error fetching credit balance:", error);
@@ -81,7 +90,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (!mounted) return;
@@ -89,7 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Use setTimeout to avoid Supabase trigger race conditions
           setTimeout(async () => {
             if (mounted) {
               await loadUserData(session.user.id);
@@ -104,7 +111,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       setSession(session);
@@ -145,7 +151,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (username: string, password: string) => {
     try {
-      // If input looks like an email, use it directly; otherwise append @eternia.local
       const email = username.includes("@") ? username.toLowerCase() : `${username.toLowerCase()}@eternia.local`;
       const { error } = await supabase.auth.signInWithPassword({
         email,
