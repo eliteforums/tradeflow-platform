@@ -49,7 +49,7 @@ const MobileExpertDashboard = () => {
     queryKey: ["expert-appointments", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase.from("appointments").select("*, student:profiles!appointments_student_id_fkey(username)").eq("expert_id", user.id).order("slot_time", { ascending: true });
+      const { data, error } = await supabase.from("appointments").select("*, student:profiles!appointments_student_id_fkey(username, institution_id)").eq("expert_id", user.id).order("slot_time", { ascending: true });
       if (error) throw error; return data;
     }, enabled: !!user,
   });
