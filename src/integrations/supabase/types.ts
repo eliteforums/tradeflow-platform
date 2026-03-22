@@ -570,6 +570,39 @@ export type Database = {
         }
         Relationships: []
       }
+      intern_referral_codes: {
+        Row: {
+          assigned_to: string | null
+          code: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_used: boolean
+          used_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          code: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          used_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
           content: string
