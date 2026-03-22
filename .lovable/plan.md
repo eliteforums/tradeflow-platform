@@ -1,29 +1,47 @@
 
 
-## Plan: Fix Eternia Code Display + Therapist BlackBox Join
+## Plan: Fix Expert Visibility + Auto-Join Sessions
 
-### Issue 1: Eternia code not displayed in SPOC dashboard
+### Issue 1: Experts/therapists not shown on student panel
 
-**Root cause**: The institution query in `SPOCDashboardContent.tsx` (line 57) selects `id, name, plan_type, credits_pool, is_active, institution_type` but **omits `eternia_code_hash`**. The code is never rendered anywhere in the SPOC dashboard.
+**Root cause**: The `profiles` table RLS only lets students SELECT their own row (`auth.uid() = id`). When `useAppointments` queries `profiles.eq("role", "expert")`, it returns zero rows for students because RLS blocks access to other users' profiles.
 
-**Fix**:
-1. **`src/components/spoc/SPOCDashboardContent.tsx`** — Add `eternia_code_hash` to the institution select query (line 57). Display it in the Home tab's institution overview card (around line 417-428) with a copy button.
+Staff (expert/therapist/intern) can see all profiles, but students cannot. The expert availability table itself is readable (`USING (true)`), but the JOIN to profiles fails silently — returning null expert data.
 
-### Issue 2: Therapist can't join BlackBox session
+**Fix**: Add a new RLS policy on `profiles` allowing all authenticated users to view basic expert/therapist/intern profiles:
 
-**Root cause**: Two problems:
-1. The `Profile` type in `AuthContext` (line 8) lists `"student" | "intern" | "expert" | "spoc" | "admin"` — **missing `"therapist"`**. This causes TypeScript mismatches and potential runtime issues with role checks.
-2. The BlackBox page (`/dashboard/blackbox`) was added to therapist nav, but it uses `useBlackBoxSession` which is student-centric (requests sessions as a student). Therapists should accept sessions from their **TherapistDashboard** queue tab, not the BlackBox page. The BlackBox nav link for therapists should point to `/dashboard/therapist` instead (their queue).
+```sql
+CREATE POLICY "Students can view staff profiles"
+ON public.profiles FOR SELECT
+TO authenticated
+USING (role IN ('expert', 'therapist', 'intern'));
+```
 
-**Fix**:
-1. **`src/contexts/AuthContext.tsx`** — Add `"therapist"` to the Profile role union type on line 8.
-2. **`src/components/layout/DashboardLayout.tsx`** — Change the therapist's BlackBox nav item to link to `/dashboard/therapist` (their queue) instead of `/dashboard/blackbox` (student request page). OR remove BlackBox from therapist nav entirely since the TherapistDashboard already has the queue tab.
+This is safe — profiles don't contain PII (no emails/phones; those are in `user_private`).
+
+---
+
+### Issue 2: Sessions stuck at "Joining" / voice calls not initiated
+
+**Root cause**: `MeetingView` renders a "Join Session" button and waits for a manual click. After clicking, it calls `join()` and shows "Joining the session..." indefinitely if the VideoSDK meeting fails to connect. For BlackBox, neither student nor therapist auto-joins — they both see a "Join Session" screen after the MeetingProvider mounts.
+
+**Fix**: Add an `autoJoin` prop to `MeetingView`. When true, automatically call `join()` on mount instead of showing the "Join Session" button. Pass `autoJoin={true}` from:
+- BlackBox page (both desktop and mobile) — student side
+- TherapistDashboardContent — therapist side accepting sessions
+- VideoCallModal — for appointment calls (trigger join after "Start Call" already clicked)
+
+Also add a timeout fallback: if join doesn't complete within 15 seconds, show a retry button instead of infinite spinner.
+
+---
 
 ### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/spoc/SPOCDashboardContent.tsx` | Add `eternia_code_hash` to query + display it with copy button |
-| `src/contexts/AuthContext.tsx` | Add `"therapist"` to Profile role type |
-| `src/components/layout/DashboardLayout.tsx` | Fix therapist BlackBox nav to point to therapist dashboard queue |
+| **DB Migration** | Add RLS policy: students can view staff profiles |
+| `src/components/videosdk/MeetingView.tsx` | Add `autoJoin` prop with auto-join on mount + 15s timeout retry |
+| `src/pages/dashboard/BlackBox.tsx` | Pass `autoJoin={true}` to MeetingView |
+| `src/components/mobile/MobileBlackBox.tsx` | Pass `autoJoin={true}` to MeetingView |
+| `src/components/therapist/TherapistDashboardContent.tsx` | Pass `autoJoin={true}` to MeetingView |
+| `src/components/videosdk/VideoCallModal.tsx` | Pass `autoJoin={true}` to MeetingView |
 
