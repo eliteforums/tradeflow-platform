@@ -14,6 +14,8 @@ interface Profile {
   bio: string | null;
   total_sessions: number;
   streak_days: number;
+  training_status: string;
+  training_progress: number[] | null;
   created_at: string;
 }
 
@@ -44,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, role, institution_id, is_active, is_verified, avatar_url, specialty, bio, total_sessions, streak_days, created_at")
+        .select("id, username, role, institution_id, is_active, is_verified, avatar_url, specialty, bio, total_sessions, streak_days, training_status, training_progress, created_at")
         .eq("id", userId)
         .single();
 
