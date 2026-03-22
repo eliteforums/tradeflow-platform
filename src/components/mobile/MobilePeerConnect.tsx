@@ -15,7 +15,7 @@ const MobilePeerConnect = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { user, profile, creditBalance } = useAuth();
-  const { interns, sessions, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, flagSession, isRequesting, isSending, isFlagging } = usePeerConnect();
+  const { interns, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, flagSession, isRequesting, isSending, isFlagging, internStatuses } = usePeerConnect();
   const isIntern = profile?.role === "intern";
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
@@ -25,7 +25,6 @@ const MobilePeerConnect = () => {
   const handleStartSession = (internId: string) => { if (creditBalance < 20) return; requestSession(internId); setMobileView("chat"); };
 
   const statusColors: Record<string, string> = { online: "bg-eternia-success", busy: "bg-eternia-warning", offline: "bg-muted-foreground" };
-  const getInternStatus = (internId: string) => { const i = interns.findIndex((x) => x.id === internId); return i % 3 === 0 ? "online" : i % 3 === 1 ? "busy" : "offline"; };
   const selectedIntern = activeSessionId ? interns.find((i) => i.id === activeSession?.intern_id) : null;
 
   return (
@@ -60,7 +59,7 @@ const MobilePeerConnect = () => {
               : (
                 <div className="space-y-2">
                   {interns.map((intern) => {
-                    const status = getInternStatus(intern.id);
+                    const status = internStatuses[intern.id] || "offline";
                     return (
                       <button key={intern.id} onClick={() => { if (!activeSessionId && status === "online") handleStartSession(intern.id); }}
                         className={`w-full p-4 rounded-2xl text-left border ${activeSession?.intern_id === intern.id ? "bg-primary/10 border-primary" : "bg-card border-border"}`}
