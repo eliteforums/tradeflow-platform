@@ -3,7 +3,7 @@ import {
   Users, Calendar, MessageCircle, AlertTriangle, Coins,
   Shield, Activity, BarChart3, Search, Loader2,
   UserPlus, Settings, Building2, Crown, Stethoscope,
-  GraduationCap, Zap, Eye, CheckCircle, Music, FileText, BookOpen,
+  GraduationCap, Zap, Eye, CheckCircle, Music, FileText, BookOpen, Copy, Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,7 @@ const MobileAdminDashboard = () => {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [sessionFilter, setSessionFilter] = useState<SessionFilter>("all");
   const [selectedInstitution, setSelectedInstitution] = useState<any>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const { profile } = useAuth();
   const { isAdmin, members, stats, appointments, peerSessions, flaggedEntries, blackboxSessions, institutions, isLoading } = useAdmin();
 
@@ -265,6 +266,23 @@ const MobileAdminDashboard = () => {
                       {inst.spoc ? (
                         <div className="flex items-center gap-2"><Shield className="w-3.5 h-3.5 text-primary" /><span className="text-sm font-medium">{inst.spoc.username}</span></div>
                       ) : <p className="text-xs text-muted-foreground italic">Not assigned</p>}
+                    </div>
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/30 border border-border/30">
+                      <div>
+                        <p className="text-[10px] font-medium text-muted-foreground mb-0.5">Eternia Code</p>
+                        <code className="text-sm font-mono font-bold tracking-widest">{inst.eternia_code_hash}</code>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(inst.eternia_code_hash);
+                          setCopiedId(inst.id);
+                          setTimeout(() => setCopiedId(null), 2000);
+                        }}
+                        className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground"
+                      >
+                        {copiedId === inst.id ? <Check className="w-3.5 h-3.5 text-eternia-success" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="p-2 rounded-lg bg-muted/20 text-center"><p className="text-lg font-bold">{inst.studentCount}</p><p className="text-[10px] text-muted-foreground">Students</p></div>
