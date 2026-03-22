@@ -241,15 +241,14 @@ const SPOCDashboardContent = () => {
       const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
       if (error) throw new Error(error.message || "Failed to generate QR");
       if (data?.error) throw new Error(data.error);
-      return data as { qr_payload: string; expires_at: number };
+      return data as { qr_payload: string };
     },
     enabled: !!user && profile?.role === "spoc",
-    staleTime: 1000 * 60 * 60,
+    staleTime: Infinity,
     retry: 2,
   });
 
   const qrPayload = qrData?.qr_payload || "";
-  const qrExpiresAt = qrData?.expires_at ? new Date(qrData.expires_at) : null;
 
   const copyQRPayload = () => {
     if (!qrPayload) { toast.error("No QR code generated yet"); return; }
@@ -503,11 +502,9 @@ const SPOCDashboardContent = () => {
                 <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary/40 rounded-bl-lg" />
                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary/40 rounded-br-lg" />
               </div>
-              {qrExpiresAt && (
-                <p className="text-[10px] text-muted-foreground mt-2">
-                  Expires {qrExpiresAt.toLocaleTimeString()} · Scan to join
-                </p>
-              )}
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Scan to join · Regenerate anytime
+              </p>
             </div>
 
             <div className="grid grid-cols-3 gap-2">
@@ -524,7 +521,7 @@ const SPOCDashboardContent = () => {
                 Regenerate
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground italic">HMAC-SHA256 signed · Valid for 24 hours · Audited</p>
+            <p className="text-[10px] text-muted-foreground italic">HMAC-SHA256 signed · Regenerable · Audited</p>
           </div>
 
           {/* Bulk Credit Granting */}

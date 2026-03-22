@@ -25,16 +25,15 @@ const SPOCTools = () => {
       const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
       if (error) throw new Error(error.message || "Failed to generate QR");
       if (data?.error) throw new Error(data.error);
-      return data as { qr_payload: string; expires_at: number };
+      return data as { qr_payload: string };
     },
     enabled: !!user && profile?.role === "spoc",
-    staleTime: 1000 * 60 * 60,
+    staleTime: Infinity,
     retry: 2,
     retryDelay: 1000,
   });
 
   const qrPayload = qrData?.qr_payload || "";
-  const qrExpiresAt = qrData?.expires_at ? new Date(qrData.expires_at) : null;
 
   const { data: institutionStudents = [] } = useQuery({
     queryKey: ["institution-students", profile?.institution_id],
@@ -177,7 +176,7 @@ const SPOCTools = () => {
             SPOC Verification QR
           </h3>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-            {qrExpiresAt ? `Expires ${qrExpiresAt.toLocaleTimeString()}` : "24h validity"}
+            Regenerable
           </span>
         </div>
 
