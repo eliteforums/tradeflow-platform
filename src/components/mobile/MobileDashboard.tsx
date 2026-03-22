@@ -79,8 +79,8 @@ const MobileDashboard = () => {
 
   const selfHelpTools = [
     { icon: Music, title: "Sound Therapy", desc: "Meditate & relax", path: "/dashboard/sound-therapy", gradient: "from-cyan-500 to-blue-500" },
-    { icon: Award, title: "Quest Cards", desc: "Daily wellbeing quests", path: "/dashboard/self-help", gradient: "from-amber-400 to-orange-500" },
-    { icon: Sparkles, title: "Wreck Buddy", desc: "Release stress", path: "/dashboard/self-help", gradient: "from-pink-400 to-rose-500" },
+    { icon: Award, title: "Quest Cards", desc: "Daily wellbeing quests", path: "/dashboard/quest-cards", gradient: "from-amber-400 to-orange-500" },
+    { icon: Sparkles, title: "Journaling", desc: "Reflective writing", path: "/dashboard/journaling", gradient: "from-emerald-400 to-teal-500" },
   ];
 
   const quickTools = [
