@@ -7,7 +7,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight } from "lucide-react";
+import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight, Plus, Download } from "lucide-react";
 
 const ROLES = [
   { value: "student", label: "Student" },
@@ -25,6 +25,13 @@ export default function MemberManager() {
   const [selectedRole, setSelectedRole] = useState("intern");
   const [selectedInstitution, setSelectedInstitution] = useState("");
   const [expandedInstitution, setExpandedInstitution] = useState<string | null>(null);
+  // Bulk creation state
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [bulkInstitution, setBulkInstitution] = useState("");
+  const [bulkCount, setBulkCount] = useState("10");
+  const [bulkPrefix, setBulkPrefix] = useState("");
+  const [bulkRole, setBulkRole] = useState("student");
+  const [bulkResults, setBulkResults] = useState<{ username: string; password: string }[] | null>(null);
 
   const { data: institutions = [] } = useQuery({
     queryKey: ["admin-institutions-list"],
@@ -79,6 +86,40 @@ export default function MemberManager() {
     },
     onError: (err: any) => toast.error(err.message),
   });
+
+  // Bulk create mutation
+  const bulkMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("bulk-add-members", {
+        body: {
+          institution_id: bulkInstitution,
+          count: parseInt(bulkCount),
+          prefix: bulkPrefix || undefined,
+          role: bulkRole,
+        },
+      });
+      if (error) throw new Error(error.message || "Failed to bulk create");
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`${data.created_count} members created`);
+      queryClient.invalidateQueries({ queryKey: ["admin-all-members"] });
+      setBulkResults(data.members);
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const downloadBulkCSV = () => {
+    if (!bulkResults) return;
+    const csv = "Username,Password\n" + bulkResults.map((m: any) => `${m.username},${m.password}`).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "bulk-credentials.csv";
+    a.click();
+    toast.success("Credentials CSV downloaded");
+  };
 
   const getRoleDesc = (role: string) => {
     const map: Record<string, string> = {
@@ -184,6 +225,93 @@ export default function MemberManager() {
           {addMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
           Create Member
         </Button>
+      </div>
+
+      {/* Bulk ID Creation */}
+      <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Users className="w-4 h-4 text-primary" />
+          Bulk ID Creation
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Auto-generate multiple accounts with random passwords for an institution.
+        </p>
+
+        {!showBulkDialog ? (
+          <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowBulkDialog(true)}>
+            <Plus className="w-3.5 h-3.5" />
+            Bulk Create Members
+          </Button>
+        ) : bulkResults ? (
+          <div className="space-y-3">
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-sm font-medium text-primary">{bulkResults.length} accounts created!</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Download credentials CSV before closing.</p>
+            </div>
+            <div className="max-h-[200px] overflow-y-auto space-y-1">
+              {bulkResults.map((m, i) => (
+                <div key={i} className="flex items-center justify-between text-xs px-2 py-1.5 bg-muted/30 rounded">
+                  <span className="font-mono">{m.username}</span>
+                  <span className="font-mono text-muted-foreground">{m.password}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" className="gap-1.5 h-8 text-xs flex-1" onClick={downloadBulkCSV}>
+                <Download className="w-3.5 h-3.5" />
+                Download CSV
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setBulkResults(null); setShowBulkDialog(false); }}>
+                Done
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Institution *</label>
+              <Select value={bulkInstitution} onValueChange={setBulkInstitution}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select institution" /></SelectTrigger>
+                <SelectContent>
+                  {institutions.map((inst) => <SelectItem key={inst.id} value={inst.id}>{inst.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Role</label>
+              <Select value={bulkRole} onValueChange={setBulkRole}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Count (1-500)</label>
+                <Input type="number" value={bulkCount} onChange={(e) => setBulkCount(e.target.value)} className="h-9" min="1" max="500" />
+              </div>
+              <div>
+                <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Prefix (optional)</label>
+                <Input placeholder="e.g. mit" value={bulkPrefix} onChange={(e) => setBulkPrefix(e.target.value)} className="h-9" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="gap-1.5 h-8 text-xs flex-1"
+                onClick={() => bulkMutation.mutate()}
+                disabled={!bulkInstitution || bulkMutation.isPending}
+              >
+                {bulkMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />}
+                Create {bulkCount} Members
+              </Button>
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowBulkDialog(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Members grouped by institution */}
