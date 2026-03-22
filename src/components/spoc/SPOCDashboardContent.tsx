@@ -15,7 +15,6 @@ import {
   CheckCircle, Clock, XCircle, FileText, Plus,
   Search, Filter, Download, LogOut, Lock, Settings,
   TrendingUp, Music, Gamepad2, Phone, RefreshCw,
-  UserPlus, EyeOff,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
