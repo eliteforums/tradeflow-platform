@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 import SPOCTools from "@/components/admin/SPOCTools";
 import RoleManager from "@/components/admin/RoleManager";
-import MemberManager from "@/components/admin/MemberManager";
+import MemberManager, { ReferralCodesCard } from "@/components/admin/MemberManager";
 import CreditGrantTool from "@/components/admin/CreditGrantTool";
 import SoundManager from "@/components/admin/SoundManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
