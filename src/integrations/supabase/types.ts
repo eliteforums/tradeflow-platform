@@ -213,6 +213,7 @@ export type Database = {
           escalation_reason: string | null
           flag_level: number
           id: string
+          last_join_error: string | null
           refunded: boolean
           room_id: string | null
           session_notes_encrypted: string | null
@@ -220,7 +221,9 @@ export type Database = {
           started_at: string | null
           status: string
           student_id: string
+          student_joined_at: string | null
           therapist_id: string | null
+          therapist_joined_at: string | null
         }
         Insert: {
           created_at?: string
@@ -229,6 +232,7 @@ export type Database = {
           escalation_reason?: string | null
           flag_level?: number
           id?: string
+          last_join_error?: string | null
           refunded?: boolean
           room_id?: string | null
           session_notes_encrypted?: string | null
@@ -236,7 +240,9 @@ export type Database = {
           started_at?: string | null
           status?: string
           student_id: string
+          student_joined_at?: string | null
           therapist_id?: string | null
+          therapist_joined_at?: string | null
         }
         Update: {
           created_at?: string
@@ -245,6 +251,7 @@ export type Database = {
           escalation_reason?: string | null
           flag_level?: number
           id?: string
+          last_join_error?: string | null
           refunded?: boolean
           room_id?: string | null
           session_notes_encrypted?: string | null
@@ -252,7 +259,9 @@ export type Database = {
           started_at?: string | null
           status?: string
           student_id?: string
+          student_joined_at?: string | null
           therapist_id?: string | null
+          therapist_joined_at?: string | null
         }
         Relationships: [
           {
