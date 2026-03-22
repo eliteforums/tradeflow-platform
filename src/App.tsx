@@ -100,7 +100,7 @@ const App = () => (
               {/* Role-Based Dashboards */}
               <Route path="/dashboard/expert" element={<ProtectedRoute allowedRoles={["expert"]}><ExpertDashboard /></ProtectedRoute>} />
               <Route path="/dashboard/intern" element={<ProtectedRoute allowedRoles={["intern"]}><InternDashboard /></ProtectedRoute>} />
-              <Route path="/dashboard/therapist" element={<ProtectedRoute allowedRoles={["expert"]}><TherapistDashboard /></ProtectedRoute>} />
+              <Route path="/dashboard/therapist" element={<ProtectedRoute allowedRoles={["intern"]}><TherapistDashboard /></ProtectedRoute>} />
               
               {/* Admin Routes */}
               <Route path="/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
