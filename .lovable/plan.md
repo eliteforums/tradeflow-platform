@@ -1,24 +1,36 @@
 
 
-## Plan: Clarify Admin Member Management Roles
+## Plan: Fix Quest Cards Loading Issue
 
-### Problem
-The "Add Member" form currently includes "Student" in the role list — students should only be created via Bulk ID Creation. The Bulk ID Creation role selector shows all roles — it should default to and primarily support "Student".
+### Root Cause Analysis
+
+The Quest Cards page has two potential loading issues:
+
+1. **3D Canvas hanging**: The `QuestCard3D` component uses `@react-three/fiber` Canvas with external Google Fonts loading. If the Canvas fails to initialize or fonts fail to load, the entire page appears frozen with no error feedback.
+
+2. **No error boundary**: If the Three.js canvas throws, there's no fallback — React unmounts everything and the user sees a blank/stuck page.
 
 ### Changes
 
-#### 1. `src/components/admin/MemberManager.tsx`
-- **Remove "Student"** from the `ROLES` array used in Add Member (keep only intern, expert, spoc, therapist)
-- **Bulk ID Creation**: lock role selector to "Student" only (remove the role dropdown from bulk form since bulk is specifically for student creation at institutes)
-- Update description text: "Auto-generate multiple student accounts for an institution"
+#### 1. `src/components/selfhelp/QuestCard3D.tsx`
+- Wrap the Canvas in a React error boundary with fallback to 2D cards
+- Add a loading timeout — if the Canvas doesn't render within 5 seconds, fall back to 2D cards
+- Always render the 2D fallback grid if the 3D canvas fails
 
-#### 2. `supabase/functions/add-member/index.ts`
-- Remove `"student"` from the `validRoles` array (students only via bulk)
+#### 2. `src/pages/dashboard/QuestCards.tsx`
+- Add an empty state when `quests.length === 0` after loading completes
+- Add error handling display if the queries fail
+- Show a loading indicator on quest buttons during completion (`isCompleting` state)
 
-No other files need changes. The edge functions already handle SPOC institution-binding and universal roles correctly.
+#### 3. `src/hooks/useQuests.ts`
+- Add `retry: 1` to both queries to prevent indefinite retries on failure
+- Add error state to the return value so the page can display errors
+
+### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/admin/MemberManager.tsx` | Remove Student from individual Add Member roles; lock bulk to student-only |
-| `supabase/functions/add-member/index.ts` | Remove "student" from validRoles |
+| `src/components/selfhelp/QuestCard3D.tsx` | Add error boundary + timeout fallback to 2D cards |
+| `src/pages/dashboard/QuestCards.tsx` | Add empty state, error display, button loading states |
+| `src/hooks/useQuests.ts` | Add retry limits, expose error state |
 
