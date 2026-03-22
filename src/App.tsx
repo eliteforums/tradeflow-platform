@@ -82,7 +82,7 @@ const App = () => (
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
-              {/* /institution-code removed — students go directly to /qr-scan */}
+              <Route path="/institution-code" element={<InstitutionCode />} />
               <Route path="/qr-scan" element={<QRScan />} />
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
