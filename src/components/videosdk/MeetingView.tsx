@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import ParticipantView from "./ParticipantView";
 import MeetingControls from "./MeetingControls";
 import { useAudioMonitor } from "@/hooks/useAudioMonitor";
+import { useSilenceDetection } from "@/hooks/useSilenceDetection";
+import TherapistSessionControls from "@/components/blackbox/TherapistSessionControls";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MeetingViewProps {
   meetingId: string;
@@ -16,6 +20,8 @@ interface MeetingViewProps {
   onRiskDetected?: (level: number, snippet: string) => void;
   autoJoin?: boolean;
   onError?: (error: string) => void;
+  isTherapistView?: boolean;
+  onSilenceAutoEnd?: () => void;
 }
 
 const riskColors: Record<number, string> = {
@@ -41,6 +47,8 @@ const MeetingView = ({
   onRiskDetected,
   autoJoin = false,
   onError,
+  isTherapistView = false,
+  onSilenceAutoEnd,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
@@ -131,6 +139,29 @@ const MeetingView = ({
     onRiskDetected: useCallback((level: number, snippet: string) => {
       onRiskDetected?.(level, snippet);
     }, [onRiskDetected]),
+  });
+
+  // Silence detection for therapist view
+  const handleSilenceAutoEnd = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      await supabase.functions.invoke("refund-blackbox-session", {
+        body: { session_id: sessionId, reason: "Auto-ended: 5 min silence" },
+      });
+      toast.info("Session ended due to inactivity. Student has been refunded.");
+      onSilenceAutoEnd?.();
+      onMeetingLeave();
+    } catch {
+      toast.error("Failed to auto-end session");
+    }
+  }, [sessionId, onSilenceAutoEnd, onMeetingLeave]);
+
+  const silenceDetection = useSilenceDetection({
+    enabled: isTherapistView && joined === "JOINED",
+    warningThresholdSec: 120,
+    autoEndThresholdSec: 300,
+    onWarning: () => toast.warning("Student has been silent for 2+ minutes"),
+    onAutoEnd: handleSilenceAutoEnd,
   });
 
   const joinMeeting = () => {
@@ -233,6 +264,13 @@ const MeetingView = ({
         </div>
       </div>
       <MeetingControls audioOnly={audioOnly} />
+      {isTherapistView && sessionId && (
+        <TherapistSessionControls
+          sessionId={sessionId}
+          silenceDurationSec={silenceDetection.silenceDurationSec}
+          onSessionEnded={onMeetingLeave}
+        />
+      )}
     </div>
   );
 };
