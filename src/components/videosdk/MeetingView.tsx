@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-// NOTE: autoJoin works via MeetingProvider's joinWithoutUserInteraction config flag
 import { useMeeting } from "@videosdk.live/react-sdk";
 import { Loader2, Shield, AlertTriangle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
