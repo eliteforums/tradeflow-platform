@@ -102,7 +102,7 @@ const MobileSoundTherapy = () => {
                 transition={{ type: "spring", damping: 20 }}
                 className={`w-48 h-48 rounded-3xl bg-gradient-to-br ${gradients[currentTrack % gradients.length]} flex items-center justify-center shadow-2xl`}
               >
-                <span className="text-6xl">{currentTrackData.cover_emoji || "🎵"}</span>
+                <span className="text-6xl">{(currentTrackData.cover_emoji || "🎵").slice(0, 2)}</span>
               </motion.div>
             </div>
 
@@ -198,7 +198,7 @@ const MobileSoundTherapy = () => {
                   }`}
                 >
                   <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${gradients[index % gradients.length]} flex items-center justify-center shrink-0 relative`}>
-                    <span className="text-lg">{track.cover_emoji || "🎵"}</span>
+                    <span className="text-lg">{(track.cover_emoji || "🎵").slice(0, 2)}</span>
                     {isActive && (
                       <div className="absolute inset-0 rounded-xl bg-black/30 flex items-center justify-center">
                         <div className="flex gap-0.5 items-end h-3">
@@ -245,7 +245,7 @@ const MobileSoundTherapy = () => {
             className="w-full flex items-center gap-3 px-3 py-2 bg-card/95 backdrop-blur-xl border-t border-border/30"
           >
             <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${gradients[currentTrack % gradients.length]} flex items-center justify-center text-base shrink-0`}>
-              {currentTrackData.cover_emoji || "🎵"}
+              {(currentTrackData.cover_emoji || "🎵").slice(0, 2)}
             </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="text-xs font-semibold truncate">{currentTrackData.title}</p>
