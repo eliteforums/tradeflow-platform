@@ -11,7 +11,7 @@ export function useAnalyticsData() {
     queryKey: ["analytics-page-views"],
     queryFn: async () => {
       const { data, error } = await (supabase.from("analytics_events" as any) as any)
-        .select("*")
+        .select("id, user_id, session_hash, page_path, screen_size, created_at")
         .gte("created_at", subDays(new Date(), 30).toISOString())
         .order("created_at", { ascending: false })
         .limit(1000);
@@ -45,7 +45,16 @@ export function useAnalyticsData() {
   const viewsWeek = pageViews.filter((e: any) => e.created_at >= week).length;
   const viewsMonth = pageViews.length;
 
-  const uniqueVisitors = new Set(pageViews.map((e: any) => e.session_hash)).size;
+  // Accurate unique visitor counting: deduplicate by user_id for authenticated, session_hash for anonymous
+  const authenticatedUserIds = new Set(
+    pageViews.filter((e: any) => e.user_id).map((e: any) => e.user_id)
+  );
+  const anonymousSessions = new Set(
+    pageViews.filter((e: any) => !e.user_id).map((e: any) => e.session_hash)
+  );
+  const uniqueUsers = authenticatedUserIds.size;
+  const uniqueAnonymous = anonymousSessions.size;
+  const uniqueVisitors = uniqueUsers + uniqueAnonymous;
 
   const pageCounts: Record<string, number> = {};
   pageViews.forEach((e: any) => {
@@ -72,7 +81,8 @@ export function useAnalyticsData() {
   });
 
   return {
-    viewsToday, viewsWeek, viewsMonth, uniqueVisitors,
+    viewsToday, viewsWeek, viewsMonth,
+    uniqueVisitors, uniqueUsers, uniqueAnonymous,
     topPages, hourlyData, deviceCounts,
     consentStats: consentStats || { accepted: 0, rejected: 0, pending: 0 },
     isLoading: isLoadingViews || isLoadingConsent,

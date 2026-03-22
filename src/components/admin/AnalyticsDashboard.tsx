@@ -1,9 +1,10 @@
 import { useAnalyticsData } from "@/hooks/useAnalyticsData";
-import { Eye, Users, Monitor, Smartphone, Tablet, Cookie, TrendingUp, BarChart3, Loader2 } from "lucide-react";
+import { Eye, Users, UserCheck, UserX, Monitor, Smartphone, Tablet, Cookie, TrendingUp, BarChart3, Loader2 } from "lucide-react";
 
 const AnalyticsDashboard = () => {
   const {
-    viewsToday, viewsWeek, viewsMonth, uniqueVisitors,
+    viewsToday, viewsWeek, viewsMonth,
+    uniqueVisitors, uniqueUsers, uniqueAnonymous,
     topPages, hourlyData, deviceCounts, consentStats, isLoading,
   } = useAnalyticsData();
 
@@ -16,9 +17,15 @@ const AnalyticsDashboard = () => {
   }
 
   const maxHourly = Math.max(...hourlyData.map(h => h.count), 1);
+  const hasData = viewsMonth > 0;
 
   return (
     <div className="space-y-5">
+      {/* Note about admin exclusion */}
+      <div className="text-xs text-muted-foreground bg-muted/30 rounded-xl px-4 py-2 border border-border/30">
+        ℹ️ Admin browsing activity is excluded from analytics to ensure accurate metrics.
+      </div>
+
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
@@ -37,112 +44,139 @@ const AnalyticsDashboard = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top Pages */}
-        <div className="rounded-2xl bg-card border border-border/50 p-5">
-          <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-primary" /> Top Pages
-          </h3>
-          {topPages.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No data yet</p>
-          ) : (
-            <div className="space-y-2">
-              {topPages.map((p, i) => (
-                <div key={p.path} className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground w-5 text-right">{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium truncate">{p.path}</span>
-                      <span className="text-xs text-muted-foreground shrink-0 ml-2">{p.count}</span>
+      {/* Visitor Breakdown */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="p-4 rounded-2xl bg-card border border-border/50">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-3">
+            <UserCheck className="w-5 h-5 text-emerald-500" />
+          </div>
+          <p className="text-2xl font-bold leading-none">{uniqueUsers}</p>
+          <p className="text-xs text-muted-foreground mt-1">Logged-in Users</p>
+        </div>
+        <div className="p-4 rounded-2xl bg-card border border-border/50">
+          <div className="w-10 h-10 rounded-xl bg-muted/50 flex items-center justify-center mb-3">
+            <UserX className="w-5 h-5 text-muted-foreground" />
+          </div>
+          <p className="text-2xl font-bold leading-none">{uniqueAnonymous}</p>
+          <p className="text-xs text-muted-foreground mt-1">Anonymous Visitors</p>
+        </div>
+      </div>
+
+      {!hasData && (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          No analytics data yet. Metrics will appear once real users start visiting.
+        </div>
+      )}
+
+      {hasData && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Top Pages */}
+            <div className="rounded-2xl bg-card border border-border/50 p-5">
+              <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-primary" /> Top Pages
+              </h3>
+              {topPages.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No data yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {topPages.map((p, i) => (
+                    <div key={p.path} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-5 text-right">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium truncate">{p.path}</span>
+                          <span className="text-xs text-muted-foreground shrink-0 ml-2">{p.count}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary/60"
+                            style={{ width: `${(p.count / (topPages[0]?.count || 1)) * 100}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-primary/60"
-                        style={{ width: `${(p.count / (topPages[0]?.count || 1)) * 100}%` }}
-                      />
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Hourly Traffic */}
-        <div className="rounded-2xl bg-card border border-border/50 p-5">
-          <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" /> Hourly Traffic (30d)
-          </h3>
-          <div className="grid grid-cols-12 gap-1 h-32">
-            {hourlyData.map((h) => (
-              <div key={h.hour} className="flex flex-col items-center justify-end gap-1">
-                <div
-                  className="w-full rounded-t bg-primary/40 hover:bg-primary/60 transition-colors min-h-[2px]"
-                  style={{ height: `${(h.count / maxHourly) * 100}%` }}
-                  title={`${h.hour}:00 — ${h.count} views`}
-                />
-                {h.hour % 4 === 0 && (
-                  <span className="text-[9px] text-muted-foreground">{h.hour}</span>
-                )}
+            {/* Hourly Traffic */}
+            <div className="rounded-2xl bg-card border border-border/50 p-5">
+              <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" /> Hourly Traffic (30d)
+              </h3>
+              <div className="grid grid-cols-12 gap-1 h-32">
+                {hourlyData.map((h) => (
+                  <div key={h.hour} className="flex flex-col items-center justify-end gap-1">
+                    <div
+                      className="w-full rounded-t bg-primary/40 hover:bg-primary/60 transition-colors min-h-[2px]"
+                      style={{ height: `${(h.count / maxHourly) * 100}%` }}
+                      title={`${h.hour}:00 — ${h.count} views`}
+                    />
+                    {h.hour % 4 === 0 && (
+                      <span className="text-[9px] text-muted-foreground">{h.hour}</span>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Device Breakdown */}
-        <div className="rounded-2xl bg-card border border-border/50 p-5">
-          <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
-            <Monitor className="w-4 h-4 text-primary" /> Devices
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Desktop", value: deviceCounts.desktop, icon: Monitor },
-              { label: "Tablet", value: deviceCounts.tablet, icon: Tablet },
-              { label: "Mobile", value: deviceCounts.mobile, icon: Smartphone },
-            ].map((d) => (
-              <div key={d.label} className="p-3 rounded-xl bg-muted/20 border border-border/30 text-center">
-                <d.icon className="w-5 h-5 text-primary mx-auto mb-2" />
-                <p className="text-lg font-bold">{d.value}</p>
-                <p className="text-[10px] text-muted-foreground">{d.label}</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Device Breakdown */}
+            <div className="rounded-2xl bg-card border border-border/50 p-5">
+              <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
+                <Monitor className="w-4 h-4 text-primary" /> Devices
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Desktop", value: deviceCounts.desktop, icon: Monitor },
+                  { label: "Tablet", value: deviceCounts.tablet, icon: Tablet },
+                  { label: "Mobile", value: deviceCounts.mobile, icon: Smartphone },
+                ].map((d) => (
+                  <div key={d.label} className="p-3 rounded-xl bg-muted/20 border border-border/30 text-center">
+                    <d.icon className="w-5 h-5 text-primary mx-auto mb-2" />
+                    <p className="text-lg font-bold">{d.value}</p>
+                    <p className="text-[10px] text-muted-foreground">{d.label}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* Cookie Consent Stats */}
-        <div className="rounded-2xl bg-card border border-border/50 p-5">
-          <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
-            <Cookie className="w-4 h-4 text-primary" /> Cookie Consent
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: "Accepted", value: consentStats.accepted, color: "bg-emerald-500" },
-              { label: "Rejected", value: consentStats.rejected, color: "bg-destructive" },
-              { label: "Pending", value: consentStats.pending, color: "bg-amber-500" },
-            ].map((c) => (
-              <div key={c.label} className="p-3 rounded-xl bg-muted/20 border border-border/30 text-center">
-                <div className={`w-3 h-3 rounded-full ${c.color} mx-auto mb-2`} />
-                <p className="text-lg font-bold">{c.value}</p>
-                <p className="text-[10px] text-muted-foreground">{c.label}</p>
+            {/* Cookie Consent Stats */}
+            <div className="rounded-2xl bg-card border border-border/50 p-5">
+              <h3 className="font-semibold text-sm mb-4 flex items-center gap-2">
+                <Cookie className="w-4 h-4 text-primary" /> Cookie Consent
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Accepted", value: consentStats.accepted, color: "bg-emerald-500" },
+                  { label: "Rejected", value: consentStats.rejected, color: "bg-destructive" },
+                  { label: "Pending", value: consentStats.pending, color: "bg-amber-500" },
+                ].map((c) => (
+                  <div key={c.label} className="p-3 rounded-xl bg-muted/20 border border-border/30 text-center">
+                    <div className={`w-3 h-3 rounded-full ${c.color} mx-auto mb-2`} />
+                    <p className="text-lg font-bold">{c.value}</p>
+                    <p className="text-[10px] text-muted-foreground">{c.label}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+              {(() => {
+                const total = consentStats.accepted + consentStats.rejected + consentStats.pending;
+                if (total === 0) return null;
+                return (
+                  <div className="flex h-2 rounded-full overflow-hidden mt-4 bg-muted">
+                    <div className="bg-emerald-500" style={{ width: `${(consentStats.accepted / total) * 100}%` }} />
+                    <div className="bg-destructive" style={{ width: `${(consentStats.rejected / total) * 100}%` }} />
+                    <div className="bg-amber-500" style={{ width: `${(consentStats.pending / total) * 100}%` }} />
+                  </div>
+                );
+              })()}
+            </div>
           </div>
-          {/* Bar */}
-          {(() => {
-            const total = consentStats.accepted + consentStats.rejected + consentStats.pending;
-            if (total === 0) return null;
-            return (
-              <div className="flex h-2 rounded-full overflow-hidden mt-4 bg-muted">
-                <div className="bg-emerald-500" style={{ width: `${(consentStats.accepted / total) * 100}%` }} />
-                <div className="bg-destructive" style={{ width: `${(consentStats.rejected / total) * 100}%` }} />
-                <div className="bg-amber-500" style={{ width: `${(consentStats.pending / total) * 100}%` }} />
-              </div>
-            );
-          })()}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };
