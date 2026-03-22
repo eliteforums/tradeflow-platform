@@ -30,12 +30,16 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: hasAdmin } = await supabaseAdmin.rpc("has_role", {
+    const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
       _user_id: caller.id,
       _role: "admin",
     });
+    const { data: isSpoc } = await supabaseAdmin.rpc("has_role", {
+      _user_id: caller.id,
+      _role: "spoc",
+    });
 
-    if (!hasAdmin) throw new Error("Only admins can add members");
+    if (!isAdmin && !isSpoc) throw new Error("Only admins and SPOCs can add members");
 
     const { username, password, role, institution_id } = await req.json();
 
@@ -43,7 +47,12 @@ serve(async (req) => {
       throw new Error("username, password, and role are required");
     }
 
-    const validRoles = ["intern", "expert", "spoc", "therapist"];
+    // SPOCs can only create students
+    if (isSpoc && !isAdmin && role !== "student") {
+      throw new Error("SPOCs can only create student accounts");
+    }
+
+    const validRoles = ["student", "intern", "expert", "spoc", "therapist"];
     if (!validRoles.includes(role)) {
       throw new Error(`Invalid role. Must be one of: ${validRoles.join(", ")}`);
     }
@@ -52,11 +61,25 @@ serve(async (req) => {
       throw new Error("Password must be at least 6 characters");
     }
 
-    // SPOC requires institution_id; other roles are universal
-    if (role === "spoc" && !institution_id) {
-      throw new Error("SPOC role requires an institution");
+    // Determine institution_id
+    let effectiveInstitutionId: string | null = null;
+
+    if (isSpoc && !isAdmin) {
+      // SPOC: force their own institution
+      const { data: spocProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("institution_id")
+        .eq("id", caller.id)
+        .single();
+      if (!spocProfile?.institution_id) throw new Error("SPOC has no institution assigned");
+      effectiveInstitutionId = spocProfile.institution_id;
+    } else {
+      // Admin: SPOC requires institution_id, student can optionally have one
+      if (role === "spoc" && !institution_id) {
+        throw new Error("SPOC role requires an institution");
+      }
+      effectiveInstitutionId = (role === "spoc" || role === "student") && institution_id ? institution_id : null;
     }
-    const effectiveInstitutionId = role === "spoc" ? institution_id : null;
 
     const email = `${username.toLowerCase().replace(/\s+/g, "_")}@eternia.local`;
 

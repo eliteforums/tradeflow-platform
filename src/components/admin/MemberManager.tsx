@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight } from "lucide-react";
 
 const ROLES = [
+  { value: "student", label: "Student" },
   { value: "intern", label: "Intern" },
   { value: "expert", label: "Expert" },
   { value: "spoc", label: "SPOC" },
@@ -53,7 +54,7 @@ export default function MemberManager() {
           username: username.trim(),
           password,
           role: selectedRole,
-          institution_id: selectedRole === "spoc" && selectedInstitution && selectedInstitution !== "none" ? selectedInstitution : null,
+          institution_id: (selectedRole === "spoc" || selectedRole === "student") && selectedInstitution && selectedInstitution !== "none" ? selectedInstitution : null,
         },
       });
       if (error) {
@@ -81,6 +82,7 @@ export default function MemberManager() {
 
   const getRoleDesc = (role: string) => {
     const map: Record<string, string> = {
+      student: "Institution-specific — Self-help tools, peer sessions, quests",
       intern: "Universal — Peer sessions, escalation flagging",
       expert: "Universal — Appointments, session notes",
       spoc: "Institution-specific — QR onboarding, credits, analytics",
@@ -144,16 +146,18 @@ export default function MemberManager() {
           </div>
           <div>
             <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Role *</label>
-            <Select value={selectedRole} onValueChange={(v) => { setSelectedRole(v); if (v !== "spoc") setSelectedInstitution(""); }}>
+            <Select value={selectedRole} onValueChange={(v) => { setSelectedRole(v); if (v !== "spoc" && v !== "student") setSelectedInstitution(""); }}>
               <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          {selectedRole === "spoc" && (
+          {(selectedRole === "spoc" || selectedRole === "student") && (
             <div>
-              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Institution *</label>
+              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">
+                Institution {selectedRole === "spoc" ? "*" : "(optional)"}
+              </label>
               <Select value={selectedInstitution} onValueChange={setSelectedInstitution}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select institution" /></SelectTrigger>
                 <SelectContent>
