@@ -144,18 +144,21 @@
       letter-spacing: 0.08em;
     }
 
-    /* Top-left subtle info */
     #corner-info {
       position: fixed;
-      top: 20px; left: 22px;
+      top: 12px; left: 14px;
       pointer-events: none; z-index: 10;
     }
     #corner-info p {
       font-family: 'Palatino Linotype', Palatino, serif;
-      font-size: 10px;
+      font-size: clamp(8px, 1.5vw, 10px);
       color: rgba(220,180,80,0.18);
       letter-spacing: 0.12em;
       line-height: 1.8;
+    }
+    @media (max-width: 480px) {
+      #corner-info { display: none; }
+      .start-sub { margin-bottom: 32px; }
     }
   </style>
 </head>
