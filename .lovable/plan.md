@@ -1,65 +1,28 @@
 
 
-## Plan: Fix Peer Connect for Interns + Add Delete ID from Admin Dashboard
+## Plan: Fix SPOC QR Generation to Use Temp IDs
 
-### Issues Identified
+### Problem
+The `generate-spoc-qr` edge function generates old-style HMAC-signed QR codes (`{institution_id, spoc_id, timestamp, signature}`). It does NOT pick a temp credential from the pool. So when a student scans and registers, no temp ID gets consumed/linked.
 
-**Issue 1: Intern cannot see student's chat or receive calls in Peer Connect**
+The expected flow is:
+1. Admin creates 50 temp IDs via `create-bulk-temp-ids`
+2. SPOC generates QR → function picks an **unused** temp credential, marks it **assigned**, returns QR with `{temp_id, temp_password, institution_id}`
+3. Student scans QR → `verify-temp-credentials` validates → Register → `activate-account` marks it **activated**
 
-The Peer Connect page (`/dashboard/peer-connect`) uses `usePeerConnect` hook which works for both students and interns. The intern CAN access the page (routing allows it). However, the problem is architectural:
-
-- When a student starts a session and sends messages, the intern needs to be on the `/dashboard/peer-connect` page to see/respond. But the intern's primary view is the **Intern Dashboard**, which only shows a session list with "Join" buttons that just call `toast.info("Join session")` (line 518) — it does NOT navigate to Peer Connect or open a chat.
-- The intern dashboard's "Join" button is a dead-end — no actual chat or call functionality.
-- There is no realtime notification to alert the intern that a new session has started.
-
-**Issue 2: No option to delete user IDs from super admin dashboard**
-
-The MemberManager component shows members grouped by institution but has no delete button. The `delete-account` edge function only supports self-deletion.
-
----
+Step 2 is broken — the function never queries `temp_credentials`.
 
 ### Solution
 
-**Fix 1: Wire up Intern "Join" button to navigate to Peer Connect page**
+**Rewrite `supabase/functions/generate-spoc-qr/index.ts`** to:
 
-In both `InternDashboardContent.tsx` and `MobileInternDashboard.tsx`, change the "Join" button on active sessions to navigate to `/dashboard/peer-connect`. The Peer Connect page already handles intern sessions (via `usePeerConnect` with `isIntern` checks and `or()` query). This ensures the intern can see the chat, send messages, and make calls.
-
-Also add a realtime subscription on `peer_sessions` in the intern dashboard to auto-refresh when a new session is assigned to them.
-
-**Fix 2: Add delete button to admin MemberManager**
-
-Add a delete button next to each member in the admin member list. Create a new edge function `admin-delete-member` that:
-1. Accepts a `target_user_id` from an admin
-2. Verifies the caller is an admin (via `has_role`)
-3. Deletes PII, profile data, and auth account (same flow as `delete-account` but admin-initiated)
-
----
-
-### Changes
-
-**1. `src/components/intern/InternDashboardContent.tsx`**
-- Import `useNavigate` from react-router-dom
-- Replace the "Join" button `toast.info(...)` with `navigate("/dashboard/peer-connect")`
-- Add realtime subscription on `peer_sessions` filtered by `intern_id` to invalidate the query on new/updated sessions
-
-**2. `src/components/mobile/MobileInternDashboard.tsx`**
-- Same "Join" button fix — navigate to `/dashboard/peer-connect`
-- Add realtime subscription for session notifications
-
-**3. `supabase/functions/admin-delete-member/index.ts`** (new)
-- Edge function that accepts `{ target_user_id }` 
-- Verifies caller is admin via `has_role`
-- Runs same cleanup as `delete-account`: deletes user_private, blackbox_entries, recovery_credentials, credit_transactions, deactivates profile, deletes auth user
-
-**4. `src/components/admin/MemberManager.tsx`**
-- Add a delete (Trash2) button per member row
-- Confirm dialog before deletion
-- Call `admin-delete-member` edge function
-- Invalidate member queries on success
+1. Authenticate SPOC (keep existing auth check)
+2. Query `temp_credentials` for the SPOC's institution where `status = 'unused'`, pick one (LIMIT 1)
+3. If none available, return an error ("No temp IDs available. Ask admin to generate more.")
+4. Update that temp credential to `status = 'assigned'`, `assigned_at = now()`
+5. Return QR payload as `JSON.stringify({ temp_id: cred.temp_username, temp_password: cred.temp_password_plain, institution_id })`
+6. Audit log the assignment
 
 ### Files to modify
-- `src/components/intern/InternDashboardContent.tsx`
-- `src/components/mobile/MobileInternDashboard.tsx`
-- `supabase/functions/admin-delete-member/index.ts` (new)
-- `src/components/admin/MemberManager.tsx`
+- `supabase/functions/generate-spoc-qr/index.ts` — rewrite to use temp credentials pool
 
