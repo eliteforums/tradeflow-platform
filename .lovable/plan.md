@@ -1,57 +1,110 @@
 
 
-## Plan: Fix Peer Connect Module — Cursor Loss, Dummy Data, and PRD Compliance
+## Plan: TechSpec v2-31 Compliance + Scalability for Millions of Users
 
-### Issues Identified
+### Gap Analysis: TechSpec v2-31 vs Current Codebase
 
-1. **Cursor disconnect on every keystroke** — In `PeerConnect.tsx`, `InternList` and `ChatArea` are defined as inline component functions (lines 59, 79) inside the render body. Every parent re-render creates new component references, causing React to unmount/remount these components, destroying input focus.
+Most of v2-31 is already implemented (onboarding, RBAC, ECC system, dashboards, escalation model, training lifecycle, indexes). The gaps are in **scalability patterns** and **data access optimization** — critical for the "millions of users" target.
 
-2. **Fake intern status (dummy data)** — `getInternStatus()` uses `index % 3` to assign online/busy/offline — this is hardcoded mock logic with no connection to real data.
-
-3. **Intern-side sessions not visible** — The `usePeerConnect` hook queries `peer_sessions` with `.eq("student_id", user.id)`, meaning interns cannot see sessions assigned to them. Interns have no way to receive or view incoming session requests.
-
-4. **No training_status filter on intern list** — PRD §4.2 requires interns to complete training before appearing in the available list. The query fetches all `is_active` interns regardless of training completion.
-
-5. **Same issues exist in MobilePeerConnect.tsx** — duplicate dummy status logic and cursor issues (though mobile uses a different view structure so cursor loss is less severe).
+| # | Gap | TechSpec Section | Impact |
+|---|-----|------------------|--------|
+| 1 | No materialized view for credit balance | §12.1 | Every credit check does SUM() over entire transaction history — O(n) per user at scale |
+| 2 | No cursor-based pagination | §13.1, §16.2 | List endpoints hit 1000-row Supabase limit; unbounded queries at scale |
+| 3 | peer_messages not in realtime publication | §7.2 | Realtime subscription works via channel filter but publication ensures DB-level efficiency |
+| 4 | Queries use SELECT * everywhere | §13.1 | Fetches unnecessary columns, wastes bandwidth and memory at scale |
+| 5 | No debouncing on search/filter inputs | Performance | Every keystroke triggers re-renders and potential queries |
+| 6 | Missing index on device_sessions.device_id_hash | §12.3 | Device validation on every auth request — needs fast lookup |
+| 7 | No React.memo/useCallback optimization | Performance | Unnecessary re-renders cascade through component trees |
+| 8 | Intern search in PeerConnect is non-functional | UI bug | Search input exists but doesn't filter anything |
 
 ### Changes
 
-| # | File | Change |
-|---|------|--------|
-| 1 | `src/pages/dashboard/PeerConnect.tsx` | Move `InternList` and `ChatArea` out of render body to fix cursor loss; remove dummy `getInternStatus`; use real availability logic |
-| 2 | `src/hooks/usePeerConnect.ts` | Filter interns by `training_status`; add intern-side session query; derive real online/busy status from active sessions |
-| 3 | `src/components/mobile/MobilePeerConnect.tsx` | Remove dummy `getInternStatus`; use real status from hook |
+**1. Database Migrations (scalability foundation)**
+- Create `credit_balance_view` materialized view: `SELECT user_id, SUM(delta) as balance FROM credit_transactions GROUP BY user_id`
+- Add DB function to refresh the view (called after credit operations)
+- Add `peer_messages` to realtime publication
+- Add missing index on `device_sessions(device_id_hash)`
+- Add index on `peer_messages(session_id, created_at)` for message pagination
+
+**2. Optimize usePeerConnect.ts**
+- Select only needed columns instead of `*` (intern query: `id, username, specialty, is_active, training_status`)
+- Add message pagination: fetch last 50 messages, load more on scroll
+- Add intern search filter (local filter on username/specialty)
+- Memoize derived values with useMemo
+
+**3. Optimize PeerConnect.tsx + MobilePeerConnect.tsx**
+- Implement working search filter for intern list
+- Add message pagination UI (load earlier messages button)
+- Wrap handlers in useCallback to prevent re-renders
+- Debounce search input
+
+**4. Optimize AuthContext.tsx**
+- Use materialized view for credit balance fetch (faster than SUM at scale)
+- Add staleTime to prevent unnecessary refetches
+
+**5. Optimize query patterns across hooks**
+- `useAppointments.ts` — select specific columns, add cursor pagination
+- `useBlackBox.ts` — paginate entries
+- `useCredits.ts` — use materialized view
 
 ### Technical Details
 
-**Fix 1: Cursor Loss (Critical)**
+**Materialized View Migration:**
+```sql
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.credit_balance_view AS
+SELECT user_id, COALESCE(SUM(delta), 0)::integer AS balance,
+       MAX(created_at) AS last_transaction_at
+FROM public.credit_transactions
+GROUP BY user_id;
 
-Move `InternList` and `ChatArea` from inline arrow functions to either:
-- Extracted to top-level components in the same file, receiving props
-- Or inlined directly into the JSX (no component boundary)
+CREATE UNIQUE INDEX idx_credit_balance_view_user ON public.credit_balance_view(user_id);
 
-The simplest fix: inline the JSX directly into the return statement instead of wrapping in component functions. This avoids unmount/remount cycles entirely.
+CREATE OR REPLACE FUNCTION public.refresh_credit_balance()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW CONCURRENTLY public.credit_balance_view;
+  RETURN NULL;
+END;
+$$;
 
-**Fix 2: Real Intern Availability**
+CREATE TRIGGER trg_refresh_credit_balance
+AFTER INSERT ON public.credit_transactions
+FOR EACH STATEMENT EXECUTE FUNCTION public.refresh_credit_balance();
+```
 
-Replace the `index % 3` dummy logic in both files. In `usePeerConnect.ts`:
-- Query interns with `.in("training_status", ["active", "completed"])` to only show trained interns
-- Fetch active `peer_sessions` to determine which interns are currently in a session
-- Return an `internStatuses` map: `Record<string, "online" | "busy" | "offline">`
-  - `busy` = intern has an active peer_session
-  - `online` = intern is `is_active` and not busy
-  - No offline interns shown (they're filtered out by `is_active`)
+**Cursor Pagination Pattern (messages):**
+```typescript
+// Fetch last 50, then load more with cursor
+const { data } = await supabase
+  .from("peer_messages")
+  .select("id, session_id, sender_id, content_encrypted, created_at")
+  .eq("session_id", sessionId)
+  .order("created_at", { ascending: false })
+  .limit(50);
+```
 
-**Fix 3: Intern-Side Sessions**
-
-Update the sessions query in `usePeerConnect.ts` to also fetch sessions where `intern_id = user.id` (when the user is an intern), so interns can see and respond to their assigned sessions.
-
-**Fix 4: MobilePeerConnect Parity**
-
-Apply same status logic changes to `MobilePeerConnect.tsx` — consume `internStatuses` from the hook instead of computing fake status locally.
+**Debounced Search:**
+```typescript
+const [searchTerm, setSearchTerm] = useState("");
+const debouncedSearch = useDebouncedValue(searchTerm, 300);
+const filteredInterns = useMemo(() =>
+  interns.filter(i => i.username.toLowerCase().includes(debouncedSearch.toLowerCase())),
+  [interns, debouncedSearch]
+);
+```
 
 ### Files to Edit
-- `src/hooks/usePeerConnect.ts` — add training filter, real status derivation, intern-side query
-- `src/pages/dashboard/PeerConnect.tsx` — inline JSX (fix cursor), consume real statuses
-- `src/components/mobile/MobilePeerConnect.tsx` — consume real statuses, remove dummy logic
+
+| # | File | Change |
+|---|------|--------|
+| 1 | DB Migration | Materialized view, indexes, realtime publication |
+| 2 | `src/hooks/usePeerConnect.ts` | Column-specific selects, message pagination, search filter |
+| 3 | `src/pages/dashboard/PeerConnect.tsx` | Working search, pagination UI, useCallback handlers |
+| 4 | `src/components/mobile/MobilePeerConnect.tsx` | Same search/pagination parity |
+| 5 | `src/contexts/AuthContext.tsx` | Optimized credit balance fetch |
+| 6 | `src/hooks/useBlackBox.ts` | Paginated queries |
+| 7 | `src/hooks/useAppointments.ts` | Column-specific selects |
+
+### Summary
+The codebase has all PRD features implemented. The gaps are performance and scalability patterns needed for millions of users: materialized views for O(1) balance lookups, cursor pagination to avoid unbounded queries, column-specific selects to reduce payload size, debounced inputs, and missing database indexes. No new features — purely optimization and scalability hardening.
 
