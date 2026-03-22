@@ -93,10 +93,9 @@ export const useBlackBoxSession = () => {
     };
   }, [activeSession?.id, fetchTokenIfNeeded]);
 
-  // Polling fallback: check session status every 5s while queued/accepted without token
+  // Polling fallback: check session status every 3s while queued or missing token
   useEffect(() => {
     if (!activeSession?.id) return;
-    // Only poll if we're waiting (queued, or accepted/active without token)
     const needsPoll =
       activeSession.status === "queued" ||
       ((activeSession.status === "accepted" || activeSession.status === "active") &&
@@ -116,13 +115,21 @@ export const useBlackBoxSession = () => {
       if (!data) return;
       const session = data as unknown as BlackBoxSession;
 
-      // If status or room changed, update
+      // Always update state if data changed
       if (session.status !== activeSession.status || session.room_id !== activeSession.room_id) {
         console.log("[BlackBox] Poll detected change:", session.status, "room:", session.room_id);
         setActiveSession(session);
+      }
+
+      // Always retry token fetch if we still need one
+      if (
+        (session.status === "accepted" || session.status === "active") &&
+        session.room_id &&
+        !tokenRef.current
+      ) {
         await fetchTokenIfNeeded(session);
       }
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [activeSession?.id, activeSession?.status, activeSession?.room_id, token, fetchTokenIfNeeded]);
