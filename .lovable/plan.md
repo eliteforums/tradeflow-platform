@@ -1,22 +1,32 @@
 
 
-## Plan: Make Referral Code Input More Visible on Intern Dashboard
+## Plan: Fix Referral Code Redemption Not Updating Training Status
 
 ### Problem
-The referral code option exists in both desktop and mobile intern dashboards, but it renders as a tiny "Have a referral code?" text link that is very easy to miss. It needs to be more prominent.
+When an intern redeems a referral code, the profile update to the database likely fails silently because:
+1. No error checking on the `profiles.update()` call — if it fails, the success toast still shows
+2. The `refreshProfile` function from AuthContext is not called, so the in-memory profile state doesn't update
+3. Even though `window.location.reload()` is called, if the DB update failed, the old state persists
 
 ### Solution
-Replace the small text link with a visible card/banner that stands out in the training section. Show it as a styled card with an icon, description, and a clear call-to-action button.
+Fix the referral code redemption in both desktop and mobile components:
+
+1. **Add error handling** on the `profiles.update()` call — if it fails, show an error and don't mark the code as used (reverse the order: update profile first, then mark code as used)
+2. **Call `refreshProfile`** from AuthContext after successful update
+3. **Reorder operations**: Update the profile FIRST, then mark the referral code as used — this way if the profile update fails, the code remains unused
 
 ### Changes
 
-**1. `src/components/intern/InternDashboardContent.tsx` (line 694-703)**
-- Replace the collapsed state from a plain text link to a visible card with Gift icon, description text ("Skip training with a referral code from your admin"), and a prominent "Enter Code" button
+**1. `src/components/intern/InternDashboardContent.tsx`**
+- Pass `refreshProfile` from AuthContext to the `ReferralCodeInput` component
+- Reorder: update profile first, then mark code used
+- Add error check on the profile update call
+- Call `refreshProfile()` before reload
 
-**2. `src/components/mobile/MobileInternDashboard.tsx` (line 489-494)**
-- Same change for mobile: replace the text link with a visible card matching mobile design patterns (rounded-2xl)
+**2. `src/components/mobile/MobileInternDashboard.tsx`**
+- Same fixes for the `MobileReferralCodeInput` component
 
 ### Files to modify
-- `src/components/intern/InternDashboardContent.tsx` — update `ReferralCodeInput` collapsed state
-- `src/components/mobile/MobileInternDashboard.tsx` — update `MobileReferralCodeInput` collapsed state
+- `src/components/intern/InternDashboardContent.tsx`
+- `src/components/mobile/MobileInternDashboard.tsx`
 
