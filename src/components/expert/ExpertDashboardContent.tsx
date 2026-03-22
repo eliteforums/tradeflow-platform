@@ -263,12 +263,6 @@ const ExpertDashboardContent = () => {
             <h1 className="text-2xl xl:text-3xl font-bold font-display">Expert Dashboard</h1>
             <p className="text-sm text-muted-foreground">Manage appointments, schedule & sessions</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-eternia-warning/10 border border-eternia-warning/20">
-              <AlertTriangle className="w-4 h-4 text-eternia-warning" />
-            </div>
-            <span className="text-xs text-muted-foreground">AI Risk Monitor Active</span>
-          </div>
         </div>
 
         {/* Tab Bar */}
