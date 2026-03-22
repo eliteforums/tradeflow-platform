@@ -234,25 +234,55 @@ const SPOCDashboardContent = () => {
   const [resetDeviceStudent, setResetDeviceStudent] = useState<string | null>(null);
   const [isResettingDevice, setIsResettingDevice] = useState(false);
 
-  const generateQR = async () => {
-    try {
+  // Dynamic QR code query
+  const { data: qrData, isLoading: qrLoading, error: qrError, refetch: regenerateQR } = useQuery({
+    queryKey: ["spoc-qr", user?.id],
+    queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
-      if (error) throw error;
-      if (data?.qr_payload) {
-        navigator.clipboard.writeText(data.qr_payload);
-        setCopiedQR(true);
-        toast.success("Secure QR code generated & copied!");
-        setTimeout(() => setCopiedQR(false), 2000);
-      }
-    } catch (err: any) {
-      // Fallback to legacy
-      const fallback = `ETERNIA-SPOC-${institutionId}-${user?.id}-${Date.now()}`;
-      navigator.clipboard.writeText(fallback);
-      setCopiedQR(true);
-      toast.success("QR code copied (legacy format)");
-      setTimeout(() => setCopiedQR(false), 2000);
-    }
+      if (error) throw new Error(error.message || "Failed to generate QR");
+      if (data?.error) throw new Error(data.error);
+      return data as { qr_payload: string; expires_at: number };
+    },
+    enabled: !!user && profile?.role === "spoc",
+    staleTime: 1000 * 60 * 60,
+    retry: 2,
+  });
+
+  const qrPayload = qrData?.qr_payload || "";
+  const qrExpiresAt = qrData?.expires_at ? new Date(qrData.expires_at) : null;
+
+  const copyQRPayload = () => {
+    if (!qrPayload) { toast.error("No QR code generated yet"); return; }
+    navigator.clipboard.writeText(qrPayload);
+    setCopiedQR(true);
+    toast.success("QR payload copied!");
+    setTimeout(() => setCopiedQR(false), 2000);
   };
+
+  const downloadQR = useCallback(() => {
+    if (!qrRef.current) return;
+    const svg = qrRef.current.querySelector("svg");
+    if (!svg) return;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const size = 600;
+    canvas.width = size;
+    canvas.height = size;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    img.onload = () => {
+      ctx.fillStyle = "hsl(222, 47%, 6%)";
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, 0, 0, size, size);
+      const a = document.createElement("a");
+      a.download = "eternia-spoc-qr.png";
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+      toast.success("QR code downloaded!");
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  }, []);
 
   const grantCreditsToStudents = async () => {
     if (!user || !institutionId) return;
