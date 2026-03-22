@@ -15,12 +15,14 @@ function getSessionHash(): string {
 
 export function useAnalytics() {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const lastPath = useRef("");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (getConsentStatus() !== "accepted") return;
+    // Exclude admin users from analytics to avoid polluting metrics
+    if (profile?.role === "admin") return;
     if (location.pathname === lastPath.current) return;
 
     clearTimeout(debounceRef.current);
@@ -41,5 +43,5 @@ export function useAnalytics() {
     }, 300);
 
     return () => clearTimeout(debounceRef.current);
-  }, [location.pathname, user?.id]);
+  }, [location.pathname, user?.id, profile?.role]);
 }
