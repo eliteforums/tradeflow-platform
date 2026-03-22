@@ -1,38 +1,22 @@
 
 
-## Plan: Clean Up Roles & Credits Layout
+## Plan: Make Referral Code Input More Visible on Intern Dashboard
 
 ### Problem
-The "Roles & Credits" tab uses a `grid-cols-3` layout where `MemberManager` (left column) contains 5 stacked sections (Add Staff, Bulk Temp IDs, Temp Credential Pool, Members by University, Referral Codes) making it extremely tall, while `RoleManager` and `CreditGrantTool` (middle and right columns) are short — leaving large empty space and a messy look.
+The referral code option exists in both desktop and mobile intern dashboards, but it renders as a tiny "Have a referral code?" text link that is very easy to miss. It needs to be more prominent.
 
 ### Solution
-Reorganize the grid into a **2-column layout** with better section distribution:
-
-**Left column (wider):**
-- Add Staff Member
-- Bulk Temp ID Creation
-- Temp Credential Pool
-- Members by University
-
-**Right column:**
-- Assign Role
-- Grant Credits
-- Referral Codes
+Replace the small text link with a visible card/banner that stands out in the training section. Show it as a styled card with an icon, description, and a clear call-to-action button.
 
 ### Changes
 
-**1. `src/components/admin/MemberManager.tsx`**
-- Extract the Referral Codes section into its own exported component `ReferralCodesCard` (it's already a separate function internally — just wrap it in the card UI and export)
-- Remove the Referral Codes card from MemberManager's return
+**1. `src/components/intern/InternDashboardContent.tsx` (line 694-703)**
+- Replace the collapsed state from a plain text link to a visible card with Gift icon, description text ("Skip training with a referral code from your admin"), and a prominent "Enter Code" button
 
-**2. `src/pages/admin/AdminDashboard.tsx`**
-- Change the roles tab from `grid-cols-3` to a 2-column layout
-- Left column: `<MemberManager />`
-- Right column: stack `<RoleManager />`, `<CreditGrantTool />`, `<ReferralCodesCard />`
-- Use `lg:grid-cols-[2fr_1fr]` for proportional widths
-- Add `self-start` to the right column so it doesn't stretch
+**2. `src/components/mobile/MobileInternDashboard.tsx` (line 489-494)**
+- Same change for mobile: replace the text link with a visible card matching mobile design patterns (rounded-2xl)
 
 ### Files to modify
-- `src/components/admin/MemberManager.tsx` — extract ReferralCodesCard as separate export
-- `src/pages/admin/AdminDashboard.tsx` — reorganize grid layout
+- `src/components/intern/InternDashboardContent.tsx` — update `ReferralCodeInput` collapsed state
+- `src/components/mobile/MobileInternDashboard.tsx` — update `MobileReferralCodeInput` collapsed state
 
