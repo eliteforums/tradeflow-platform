@@ -836,16 +836,51 @@ const SPOCDashboardContent = () => {
                       <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg line-clamp-3">
                         {esc.justification_encrypted}
                       </p>
-                      {esc.trigger_snippet && (
-                        <div className="mt-2 p-2 rounded-lg bg-destructive/5 border border-destructive/10">
-                          <p className="text-[10px] font-medium text-destructive mb-0.5">Trigger Snippet</p>
-                          <p className="text-[11px] text-muted-foreground italic">"{esc.trigger_snippet}"</p>
-                        </div>
-                      )}
-                      {esc.escalation_level === 3 && (
+                      {esc.trigger_snippet && (() => {
+                        // Try to parse emergency contact JSON from trigger_snippet
+                        let parsed: any = null;
+                        try { parsed = JSON.parse(esc.trigger_snippet); } catch {}
+                        if (parsed?.type === "emergency_contact") {
+                          return (
+                            <div className="mt-2 p-3 rounded-lg bg-destructive/10 border-2 border-destructive/30 space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <Phone className="w-4 h-4 text-destructive shrink-0" />
+                                <p className="text-xs font-bold text-destructive">🚨 Emergency Contact</p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <p className="text-[10px] text-muted-foreground">Name</p>
+                                  <p className="font-semibold">{parsed.name || "Not provided"}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-muted-foreground">Phone</p>
+                                  <p className="font-semibold font-mono">{parsed.phone || "Not provided"}</p>
+                                </div>
+                                <div>
+                                  <p className="text-[10px] text-muted-foreground">Relation</p>
+                                  <p className="font-medium">{parsed.relation || "Not specified"}</p>
+                                </div>
+                                {parsed.is_self && (
+                                  <div>
+                                    <p className="text-[10px] text-muted-foreground">Note</p>
+                                    <p className="font-medium text-eternia-warning">Contact is student themselves</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="mt-2 p-2 rounded-lg bg-destructive/5 border border-destructive/10">
+                            <p className="text-[10px] font-medium text-destructive mb-0.5">Trigger Snippet</p>
+                            <p className="text-[11px] text-muted-foreground italic">"{esc.trigger_snippet}"</p>
+                          </div>
+                        );
+                      })()}
+                      {esc.escalation_level === 3 && !esc.trigger_snippet && (
                         <div className="mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-2">
                           <Phone className="w-3.5 h-3.5 text-destructive shrink-0" />
-                          <p className="text-[10px] font-medium text-destructive">L3 Critical — Emergency contact shared with assigned expert</p>
+                          <p className="text-[10px] font-medium text-destructive">L3 Critical — Awaiting emergency contact from expert</p>
                         </div>
                       )}
                       {esc.resolved_at && (

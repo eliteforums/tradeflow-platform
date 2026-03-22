@@ -1,12 +1,11 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,9 +26,8 @@ serve(async (req) => {
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(
-      authHeader.replace("Bearer ", "")
-    );
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
     if (claimsError || !claimsData?.claims) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -49,7 +47,7 @@ serve(async (req) => {
     // Use service role for privileged access
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Validate caller is the therapist on this session
+    // Validate session exists and is L3
     const { data: session, error: sessionError } = await adminClient
       .from("blackbox_sessions")
       .select("therapist_id, student_id, flag_level")
@@ -59,13 +57,6 @@ serve(async (req) => {
     if (sessionError || !session) {
       return new Response(JSON.stringify({ error: "Session not found" }), {
         status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (session.therapist_id !== callerId) {
-      return new Response(JSON.stringify({ error: "Not authorized for this session" }), {
-        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -85,6 +76,26 @@ serve(async (req) => {
       });
     }
 
+    // Allow access if caller is the session therapist OR has expert role
+    const isTherapist = session.therapist_id === callerId;
+    let isExpert = false;
+    if (!isTherapist) {
+      const { data: roleCheck } = await adminClient
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", callerId)
+        .eq("role", "expert")
+        .limit(1);
+      isExpert = !!(roleCheck && roleCheck.length > 0);
+    }
+
+    if (!isTherapist && !isExpert) {
+      return new Response(JSON.stringify({ error: "Not authorized for this session" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch emergency contact
     const { data: privateData, error: privateError } = await adminClient
       .from("user_private")
@@ -97,6 +108,15 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Audit log
+    await adminClient.from("audit_logs").insert({
+      actor_id: callerId,
+      action_type: "emergency_contact_accessed",
+      target_table: "user_private",
+      target_id: student_id,
+      metadata: { session_id, flag_level: session.flag_level, accessor_role: isTherapist ? "therapist" : "expert" },
+    });
 
     return new Response(
       JSON.stringify({

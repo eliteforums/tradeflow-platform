@@ -13,6 +13,7 @@ import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import VideoCallModal from "@/components/videosdk/VideoCallModal";
+import ExpertL3AlertPanel from "@/components/expert/ExpertL3AlertPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -301,6 +302,8 @@ const ExpertDashboardContent = () => {
         {/* =================== HOME TAB =================== */}
         {activeTab === "home" && (
           <div className="space-y-4">
+            {/* L3 Emergency Alerts */}
+            <ExpertL3AlertPanel />
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold font-display">Appointments</h2>
               <Button size="sm" className="gap-1.5" onClick={() => { setActiveTab("schedule"); }}>

@@ -13,6 +13,7 @@ import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import VideoCallModal from "@/components/videosdk/VideoCallModal";
+import ExpertL3AlertPanel from "@/components/expert/ExpertL3AlertPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -171,6 +172,8 @@ const MobileExpertDashboard = () => {
         {/* HOME */}
         {activeTab === "home" && (
           <div className="space-y-3">
+            {/* L3 Emergency Alerts */}
+            <ExpertL3AlertPanel />
             <div className="flex items-center justify-between">
               <p className="font-semibold text-sm">Appointments</p>
               <Button size="sm" className="gap-1 h-8 text-xs" onClick={() => setSlotDialogOpen(true)}><Plus className="w-3.5 h-3.5" />Add Slot</Button>
