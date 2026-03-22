@@ -1,65 +1,65 @@
 
 
-## Plan: Activate Self-Help Tools (Quest Cards, Journaling, Mood Tracker, Gratitude)
+## Codebase Audit: Issues Found
 
-### Overview
+After reviewing all modules — auth, dashboard, self-help tools, hooks, RLS policies, routing, and layout — here are the issues discovered:
 
-Make 4 self-help tools fully functional with dedicated sub-pages: **Quest Cards** (already has backend), **Journaling**, **Mood Tracker**, and **Gratitude**. Keep **Wreck the Buddy** and **Tibetan Bowl** as "Coming Soon".
+---
 
-### Database Changes (Migration)
+### CRITICAL: Students Cannot Earn ECC (RLS Policy Blocks Inserts)
 
-Create 3 new tables:
+The `credit_transactions` table RLS only allows **admins and SPOCs** to INSERT rows. However, these hooks all attempt to insert as a regular student user:
 
-| Table | Columns | Purpose |
-|-------|---------|---------|
-| `journal_entries` | id, user_id, title, content, mood_tag, created_at | Guided reflective writing |
-| `mood_entries` | id, user_id, mood (1-5 scale), note, created_at | Daily emotional tracking |
-| `gratitude_entries` | id, user_id, entry_1, entry_2, entry_3, created_at | Daily 3-item gratitude practice |
+- `useEccEarn` — inserts `type: "earn"` rows for journaling, mood tracker, gratitude
+- `useQuests` — inserts `type: "earn"` rows for quest completions
+- `useCredits.earnCredits` / `useCredits.spendCredits` — inserts earn/spend rows
 
-All tables: RLS enabled, user can only CRUD own rows. Each tool awards ECC on daily completion (using existing `useEccEarn` cap logic).
+**Impact**: Every self-help ECC reward and credit spend will silently fail with an RLS violation. Students effectively cannot earn or spend credits.
 
-### New Hooks (3 files)
+**Fix**: Add an RLS policy allowing authenticated users to insert their own `credit_transactions`:
+```sql
+CREATE POLICY "Users can insert own credit transactions"
+ON public.credit_transactions FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = user_id);
+```
 
-| Hook | File | Purpose |
-|------|------|---------|
-| `useJournaling` | `src/hooks/useJournaling.ts` | CRUD journal entries, daily ECC earn on first entry |
-| `useMoodTracker` | `src/hooks/useMoodTracker.ts` | Insert mood, query history/trends |
-| `useGratitude` | `src/hooks/useGratitude.ts` | Submit daily 3 gratitudes, ECC earn |
+---
 
-### New Pages/Components (8 files)
+### BUG: `useState` Misused as `useEffect` in Register.tsx
 
-| File | Purpose |
-|------|---------|
-| `src/pages/dashboard/QuestCards.tsx` | Quest cards page using existing `useQuests` + `QuestCard3D` |
-| `src/pages/dashboard/Journaling.tsx` | Journal entry form + past entries list |
-| `src/pages/dashboard/MoodTracker.tsx` | Mood selector (1-5 emoji scale) + 7-day visual history |
-| `src/pages/dashboard/Gratitude.tsx` | 3-field gratitude form + past entries |
-| `src/components/mobile/MobileQuestCards.tsx` | Mobile variant |
-| `src/components/mobile/MobileJournaling.tsx` | Mobile variant |
-| `src/components/mobile/MobileMoodTracker.tsx` | Mobile variant |
-| `src/components/mobile/MobileGratitude.tsx` | Mobile variant |
+Line 33 of `Register.tsx` uses `useState(() => { ... })` to run a side effect (fetching institution type). This is the state initializer — it should be `useEffect`. While it technically fires once, it's a React anti-pattern and will not re-run if dependencies change.
 
-### Modified Files
+**Fix**: Replace `useState(() => { ... })` with `useEffect(() => { ... }, [])`.
+
+---
+
+### UI: Wrong Icons for Mood and Gratitude in Dashboard Quick Tools
+
+In both `Dashboard.tsx` (line 59) and `MobileDashboard.tsx` (line 87-88):
+- "Mood" uses the `Music` icon instead of `BarChart3`
+- "Gratitude" on mobile uses `Sparkles` instead of `Heart`
+
+**Fix**: Use `BarChart3` for Mood and `Heart` for Gratitude to match the Self-Help hub.
+
+---
+
+### MINOR: Self-Help Hub Missing from Dashboard Quick Links (Desktop)
+
+The desktop `Dashboard.tsx` quick tools section has Quest Cards, Journaling, Mood, Wallet — but no Gratitude shortcut. The mobile version has Mood and Gratitude but not Quest Cards or Journaling. Neither links to the Self-Help hub itself from quick tools.
+
+**Fix**: Harmonize quick tool shortcuts across desktop and mobile to include the same set.
+
+---
+
+### Summary of Changes
 
 | File | Change |
 |------|--------|
-| `src/pages/dashboard/SelfHelp.tsx` | Hub page — active cards link to sub-routes; Wreck Buddy & Tibetan Bowl show lock |
-| `src/components/mobile/MobileSelfHelp.tsx` | Same hub logic for mobile |
-| `src/App.tsx` | Add 4 new protected routes: `/dashboard/quest-cards`, `/dashboard/journaling`, `/dashboard/mood-tracker`, `/dashboard/gratitude` |
-| `src/components/mobile/MobileDashboard.tsx` | Update self-help quick links to point to new routes |
-| `src/pages/dashboard/Dashboard.tsx` | Update self-help quick links to point to new routes |
+| Migration SQL | Add RLS INSERT policy for students on `credit_transactions` |
+| `src/pages/auth/Register.tsx` | Replace `useState` with `useEffect` for institution type fetch |
+| `src/pages/dashboard/Dashboard.tsx` | Fix Mood icon to `BarChart3`, add Gratitude with `Heart` icon |
+| `src/components/mobile/MobileDashboard.tsx` | Fix Mood icon to `BarChart3`, fix Gratitude icon to `Heart` |
 
-### Self-Help Hub Behavior
-
-- **Active tools** (Quest Cards, Journaling, Mood Tracker, Gratitude): Full-color cards, clickable, link to their dedicated pages
-- **Coming Soon** (Wreck the Buddy, Tibetan Bowl): Greyed out with lock icon, non-clickable
-- "Coming Soon" banner only shown for the locked tools, not the whole page
-
-### ECC Integration
-
-Each tool awards ECC on first daily use (respecting the existing daily cap from `useEccEarn`):
-- Quest Cards: existing logic (per-quest XP)
-- Journaling: +5 ECC for first journal entry of the day
-- Mood Tracker: +3 ECC for first mood log of the day
-- Gratitude: +5 ECC for first gratitude entry of the day
+The RLS fix is the highest priority — without it, all ECC earning and spending features are broken for students.
 
