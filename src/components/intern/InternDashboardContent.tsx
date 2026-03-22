@@ -74,7 +74,7 @@ const InternDashboardContent = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_modules")
-        .select("*")
+        .select("id, day_number, title, description, duration, objectives, content, has_quiz, quiz_questions, is_active")
         .order("day_number", { ascending: true });
       if (error) throw error;
       return (data as any[]) as TrainingModule[];
