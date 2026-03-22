@@ -54,7 +54,7 @@ export default function MemberManager() {
           username: username.trim(),
           password,
           role: selectedRole,
-          institution_id: selectedRole === "spoc" && selectedInstitution && selectedInstitution !== "none" ? selectedInstitution : null,
+          institution_id: (selectedRole === "spoc" || selectedRole === "student") && selectedInstitution && selectedInstitution !== "none" ? selectedInstitution : null,
         },
       });
       if (error) {
