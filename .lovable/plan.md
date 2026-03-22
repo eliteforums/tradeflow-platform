@@ -1,42 +1,69 @@
 
+## Plan: Stabilize Peer Connect + BlackBox Calls and Show Only Students in Intern Chat Logs
 
-## Plan: Fix QR Generation, BlackBox Student Call, and Peer Session ID Mismatch
+### What I found (current root causes)
+1. **Peer Connect call mismatch**: audio call modal creates a room per user click, and `peer_sessions` has no shared `room_id`. So student and intern can enter different rooms.
+2. **Interns appearing as “users”**: backend insert rules allow any authenticated user to create a peer session as `student_id` (only checks `auth.uid = student_id`). This lets interns create “student” sessions, so intern dashboards show intern names in student slots.
+3. **Mobile mismatch still present**: mobile intern “Join” still navigates to `/dashboard/peer-connect` **without** `sessionId`, so wrong session can open.
+4. **BlackBox reliability gap**: student auto-joins via hidden meeting view; if join times out/errors, there is no visible retry path in BlackBox screen. Also repeated taps can create multiple open requests.
 
-### Issue 1: QR Code "non-2xx status code"
+### Implementation plan
 
-The `generate-spoc-qr` edge function returns HTTP 400 when it fails. Most likely cause: no unused temp credentials exist for the SPOC's institution (admin hasn't run `create-bulk-temp-ids`), OR the function wasn't deployed after the recent rewrite.
+#### 1) Harden backend session integrity (database migration)
+- Add `peer_sessions.room_id text null` to store one shared call room per session.
+- Tighten `peer_sessions` insert policy so:
+  - creator must be a **student** role,
+  - `intern_id` must be an **intern** role (active/training-complete).
+- Add partial unique indexes to prevent duplicate active peer sessions:
+  - one active session per student,
+  - one active session per intern.
+- Add one-time cleanup for currently invalid active peer sessions where `student_id` belongs to non-student role (close them safely).
+- Add partial unique index for BlackBox open sessions per student (`queued/accepted/active`) to prevent duplicate “request” races.
 
-**Fix:**
-- Deploy the edge function to ensure the latest code is live
-- Update the SPOC Dashboard QR section to show a clear, actionable error message (e.g., "No temp IDs available — ask your admin to generate more") instead of the generic "Edge Function returned a non-2xx status code"
-- File: `src/components/spoc/SPOCDashboardContent.tsx` — improve error display in the QR query's error state
+#### 2) Fix Peer Connect call flow to always use one shared room
+Files:
+- `src/hooks/usePeerConnect.ts`
+- `src/pages/dashboard/PeerConnect.tsx`
+- `src/components/mobile/MobilePeerConnect.tsx`
 
-### Issue 2: BlackBox — Student Not Joining the Call
+Changes:
+- Add role guard in `requestSession` (students only).
+- Add helper `ensureSessionRoom(sessionId)`:
+  - if session already has `room_id`, reuse it,
+  - else create room once and persist `room_id` on the session, then reuse.
+- Call button opens `VideoCallModal` with `existingRoomId` from shared session room.
+- Include `student` relation in session query so intern-side participant identity is correct.
+- Use `initialSessionId` deterministically and avoid fallback to unrelated active session.
 
-The student's `MeetingProvider` + `MeetingView` is rendered offscreen at `position: fixed; top: -9999; opacity: 0`. This can cause browsers to throttle or block WebRTC audio connections for elements completely outside the viewport.
+#### 3) Make intern-facing chat/session UI student-only
+Files:
+- `src/components/intern/InternDashboardContent.tsx`
+- `src/components/mobile/MobileInternDashboard.tsx`
+- `src/pages/dashboard/PeerConnect.tsx`
+- `src/components/mobile/MobilePeerConnect.tsx`
 
-**Fix:**
-- Change the offscreen container approach in both `src/pages/dashboard/BlackBox.tsx` and `src/components/mobile/MobileBlackBox.tsx`
-- Instead of pushing off-screen, use `clip: rect(0,0,0,0); position: absolute; width: 1px; height: 1px;` (screen-reader-safe hiding that keeps the element in the render tree and viewport)
-- This ensures WebRTC audio streams remain active while keeping the video UI invisible
+Changes:
+- Filter intern dashboard session lists/history to only sessions where counterpart is student role.
+- Intern “Join” uses `?sessionId=<id>` on **both desktop and mobile**.
+- In Peer Connect intern view:
+  - show assigned students (not intern directory),
+  - header/chat partner name resolves from `student` relation, not intern list.
 
-### Issue 3: Peer Session ID Mismatch Between Intern and Student
+#### 4) Improve BlackBox connection reliability without changing core flow
+Files:
+- `src/hooks/useBlackBoxSession.ts`
+- `src/pages/dashboard/BlackBox.tsx`
+- `src/components/mobile/MobileBlackBox.tsx`
+- `src/components/videosdk/MeetingView.tsx` (small extension)
 
-When an intern clicks "Join" from InternDashboardContent, it navigates to `/dashboard/peer-connect` without passing the session ID. PeerConnect then independently queries sessions and picks the first `status === "active"` one. If multiple active sessions exist, intern and student may see different sessions.
+Changes:
+- In `requestSession`, reuse existing open student session instead of creating a new one.
+- Surface join timeout/error from meeting layer back to BlackBox screen.
+- Add visible “Reconnect / Join Call” action when auto-join fails (instead of silent hidden failure).
+- Keep current UI structure, but add explicit retry path so student can recover if initial join fails.
 
-**Fix:**
-- `src/components/intern/InternDashboardContent.tsx` — when intern clicks "Join", navigate with query param: `/dashboard/peer-connect?sessionId=<id>`
-- `src/pages/dashboard/PeerConnect.tsx` — read `sessionId` from URL search params and pass it to `usePeerConnect` or set `activeSessionId` directly
-- `src/hooks/usePeerConnect.ts` — accept optional `initialSessionId` parameter; if provided, use it instead of auto-detecting from `sessions.find()`
-- Same fix for `src/components/mobile/MobilePeerConnect.tsx`
-
-### Files to modify
-1. `supabase/functions/generate-spoc-qr/index.ts` — redeploy (no code change needed)
-2. `src/components/spoc/SPOCDashboardContent.tsx` — improve QR error display
-3. `src/pages/dashboard/BlackBox.tsx` — fix offscreen container CSS
-4. `src/components/mobile/MobileBlackBox.tsx` — fix offscreen container CSS
-5. `src/components/intern/InternDashboardContent.tsx` — pass session ID in "Join" navigation
-6. `src/pages/dashboard/PeerConnect.tsx` — read session ID from URL params
-7. `src/components/mobile/MobilePeerConnect.tsx` — read session ID from URL params
-8. `src/hooks/usePeerConnect.ts` — accept optional initial session ID
-
+### Technical details
+- `peer_sessions` currently lacks call room persistence; adding `room_id` removes split-room behavior.
+- Existing insert policy only checks identity equality, not role semantics; this is why intern-to-intern sessions are being created as “student” sessions.
+- Hidden auto-join is fragile when join fails; a visible retry trigger is required for deterministic recovery.
+- No broad refactor: this is a targeted stabilization pass on existing hooks/pages/components and policy/index hardening in database.
