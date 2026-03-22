@@ -42,7 +42,7 @@ const MobileProfile = () => {
   const isStudent = profile?.role === "student";
   const isExpert = profile?.role === "expert";
   const isIntern = profile?.role === "intern";
-  const isTherapist = profile?.role === "therapist";
+  const isTherapist = (profile as any)?.role === "therapist";
   const isSPOC = profile?.role === "spoc";
 
   useEffect(() => {
