@@ -770,6 +770,27 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          id: string
+          key: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       recovery_credentials: {
         Row: {
           created_at: string
@@ -978,6 +999,11 @@ export type Database = {
       }
     }
     Functions: {
+      check_rate_limit: {
+        Args: { _key: string; _max_requests?: number; _window_seconds?: number }
+        Returns: boolean
+      }
+      cleanup_rate_limits: { Args: never; Returns: undefined }
       get_credit_balance: { Args: { _user_id: string }; Returns: number }
       get_credit_balance_fast: { Args: { _user_id: string }; Returns: number }
       get_daily_earn_total: { Args: { _user_id: string }; Returns: number }
