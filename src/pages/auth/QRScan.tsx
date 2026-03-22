@@ -21,14 +21,19 @@ const QRScan = () => {
     toast.info("Camera not available in browser. Please enter the credentials manually.");
   };
 
-  const parseQRPayload = (input: string): { temp_id: string; temp_password: string; institution_id: string } | null => {
+  const parseQRPayload = (input: string): Record<string, any> | null => {
     try {
       const parsed = JSON.parse(input.trim());
+      // HMAC-signed SPOC QR: {institution_id, spoc_id, timestamp, signature}
+      if (parsed.institution_id && parsed.spoc_id && parsed.timestamp && parsed.signature) {
+        return { type: "hmac", ...parsed };
+      }
+      // Temp ID QR: {temp_id, temp_password, institution_id}
       if (parsed.temp_id && parsed.temp_password && parsed.institution_id) {
-        return parsed;
+        return { type: "temp", ...parsed };
       }
     } catch {
-      // Not JSON — could be pasted as "username password" format
+      // Not valid JSON
     }
     return null;
   };
@@ -42,25 +47,40 @@ const QRScan = () => {
     setIsVerifying(true);
     try {
       const parsed = parseQRPayload(manualCode.trim());
-      
+
       if (!parsed) {
         toast.error("Invalid QR code format. Please scan a valid SPOC QR code.");
         setIsVerifying(false);
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("verify-temp-credentials", {
-        body: { temp_username: parsed.temp_id, temp_password: parsed.temp_password },
-      });
-
-      if (error || !data?.valid) {
-        toast.error(data?.error || "Invalid or expired QR code. Please ask your Grievance Officer for a new one.");
+      if (parsed.type === "hmac") {
+        // HMAC-signed institution verification
+        const { data, error } = await supabase.functions.invoke("validate-spoc-qr", {
+          body: { qr_payload: manualCode.trim() },
+        });
+        if (error || !data?.valid) {
+          toast.error(data?.error || "Invalid or expired QR code.");
+        } else {
+          sessionStorage.setItem("eternia_spoc_verified", "true");
+          sessionStorage.setItem("eternia_institution_id", data.institution_id);
+          toast.success(`Verified: ${data.institution_name}`);
+          navigate("/register");
+        }
       } else {
-        sessionStorage.setItem("eternia_spoc_verified", "true");
-        sessionStorage.setItem("eternia_institution_id", data.institution_id);
-        sessionStorage.setItem("eternia_temp_credential_id", data.temp_credential_id);
-        toast.success(`Verified: ${data.institution_name}`);
-        navigate("/register");
+        // Temp ID verification
+        const { data, error } = await supabase.functions.invoke("verify-temp-credentials", {
+          body: { temp_username: parsed.temp_id, temp_password: parsed.temp_password },
+        });
+        if (error || !data?.valid) {
+          toast.error(data?.error || "Invalid or expired QR code. Please ask your Grievance Officer for a new one.");
+        } else {
+          sessionStorage.setItem("eternia_spoc_verified", "true");
+          sessionStorage.setItem("eternia_institution_id", data.institution_id);
+          sessionStorage.setItem("eternia_temp_credential_id", data.temp_credential_id);
+          toast.success(`Verified: ${data.institution_name}`);
+          navigate("/register");
+        }
       }
     } catch {
       toast.error("Verification failed. Please check your connection and try again.");

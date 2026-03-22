@@ -190,7 +190,7 @@ const SPOCTools = () => {
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Students scan this QR during onboarding to verify your institution.
+          Students scan this QR to verify your institution during onboarding. No temp IDs needed.
         </p>
 
         {/* QR Display */}

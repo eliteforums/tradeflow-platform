@@ -568,7 +568,7 @@ const SPOCDashboardContent = () => {
               Temp ID Pool
             </h3>
             <p className="text-xs text-muted-foreground">
-              Temp IDs are created by admin. Each QR assigns one to a student.
+              Temp IDs are created by admin for bulk onboarding (separate from QR verification).
             </p>
             <div className="grid grid-cols-3 gap-2">
               <div className="p-2.5 rounded-lg bg-muted/30 text-center">
