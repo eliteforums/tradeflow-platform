@@ -12,7 +12,7 @@
 | **Backend** | Lovable Cloud — Postgres + Edge Functions |
 | **Auth** | Username/password (email-less, anonymous via @eternia.local) |
 | **Video** | VideoSDK.live (WebRTC) |
-| **AI** | Lovable AI Gateway (Gemini 2.5 Flash Lite for moderation) |
+| **AI** | Groq API (GPT OSS 20B 128k) for content moderation |
 | **Payments** | Razorpay (ECC credit bundles) |
 | **PWA** | vite-plugin-pwa with offline support + runtime caching |
 
@@ -20,8 +20,8 @@
 
 ### Student Portal
 - **Expert Appointments** — Book video/audio sessions with verified M.Phil professionals (50 ECC)
-- **Peer Connect** — Realtime encrypted chat with trained psychology interns (20 ECC)
-- **BlackBox** — Anonymous emotional expression with AI crisis detection (flag levels 0–3)
+- **Peer Connect** — Realtime encrypted audio + chat with trained psychology interns (20 ECC, no video)
+- **BlackBox** — Anonymous emotional expression with AI crisis detection (flag levels 0–3, 30 ECC)
 - **Sound Therapy** — Curated audio for meditation, relaxation, and focus
 - **Self-Help Tools** — Quest Cards, Wreck the Buddy, Tibetan Bowl breathing
 - **Care Credits (ECC)** — Internal economy with 5 ECC/day earn cap
@@ -29,13 +29,14 @@
 ### ECC Economy
 - **Welcome Bonus**: 100 ECC on signup
 - **Daily Earn Cap**: 5 ECC/day via quests, self-help tools, journaling
-- **Spending**: Expert sessions (50 ECC), Peer Connect (20 ECC)
+- **Spending**: Expert sessions (50 ECC), Peer Connect (20 ECC), BlackBox (30 ECC)
 - **Stability Pool**: 1 ECC/month auto-contribution per student; zero-balance students can access emergency sessions from the shared pool
 - **Top-Up**: Razorpay-powered bundles (₹49/10 ECC, ₹99/25 ECC, ₹199/60 ECC, ₹499/200 ECC)
 
 ### Role-Based Dashboards
 - **Student Dashboard** — Appointments, Peer Connect, BlackBox, Sounds, Self-Help, Credits, Profile
 - **Expert Dashboard** — Schedule management, session completion, encrypted notes, BlackBox crisis queue
+- **Therapist Dashboard** — BlackBox crisis queue with L3 host-swap, session notes, escalation handling
 - **Intern Dashboard** — 7-day training module progression (DB-driven, managed by superadmin), peer session logs, training gate (Peer Connect locked until Day 7 approval)
 - **SPOC Dashboard** — Institution overview, member management, flagged entries, escalation management
 - **Super Admin Dashboard** — Full platform control via grouped sidebar navigation:
@@ -54,7 +55,7 @@
 - **Row-Level Security**: RLS on all 16+ tables with `has_role()` security definer function
 - **DPDP Act 2023 Compliance**: Data minimization, right to erasure, account deletion with hard-delete PII + soft-delete profile
 - **Escalation Consent**: Explicit opt-in during registration for crisis-triggered identity disclosure
-- **AI Moderation**: Automated sentiment classification on BlackBox entries (Gemini 2.5 Flash Lite)
+- **AI Moderation**: Automated sentiment classification on BlackBox entries (Groq GPT OSS 20B 128k)
 - **Audit Trail**: All admin/SPOC actions logged to `audit_logs` table
 
 ## 📁 Project Structure
@@ -70,7 +71,7 @@ src/
 │   ├── mobile/         # Mobile-optimized variants of all dashboard pages
 │   ├── selfhelp/       # 3D interactive tools (QuestCard3D, TibetanBowl3D, WreckBuddy3D)
 │   ├── spoc/           # SPOC dashboard content
-│   ├── therapist/      # Therapist/BlackBox crisis queue
+│   ├── therapist/      # Therapist/BlackBox crisis queue with L3 host-swap
 │   ├── ui/             # shadcn/ui primitives
 │   ├── videosdk/       # VideoSDK meeting components
 │   └── PWAUpdatePrompt.tsx  # Service worker update notification
@@ -90,7 +91,8 @@ src/
     └── supabase/       # Auto-generated client + types
 supabase/
 ├── functions/
-│   ├── ai-moderate/    # AI content risk classification
+│   ├── ai-moderate/    # AI content risk classification (Groq GPT OSS 20B 128k)
+│   ├── bulk-add-members/ # Batch user creation for institutions
 │   ├── delete-account/ # DPDP-compliant account erasure
 │   ├── purchase-credits/ # Razorpay order + verification
 │   ├── seed-admin/     # Admin seeding utility
@@ -111,7 +113,7 @@ supabase/
 | `peer_sessions` | Peer Connect session records |
 | `peer_messages` | Encrypted chat messages (realtime-enabled) |
 | `blackbox_entries` | Anonymous emotional entries with AI flag levels (0–3) |
-| `blackbox_sessions` | Crisis intervention sessions (expert ↔ student, L3 host-swap) |
+| `blackbox_sessions` | Crisis intervention sessions (expert/therapist ↔ student, L3 host-swap) |
 | `credit_transactions` | ECC economy ledger (earn, spend, grant, purchase) |
 | `ecc_stability_pool` | Shared emergency credit pool per institution |
 | `training_modules` | DB-driven intern training content (managed by superadmin) |

@@ -49,7 +49,7 @@ serve(async (req) => {
       throw new Error("Count must be between 1 and 500");
     }
 
-    const validRoles = ["student", "intern", "expert", "spoc"];
+    const validRoles = ["student", "intern", "expert", "spoc", "therapist"];
     if (!validRoles.includes(role)) {
       throw new Error(`Invalid role: ${role}`);
     }
