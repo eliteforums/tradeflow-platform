@@ -264,6 +264,13 @@ const MeetingView = ({
         </div>
       </div>
       <MeetingControls audioOnly={audioOnly} />
+      {isTherapistView && sessionId && (
+        <TherapistSessionControls
+          sessionId={sessionId}
+          silenceDurationSec={silenceDetection.silenceDurationSec}
+          onSessionEnded={onMeetingLeave}
+        />
+      )}
     </div>
   );
 };
