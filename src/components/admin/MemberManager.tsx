@@ -48,7 +48,7 @@ export default function MemberManager() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, role, institution_id, is_active, student_id, created_at")
+        .select("id, username, role, institution_id, is_active, is_verified, training_status, student_id, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
