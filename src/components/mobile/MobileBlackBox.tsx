@@ -50,6 +50,7 @@ const MobileBlackBox = () => {
                 webcamEnabled: false,
                 name: profile?.username || "Anonymous",
                 debugMode: false,
+                joinWithoutUserInteraction: true,
               }}
               token={token}
             >
