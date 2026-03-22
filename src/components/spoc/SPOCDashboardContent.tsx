@@ -504,7 +504,7 @@ const SPOCDashboardContent = () => {
               QR Onboarding Code
             </h3>
             <p className="text-xs text-muted-foreground">
-              Generate HMAC-signed QR code for student onboarding (24h TTL).
+              Each QR code assigns one unused temp ID to a student. Students scan it to set up their account.
             </p>
             <div className="flex flex-col items-center">
               <div
