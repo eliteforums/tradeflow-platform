@@ -31,7 +31,7 @@ export function useQuests() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("quest_cards")
-        .select("*")
+        .select("id, title, description, xp_reward, category, is_active")
         .eq("is_active", true)
         .order("xp_reward", { ascending: false });
 
