@@ -501,6 +501,33 @@ export type Database = {
           },
         ]
       }
+      gratitude_entries: {
+        Row: {
+          created_at: string
+          entry_1: string
+          entry_2: string
+          entry_3: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entry_1?: string
+          entry_2?: string
+          entry_3?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entry_1?: string
+          entry_2?: string
+          entry_3?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       institutions: {
         Row: {
           created_at: string
@@ -534,6 +561,57 @@ export type Database = {
           name?: string
           plan_type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          mood_tag: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          mood_tag?: string | null
+          title?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          mood_tag?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mood_entries: {
+        Row: {
+          created_at: string
+          id: string
+          mood: number
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mood: number
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mood?: number
+          note?: string | null
+          user_id?: string
         }
         Relationships: []
       }
