@@ -1,72 +1,21 @@
 
 
-## Plan: Redesign Quest Cards as Card Game + Admin Tools Tab
+## Plan: Fix BlackBox User-Side Not Joining Call
 
-### Overview
-Transform Quest Cards from a task-completion checklist into an interactive card-flipping game. 6 randomized cards face-down, user flips one to reveal a question, types an answer that gets saved. Admin gets a new "Tools" tab to manage questions and view user answers.
+### Root Cause
 
-### Database Changes
+The polling fallback (lines 111-116) only calls `fetchTokenIfNeeded` when it detects a **change** in status or room_id. But if the Realtime event already updated `activeSession` (so status/room match the DB), yet the token fetch **failed**, the poll sees "no change" and never retries. The user gets stuck in the "Connecting..." state permanently.
 
-**1. Add `answer` column to `quest_completions`**
-```sql
-ALTER TABLE quest_completions ADD COLUMN answer text;
-```
+Additionally, `fetchTokenIfNeeded` has no retry logic — a single failure means the token is never obtained.
 
-**2. Add RLS policy for admins to view all quest completions**
-```sql
-CREATE POLICY "Admins can view all quest completions"
-ON quest_completions FOR SELECT TO authenticated
-USING (has_role(auth.uid(), 'admin'));
-```
+### Fix (single file: `src/hooks/useBlackBoxSession.ts`)
 
-**3. Add admin INSERT/UPDATE/DELETE policies on `quest_cards`**
-Currently admins cannot insert, update, or delete quest cards. Add:
-```sql
-CREATE POLICY "Admins can manage quest cards" ON quest_cards
-FOR ALL TO authenticated
-USING (has_role(auth.uid(), 'admin'))
-WITH CHECK (has_role(auth.uid(), 'admin'));
-```
+1. **Polling: always attempt token fetch when needed**, not just on data changes. Replace the change-detection-only logic with: if session is active + has room_id + no token → call `fetchTokenIfNeeded`, regardless of whether data changed from last poll.
 
-### Frontend Changes
+2. **Add retry with backoff to `fetchTokenIfNeeded`**: If `getVideoSDKToken()` throws, retry up to 3 times with 2s delays before giving up. This handles transient network/auth failures.
 
-**4. Rewrite `src/pages/dashboard/QuestCards.tsx`**
-- Replace current list UI with a card-game layout
-- Show 6 cards face-down in a 3×2 grid (responsive: 2×3 on mobile) + a deck visual on the side
-- Click a card → flip animation (CSS transform rotateY) → reveals the question text
-- Below the flipped card, show a text input + "Submit" button
-- On submit: save answer to `quest_completions.answer`, award XP, flip card to "done" state
-- Cards already answered today show as completed (green, no re-flip)
-- Questions are randomized from the full `quest_cards` pool (pick 6 random)
+3. **Reduce poll interval from 5s to 3s** while waiting for token (more responsive UX).
 
-**5. Remove `src/components/selfhelp/QuestCard3D.tsx`**
-No longer needed — the 3D/three.js cards are replaced by the new 2D card-flip game.
-
-**6. Update `src/hooks/useQuests.ts`**
-- Add `answer` field to the `completeQuest` mutation (accept answer string)
-- Insert answer into `quest_completions.answer`
-- Fetch completions with answer field
-
-**7. Add admin "Tools" tab to `src/pages/admin/AdminDashboard.tsx`**
-- Add `"tools"` to the `TabId` union type
-- Add sidebar entry under "Content" group with a Gamepad/Wrench icon
-- New `QuestCardManager` component with two sections:
-  - **Manage Questions**: List all quest_cards with inline edit/delete + "Add Question" form (title, description, xp_reward, category)
-  - **View Answers**: Table of recent quest_completions showing username, question title, answer text, date
-
-**8. Create `src/components/admin/QuestCardManager.tsx`**
-- CRUD for quest_cards (add, edit title/description/xp, toggle active, delete)
-- Table view of quest_completions with answers, joined with quest title and user profile
-- Search/filter by question or user
-
-**9. Same "Tools" tab addition to `src/components/mobile/MobileAdminDashboard.tsx`**
-
-### Files to Create/Modify
-- **Migration**: Add `answer` column + admin RLS policies
-- **Create**: `src/components/admin/QuestCardManager.tsx`
-- **Rewrite**: `src/pages/dashboard/QuestCards.tsx` (card-flip game)
-- **Edit**: `src/hooks/useQuests.ts` (add answer support)
-- **Edit**: `src/pages/admin/AdminDashboard.tsx` (add "Tools" tab)
-- **Edit**: `src/components/mobile/MobileAdminDashboard.tsx` (add "Tools" tab)
-- **Delete**: `src/components/selfhelp/QuestCard3D.tsx`
+### Files to modify
+- `src/hooks/useBlackBoxSession.ts`
 
