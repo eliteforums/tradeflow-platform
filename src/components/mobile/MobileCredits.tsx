@@ -12,8 +12,19 @@ import { format } from "date-fns";
 const MobileCredits = () => {
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const filtered = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
+
+  const { data: dailyEarned = 0 } = useQuery({
+    queryKey: ["daily-earn-total", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data, error } = await supabase.rpc("get_daily_earn_total", { _user_id: user.id });
+      if (error) throw error;
+      return data || 0;
+    },
+    enabled: !!user,
+  });
 
   // Only students can access credits
   if (profile?.role && profile.role !== "student") {
