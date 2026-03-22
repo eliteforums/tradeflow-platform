@@ -1,57 +1,72 @@
 
 
-## Plan: Fix BlackBox Call Not Connecting on User Side + QR Camera Error
+## Plan: Redesign Quest Cards as Card Game + Admin Tools Tab
 
-### Error 1: BlackBox — User side never connects after therapist accepts
+### Overview
+Transform Quest Cards from a task-completion checklist into an interactive card-flipping game. 6 randomized cards face-down, user flips one to reveal a question, types an answer that gets saved. Admin gets a new "Tools" tab to manage questions and view user answers.
 
-**Root cause:** The realtime subscription in `useBlackBoxSession.ts` (line 32-69) has a stale closure problem. The `token` variable captured in the closure is from when the effect was created, but the real issue is more subtle: when the therapist accepts and sets `room_id` + `status = "active"`, the realtime event fires, `setActiveSession(updated)` triggers a re-render, then `getVideoSDKToken()` is called asynchronously. However, if `getVideoSDKToken()` fails silently or the realtime event isn't received at all, the user stays stuck.
+### Database Changes
 
-The more likely culprit: **Supabase Realtime may not be delivering the update** due to the `token` dependency being stale. The effect depends on `[activeSession?.id]` but uses `token` inside the callback without it being in the dependency array. If a re-render happens between `setActiveSession` and `setToken`, the effect could be torn down and re-created (since `activeSession?.id` is the same, it wouldn't re-create — so this is actually fine).
+**1. Add `answer` column to `quest_completions`**
+```sql
+ALTER TABLE quest_completions ADD COLUMN answer text;
+```
 
-After closer inspection, the most probable issue is: **the realtime event IS received**, the token IS fetched, but the UI condition `isInSession` requires both `activeSession.room_id` AND `token` to be truthy simultaneously. Since `setActiveSession(updated)` and `setToken(t)` are separated by an `await`, they cause two separate renders. The first render has the updated session but no token — fine. The second render should have both — this should work.
+**2. Add RLS policy for admins to view all quest completions**
+```sql
+CREATE POLICY "Admins can view all quest completions"
+ON quest_completions FOR SELECT TO authenticated
+USING (has_role(auth.uid(), 'admin'));
+```
 
-**Actual likely issue:** The `token` state is set but the `useEffect` dependency `[activeSession?.id]` doesn't include `token`, so if a second realtime event fires, the stale `!token` check passes and triggers another token fetch. But more critically — **testing confirms the flow should work in theory**. The problem may be that `getVideoSDKToken()` is throwing an error that gets swallowed, or that the Realtime subscription filter isn't matching.
+**3. Add admin INSERT/UPDATE/DELETE policies on `quest_cards`**
+Currently admins cannot insert, update, or delete quest cards. Add:
+```sql
+CREATE POLICY "Admins can manage quest cards" ON quest_cards
+FOR ALL TO authenticated
+USING (has_role(auth.uid(), 'admin'))
+WITH CHECK (has_role(auth.uid(), 'admin'));
+```
 
-**Fix approach — make the flow more robust:**
-1. Add `token` to the useEffect dependency array to prevent stale closures
-2. Add explicit logging to the realtime handler so we can debug
-3. Add a polling fallback: if session is queued, poll every 5 seconds for status changes (in case realtime fails)
-4. Show a "Connecting..." state to the user when session transitions from queued to active
+### Frontend Changes
 
-**Changes to `src/hooks/useBlackBoxSession.ts`:**
-- Add `token` to the realtime useEffect dependency array
-- Add a polling fallback that checks session status every 5 seconds while queued
-- Add better error logging in the realtime handler
+**4. Rewrite `src/pages/dashboard/QuestCards.tsx`**
+- Replace current list UI with a card-game layout
+- Show 6 cards face-down in a 3×2 grid (responsive: 2×3 on mobile) + a deck visual on the side
+- Click a card → flip animation (CSS transform rotateY) → reveals the question text
+- Below the flipped card, show a text input + "Submit" button
+- On submit: save answer to `quest_completions.answer`, award XP, flip card to "done" state
+- Cards already answered today show as completed (green, no re-flip)
+- Questions are randomized from the full `quest_cards` pool (pick 6 random)
 
-**Changes to `src/pages/dashboard/BlackBox.tsx` and `src/components/mobile/MobileBlackBox.tsx`:**
-- Add a "Connecting..." intermediate state between queued and in-session (when session has room_id but no token yet)
+**5. Remove `src/components/selfhelp/QuestCard3D.tsx`**
+No longer needed — the 3D/three.js cards are replaced by the new 2D card-flip game.
 
----
+**6. Update `src/hooks/useQuests.ts`**
+- Add `answer` field to the `completeQuest` mutation (accept answer string)
+- Insert answer into `quest_completions.answer`
+- Fetch completions with answer field
 
-### Error 2: QR Scanner — "Camera not available" error
+**7. Add admin "Tools" tab to `src/pages/admin/AdminDashboard.tsx`**
+- Add `"tools"` to the `TabId` union type
+- Add sidebar entry under "Content" group with a Gamepad/Wrench icon
+- New `QuestCardManager` component with two sections:
+  - **Manage Questions**: List all quest_cards with inline edit/delete + "Add Question" form (title, description, xp_reward, category)
+  - **View Answers**: Table of recent quest_completions showing username, question title, answer text, date
 
-**Root cause:** The `html5-qrcode` library's `Html5Qrcode.start()` calls `navigator.mediaDevices.getUserMedia()`. This fails in certain contexts:
-1. **Lovable preview iframe** doesn't have `allow="camera"` permission attribute
-2. **HTTP (non-HTTPS)** contexts don't expose `navigator.mediaDevices`
-3. **Cross-origin iframes** block camera access by default
+**8. Create `src/components/admin/QuestCardManager.tsx`**
+- CRUD for quest_cards (add, edit title/description/xp, toggle active, delete)
+- Table view of quest_completions with answers, joined with quest title and user profile
+- Search/filter by question or user
 
-The current error handling (lines 114-126) catches the error but shows a generic "Could not access camera" message. The library throws before even attempting — it can't enumerate cameras.
+**9. Same "Tools" tab addition to `src/components/mobile/MobileAdminDashboard.tsx`**
 
-**Fix approach:**
-1. Before calling `Html5Qrcode.start()`, explicitly check if `navigator.mediaDevices` exists and call `getUserMedia` directly first to trigger the browser permission prompt
-2. Use `Html5Qrcode.getCameras()` first to enumerate available cameras — if none found, show a specific helpful error instead of the generic one
-3. Improve error messages to guide the user (e.g., "Open in your phone's browser" if in an iframe context)
-
-**Changes to `src/pages/auth/QRScan.tsx`:**
-- Add `navigator.mediaDevices` availability check before starting scanner
-- Call `Html5Qrcode.getCameras()` first, then use the back camera ID explicitly
-- Better error messaging for different failure modes (no camera hardware, permission denied, insecure context)
-
----
-
-### Summary of files to modify
-- `src/hooks/useBlackBoxSession.ts` — Add polling fallback + fix stale closure
-- `src/pages/dashboard/BlackBox.tsx` — Add "Connecting" intermediate state
-- `src/components/mobile/MobileBlackBox.tsx` — Same intermediate state
-- `src/pages/auth/QRScan.tsx` — Camera enumeration + better error handling
+### Files to Create/Modify
+- **Migration**: Add `answer` column + admin RLS policies
+- **Create**: `src/components/admin/QuestCardManager.tsx`
+- **Rewrite**: `src/pages/dashboard/QuestCards.tsx` (card-flip game)
+- **Edit**: `src/hooks/useQuests.ts` (add answer support)
+- **Edit**: `src/pages/admin/AdminDashboard.tsx` (add "Tools" tab)
+- **Edit**: `src/components/mobile/MobileAdminDashboard.tsx` (add "Tools" tab)
+- **Delete**: `src/components/selfhelp/QuestCard3D.tsx`
 
