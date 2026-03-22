@@ -49,7 +49,7 @@ const MobileExpertDashboard = () => {
     queryKey: ["expert-appointments", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase.from("appointments").select("*, student:profiles!appointments_student_id_fkey(username)").eq("expert_id", user.id).order("slot_time", { ascending: true });
+      const { data, error } = await supabase.from("appointments").select("*, student:profiles!appointments_student_id_fkey(username, institution_id)").eq("expert_id", user.id).order("slot_time", { ascending: true });
       if (error) throw error; return data;
     }, enabled: !!user,
   });
@@ -100,6 +100,25 @@ const MobileExpertDashboard = () => {
   const upcoming = myAppointments.filter((a) => a.status === "pending" || a.status === "confirmed");
   const completed = myAppointments.filter((a) => a.status === "completed");
   const futureSlots = mySlots.filter((s) => new Date(s.start_time) > new Date());
+
+  const submitEscalation = useMutation({
+    mutationFn: async () => {
+      if (!user || !escalationDialog.appointmentId) throw new Error("Missing data");
+      const appointment = myAppointments.find(a => a.id === escalationDialog.appointmentId);
+      let spocId = user.id;
+      if ((appointment?.student as any)?.institution_id) {
+        const { data: spocs } = await supabase.from("profiles").select("id").eq("institution_id", (appointment!.student as any).institution_id).eq("role", "spoc").limit(1);
+        if (spocs && spocs.length > 0) spocId = spocs[0].id;
+      }
+      const { error } = await supabase.from("escalation_requests").insert({
+        spoc_id: spocId, justification_encrypted: escalationReason, session_id: null, entry_id: null,
+        trigger_timestamp: appointment?.slot_time || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Escalation submitted"); setEscalationDialog({ open: false }); setEscalationReason(""); },
+    onError: (e) => toast.error(e.message),
+  });
 
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></DashboardLayout>;
 
@@ -167,13 +186,21 @@ const MobileExpertDashboard = () => {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">{apt.student?.username}</p>
                     <p className="text-xs text-muted-foreground">{format(new Date(apt.slot_time), "MMM d · h:mm a")}</p>
-                    <span className={cn("inline-block mt-1 px-2 py-0.5 rounded-full text-[10px]",
-                      apt.status === "completed" ? "bg-eternia-success/10 text-eternia-success" : "bg-eternia-warning/10 text-eternia-warning"
-                    )}>{apt.status}</span>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span className={cn("px-2 py-0.5 rounded-full text-[10px]",
+                        apt.status === "completed" ? "bg-eternia-success/10 text-eternia-success" : "bg-eternia-warning/10 text-eternia-warning"
+                      )}>{apt.status}</span>
+                      {apt.status !== "completed" && apt.status !== "cancelled" && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-accent/10 text-accent-foreground flex items-center gap-0.5">
+                          <AlertTriangle className="w-2.5 h-2.5 text-primary" />AI Monitor
+                        </span>
+                      )}
+                    </div>
                     {apt.status !== "completed" && apt.status !== "cancelled" && (
                       <div className="flex gap-2 mt-2 flex-wrap">
                         <Button size="sm" className="gap-1 h-7 text-[10px] px-2" onClick={() => setCallModal({ open: true, mode: apt.session_type === "video" ? "video" : "audio", appointmentId: apt.id })}>Join</Button>
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => toast.info("Reschedule sent")}><RefreshCw className="w-3 h-3" /></Button>
+                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}><AlertTriangle className="w-3 h-3" /></Button>
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => setSelectedAppointment(apt.id)}>Complete</Button>
                       </div>
                     )}
@@ -295,6 +322,20 @@ const MobileExpertDashboard = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setSlotDialogOpen(false)}>Cancel</Button>
             <Button disabled={!slotDate || createSlot.isPending} onClick={() => createSlot.mutate()}>{createSlot.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Escalation Dialog */}
+      <Dialog open={escalationDialog.open} onOpenChange={(o) => { if (!o) { setEscalationDialog({ open: false }); setEscalationReason(""); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-eternia-warning" />Escalate to SPOC</DialogTitle><DialogDescription>Describe the concern to trigger SPOC review.</DialogDescription></DialogHeader>
+          <Textarea placeholder="Reason for escalation..." value={escalationReason} onChange={(e) => setEscalationReason(e.target.value)} className="min-h-[80px] text-sm" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEscalationDialog({ open: false }); setEscalationReason(""); }}>Cancel</Button>
+            <Button disabled={!escalationReason.trim() || submitEscalation.isPending} onClick={() => submitEscalation.mutate()} className="gap-1.5">
+              {submitEscalation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}Submit
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

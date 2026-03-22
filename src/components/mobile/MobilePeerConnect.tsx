@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, Search, Circle, Phone, Video, Send, X, Shield, Users, Loader2, AlertCircle, ArrowLeft, Flag } from "lucide-react";
+import { MessageCircle, Search, Circle, Phone, Send, X, Shield, Users, Loader2, AlertCircle, ArrowLeft, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -102,7 +102,6 @@ const MobilePeerConnect = () => {
                       </Button>
                     )}
                     <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setCallModal({ open: true, mode: "audio" })}><Phone className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setCallModal({ open: true, mode: "video" })}><Video className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive" onClick={() => { endSession(activeSessionId); setMobileView("list"); }}><X className="w-4 h-4" /></Button>
                   </div>
                 </div>

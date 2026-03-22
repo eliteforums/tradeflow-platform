@@ -7,7 +7,7 @@ import { useDeviceValidation } from "@/hooks/useDeviceValidation";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRoles?: ("student" | "intern" | "expert" | "spoc" | "admin")[];
+  allowedRoles?: ("student" | "intern" | "expert" | "spoc" | "admin" | "therapist")[];
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
