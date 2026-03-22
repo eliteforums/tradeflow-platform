@@ -134,7 +134,7 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
         if (spocs && spocs.length > 0) spocId = spocs[0].id;
       }
 
-      // 3. Create L3 escalation request with emergency contact in trigger_snippet
+      // 3. Create L3 escalation request with enriched trigger_snippet
       const { error: escError } = await supabase.from("escalation_requests").insert({
         spoc_id: spocId,
         justification_encrypted: `L3 Emergency escalation by expert during BlackBox session. ${activeSession.escalation_reason || "Critical risk detected by AI."}`,
@@ -143,6 +143,9 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
         trigger_snippet: JSON.stringify({
           type: "emergency_contact",
           ...contact,
+          student_eternia_id: studentProfile?.student_id || null,
+          student_username: studentProfile?.username || null,
+          transcript_snippet: transcriptSnippet || null,
           session_id: activeSession.id,
         }),
         trigger_timestamp: new Date().toISOString(),

@@ -234,11 +234,29 @@ export function useAudioMonitor({
     setState((prev) => ({ ...prev, riskLevel: 0, lastTriggerSnippet: null }));
   }, []);
 
+  // ±10s selective retention: capture transcript around escalation trigger, then purge buffer
+  const captureEscalationSnippet = useCallback((windowMs: number = 10000): string => {
+    const now = Date.now();
+    const from = now - windowMs;
+    const to = now + windowMs; // future entries within window (if any delayed results arrive)
+    const snippet = bufferRef.current
+      .filter((chunk) => chunk.timestamp >= from && chunk.timestamp <= to)
+      .map((chunk) => chunk.text)
+      .join(" ")
+      .trim();
+
+    // Purge entire buffer — selective retention: only the snippet survives
+    bufferRef.current = [];
+
+    return snippet;
+  }, []);
+
   return {
     ...state,
     startListening,
     stopListening,
     classifyNow,
     resetRisk,
+    captureEscalationSnippet,
   };
 }

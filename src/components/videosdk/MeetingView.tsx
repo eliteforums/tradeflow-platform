@@ -269,6 +269,7 @@ const MeetingView = ({
           sessionId={sessionId}
           silenceDurationSec={silenceDetection.silenceDurationSec}
           onSessionEnded={onMeetingLeave}
+          captureEscalationSnippet={audioMonitor.captureEscalationSnippet}
         />
       )}
     </div>
