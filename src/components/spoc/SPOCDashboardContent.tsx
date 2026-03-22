@@ -591,7 +591,116 @@ const SPOCDashboardContent = () => {
             <p className="text-[10px] text-muted-foreground italic">HMAC-SHA256 signed · Regenerable · Audited</p>
           </div>
 
-          {/* Bulk Credit Granting */}
+          {/* Add Single Student */}
+          <div className="p-4 rounded-2xl bg-card border border-border/50 space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <UserPlus className="w-4 h-4 text-primary" />
+              Add Student
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Create a single student account for {institution?.name || "your institution"}.
+            </p>
+            <div className="grid grid-cols-1 gap-2.5">
+              <div>
+                <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Username *</label>
+                <Input placeholder="e.g. john_doe" value={newStudentUsername} onChange={(e) => setNewStudentUsername(e.target.value)} className="h-9" />
+              </div>
+              <div>
+                <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Password *</label>
+                <div className="relative">
+                  <Input
+                    type={showStudentPassword ? "text" : "password"}
+                    placeholder="Min 6 chars"
+                    value={newStudentPassword}
+                    onChange={(e) => setNewStudentPassword(e.target.value)}
+                    className="h-9 pr-9"
+                  />
+                  <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-9 w-9"
+                    onClick={() => setShowStudentPassword(!showStudentPassword)}>
+                    {showStudentPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <Button
+              onClick={() => addStudentMutation.mutate()}
+              disabled={!newStudentUsername.trim() || !newStudentPassword || newStudentPassword.length < 6 || addStudentMutation.isPending}
+              className="gap-1.5 h-8 text-xs w-full"
+              size="sm"
+            >
+              {addStudentMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
+              Create Student
+            </Button>
+          </div>
+
+          {/* Bulk ID Allocation */}
+          <div className="p-4 rounded-2xl bg-card border border-border/50 space-y-3">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              Bulk ID Allocation
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Auto-generate multiple student accounts with random passwords.
+            </p>
+            {!showBulkDialog ? (
+              <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowBulkDialog(true)}>
+                <Plus className="w-3.5 h-3.5" />
+                Bulk Create Students
+              </Button>
+            ) : bulkResults ? (
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <p className="text-sm font-medium text-primary">{bulkResults.length} students created!</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Download credentials CSV before closing.</p>
+                </div>
+                <div className="max-h-[200px] overflow-y-auto space-y-1">
+                  {bulkResults.map((m, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs px-2 py-1.5 bg-muted/30 rounded">
+                      <span className="font-mono">{m.username}</span>
+                      <span className="font-mono text-muted-foreground">{m.password}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" className="gap-1.5 h-8 text-xs flex-1" onClick={downloadBulkCSV}>
+                    <Download className="w-3.5 h-3.5" />
+                    Download CSV
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setBulkResults(null); setShowBulkDialog(false); }}>
+                    Done
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                <div>
+                  <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Count (1-500)</label>
+                  <Input type="number" value={bulkCount} onChange={(e) => setBulkCount(e.target.value)} className="h-9 w-24" min="1" max="500" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Username Prefix (optional)</label>
+                  <Input placeholder="e.g. mit" value={bulkPrefix} onChange={(e) => setBulkPrefix(e.target.value)} className="h-9" />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Defaults to institution name prefix</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="gap-1.5 h-8 text-xs flex-1"
+                    onClick={() => bulkCreateMutation.mutate()}
+                    disabled={bulkCreateMutation.isPending}
+                  >
+                    {bulkCreateMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />}
+                    Create {bulkCount} Students
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowBulkDialog(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+
           <div className="p-4 rounded-2xl bg-card border border-border/50 space-y-3">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <Coins className="w-4 h-4 text-primary" />
