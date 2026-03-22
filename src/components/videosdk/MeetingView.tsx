@@ -141,6 +141,29 @@ const MeetingView = ({
     }, [onRiskDetected]),
   });
 
+  // Silence detection for therapist view
+  const handleSilenceAutoEnd = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      await supabase.functions.invoke("refund-blackbox-session", {
+        body: { session_id: sessionId, reason: "Auto-ended: 5 min silence" },
+      });
+      toast.info("Session ended due to inactivity. Student has been refunded.");
+      onSilenceAutoEnd?.();
+      onMeetingLeave();
+    } catch {
+      toast.error("Failed to auto-end session");
+    }
+  }, [sessionId, onSilenceAutoEnd, onMeetingLeave]);
+
+  const silenceDetection = useSilenceDetection({
+    enabled: isTherapistView && joined === "JOINED",
+    warningThresholdSec: 120,
+    autoEndThresholdSec: 300,
+    onWarning: () => toast.warning("Student has been silent for 2+ minutes"),
+    onAutoEnd: handleSilenceAutoEnd,
+  });
+
   const joinMeeting = () => {
     setJoined("JOINING");
     setTimedOut(false);
