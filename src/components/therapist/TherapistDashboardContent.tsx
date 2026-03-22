@@ -200,7 +200,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
     const fetchHistory = async () => {
       const { data } = await supabase
         .from("blackbox_sessions")
-        .select("*")
+        .select("id, flag_level, escalation_reason, escalation_history, started_at, ended_at, created_at, session_notes_encrypted")
         .eq("therapist_id", user.id)
         .in("status", ["completed", "escalated"])
         .order("created_at", { ascending: false })
