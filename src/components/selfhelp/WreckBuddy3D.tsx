@@ -7,7 +7,6 @@ export default function WreckBuddy3D() {
         className="w-full h-full border-0"
         style={{ minHeight: "60vh" }}
         allow="autoplay"
-        sandbox="allow-scripts allow-same-origin"
       />
     </div>
   );
