@@ -41,6 +41,7 @@
 - [Environment Variables](#environment-variables)
 - [Local Development](#local-development)
 - [PWA Installation](#pwa-installation)
+- [Recent Updates](#recent-updates)
 - [Screenshots](#screenshots)
 - [Acknowledgements](#acknowledgements)
 - [Team](#team)
@@ -62,8 +63,9 @@ To make professional mental health support accessible to every college student i
 - **Zero PII exposure** — No email, phone number, or real name required
 - **Institution-controlled access** — Onboarding gated by verified institution codes and SPOC QR scans
 - **Internal credit economy (ECC)** — Removes direct payment friction; students earn credits through engagement
-- **AI-powered safety net** — Automated crisis detection on anonymous emotional entries
+- **AI-powered safety net** — Automated crisis detection on anonymous emotional entries with real-time audio monitoring
 - **Device-bound sessions** — SHA-256 fingerprinted device binding prevents account sharing
+- **Temp ID Onboarding** — Bulk-generated temporary credentials for streamlined institutional onboarding
 
 ---
 
@@ -75,13 +77,14 @@ To make professional mental health support accessible to every college student i
 | **UI Components** | shadcn/ui + Framer Motion + Recharts |
 | **State Management** | TanStack React Query (2 min stale, 10 min GC) |
 | **Backend** | Lovable Cloud — Postgres + Edge Functions |
-| **Authentication** | Username/password (email-less, anonymous via `@eternia.local`) |
-| **Video/Audio** | VideoSDK.live (WebRTC) |
+| **Authentication** | Username/password (email-less, anonymous via `@eternia.local`) + Temp ID activation |
+| **Video/Audio** | VideoSDK.live (WebRTC) with SDK error handling & auto-retry |
 | **AI Moderation** | Groq API (GPT OSS 20B 128k) for content risk classification |
+| **Real-time Audio Monitoring** | AI-powered audio classification during live sessions (15s intervals) |
 | **Payments** | Razorpay (ECC credit bundles in INR) |
 | **PWA** | vite-plugin-pwa with offline support + Workbox runtime caching |
 | **3D Graphics** | React Three Fiber + Drei (self-help interactive tools) |
-| **Hosting** | Vercel (with `vercel.json` SPA rewrites) |
+| **Hosting** | Vercel (with `vercel.json` SPA rewrites + relaxed CSP for embedded content) |
 
 ---
 
@@ -92,11 +95,15 @@ To make professional mental health support accessible to every college student i
 | Feature | Description | Cost |
 |---------|-------------|------|
 | **Expert Appointments** | Book video/audio sessions with verified M.Phil RCI-licensed professionals | 50 ECC |
-| **Peer Connect** | Realtime encrypted audio + chat with trained psychology interns (no video) | 20 ECC |
-| **BlackBox** | Anonymous emotional expression journal with AI crisis detection (flag levels 0–3) | 30 ECC |
+| **Peer Connect** | Realtime encrypted audio + chat with trained psychology interns (audio-only, no video) | 20 ECC |
+| **BlackBox** | Anonymous emotional expression journal with AI crisis detection (flag levels 0–3) | Free (journal) / 30 ECC (Talk Now voice session) |
 | **Sound Therapy** | Curated audio library for meditation, relaxation, deep sleep, and focus | Free |
 | **Self-Help Tools** | Interactive 3D tools — Quest Cards, Wreck the Buddy (stress relief), Tibetan Bowl (breathing) | Free |
+| **Mood Tracker** | Daily mood logging with notes and visual history | Free |
+| **Gratitude Journal** | Daily three-item gratitude entries | Free |
+| **Journaling** | Free-form journal entries with mood tagging | Free |
 | **Care Credits (ECC)** | Internal economy with 5 ECC/day earn cap via quests, journaling, and self-help engagement | — |
+| **Recovery Setup** | Fragment word pairs + emoji pattern based account recovery (no email/phone needed) | — |
 
 ### AI-Powered Safety
 
@@ -107,13 +114,19 @@ To make professional mental health support accessible to every college student i
   - `L2` — Moderate concern (persistent hopelessness, self-harm ideation without plan)
   - `L3` — Critical/crisis (explicit self-harm intent, danger to self/others)
 - **L3 Host-Swap** — Therapists can take over BlackBox crisis sessions from interns in real-time
+- **Real-time Audio Monitoring** — AI-powered audio classification during live voice sessions at 15-second intervals, with risk level badges and automatic escalation triggers
+- **Emergency Contact Retrieval** — On L3 escalation, authorized staff can retrieve encrypted emergency contact details via the `get-emergency-contact` edge function
+- **Trigger Snippet Storage** — Escalation requests capture the triggering content snippet and timestamp for audit purposes
 
 ### Video & Audio Sessions
 
-- **WebRTC via VideoSDK.live** — Low-latency, encrypted video/audio
-- **JWT-authenticated rooms** — Each session gets a unique room ID
+- **WebRTC via VideoSDK.live** — Low-latency, encrypted video/audio with robust error handling
+- **SDK Error Recovery** — `onError` and `onMeetingStateChanged` callbacks capture SDK failures (WebSocket disconnects, room join failures) with user-facing error messages instead of silent timeouts
+- **Auto-Join with Retry** — Sessions auto-join on acceptance with up to 3 retry attempts and a 20-second timeout with manual retry option
+- **JWT-authenticated rooms** — Each session gets a unique room ID via the `videosdk-token` edge function
 - **Session notes** — Experts can write AES-256 encrypted session notes post-call
 - **Peer Connect** — Audio-only + encrypted text chat (no video for privacy)
+- **BlackBox Talk Now** — Voice sessions between students and therapists, queued and matched in real-time
 
 ---
 
@@ -127,7 +140,7 @@ Eternia Care Credits (ECC) form an internal micro-economy that removes direct pa
 | **Daily Earn Cap** | 5 ECC/day via quests, self-help tools, journaling |
 | **Expert Session** | 50 ECC per appointment |
 | **Peer Connect** | 20 ECC per session |
-| **BlackBox** | 30 ECC per entry |
+| **BlackBox Talk Now** | 30 ECC per voice session |
 | **Stability Pool** | 1 ECC/month auto-contribution per student; zero-balance students can access emergency sessions from the shared institutional pool |
 
 ### Top-Up Bundles (Razorpay)
@@ -144,19 +157,19 @@ Eternia Care Credits (ECC) form an internal micro-economy that removes direct pa
 ## Role-Based Dashboards
 
 ### Student Dashboard
-Appointments, Peer Connect, BlackBox, Sound Therapy, Self-Help Tools, Credits Management, Profile Settings.
+Appointments, Peer Connect, BlackBox, Sound Therapy, Self-Help Tools, Mood Tracker, Gratitude Journal, Journaling, Credits Management, Profile Settings, Recovery Setup.
 
 ### Expert Dashboard
 Schedule management (recurring availability slots), session completion tracking, encrypted session notes, BlackBox crisis queue access.
 
 ### Therapist Dashboard
-BlackBox crisis queue with L3 host-swap capability, session notes, escalation handling, crisis intervention tools.
+BlackBox crisis queue with L3 host-swap capability, session notes, escalation handling, crisis intervention tools. Distinct from Expert role for specialized crisis management.
 
 ### Intern Dashboard
-7-day training module progression (DB-driven, managed by superadmin), peer session logs, training gate (Peer Connect locked until Day 7 approval by admin).
+7-day training module progression (DB-driven, managed by superadmin), peer session logs, training gate (Peer Connect locked until Day 7 approval by admin). Tab locking enforced — sessions, notes, and profile tabs locked until `training_status` is `active` or `completed`.
 
 ### SPOC Dashboard
-Institution overview, member management (bulk add via CSV), flagged entry monitoring, escalation request management, QR code generation for onboarding.
+Institution overview, member management (bulk add via CSV), flagged entry monitoring, escalation request management with real-time notifications, QR code generation for onboarding, M.Phil override reports.
 
 ### Super Admin Dashboard
 Full platform control via grouped sidebar navigation:
@@ -164,7 +177,7 @@ Full platform control via grouped sidebar navigation:
 | Group | Tools |
 |-------|-------|
 | **Analytics** | Overview with role counts, session stats, flagged entries, visitor analytics |
-| **People** | Members browser with role/search filters, Role & Credit management |
+| **People** | Members browser with role/search filters (grouped by institution), Role & Credit management |
 | **Activity** | Unified session feed (appointments, peer sessions, blackbox entries) |
 | **Institutions** | SPOC tools, institution detail views, credit pool management |
 | **Content** | Database-driven training modules (CRUD + quiz editor), sound management |
@@ -183,9 +196,10 @@ Full platform control via grouped sidebar navigation:
 | **Row-Level Security** | RLS on all 20+ tables with `has_role()` SECURITY DEFINER function |
 | **DPDP Compliance** | Data minimization, right to erasure, explicit consent, audit trail |
 | **Escalation Consent** | Explicit opt-in during registration for crisis-triggered identity disclosure to SPOC |
-| **AI Moderation** | Automated sentiment classification on BlackBox entries |
+| **AI Moderation** | Automated sentiment classification on BlackBox entries + real-time audio monitoring in live sessions |
 | **Audit Trail** | All admin/SPOC actions logged to `audit_logs` table with actor ID, timestamp, and metadata |
 | **JWT Rotation** | Device sessions table tracks refresh tokens with expiry and revocation |
+| **Temp ID System** | Bulk-generated temporary credentials for institutional onboarding with activation tracking |
 
 ### Security Headers
 
@@ -193,20 +207,20 @@ All responses include hardened HTTP security headers enforced via `vercel.json`:
 
 | Header | Value | Purpose |
 |--------|-------|---------|
-| `Content-Security-Policy` | Strict source whitelist (self + backend + fonts + VideoSDK + Razorpay) | Prevents XSS, code injection, and data exfiltration |
+| `Content-Security-Policy` | Broad `https:` whitelist for scripts, styles, fonts, images, connections, media, and frames | Prevents XSS while allowing CDN assets and embedded game content |
 | `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` | Forces HTTPS for 2 years with HSTS preload |
-| `X-Frame-Options` | `DENY` | Prevents clickjacking via iframe embedding |
+| `X-Frame-Options` | `SAMEORIGIN` | Prevents clickjacking via iframe embedding from external origins |
 | `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing attacks |
-| `Cross-Origin-Opener-Policy` | `same-origin` | Isolates browsing context from cross-origin popups |
-| `Cross-Origin-Embedder-Policy` | `credentialless` | Prevents cross-origin resource credential leaks |
-| `Cross-Origin-Resource-Policy` | `same-site` | Blocks cross-origin resource loading |
+| `Cross-Origin-Opener-Policy` | `same-origin-allow-popups` | Balances browsing context isolation with WebRTC peer connection requirements |
 | `Permissions-Policy` | `camera=(self), microphone=(self), geolocation=(), payment=(), usb=()` | Restricts browser API access — camera/mic for video calls only |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer information leakage |
 | `X-DNS-Prefetch-Control` | `on` | Enables DNS prefetching for performance |
 
+> **Note:** `Cross-Origin-Embedder-Policy` and `Cross-Origin-Resource-Policy` headers were intentionally removed to support WebRTC signaling and embedded game/CDN content loading.
+
 ### Edge Function Security
 
-All 17 edge functions are hardened with defense-in-depth:
+All 19 edge functions are hardened with defense-in-depth:
 
 | Protection | Details |
 |------------|---------|
@@ -260,18 +274,22 @@ SELECT public.check_rate_limit('function:user_id', 60, 60);
 src/
 ├── components/
 │   ├── admin/          # Admin tools (RoleManager, MemberManager, TrainingModuleManager,
-│   │                   #   SoundManager, AnalyticsDashboard, AuditLogViewer, etc.)
+│   │                   #   SoundManager, AnalyticsDashboard, AuditLogViewer,
+│   │                   #   EscalationManager, ExpertManager, InstitutionManager, etc.)
+│   ├── blackbox/       # BlackBox UI components (NovaOrb animated visual)
 │   ├── expert/         # Expert dashboard content & session management
 │   ├── intern/         # Intern dashboard with training gate (fetches modules from DB)
 │   ├── landing/        # Landing page sections (Hero, Features, CTA, Testimonials,
-│   │                   #   FAQ, Security, Stats, TrustLogos, Footer, Navbar)
+│   │                   #   FAQ, Security, Stats, TrustLogos, Footer, Navbar,
+│   │                   #   HowItWorks, CodePreview, AnnouncementBanner)
 │   ├── layout/         # DashboardLayout with sidebar + bottom nav + mobile detection
 │   ├── mobile/         # Mobile-optimized variants of all dashboard pages
 │   ├── selfhelp/       # 3D interactive tools (QuestCard3D, TibetanBowl3D, WreckBuddy3D)
 │   ├── spoc/           # SPOC dashboard content
 │   ├── therapist/      # Therapist/BlackBox crisis queue with L3 host-swap
 │   ├── ui/             # shadcn/ui primitives (40+ components)
-│   ├── videosdk/       # VideoSDK meeting components (MeetingView, Controls, Participant)
+│   ├── videosdk/       # VideoSDK meeting components (MeetingView, MeetingControls,
+│   │                   #   ParticipantView, VideoCallModal)
 │   ├── CookieConsent.tsx       # DPDP-compliant cookie consent banner
 │   ├── EterniaLogo.tsx         # Brand logo component
 │   ├── NavLink.tsx             # Navigation link wrapper
@@ -284,13 +302,16 @@ src/
 │   ├── useAnalytics.ts         # Page view tracking (excludes admin traffic)
 │   ├── useAnalyticsData.ts     # Analytics data aggregation
 │   ├── useAppointments.ts      # Expert appointment CRUD
-│   ├── useAudioMonitor.ts      # Audio level monitoring for calls
+│   ├── useAudioMonitor.ts      # AI-powered audio level monitoring for live calls
 │   ├── useBlackBox.ts          # BlackBox entry management
-│   ├── useBlackBoxSession.ts   # BlackBox crisis session management
+│   ├── useBlackBoxSession.ts   # BlackBox crisis session management with debug logging
 │   ├── useCredits.ts           # ECC balance, transactions, earn/spend
 │   ├── useDebouncedValue.ts    # Input debounce utility
 │   ├── useDeviceValidation.ts  # Device fingerprint validation
 │   ├── useEccEarn.ts           # Daily ECC earning logic
+│   ├── useGratitude.ts         # Gratitude journal entries
+│   ├── useJournaling.ts        # Free-form journal management
+│   ├── useMoodTracker.ts       # Daily mood logging
 │   ├── usePeerConnect.ts       # Peer session management
 │   ├── usePurchaseCredits.ts   # Razorpay credit purchase
 │   ├── useQuests.ts            # Quest cards & completions
@@ -299,10 +320,15 @@ src/
 ├── lib/
 │   ├── deviceFingerprint.ts    # SHA-256 device binding
 │   ├── utils.ts                # Tailwind merge utility (cn)
-│   └── videosdk.ts             # VideoSDK helper functions
+│   └── videosdk.ts             # VideoSDK helper with auth retry & error parsing
 ├── pages/
 │   ├── auth/           # InstitutionCode → QRScan → Register → Login
 │   ├── dashboard/      # All dashboard pages (lazy-loaded via React.lazy)
+│   │                   # Includes: Appointments, BlackBox, Credits, Dashboard,
+│   │                   # ExpertDashboard, Gratitude, InternDashboard, Journaling,
+│   │                   # MoodTracker, PeerConnect, Profile, QuestCards,
+│   │                   # RecoverySetup, SPOCDashboard, SelfHelp, SoundTherapy,
+│   │                   # TherapistDashboard, WreckBuddy
 │   ├── admin/          # Admin dashboard (sidebar-driven layout)
 │   ├── legal/          # Terms, Privacy Policy, DPDP Compliance Statement
 │   ├── Landing.tsx     # Public landing page
@@ -311,7 +337,28 @@ src/
     └── supabase/       # Auto-generated client + types (DO NOT EDIT)
 
 supabase/
-├── functions/          # 16 Edge Functions (see Edge Functions section)
+├── functions/
+│   ├── _shared/        # Shared security utilities (rate limiter, input sanitization)
+│   ├── activate-account/       # Temp ID activation into permanent account
+│   ├── add-member/             # Admin: single user creation
+│   ├── ai-moderate/            # AI content risk classification
+│   ├── ai-transcribe/          # Audio transcription for accessibility
+│   ├── bulk-add-members/       # Batch user creation (CSV import)
+│   ├── cleanup-deleted-accounts/ # Scheduled account purge
+│   ├── create-bulk-temp-ids/   # Bulk temporary credential generation
+│   ├── delete-account/         # DPDP-compliant account erasure
+│   ├── generate-spoc-qr/       # SPOC QR code generation
+│   ├── get-emergency-contact/  # Encrypted emergency contact retrieval
+│   ├── grant-credits/          # Admin credit grants
+│   ├── purchase-credits/       # Razorpay payment processing
+│   ├── reset-device/           # Device binding reset
+│   ├── seed-admin/             # Initial superadmin creation
+│   ├── spend-credits/          # Credit deduction with balance validation
+│   ├── stability-pool-auto-contribute/  # Monthly auto-contribution
+│   ├── stability-pool-contribute/       # Manual pool contribution
+│   ├── validate-spoc-qr/       # QR verification during onboarding
+│   ├── verify-temp-credentials/ # Temp ID credential verification
+│   └── videosdk-token/         # VideoSDK JWT token generation
 ├── migrations/         # Database schema migrations
 └── config.toml         # Function-level configuration
 ```
@@ -326,6 +373,7 @@ supabase/
 | `user_private` | Encrypted PII (emergency contacts, student ID, device fingerprint, APAAR/ERP IDs) | ✅ |
 | `user_roles` | RBAC role assignments (student, intern, expert, therapist, spoc, admin) | ✅ |
 | `institutions` | Partnered institutions with Eternia codes, credit pools, plan types | ✅ |
+| `temp_credentials` | Bulk-generated temporary credentials for institutional onboarding | ✅ |
 | `appointments` | Expert session bookings with slot reference, room ID, session notes | ✅ |
 | `expert_availability` | Expert schedule slots per institution (with recurrence_rule) | ✅ |
 | `peer_sessions` | Peer Connect session records (student ↔ intern) | ✅ |
@@ -339,10 +387,14 @@ supabase/
 | `quest_completions` | User quest completion records (daily deduplication) | ✅ |
 | `sound_content` | Audio therapy tracks with category, duration, play count | ✅ |
 | `recovery_credentials` | Fragment pairs + emoji pattern (write-only, no read access) | ✅ |
-| `escalation_requests` | SPOC/admin escalation requests with justification (realtime-enabled) | ✅ |
+| `escalation_requests` | SPOC/admin escalation requests with justification + trigger snippets (realtime-enabled) | ✅ |
 | `audit_logs` | Immutable action log for compliance (actor, action, target, metadata) | ✅ |
 | `device_sessions` | JWT rotation & multi-device management per user | ✅ |
 | `analytics_events` | Page view tracking (event type, path, session hash, user agent) | ✅ |
+| `rate_limits` | Database-level rate limiting with auto-cleanup | ✅ |
+| `gratitude_entries` | Daily three-item gratitude journal entries | ✅ |
+| `journal_entries` | Free-form journal entries with mood tagging | ✅ |
+| `mood_entries` | Daily mood score logging with optional notes | ✅ |
 
 ### Key Database Functions
 
@@ -354,6 +406,10 @@ supabase/
 | `get_daily_earn_total(_user_id)` | Returns today's total earned ECC (for 5/day cap enforcement) |
 | `get_pool_balance(_institution_id)` | Returns institution's stability pool balance |
 | `increment_play_count(_track_id)` | Atomically increments sound track play counter |
+| `check_rate_limit(_key, _max, _window)` | Database-level rate limiting with sliding window |
+| `handle_new_user()` | Trigger: auto-creates profile, assigns student role, grants 100 ECC welcome bonus |
+| `generate_student_id()` | Trigger: generates unique ETN-XXXX-XXXXX student IDs |
+| `refresh_credit_balance()` | Trigger: refreshes materialized credit balance view |
 
 ### Key Views
 
@@ -369,14 +425,16 @@ All edge functions are deployed as serverless Deno functions on Lovable Cloud.
 
 | Function | Description | JWT Verified |
 |----------|-------------|:------------:|
+| `activate-account` | Activate a temporary credential into a permanent user account | ❌ |
 | `add-member` | Admin-only: Create new platform user with role and institution assignment | ✅ |
 | `ai-moderate` | Classify BlackBox entry risk level (0–3) using Groq GPT OSS 20B 128k | ❌ |
 | `ai-transcribe` | Transcribe audio content for accessibility | ❌ |
 | `bulk-add-members` | Batch user creation for institutions (CSV import) | ✅ |
 | `cleanup-deleted-accounts` | Scheduled: Purge soft-deleted accounts past retention period | ✅ |
+| `create-bulk-temp-ids` | Generate temporary credentials in bulk for institutional onboarding | ✅ |
 | `delete-account` | DPDP-compliant account erasure (hard-delete PII, soft-delete profile) | ✅ |
 | `generate-spoc-qr` | Generate institution-specific QR codes for SPOC onboarding | ❌ |
-| `get-emergency-contact` | Retrieve encrypted emergency contact for escalation (authorized only) | ✅ |
+| `get-emergency-contact` | Retrieve encrypted emergency contact for L3 escalation (authorized only) | ✅ |
 | `grant-credits` | Admin: Grant ECC credits to users with audit logging | ✅ |
 | `purchase-credits` | Razorpay order creation + payment verification for ECC top-up | ❌ |
 | `reset-device` | Admin: Reset device binding for locked-out users | ❌ |
@@ -385,28 +443,41 @@ All edge functions are deployed as serverless Deno functions on Lovable Cloud.
 | `stability-pool-auto-contribute` | Scheduled: Auto-deduct 1 ECC/month per student to stability pool | ✅ |
 | `stability-pool-contribute` | Manual contribution to institution's stability pool | ❌ |
 | `validate-spoc-qr` | Verify SPOC QR code during student onboarding | ❌ |
+| `verify-temp-credentials` | Verify temporary credentials during Temp ID login | ❌ |
 | `videosdk-token` | Generate JWT tokens for VideoSDK.live WebRTC sessions | ❌ |
 
 ---
 
 ## Onboarding Flow
 
+### Standard Onboarding
+
 ```
 ┌─────────────────┐     ┌──────────────┐     ┌─────────────────┐     ┌─────────┐
 │ Institution Code │ ──▶ │  SPOC QR     │ ──▶ │  Registration   │ ──▶ │  Login  │
 │ (DEMO123, etc.)  │     │  Scan/Verify │     │  + Device Bind  │     │         │
 └─────────────────┘     └──────────────┘     └─────────────────┘     └─────────┘
-                                                     │
-                                              ┌──────┴──────┐
-                                              │ username    │
-                                              │ password    │
-                                              │ emergency   │
-                                              │ contact     │
-                                              │ escalation  │
-                                              │ consent     │
-                                              │ device      │
-                                              │ fingerprint │
-                                              └─────────────┘
+                                                      │
+                                               ┌──────┴──────┐
+                                               │ username    │
+                                               │ password    │
+                                               │ emergency   │
+                                               │ contact     │
+                                               │ escalation  │
+                                               │ consent     │
+                                               │ device      │
+                                               │ fingerprint │
+                                               └─────────────┘
+```
+
+### Temp ID Onboarding (Institutional Bulk)
+
+```
+┌──────────────────┐     ┌───────────────┐     ┌─────────────────┐     ┌─────────┐
+│ SPOC generates   │ ──▶ │ Student gets  │ ──▶ │ Activate with   │ ──▶ │  Login  │
+│ bulk Temp IDs    │     │ temp username │     │ new username +  │     │         │
+│ (CSV download)   │     │ + password    │     │ password + data │     │         │
+└──────────────────┘     └───────────────┘     └─────────────────┘     └─────────┘
 ```
 
 1. **Institution Code** → Validated against `institutions` table
@@ -498,9 +569,8 @@ For the full compliance statement, see the [DPDP Compliance page](/dpdp) within 
 | `SUPABASE_ANON_KEY` | `add-member`, `bulk-add-members` | Anon key for user-context client (auto-injected) |
 | `GROQ_API_KEY` | `ai-moderate` | Groq API key for AI content moderation |
 | `VIDEOSDK_API_KEY` | `videosdk-token` | VideoSDK.live API key for WebRTC sessions |
-| `VIDEOSDK_SECRET` | `videosdk-token` | VideoSDK.live secret for JWT signing |
-| `RAZORPAY_KEY_ID` | `purchase-credits` | Razorpay key ID for payment processing |
-| `RAZORPAY_KEY_SECRET` | `purchase-credits` | Razorpay key secret for order verification |
+| `VIDEOSDK_API_SECRET` | `videosdk-token` | VideoSDK.live secret for JWT signing |
+| `LOVABLE_API_KEY` | AI features | Lovable AI integration key |
 
 ---
 
@@ -568,6 +638,44 @@ The app will work offline for cached pages and API responses.
 
 ---
 
+## Recent Updates
+
+### March 2026
+
+#### VideoSDK Error Handling & Recovery
+- Added `onError` and `onMeetingStateChanged` callbacks to capture SDK failures (WebSocket disconnects, room join failures) with user-facing error messages
+- Replaced silent 15-second timeout with informative error display + manual retry
+- Increased join timeout to 20 seconds with 3 auto-retry attempts at 5-second intervals
+- Added debug logging throughout BlackBox session reconnection flow
+
+#### Security Header Optimization
+- Relaxed CSP to allow `https:` sources for scripts, styles, fonts, images, media, and frames — enabling embedded game content and CDN assets without per-game CSP updates
+- Changed `Cross-Origin-Opener-Policy` from `same-origin` to `same-origin-allow-popups` for WebRTC compatibility
+- Removed `Cross-Origin-Embedder-Policy` and `Cross-Origin-Resource-Policy` headers that blocked WebRTC signaling and cross-origin CDN assets
+
+#### Temp ID Onboarding System
+- Bulk temporary credential generation for institutional onboarding (`create-bulk-temp-ids` edge function)
+- Temp ID activation flow with credential verification (`verify-temp-credentials`, `activate-account` edge functions)
+- CSV download of generated Temp IDs for SPOC distribution
+
+#### Real-time Audio Monitoring
+- AI-powered audio classification during live voice sessions at 15-second intervals
+- Risk level badges displayed in-session (Normal → L1 Mild → L2 Moderate → L3 Critical)
+- Automatic escalation triggers on sustained high-risk audio patterns
+
+#### Additional Features
+- Mood Tracker with daily mood logging and visual history
+- Gratitude Journal with three daily entries
+- Free-form Journaling with mood tagging
+- SPOC real-time escalation notifications via Supabase Realtime
+- Emergency contact retrieval on L3 escalation
+- Trigger snippet storage in escalation requests for audit purposes
+- Training status lifecycle: `not_started` → `in_progress` → `assessment_pending` → `failed` → `interview_pending` → `active`
+- Dual verification model (APAAR/ERP) for different institution types
+- Embedded self-help games (Ragdoll Bash) with relaxed CSP headers
+
+---
+
 ## Screenshots
 
 > _Screenshots and demo links will be added in a future release._
@@ -618,7 +726,7 @@ For business inquiries, licensing, or partnership opportunities, please visit [e
 ## License
 
 ```
-Copyright © 2026 Elite Forums (eliteforums.in). All rights reserved.
+Copyright © 2026 Elite Forums (eliteforms.in). All rights reserved.
 
 This software and its source code are proprietary and confidential.
 Unauthorized copying, modification, distribution, or use of this software,
