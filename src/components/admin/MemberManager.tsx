@@ -6,8 +6,12 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight, Plus, Download, Key, CheckCircle, Clock, QrCode, ShieldCheck, Gift, Copy } from "lucide-react";
+import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight, Plus, Download, Key, CheckCircle, Clock, QrCode, ShieldCheck, Gift, Copy, Trash2 } from "lucide-react";
 
 const ROLES = [
   { value: "student", label: "Student" },
@@ -458,6 +462,47 @@ export default function MemberManager() {
                             <span className="text-[10px] text-muted-foreground font-mono">
                               {m.student_id || "—"}
                             </span>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete member "{m.username}"?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete this user's account, PII, and auth credentials. This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={async () => {
+                                      try {
+                                        const { data, error } = await supabase.functions.invoke("admin-delete-member", {
+                                          body: { target_user_id: m.id },
+                                        });
+                                        if (error) throw error;
+                                        if (data?.error) throw new Error(data.error);
+                                        toast.success(`"${m.username}" deleted`);
+                                        queryClient.invalidateQueries({ queryKey: ["admin-all-members"] });
+                                      } catch (err: any) {
+                                        toast.error(err.message || "Failed to delete member");
+                                      }
+                                    }}
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       ))}

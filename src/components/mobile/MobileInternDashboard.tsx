@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Home, MessageCircle, FileText, User, Clock, CheckCircle,
   AlertTriangle, Loader2, Search, LogOut, Lock,
@@ -41,6 +42,7 @@ interface TrainingModule {
 const MobileInternDashboard = () => {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("training");
   const [activeModule, setActiveModule] = useState<number | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
@@ -86,6 +88,23 @@ const MobileInternDashboard = () => {
       if (error) throw error; return data;
     }, enabled: !!user,
   });
+
+  // Realtime subscription for new/updated peer sessions
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`intern-peer-sessions-mobile-${user.id}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "peer_sessions",
+        filter: `intern_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ["intern-sessions", user.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, queryClient]);
 
   const submitEscalation = useMutation({
     mutationFn: async () => {
@@ -370,9 +389,12 @@ const MobileInternDashboard = () => {
                         s.is_flagged ? "bg-destructive/10 text-destructive" : s.status === "active" ? "bg-eternia-success/10 text-eternia-success" : "bg-primary/10 text-primary"
                       )}>{s.is_flagged ? "⚠" : s.status}</span>
                       {s.status === "active" && !s.is_flagged && (
-                        <Button size="sm" variant="ghost" className="text-destructive h-7 px-1.5" onClick={() => setEscalationDialog({ open: true, sessionId: s.id })}>
-                          <AlertTriangle className="w-3.5 h-3.5" />
-                        </Button>
+                        <>
+                          <Button size="sm" className="h-7 text-[10px] px-2" onClick={() => navigate("/dashboard/peer-connect")}>Join</Button>
+                          <Button size="sm" variant="ghost" className="text-destructive h-7 px-1.5" onClick={() => setEscalationDialog({ open: true, sessionId: s.id })}>
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>

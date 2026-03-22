@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Home, MessageCircle, FileText, User, Clock, CheckCircle,
   AlertTriangle, Loader2, Search, Shield, LogOut, Lock,
@@ -49,6 +50,7 @@ interface TrainingModule {
 const InternDashboardContent = () => {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("training");
   const [activeModule, setActiveModule] = useState<number | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
@@ -101,6 +103,23 @@ const InternDashboardContent = () => {
     },
     enabled: !!user,
   });
+
+  // Realtime subscription for new/updated peer sessions
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`intern-peer-sessions-${user.id}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "peer_sessions",
+        filter: `intern_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ["intern-sessions", user.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, queryClient]);
 
   const { data: institutions = [] } = useQuery({
     queryKey: ["institutions"],
@@ -515,7 +534,7 @@ const InternDashboardContent = () => {
                       <div className="flex items-center gap-2 shrink-0">
                         {session.status === "active" && (
                           <>
-                            <Button size="sm" className="gap-1 h-7 text-[11px] px-2.5" onClick={() => toast.info("Join session")}>Join</Button>
+                            <Button size="sm" className="gap-1 h-7 text-[11px] px-2.5" onClick={() => navigate("/dashboard/peer-connect")}>Join</Button>
                             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={async () => {
                               await supabase.from("peer_sessions").update({ status: "completed" as any, ended_at: new Date().toISOString() }).eq("id", session.id);
                               queryClient.invalidateQueries({ queryKey: ["intern-sessions"] });
