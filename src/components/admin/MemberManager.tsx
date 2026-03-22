@@ -25,6 +25,13 @@ export default function MemberManager() {
   const [selectedRole, setSelectedRole] = useState("intern");
   const [selectedInstitution, setSelectedInstitution] = useState("");
   const [expandedInstitution, setExpandedInstitution] = useState<string | null>(null);
+  // Bulk creation state
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [bulkInstitution, setBulkInstitution] = useState("");
+  const [bulkCount, setBulkCount] = useState("10");
+  const [bulkPrefix, setBulkPrefix] = useState("");
+  const [bulkRole, setBulkRole] = useState("student");
+  const [bulkResults, setBulkResults] = useState<{ username: string; password: string }[] | null>(null);
 
   const { data: institutions = [] } = useQuery({
     queryKey: ["admin-institutions-list"],
