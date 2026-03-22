@@ -54,7 +54,7 @@ export function useAdmin() {
     queryFn: async () => {
       let studentQuery = supabase
         .from("profiles")
-        .select("*", { count: "exact", head: true })
+        .select("id", { count: "exact", head: true })
         .eq("role", "student");
 
       if (!isSuperAdmin && profile?.institution_id) {
