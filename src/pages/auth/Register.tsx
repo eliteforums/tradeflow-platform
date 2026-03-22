@@ -29,6 +29,9 @@ const Register = () => {
   const [step, setStep] = useState(1);
   const [institutionType, setInstitutionType] = useState<string>("university");
 
+  // Check if we have temp credential from QR flow
+  const tempCredentialId = sessionStorage.getItem("eternia_temp_credential_id");
+
   // Detect institution type on mount
   useEffect(() => {
     const instId = sessionStorage.getItem("eternia_institution_id");
@@ -51,7 +54,6 @@ const Register = () => {
     e.preventDefault();
     const username = formData.username.trim();
     
-    // Username validation
     if (!username || username.length < 4) {
       toast.error("Username must be at least 4 characters");
       return;
@@ -65,7 +67,6 @@ const Register = () => {
       return;
     }
     
-    // Password strength validation
     if (!formData.password || formData.password.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
@@ -120,7 +121,6 @@ const Register = () => {
       toast.error("Emergency contact number is required");
       return;
     }
-    // Indian phone number validation
     if (!/^(\+91[\s-]?)?[6-9]\d{9}$/.test(emergencyContact.replace(/[\s-]/g, ""))) {
       toast.error("Please enter a valid Indian phone number");
       return;
@@ -140,62 +140,101 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      const institutionCode = sessionStorage.getItem("eternia_institution_code");
-      const institutionId = sessionStorage.getItem("eternia_institution_id");
-      const { error } = await signUp(formData.username, formData.password, {
-        institution_code: institutionCode,
-      });
-      if (error) throw error;
-
-      // Wait for session to be established, then insert private data
-      const waitForUser = (): Promise<string | null> => {
-        return new Promise((resolve) => {
-          let attempts = 0;
-          const check = async () => {
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (authUser?.id) return resolve(authUser.id);
-            if (++attempts >= 10) return resolve(null);
-            setTimeout(check, 400);
-          };
-          check();
-        });
-      };
-
-      const userId = await waitForUser();
-      if (userId) {
-        let deviceFingerprint = "";
-        try {
-          deviceFingerprint = await generateDeviceFingerprint();
-        } catch (e) {
-          console.warn("Device fingerprint generation failed:", e);
-        }
-
-        const isSchool = institutionType === "school";
-        await supabase.from("user_private").insert({
-          user_id: userId,
-          emergency_name_encrypted: formData.emergencyName,
-          emergency_phone_encrypted: formData.emergencyContact,
-          emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
-          student_id_encrypted: formData.studentId,
-          contact_is_self: formData.contactIsSelf,
-          device_id_encrypted: deviceFingerprint || null,
-          apaar_id_encrypted: !isSchool ? formData.studentId : null,
-          erp_id_encrypted: isSchool ? formData.studentId : null,
-        });
-
-        if (institutionId) {
-          await supabase
-            .from("profiles")
-            .update({ institution_id: institutionId })
-            .eq("id", userId);
-        }
+      let deviceFingerprint = "";
+      try {
+        deviceFingerprint = await generateDeviceFingerprint();
+      } catch (e) {
+        console.warn("Device fingerprint generation failed:", e);
       }
 
-      toast.success("Account created successfully!");
-      sessionStorage.removeItem("eternia_institution_code");
-      sessionStorage.removeItem("eternia_institution_id");
-      sessionStorage.removeItem("eternia_spoc_verified");
-      navigate("/dashboard");
+      if (tempCredentialId) {
+        // ─── New Flow: Activate via temp credential ───
+        const { data, error } = await supabase.functions.invoke("activate-account", {
+          body: {
+            temp_credential_id: tempCredentialId,
+            new_username: formData.username.trim(),
+            new_password: formData.password,
+            emergency_name: formData.emergencyName,
+            emergency_phone: formData.emergencyContact,
+            emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
+            contact_is_self: formData.contactIsSelf,
+            student_id: formData.studentId,
+            device_fingerprint: deviceFingerprint || null,
+          },
+        });
+
+        if (error) throw new Error(error.message || "Account activation failed");
+        if (data?.error) throw new Error(data.error);
+
+        if (data?.auto_login && data?.session) {
+          await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+        }
+
+        toast.success("Account created successfully!");
+        // Clear session storage
+        sessionStorage.removeItem("eternia_institution_code");
+        sessionStorage.removeItem("eternia_institution_id");
+        sessionStorage.removeItem("eternia_spoc_verified");
+        sessionStorage.removeItem("eternia_temp_credential_id");
+
+        if (data?.auto_login) {
+          navigate("/dashboard");
+        } else {
+          navigate("/login");
+        }
+      } else {
+        // ─── Legacy flow (if no temp credential) ───
+        const institutionCode = sessionStorage.getItem("eternia_institution_code");
+        const institutionId = sessionStorage.getItem("eternia_institution_id");
+        const { error } = await signUp(formData.username, formData.password, {
+          institution_code: institutionCode,
+        });
+        if (error) throw error;
+
+        const waitForUser = (): Promise<string | null> => {
+          return new Promise((resolve) => {
+            let attempts = 0;
+            const check = async () => {
+              const { data: { user: authUser } } = await supabase.auth.getUser();
+              if (authUser?.id) return resolve(authUser.id);
+              if (++attempts >= 10) return resolve(null);
+              setTimeout(check, 400);
+            };
+            check();
+          });
+        };
+
+        const userId = await waitForUser();
+        if (userId) {
+          await supabase.from("user_private").insert({
+            user_id: userId,
+            emergency_name_encrypted: formData.emergencyName,
+            emergency_phone_encrypted: formData.emergencyContact,
+            emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
+            student_id_encrypted: formData.studentId,
+            contact_is_self: formData.contactIsSelf,
+            device_id_encrypted: deviceFingerprint || null,
+            apaar_id_encrypted: institutionType !== "school" ? formData.studentId : null,
+            erp_id_encrypted: institutionType === "school" ? formData.studentId : null,
+          });
+
+          if (institutionId) {
+            await supabase
+              .from("profiles")
+              .update({ institution_id: institutionId })
+              .eq("id", userId);
+          }
+        }
+
+        toast.success("Account created successfully!");
+        sessionStorage.removeItem("eternia_institution_code");
+        sessionStorage.removeItem("eternia_institution_id");
+        sessionStorage.removeItem("eternia_spoc_verified");
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       toast.error(error.message || "Registration failed. Please try again.");
     } finally {
@@ -229,15 +268,11 @@ const Register = () => {
           <div className="flex items-center justify-center w-7 h-7 rounded-full bg-eternia-success text-background text-xs">
             <CheckCircle className="w-4 h-4" />
           </div>
-          <div className="flex-1 h-1 rounded bg-eternia-success" />
-          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-eternia-success text-background text-xs">
-            <CheckCircle className="w-4 h-4" />
-          </div>
           <div className={`flex-1 h-1 rounded ${step >= 2 ? "bg-gradient-eternia" : "bg-muted"}`} />
           <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
-            step >= 2 ? "bg-gradient-eternia text-background" : "bg-muted text-muted-foreground"
+            step >= 2 ? "bg-gradient-eternia text-background" : "bg-gradient-eternia text-background"
           }`}>
-            3
+            2
           </div>
         </div>
 
@@ -245,9 +280,13 @@ const Register = () => {
           {step === 1 ? (
             <>
               <div className="mb-5">
-                <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">Create Your Identity</h1>
+                <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">
+                  {tempCredentialId ? "Set Up Your Account" : "Create Your Identity"}
+                </h1>
                 <p className="text-sm text-muted-foreground">
-                  Choose a username and password. Your real name is never required.
+                  {tempCredentialId
+                    ? "Choose your permanent username and password to activate your account."
+                    : "Choose a username and password. Your real name is never required."}
                 </p>
               </div>
 
@@ -265,7 +304,7 @@ const Register = () => {
                       className="pl-10 h-11 rounded-xl bg-card/50 border-border/40 text-sm"
                     />
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-1">This will be your identity</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">This will be your permanent identity</p>
                 </div>
 
                 <div>
@@ -418,12 +457,12 @@ const Register = () => {
                   {isLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Creating Account...
+                      {tempCredentialId ? "Activating Account..." : "Creating Account..."}
                     </>
                   ) : (
                     <>
                       <Shield className="w-4 h-4" />
-                      Complete Registration
+                      {tempCredentialId ? "Activate Account" : "Complete Registration"}
                     </>
                   )}
                 </Button>

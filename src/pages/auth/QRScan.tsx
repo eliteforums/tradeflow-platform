@@ -18,26 +18,47 @@ const QRScan = () => {
     await new Promise((r) => setTimeout(r, 2000));
     setIsScanning(false);
     setUseManual(true);
-    toast.info("Camera not available in browser. Please enter the SPOC code manually.");
+    toast.info("Camera not available in browser. Please enter the credentials manually.");
+  };
+
+  const parseQRPayload = (input: string): { temp_id: string; temp_password: string; institution_id: string } | null => {
+    try {
+      const parsed = JSON.parse(input.trim());
+      if (parsed.temp_id && parsed.temp_password && parsed.institution_id) {
+        return parsed;
+      }
+    } catch {
+      // Not JSON — could be pasted as "username password" format
+    }
+    return null;
   };
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualCode.trim()) {
-      toast.error("Please enter the SPOC verification code");
+      toast.error("Please enter the QR code data");
       return;
     }
     setIsVerifying(true);
     try {
-      // Try to validate as HMAC-signed QR payload
-      const { data, error } = await supabase.functions.invoke("validate-spoc-qr", {
-        body: { qr_payload: manualCode.trim() },
+      const parsed = parseQRPayload(manualCode.trim());
+      
+      if (!parsed) {
+        toast.error("Invalid QR code format. Please scan a valid SPOC QR code.");
+        setIsVerifying(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("verify-temp-credentials", {
+        body: { temp_username: parsed.temp_id, temp_password: parsed.temp_password },
       });
+
       if (error || !data?.valid) {
-        toast.error(data?.error || "Invalid SPOC code. Please ask your Grievance Officer.");
+        toast.error(data?.error || "Invalid or expired QR code. Please ask your Grievance Officer for a new one.");
       } else {
         sessionStorage.setItem("eternia_spoc_verified", "true");
         sessionStorage.setItem("eternia_institution_id", data.institution_id);
+        sessionStorage.setItem("eternia_temp_credential_id", data.temp_credential_id);
         toast.success(`Verified: ${data.institution_name}`);
         navigate("/register");
       }
@@ -56,7 +77,7 @@ const QRScan = () => {
 
       <div className="w-full max-w-md relative z-10">
         <Link
-          to="/institution-code"
+          to="/"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-5 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -65,16 +86,12 @@ const QRScan = () => {
 
         {/* Progress */}
         <div className="flex items-center gap-2 mb-5">
-          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-eternia-success text-background text-xs">
-            <CheckCircle className="w-4 h-4" />
-          </div>
-          <div className="flex-1 h-1 rounded bg-gradient-eternia" />
           <div className="flex items-center justify-center w-7 h-7 rounded-full bg-gradient-eternia text-background text-xs font-semibold">
-            2
+            1
           </div>
           <div className="flex-1 h-1 rounded bg-muted" />
           <div className="flex items-center justify-center w-7 h-7 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
-            3
+            2
           </div>
         </div>
 
@@ -82,7 +99,7 @@ const QRScan = () => {
           <div className="mb-5">
             <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">SPOC Verification</h1>
             <p className="text-sm text-muted-foreground">
-              Scan or enter your institution's Grievance Officer code.
+              Scan the QR code provided by your institution's Grievance Officer.
             </p>
           </div>
 
@@ -126,21 +143,20 @@ const QRScan = () => {
             <form onSubmit={handleManualSubmit} className="space-y-4">
               <div>
                 <label className="text-xs text-muted-foreground mb-1.5 block">
-                  SPOC Verification Code
+                  QR Code Data
                 </label>
                 <div className="relative">
-                  <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Enter SPOC verification code"
+                  <Shield className="absolute left-3.5 top-3 w-4 h-4 text-muted-foreground" />
+                  <textarea
+                    placeholder='Paste QR code data here'
                     value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-                    className="pl-10 h-11 rounded-xl bg-card/50 border-border/40 text-sm tracking-wider uppercase"
+                    onChange={(e) => setManualCode(e.target.value)}
+                    className="w-full pl-10 min-h-[80px] rounded-xl bg-card/50 border border-border/40 text-sm p-3 resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     disabled={isVerifying}
                   />
                 </div>
                 <p className="text-[11px] text-muted-foreground mt-1.5">
-                  Ask your Grievance Officer for this code.
+                  Ask your Grievance Officer for the QR code or paste the data.
                 </p>
               </div>
 
@@ -163,6 +179,7 @@ const QRScan = () => {
               </Button>
 
               <button
+                type="button"
                 onClick={() => setUseManual(false)}
                 className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
               >
@@ -178,7 +195,7 @@ const QRScan = () => {
             Why is this needed?
           </h3>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            This verifies you are a legitimate student of the partnered institution.
+            This verifies you are a legitimate student of the partnered institution. Each QR code can only be used once.
           </p>
         </div>
       </div>

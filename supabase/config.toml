@@ -26,3 +26,12 @@ verify_jwt = false
 
 [functions.ai-moderate]
 verify_jwt = false
+
+[functions.create-bulk-temp-ids]
+verify_jwt = false
+
+[functions.verify-temp-credentials]
+verify_jwt = false
+
+[functions.activate-account]
+verify_jwt = false

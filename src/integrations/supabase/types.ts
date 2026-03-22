@@ -938,6 +938,59 @@ export type Database = {
         }
         Relationships: []
       }
+      temp_credentials: {
+        Row: {
+          activated_at: string | null
+          assigned_at: string | null
+          auth_user_id: string | null
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          institution_id: string
+          status: string
+          temp_password_hash: string
+          temp_password_plain: string
+          temp_username: string
+        }
+        Insert: {
+          activated_at?: string | null
+          assigned_at?: string | null
+          auth_user_id?: string | null
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          institution_id: string
+          status?: string
+          temp_password_hash: string
+          temp_password_plain: string
+          temp_username: string
+        }
+        Update: {
+          activated_at?: string | null
+          assigned_at?: string | null
+          auth_user_id?: string | null
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          institution_id?: string
+          status?: string
+          temp_password_hash?: string
+          temp_password_plain?: string
+          temp_username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "temp_credentials_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_modules: {
         Row: {
           content: string
