@@ -1,56 +1,62 @@
 
 
-## Plan: Fix Analytics Dashboard Accuracy
+## Plan: Comprehensive README with Copyright, License & Credits
 
-### Root Cause
+### What Changes
 
-The "1 tab detected with no logged-in user" issue has two causes:
+Rewrite `README.md` to be a detailed, professional open-source-style README with:
 
-1. **Admin's own browsing is counted** — When you (the admin) browse the site and have accepted cookies, your page views are recorded in `analytics_events`. The dashboard then shows "1 unique visitor" — which is you.
+1. **Header** — Logo/badge area, tagline, developed by Elite Forums credit
+2. **About** — Expanded project description with mission statement
+3. **All existing sections preserved** — Architecture, Features, ECC Economy, Dashboards, Privacy, Project Structure, Database Schema, Onboarding, Performance, DPDP, Dev Setup, PWA
+4. **New sections added:**
+   - **Screenshots / Demo** placeholder section
+   - **Environment Variables** — Required secrets and API keys
+   - **Edge Functions** — Complete list of all 16 edge functions with descriptions
+   - **API Reference** — Key endpoints
+   - **Contributing** — Guidelines (or note that it's proprietary)
+   - **Acknowledgements** — Libraries and tools used
+   - **Team** — Developed by Elite Forums (eliteforums.in) under the guidance of Mr. Harsh Santosh Tambade (Founder of Elite Forums) and Team ETERNIA
+   - **Contact** — Elite Forums website link
+5. **Copyright & License** — Detailed proprietary license block:
+   - All rights reserved by Elite Forums
+   - No reproduction, distribution, or modification without written consent
+   - Year and entity attribution
 
-2. **"Unique Visitors" uses `session_hash` (per-tab)** — Each browser tab generates a new UUID via `sessionStorage`. This means unique visitors = unique tabs opened, not unique people. If you open 3 tabs, it shows 3 visitors.
+### File
 
-3. **No authenticated vs anonymous distinction** — The dashboard can't tell if a visitor was logged in or anonymous, making the metrics unreliable.
+| File | Action |
+|------|--------|
+| `README.md` | Full rewrite — comprehensive, ~400 lines |
 
-### Changes
+### License Section (Draft)
 
-| # | File | Change |
-|---|------|--------|
-| 1 | `src/hooks/useAnalytics.ts` | Exclude admin users from analytics tracking (admins should not pollute metrics) |
-| 2 | `src/hooks/useAnalyticsData.ts` | Count unique visitors by `user_id` for authenticated users + `session_hash` for anonymous only; add authenticated vs anonymous breakdown; column-specific select |
-| 3 | `src/components/admin/AnalyticsDashboard.tsx` | Add authenticated/anonymous user breakdown card; add "Logged-in Users" metric; show empty state message when no real user data exists |
+```
+## License
 
-### Technical Details
+Copyright © 2026 Elite Forums (eliteforums.in). All rights reserved.
 
-**Fix 1: Exclude admin traffic from analytics events**
-```typescript
-// useAnalytics.ts — skip tracking for admin users
-const { user, profile } = useAuth();
-if (profile?.role === "admin") return; // admins don't pollute analytics
+This software and its source code are proprietary and confidential.
+Unauthorized copying, modification, distribution, or use of this software,
+via any medium, is strictly prohibited without prior written permission
+from Elite Forums.
+
+Developed under the guidance of Mr. Harsh Santosh Tambade
+(Founder, Elite Forums) and Team ETERNIA.
+
+For licensing inquiries, contact: eliteforums.in
 ```
 
-**Fix 2: Accurate unique visitor counting**
-```typescript
-// Count authenticated unique users by user_id (not session_hash)
-const authenticatedUserIds = new Set(
-  pageViews.filter(e => e.user_id).map(e => e.user_id)
-);
-const anonymousSessions = new Set(
-  pageViews.filter(e => !e.user_id).map(e => e.session_hash)
-);
-const uniqueUsers = authenticatedUserIds.size;
-const uniqueAnonymous = anonymousSessions.size;
-const uniqueVisitors = uniqueUsers + uniqueAnonymous;
+### Team Section (Draft)
+
+```
+## Team
+
+**Eternia** is developed by **Elite Forums** (https://eliteforums.in)
+under the guidance of **Mr. Harsh Santosh Tambade** — Founder of Elite Forums.
+
+Built with dedication by **Team ETERNIA**.
 ```
 
-**Fix 3: Column-specific select (§13.1)**
-```typescript
-.select("id, user_id, session_hash, page_path, screen_size, created_at")
-```
-
-**Fix 4: Dashboard shows authenticated vs anonymous breakdown**
-Add a new stat card row showing:
-- Logged-in Users (unique `user_id` count)
-- Anonymous Visitors (unique `session_hash` where `user_id` is null)
-- Total Unique Visitors (sum of both)
+All existing technical content (architecture table, features, database schema, performance notes, DPDP compliance) will be preserved and enhanced with better formatting and additional detail where appropriate.
 
