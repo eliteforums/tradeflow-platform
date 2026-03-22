@@ -159,6 +159,24 @@ export const useBlackBoxSession = () => {
     if (!user) return;
     setIsRequesting(true);
     try {
+      // Check for existing open session first — reuse instead of creating duplicate
+      const { data: existing } = await supabase
+        .from("blackbox_sessions")
+        .select("id, student_id, therapist_id, status, room_id, flag_level, escalation_reason, escalation_history, session_notes_encrypted, started_at, ended_at, created_at")
+        .eq("student_id", user.id)
+        .in("status", ["queued", "accepted", "active"])
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        const session = existing[0] as unknown as BlackBoxSession;
+        console.log("[BlackBox] Reusing existing session:", session.id, session.status);
+        setActiveSession(session);
+        await fetchTokenIfNeeded(session);
+        toast.info("Reconnecting to your existing session…");
+        return;
+      }
+
       console.log("[BlackBox] Spending 30 ECC...");
       const spendResult = await spendCredits(30, "BlackBox Talk Now session");
       console.log("[BlackBox] Spend result:", spendResult);
@@ -189,7 +207,7 @@ export const useBlackBoxSession = () => {
     } finally {
       setIsRequesting(false);
     }
-  }, [user]);
+  }, [user, fetchTokenIfNeeded]);
 
   const cancelSession = useCallback(async () => {
     if (!activeSession) return;
@@ -212,6 +230,13 @@ export const useBlackBoxSession = () => {
     setToken(null);
   }, [activeSession]);
 
+  const retryConnection = useCallback(async () => {
+    if (!activeSession) return;
+    setToken(null);
+    tokenRef.current = null;
+    await fetchTokenIfNeeded(activeSession);
+  }, [activeSession, fetchTokenIfNeeded]);
+
   return {
     activeSession,
     isRequesting,
@@ -220,5 +245,6 @@ export const useBlackBoxSession = () => {
     requestSession,
     cancelSession,
     endSession,
+    retryConnection,
   };
 };

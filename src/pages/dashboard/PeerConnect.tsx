@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const PeerConnect = () => {
   const isMobile = useIsMobile();
@@ -19,14 +20,14 @@ const PeerConnect = () => {
   const { user, profile, creditBalance } = useAuth();
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
+  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; roomId?: string }>({ open: false, mode: "audio" });
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     interns, sessions, activeSession, messages: chatMessages, isLoading,
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses,
-    hasMoreMessages, isLoadingMore, loadMoreMessages,
+    hasMoreMessages, isLoadingMore, loadMoreMessages, ensureSessionRoom,
   } = usePeerConnect(urlSessionId);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
@@ -84,6 +85,10 @@ const PeerConnect = () => {
 
   const statusColors: Record<string, string> = { online: "bg-eternia-success", busy: "bg-eternia-warning", offline: "bg-muted-foreground" };
   const selectedIntern = activeSessionId ? interns.find((i) => i.id === activeSession?.intern_id) : null;
+  // For intern view, resolve the student name from the session
+  const chatPartnerName = isIntern
+    ? (activeSession as any)?.student?.username || "Student"
+    : selectedIntern?.username || "Intern";
 
   if (isMobile) return <MobilePeerConnect />;
 
@@ -133,7 +138,15 @@ const PeerConnect = () => {
                           <Flag className={`w-4 h-4 ${activeSession?.is_flagged ? "fill-current" : ""}`} />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCallModal({ open: true, mode: "audio" })}><Phone className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={async () => {
+                        if (!activeSessionId) return;
+                        const roomId = await ensureSessionRoom(activeSessionId);
+                        if (roomId) {
+                          setCallModal({ open: true, mode: "audio", roomId });
+                        } else {
+                          toast.error("Failed to create call room");
+                        }
+                      }}><Phone className="w-4 h-4" /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleEndSession}><X className="w-4 h-4" /></Button>
                     </div>
                   </div>
@@ -176,7 +189,7 @@ const PeerConnect = () => {
         </div>
       </div>
       <Suspense fallback={null}>
-        <LazyVideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "audio" })} participantName={profile?.username || "Student"} mode={callModal.mode} />
+        <LazyVideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "audio" })} participantName={profile?.username || "Student"} mode={callModal.mode} existingRoomId={callModal.roomId} />
       </Suspense>
     </DashboardLayout>
   );

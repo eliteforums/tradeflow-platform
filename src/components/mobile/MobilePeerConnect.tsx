@@ -15,7 +15,7 @@ const MobilePeerConnect = () => {
   const urlSessionId = searchParams.get("sessionId");
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
+  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; roomId?: string }>({ open: false, mode: "audio" });
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -24,7 +24,7 @@ const MobilePeerConnect = () => {
     interns, activeSession, messages: chatMessages, isLoading,
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses,
-    hasMoreMessages, isLoadingMore, loadMoreMessages,
+    hasMoreMessages, isLoadingMore, loadMoreMessages, ensureSessionRoom,
   } = usePeerConnect(urlSessionId);
   const isIntern = profile?.role === "intern";
 
@@ -128,7 +128,13 @@ const MobilePeerConnect = () => {
                         <Flag className={`w-4 h-4 ${activeSession?.is_flagged ? "fill-current" : ""}`} />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setCallModal({ open: true, mode: "audio" })}><Phone className="w-4 h-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-10 w-10" onClick={async () => {
+                      if (!activeSessionId) return;
+                      const roomId = await ensureSessionRoom(activeSessionId);
+                      if (roomId) {
+                        setCallModal({ open: true, mode: "audio", roomId });
+                      }
+                    }}><Phone className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive" onClick={() => { endSession(activeSessionId); setMobileView("list"); }}><X className="w-4 h-4" /></Button>
                   </div>
                 </div>
@@ -175,7 +181,7 @@ const MobilePeerConnect = () => {
           </div>
         )}
       </div>
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "audio" })} participantName={profile?.username || "Student"} mode={callModal.mode} />
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "audio" })} participantName={profile?.username || "Student"} mode={callModal.mode} existingRoomId={callModal.roomId} />
     </DashboardLayout>
   );
 };

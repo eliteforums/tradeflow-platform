@@ -13,7 +13,7 @@ import MobileBlackBox from "@/components/mobile/MobileBlackBox";
 
 const BlackBox = () => {
   const isMobile = useIsMobile();
-  const { activeSession, isRequesting, isConnecting, token, requestSession, cancelSession, endSession } = useBlackBoxSession();
+  const { activeSession, isRequesting, isConnecting, token, requestSession, cancelSession, endSession, retryConnection } = useBlackBoxSession();
   const { profile } = useAuth();
 
   if (isMobile) return <MobileBlackBox />;
@@ -35,9 +35,14 @@ const BlackBox = () => {
 
           {/* Status pill */}
           {isConnectingToSession && (
-            <div className="px-5 py-2 rounded-full border border-border bg-card/60 backdrop-blur text-sm text-muted-foreground flex items-center gap-2">
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Connecting…
+            <div className="flex flex-col items-center gap-2">
+              <div className="px-5 py-2 rounded-full border border-border bg-card/60 backdrop-blur text-sm text-muted-foreground flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Connecting…
+              </div>
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={retryConnection}>
+                Retry connection
+              </Button>
             </div>
           )}
 
