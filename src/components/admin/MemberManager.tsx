@@ -186,7 +186,7 @@ export default function MemberManager() {
           </div>
           <div>
             <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Role *</label>
-            <Select value={selectedRole} onValueChange={(v) => { setSelectedRole(v); if (v !== "spoc" && v !== "student") setSelectedInstitution(""); }}>
+            <Select value={selectedRole} onValueChange={(v) => { setSelectedRole(v); if (v !== "spoc") setSelectedInstitution(""); }}>
               <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
