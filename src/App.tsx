@@ -94,7 +94,7 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/dashboard/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
               <Route path="/dashboard/peer-connect" element={<ProtectedRoute><PeerConnect /></ProtectedRoute>} />
-              <Route path="/dashboard/blackbox" element={<ProtectedRoute><BlackBox /></ProtectedRoute>} />
+              <Route path="/dashboard/blackbox" element={<ProtectedRoute allowedRoles={["student", "therapist"]}><BlackBox /></ProtectedRoute>} />
               <Route path="/dashboard/sound-therapy" element={<ProtectedRoute><SoundTherapy /></ProtectedRoute>} />
               <Route path="/dashboard/self-help" element={<ProtectedRoute><SelfHelp /></ProtectedRoute>} />
               <Route path="/dashboard/quest-cards" element={<ProtectedRoute><QuestCards /></ProtectedRoute>} />
