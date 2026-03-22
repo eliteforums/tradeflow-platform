@@ -125,6 +125,10 @@ const InstitutionDetailView = ({ institution, onBack, onBulkAllocate }: Institut
   const totalSessions = appointments.length + peerSessions.length;
 
   const copyCode = () => {
+    if (!institution.eternia_code_hash) {
+      toast.error("Code unavailable");
+      return;
+    }
     navigator.clipboard.writeText(institution.eternia_code_hash);
     setCodeCopied(true);
     toast.success("Code copied!");
