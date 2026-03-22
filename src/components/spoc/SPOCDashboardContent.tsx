@@ -540,7 +540,7 @@ const SPOCDashboardContent = () => {
                 <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary/40 rounded-br-lg" />
               </div>
               <p className="text-[10px] text-muted-foreground mt-2">
-                Each QR is single-use · {tempCredStats?.unused || 0} temp IDs available
+                Institution verification · Regenerable anytime
               </p>
             </div>
 
