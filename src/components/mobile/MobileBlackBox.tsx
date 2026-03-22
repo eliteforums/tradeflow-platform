@@ -28,7 +28,14 @@ const MobileBlackBox = () => {
           />
 
           {/* Status pill */}
-          {isQueued && (
+          {isConnectingToSession && (
+            <div className="px-4 py-1.5 rounded-full border border-border bg-card/60 backdrop-blur text-xs text-muted-foreground flex items-center gap-1.5">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Connecting…
+            </div>
+          )}
+
+          {isQueued && !isConnectingToSession && (
             <button
               onClick={cancelSession}
               className="px-4 py-1.5 rounded-full border border-border bg-card/60 backdrop-blur text-xs text-muted-foreground"
