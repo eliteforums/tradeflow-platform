@@ -326,6 +326,20 @@ const MobileExpertDashboard = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Escalation Dialog */}
+      <Dialog open={escalationDialog.open} onOpenChange={(o) => { if (!o) { setEscalationDialog({ open: false }); setEscalationReason(""); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-eternia-warning" />Escalate to SPOC</DialogTitle><DialogDescription>Describe the concern to trigger SPOC review.</DialogDescription></DialogHeader>
+          <Textarea placeholder="Reason for escalation..." value={escalationReason} onChange={(e) => setEscalationReason(e.target.value)} className="min-h-[80px] text-sm" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEscalationDialog({ open: false }); setEscalationReason(""); }}>Cancel</Button>
+            <Button disabled={!escalationReason.trim() || submitEscalation.isPending} onClick={() => submitEscalation.mutate()} className="gap-1.5">
+              {submitEscalation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} />
     </DashboardLayout>
   );
