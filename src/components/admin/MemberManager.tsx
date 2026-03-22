@@ -233,7 +233,7 @@ export default function MemberManager() {
           Bulk ID Creation
         </h3>
         <p className="text-xs text-muted-foreground">
-          Auto-generate multiple accounts with random passwords for an institution.
+          Auto-generate multiple student accounts with random passwords for an institution.
         </p>
 
         {!showBulkDialog ? (
