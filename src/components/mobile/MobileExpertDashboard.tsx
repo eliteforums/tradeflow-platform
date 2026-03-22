@@ -172,6 +172,8 @@ const MobileExpertDashboard = () => {
         {/* HOME */}
         {activeTab === "home" && (
           <div className="space-y-3">
+            {/* L3 Emergency Alerts */}
+            <ExpertL3AlertPanel />
             <div className="flex items-center justify-between">
               <p className="font-semibold text-sm">Appointments</p>
               <Button size="sm" className="gap-1 h-8 text-xs" onClick={() => setSlotDialogOpen(true)}><Plus className="w-3.5 h-3.5" />Add Slot</Button>
