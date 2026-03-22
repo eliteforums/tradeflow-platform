@@ -1,42 +1,38 @@
 
 
-## Plan: Add Referral Code to Skip Intern Training
+## Plan: Clean Up Roles & Credits Layout
 
-### Summary
-Admin generates a referral code for an intern. The intern enters this code on their dashboard to skip all training modules and immediately unlock Peer Connect.
+### Problem
+The "Roles & Credits" tab uses a `grid-cols-3` layout where `MemberManager` (left column) contains 5 stacked sections (Add Staff, Bulk Temp IDs, Temp Credential Pool, Members by University, Referral Codes) making it extremely tall, while `RoleManager` and `CreditGrantTool` (middle and right columns) are short — leaving large empty space and a messy look.
 
-### Database Changes
+### Solution
+Reorganize the grid into a **2-column layout** with better section distribution:
 
-**New table: `intern_referral_codes`**
-- `id` uuid PK
-- `code` text unique (e.g. "REF-ABC123")
-- `created_by` uuid (admin who created it)
-- `assigned_to` uuid nullable (intern who used it)
-- `used_at` timestamptz nullable
-- `expires_at` timestamptz nullable
-- `is_used` boolean default false
-- `created_at` timestamptz default now()
-- RLS: admins can CRUD, authenticated can SELECT (to validate codes)
+**Left column (wider):**
+- Add Staff Member
+- Bulk Temp ID Creation
+- Temp Credential Pool
+- Members by University
 
-### Code Changes
+**Right column:**
+- Assign Role
+- Grant Credits
+- Referral Codes
 
-**1. Admin side — `src/components/admin/MemberManager.tsx`**
-- Add a new card section "Referral Codes" below the existing sections
-- Admin enters an intern's username or selects from a dropdown, clicks "Generate Code"
-- System creates a random code (e.g. `REF-` + 8 alphanumeric chars) in the `intern_referral_codes` table
-- Show list of generated codes with status (unused/used, assigned intern)
-- Copy-to-clipboard button for each code
+### Changes
 
-**2. Intern side — `src/components/intern/InternDashboardContent.tsx` + `MobileInternDashboard.tsx`**
-- When training is not complete, show a small "Have a referral code?" link/button above the module list
-- Clicking it opens an input field where the intern enters the code
-- On submit: validate the code exists, is unused, and not expired
-- If valid: update the intern's profile to `training_status: "active"`, `is_verified: true`, `training_progress: [1,2,3,4,5,6,7]` and mark the code as used
-- Dashboard immediately unlocks all tabs
+**1. `src/components/admin/MemberManager.tsx`**
+- Extract the Referral Codes section into its own exported component `ReferralCodesCard` (it's already a separate function internally — just wrap it in the card UI and export)
+- Remove the Referral Codes card from MemberManager's return
+
+**2. `src/pages/admin/AdminDashboard.tsx`**
+- Change the roles tab from `grid-cols-3` to a 2-column layout
+- Left column: `<MemberManager />`
+- Right column: stack `<RoleManager />`, `<CreditGrantTool />`, `<ReferralCodesCard />`
+- Use `lg:grid-cols-[2fr_1fr]` for proportional widths
+- Add `self-start` to the right column so it doesn't stretch
 
 ### Files to modify
-- Database: create `intern_referral_codes` table with RLS
-- `src/components/admin/MemberManager.tsx` — add referral code generation section
-- `src/components/intern/InternDashboardContent.tsx` — add referral code input
-- `src/components/mobile/MobileInternDashboard.tsx` — same for mobile
+- `src/components/admin/MemberManager.tsx` — extract ReferralCodesCard as separate export
+- `src/pages/admin/AdminDashboard.tsx` — reorganize grid layout
 
