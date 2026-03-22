@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, QrCode, Shield, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Camera, QrCode, Shield, CheckCircle, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Html5Qrcode } from "html5-qrcode";
 
 const QRScan = () => {
   const navigate = useNavigate();
@@ -12,23 +12,37 @@ const QRScan = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [useManual, setUseManual] = useState(false);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
+  const scannerContainerId = "qr-scanner-container";
 
-  const handleScan = async () => {
-    setIsScanning(true);
-    await new Promise((r) => setTimeout(r, 2000));
+  const stopScanner = useCallback(async () => {
+    if (scannerRef.current) {
+      try {
+        const state = scannerRef.current.getState();
+        // 2 = SCANNING, 3 = PAUSED
+        if (state === 2 || state === 3) {
+          await scannerRef.current.stop();
+        }
+      } catch {
+        // ignore
+      }
+      scannerRef.current = null;
+    }
     setIsScanning(false);
-    setUseManual(true);
-    toast.info("Camera not available in browser. Please enter the credentials manually.");
-  };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopScanner();
+    };
+  }, [stopScanner]);
 
   const parseQRPayload = (input: string): Record<string, any> | null => {
     try {
       const parsed = JSON.parse(input.trim());
-      // HMAC-signed SPOC QR: {institution_id, spoc_id, timestamp, signature}
       if (parsed.institution_id && parsed.spoc_id && parsed.timestamp && parsed.signature) {
         return { type: "hmac", ...parsed };
       }
-      // Temp ID QR: {temp_id, temp_password, institution_id}
       if (parsed.temp_id && parsed.temp_password && parsed.institution_id) {
         return { type: "temp", ...parsed };
       }
@@ -38,16 +52,10 @@ const QRScan = () => {
     return null;
   };
 
-  const handleManualSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualCode.trim()) {
-      toast.error("Please enter the QR code data");
-      return;
-    }
+  const verifyPayload = async (rawPayload: string) => {
     setIsVerifying(true);
     try {
-      const parsed = parseQRPayload(manualCode.trim());
-
+      const parsed = parseQRPayload(rawPayload);
       if (!parsed) {
         toast.error("Invalid QR code format. Please scan a valid SPOC QR code.");
         setIsVerifying(false);
@@ -55,9 +63,8 @@ const QRScan = () => {
       }
 
       if (parsed.type === "hmac") {
-        // HMAC-signed institution verification
         const { data, error } = await supabase.functions.invoke("validate-spoc-qr", {
-          body: { qr_payload: manualCode.trim() },
+          body: { qr_payload: rawPayload },
         });
         if (error || !data?.valid) {
           toast.error(data?.error || "Invalid or expired QR code.");
@@ -68,7 +75,6 @@ const QRScan = () => {
           navigate("/register");
         }
       } else {
-        // Temp ID verification
         const { data, error } = await supabase.functions.invoke("verify-temp-credentials", {
           body: { temp_username: parsed.temp_id, temp_password: parsed.temp_password },
         });
@@ -86,6 +92,51 @@ const QRScan = () => {
       toast.error("Verification failed. Please check your connection and try again.");
     }
     setIsVerifying(false);
+  };
+
+  const startScanner = async () => {
+    setIsScanning(true);
+    try {
+      const scanner = new Html5Qrcode(scannerContainerId);
+      scannerRef.current = scanner;
+
+      await scanner.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        async (decodedText) => {
+          await stopScanner();
+          verifyPayload(decodedText);
+        },
+        () => {
+          // ignore scan failures (no QR in frame)
+        }
+      );
+    } catch (err: any) {
+      console.error("[QRScan] Camera error:", err);
+      setIsScanning(false);
+      scannerRef.current = null;
+
+      if (err?.name === "NotAllowedError" || /permission/i.test(err?.message || "")) {
+        toast.error("Camera permission denied. Please allow camera access and try again, or enter the code manually.");
+      } else {
+        toast.error("Could not access camera. Please enter the code manually.");
+      }
+      setUseManual(true);
+    }
+  };
+
+  const handleStopAndManual = async () => {
+    await stopScanner();
+    setUseManual(true);
+  };
+
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualCode.trim()) {
+      toast.error("Please enter the QR code data");
+      return;
+    }
+    await verifyPayload(manualCode.trim());
   };
 
   return (
@@ -125,35 +176,52 @@ const QRScan = () => {
 
           {!useManual ? (
             <div className="space-y-4">
-              <div className="aspect-square max-h-[240px] rounded-2xl border-2 border-dashed border-border bg-muted/20 flex flex-col items-center justify-center gap-3 mx-auto">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-eternia flex items-center justify-center">
-                  <QrCode className="w-8 h-8 text-background" />
-                </div>
-                <p className="text-xs text-muted-foreground text-center px-6">
-                  Position QR code within the scanner
-                </p>
+              {/* Scanner container */}
+              <div className="relative rounded-2xl overflow-hidden border-2 border-dashed border-border bg-muted/20 mx-auto" style={{ maxHeight: 280 }}>
+                <div id={scannerContainerId} className="w-full" />
+                {!isScanning && (
+                  <div className="aspect-square max-h-[240px] flex flex-col items-center justify-center gap-3">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-eternia flex items-center justify-center">
+                      <QrCode className="w-8 h-8 text-background" />
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center px-6">
+                      Position QR code within the scanner
+                    </p>
+                  </div>
+                )}
               </div>
 
-              <Button
-                onClick={handleScan}
-                disabled={isScanning}
-                className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 active:scale-[0.98] transition-all"
-              >
-                {isScanning ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Scanning...
-                  </>
-                ) : (
-                  <>
-                    <Camera className="w-4 h-4" />
-                    Scan QR Code
-                  </>
-                )}
-              </Button>
+              {isScanning ? (
+                <Button
+                  onClick={handleStopAndManual}
+                  variant="outline"
+                  className="w-full h-11 rounded-xl text-sm font-semibold gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Stop Scanner
+                </Button>
+              ) : (
+                <Button
+                  onClick={startScanner}
+                  disabled={isVerifying}
+                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 active:scale-[0.98] transition-all"
+                >
+                  {isVerifying ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-4 h-4" />
+                      Scan QR Code
+                    </>
+                  )}
+                </Button>
+              )}
 
               <button
-                onClick={() => setUseManual(true)}
+                onClick={() => { stopScanner(); setUseManual(true); }}
                 className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
               >
                 Can't scan? Enter code manually
