@@ -169,6 +169,7 @@ const VideoCallModal = ({
                 sessionId={sessionId}
                 enableMonitoring={enableMonitoring}
                 onRiskDetected={onRiskDetected}
+                autoJoin={true}
               />
             </MeetingProvider>
           )}

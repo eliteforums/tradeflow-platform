@@ -610,6 +610,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                       audioOnly={true}
                       sessionId={activeSession.id}
                       enableMonitoring={true}
+                      autoJoin={true}
                       onRiskDetected={(level, snippet) => {
                         if (level >= 2) {
                           toast.warning(`AI detected risk level ${level}`, {
