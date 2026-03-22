@@ -294,7 +294,7 @@ export default function MemberManager() {
                 disabled={!bulkInstitution || bulkMutation.isPending}
               >
                 {bulkMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />}
-                Create {bulkCount} Members
+                Create {bulkCount} Students
               </Button>
               <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowBulkDialog(false)}>
                 Cancel
