@@ -326,6 +326,11 @@ const ExpertDashboardContent = () => {
                                 : apt.status === "cancelled" ? "bg-destructive/10 text-destructive"
                                   : "bg-eternia-warning/10 text-eternia-warning"
                           )}>{apt.status}</span>
+                          {apt.status !== "completed" && apt.status !== "cancelled" && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-accent/10 text-accent-foreground flex items-center gap-1">
+                              <Shield className="w-3 h-3 text-primary" />AI Monitor: Active
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground">{format(new Date(apt.slot_time), "EEE, MMM d · h:mm a")}</p>
 
@@ -339,6 +344,9 @@ const ExpertDashboardContent = () => {
                             </Button>
                             <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-3" onClick={() => toast.info("Reschedule request sent")}>
                               <RefreshCw className="w-3 h-3" />Reschedule
+                            </Button>
+                            <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-3 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}>
+                              <AlertTriangle className="w-3 h-3" />Escalate
                             </Button>
                             <Button size="sm" variant="ghost" className="gap-1 h-7 text-[11px] px-3 text-muted-foreground" onClick={() => setActiveTab("notes")}>
                               <FileText className="w-3 h-3" />View History

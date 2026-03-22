@@ -90,7 +90,6 @@ const PeerConnect = () => {
                 </Button>
               )}
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCallModal({ open: true, mode: "audio" })}><Phone className="w-4 h-4" /></Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCallModal({ open: true, mode: "video" })}><Video className="w-4 h-4" /></Button>
               <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleEndSession}><X className="w-4 h-4" /></Button>
             </div>
           </div>

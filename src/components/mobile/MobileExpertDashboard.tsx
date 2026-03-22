@@ -167,13 +167,21 @@ const MobileExpertDashboard = () => {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">{apt.student?.username}</p>
                     <p className="text-xs text-muted-foreground">{format(new Date(apt.slot_time), "MMM d · h:mm a")}</p>
-                    <span className={cn("inline-block mt-1 px-2 py-0.5 rounded-full text-[10px]",
-                      apt.status === "completed" ? "bg-eternia-success/10 text-eternia-success" : "bg-eternia-warning/10 text-eternia-warning"
-                    )}>{apt.status}</span>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span className={cn("px-2 py-0.5 rounded-full text-[10px]",
+                        apt.status === "completed" ? "bg-eternia-success/10 text-eternia-success" : "bg-eternia-warning/10 text-eternia-warning"
+                      )}>{apt.status}</span>
+                      {apt.status !== "completed" && apt.status !== "cancelled" && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] bg-accent/10 text-accent-foreground flex items-center gap-0.5">
+                          <AlertTriangle className="w-2.5 h-2.5 text-primary" />AI Monitor
+                        </span>
+                      )}
+                    </div>
                     {apt.status !== "completed" && apt.status !== "cancelled" && (
                       <div className="flex gap-2 mt-2 flex-wrap">
                         <Button size="sm" className="gap-1 h-7 text-[10px] px-2" onClick={() => setCallModal({ open: true, mode: apt.session_type === "video" ? "video" : "audio", appointmentId: apt.id })}>Join</Button>
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => toast.info("Reschedule sent")}><RefreshCw className="w-3 h-3" /></Button>
+                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}><AlertTriangle className="w-3 h-3" /></Button>
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => setSelectedAppointment(apt.id)}>Complete</Button>
                       </div>
                     )}
