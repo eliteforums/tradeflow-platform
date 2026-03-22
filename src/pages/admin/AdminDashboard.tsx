@@ -6,7 +6,7 @@ import {
   Users, Calendar, MessageCircle, AlertTriangle, TrendingUp, Coins,
   Shield, Activity, Eye, CheckCircle, Clock, BarChart3, Search, Loader2,
   UserPlus, Settings, Music, Building2, FileText, QrCode, Crown, UserCheck,
-  Stethoscope, GraduationCap, Phone, Zap, Filter, BookOpen, LogOut, ArrowLeft,
+  Stethoscope, GraduationCap, Phone, Zap, Filter, BookOpen, LogOut, ArrowLeft, Gamepad2,
   ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft,
 } from "lucide-react";
 import InstitutionManager from "@/components/admin/InstitutionManager";
@@ -29,8 +29,9 @@ import AccountDeletion from "@/components/admin/AccountDeletion";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
+import QuestCardManager from "@/components/admin/QuestCardManager";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics" | "tools";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -67,6 +68,7 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
     items: [
       { id: "training", label: "Training", icon: BookOpen },
       { id: "sounds", label: "Sounds", icon: Music },
+      { id: "tools", label: "Quest Cards", icon: Gamepad2 },
     ],
   },
   {
@@ -477,6 +479,9 @@ const AdminDashboard = () => {
 
               {/* ─── ANALYTICS ─── */}
               {activeTab === "analytics" && <div className="max-w-5xl"><AnalyticsDashboard /></div>}
+
+              {/* ─── TOOLS (Quest Cards) ─── */}
+              {activeTab === "tools" && <div className="max-w-4xl"><QuestCardManager /></div>}
             </>
           )}
         </div>

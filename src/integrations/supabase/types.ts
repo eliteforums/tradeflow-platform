@@ -817,6 +817,7 @@ export type Database = {
       }
       quest_completions: {
         Row: {
+          answer: string | null
           completed_at: string
           completed_date: string
           id: string
@@ -824,6 +825,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          answer?: string | null
           completed_at?: string
           completed_date?: string
           id?: string
@@ -831,6 +833,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          answer?: string | null
           completed_at?: string
           completed_date?: string
           id?: string

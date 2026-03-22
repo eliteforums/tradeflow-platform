@@ -3,7 +3,7 @@ import {
   Users, Calendar, MessageCircle, AlertTriangle, Coins,
   Shield, Activity, BarChart3, Search, Loader2,
   UserPlus, Settings, Building2, Crown, Stethoscope,
-  GraduationCap, Zap, Eye, CheckCircle, Music, FileText, BookOpen, Copy, Check,
+  GraduationCap, Zap, Eye, CheckCircle, Music, FileText, BookOpen, Copy, Check, Gamepad2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,8 +22,9 @@ import AccountDeletion from "@/components/admin/AccountDeletion";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard"));
+import QuestCardManager from "@/components/admin/QuestCardManager";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail" | "analytics";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail" | "analytics" | "tools";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -104,6 +105,7 @@ const MobileAdminDashboard = () => {
     { id: "roles", label: "Roles", icon: UserPlus },
     { id: "training", label: "Training", icon: BookOpen },
     { id: "sounds", label: "Sounds", icon: Music },
+    { id: "tools", label: "Quest Cards", icon: Gamepad2 },
     { id: "escalations", label: "Escalations", icon: AlertTriangle },
     { id: "audit", label: "Audit", icon: FileText },
   ];
@@ -332,6 +334,11 @@ const MobileAdminDashboard = () => {
               <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
                 <AnalyticsDashboard />
               </Suspense>
+            )}
+
+            {/* TOOLS (Quest Cards) */}
+            {activeTab === "tools" && (
+              <div><QuestCardManager /></div>
             )}
 
             {/* INSTITUTION DETAIL */}
