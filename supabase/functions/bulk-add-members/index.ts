@@ -32,15 +32,39 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: hasAdmin } = await supabaseAdmin.rpc("has_role", {
+    const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
       _user_id: caller.id,
       _role: "admin",
     });
-    if (!hasAdmin) throw new Error("Only admins can bulk-create members");
+    const { data: isSpoc } = await supabaseAdmin.rpc("has_role", {
+      _user_id: caller.id,
+      _role: "spoc",
+    });
+
+    if (!isAdmin && !isSpoc) throw new Error("Only admins and SPOCs can bulk-create members");
 
     const { institution_id, count, prefix, role = "student" } = await req.json();
 
-    if (!institution_id || !count) {
+    // SPOCs can only create students
+    if (isSpoc && !isAdmin && role !== "student") {
+      throw new Error("SPOCs can only create student accounts");
+    }
+
+    // Determine effective institution_id
+    let effectiveInstitutionId = institution_id;
+
+    if (isSpoc && !isAdmin) {
+      // Force SPOC's own institution
+      const { data: spocProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("institution_id")
+        .eq("id", caller.id)
+        .single();
+      if (!spocProfile?.institution_id) throw new Error("SPOC has no institution assigned");
+      effectiveInstitutionId = spocProfile.institution_id;
+    }
+
+    if (!effectiveInstitutionId || !count) {
       throw new Error("institution_id and count are required");
     }
 
@@ -58,7 +82,7 @@ serve(async (req) => {
     const { data: institution, error: instErr } = await supabaseAdmin
       .from("institutions")
       .select("name, eternia_code_hash")
-      .eq("id", institution_id)
+      .eq("id", effectiveInstitutionId)
       .single();
 
     if (instErr || !institution) throw new Error("Institution not found");
@@ -78,7 +102,7 @@ serve(async (req) => {
     const { count: existingCount } = await supabaseAdmin
       .from("profiles")
       .select("id", { count: "exact", head: true })
-      .eq("institution_id", institution_id);
+      .eq("institution_id", effectiveInstitutionId);
 
     const startIndex = (existingCount || 0) + 1;
 
@@ -109,7 +133,7 @@ serve(async (req) => {
         // Update profile
         await supabaseAdmin
           .from("profiles")
-          .update({ role, institution_id })
+          .update({ role, institution_id: effectiveInstitutionId })
           .eq("id", newUser.user.id);
 
         // Add role
@@ -133,7 +157,7 @@ serve(async (req) => {
       action_type: "bulk_members_created",
       target_table: "profiles",
       metadata: {
-        institution_id,
+        institution_id: effectiveInstitutionId,
         count: created.length,
         role,
         prefix: namePrefix,
