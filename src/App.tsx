@@ -30,6 +30,7 @@ const Journaling = lazy(() => import("./pages/dashboard/Journaling"));
 const MoodTrackerPage = lazy(() => import("./pages/dashboard/MoodTracker"));
 const GratitudePage = lazy(() => import("./pages/dashboard/Gratitude"));
 const WreckBuddy = lazy(() => import("./pages/dashboard/WreckBuddy"));
+const TibetanBowl = lazy(() => import("./pages/dashboard/TibetanBowl"));
 const Credits = lazy(() => import("./pages/dashboard/Credits"));
 const Profile = lazy(() => import("./pages/dashboard/Profile"));
 const RecoverySetup = lazy(() => import("./pages/dashboard/RecoverySetup"));
@@ -103,6 +104,7 @@ const App = () => (
               <Route path="/dashboard/mood-tracker" element={<ProtectedRoute><MoodTrackerPage /></ProtectedRoute>} />
               <Route path="/dashboard/gratitude" element={<ProtectedRoute><GratitudePage /></ProtectedRoute>} />
               <Route path="/dashboard/wreck-buddy" element={<ProtectedRoute><WreckBuddy /></ProtectedRoute>} />
+              <Route path="/dashboard/tibetan-bowl" element={<ProtectedRoute><TibetanBowl /></ProtectedRoute>} />
               <Route path="/dashboard/credits" element={<ProtectedRoute><Credits /></ProtectedRoute>} />
               <Route path="/dashboard/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/dashboard/recovery-setup" element={<ProtectedRoute><RecoverySetup /></ProtectedRoute>} />
