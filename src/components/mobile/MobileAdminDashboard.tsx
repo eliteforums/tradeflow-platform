@@ -24,7 +24,7 @@ import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard"));
 import QuestCardManager from "@/components/admin/QuestCardManager";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail" | "analytics";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail" | "analytics" | "tools";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
