@@ -14,6 +14,8 @@ interface Profile {
   bio: string | null;
   total_sessions: number;
   streak_days: number;
+  training_status: string;
+  training_progress: number[] | null;
   created_at: string;
 }
 
