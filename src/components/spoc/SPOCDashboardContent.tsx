@@ -49,7 +49,7 @@ const SPOCDashboardContent = () => {
       if (!institutionId) return null;
       const { data, error } = await supabase
         .from("institutions")
-        .select("*")
+        .select("id, name, plan_type, credits_pool, is_active, institution_type")
         .eq("id", institutionId)
         .single();
       if (error) throw error;
