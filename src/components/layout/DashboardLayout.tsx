@@ -52,7 +52,6 @@ const spocNavItems = [
 
 const expertNavItems = [
   { icon: Home, label: "Dashboard", path: "/dashboard/expert" },
-  { icon: Headphones, label: "BlackBox Queue", path: "/dashboard/therapist" },
   { icon: Calendar, label: "Appointments", path: "/dashboard/appointments" },
   { icon: User, label: "Profile", path: "/dashboard/profile" },
 ];
