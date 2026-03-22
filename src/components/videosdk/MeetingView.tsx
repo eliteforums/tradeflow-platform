@@ -43,32 +43,50 @@ const MeetingView = ({
   const [joined, setJoined] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
   const hasAutoJoined = useRef(false);
-  const joinRef = useRef<() => void>();
+  const joinAttempts = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { join, participants } = useMeeting({
+  const { join, participants, meetingId: sdkMeetingId } = useMeeting({
     onMeetingJoined: () => {
       setJoined("JOINED");
       setTimedOut(false);
+      joinAttempts.current = 0;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     },
     onMeetingLeft: () => onMeetingLeave(),
   });
 
-  // Keep join ref current
-  joinRef.current = join;
-
-  // Auto-join on mount with a small delay to let SDK initialize
+  // Auto-join: wait for SDK readiness (sdkMeetingId populated), then retry up to 3 times
   useEffect(() => {
-    if (autoJoin && !hasAutoJoined.current) {
-      hasAutoJoined.current = true;
-      const timer = setTimeout(() => {
-        setJoined("JOINING");
-        joinRef.current?.();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [autoJoin]);
+    if (!autoJoin || hasAutoJoined.current) return;
+    if (!sdkMeetingId) return; // SDK not ready yet
+
+    hasAutoJoined.current = true;
+    joinAttempts.current = 0;
+
+    const attemptJoin = () => {
+      if (joinAttempts.current >= 3) return;
+      joinAttempts.current += 1;
+      console.log(`[MeetingView] Join attempt ${joinAttempts.current}`);
+      setJoined("JOINING");
+      join();
+
+      // If not JOINED after 3s, retry
+      retryTimerRef.current = setTimeout(() => {
+        if (joinAttempts.current < 3) {
+          attemptJoin();
+        }
+      }, 3000);
+    };
+
+    attemptJoin();
+
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
+  }, [autoJoin, sdkMeetingId, join]);
 
   // Timeout: if JOINING for > 15s, show retry
   useEffect(() => {
