@@ -1,7 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useMeeting } from "@videosdk.live/react-sdk";
-import { Loader2, Shield, AlertTriangle } from "lucide-react";
+import { Loader2, Shield, AlertTriangle, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import ParticipantView from "./ParticipantView";
 import MeetingControls from "./MeetingControls";
 import { useAudioMonitor } from "@/hooks/useAudioMonitor";
@@ -10,9 +11,10 @@ interface MeetingViewProps {
   meetingId: string;
   onMeetingLeave: () => void;
   audioOnly?: boolean;
-  sessionId?: string; // BlackBox session ID for AI monitoring
+  sessionId?: string;
   enableMonitoring?: boolean;
   onRiskDetected?: (level: number, snippet: string) => void;
+  autoJoin?: boolean;
 }
 
 const riskColors: Record<number, string> = {
@@ -36,15 +38,44 @@ const MeetingView = ({
   sessionId,
   enableMonitoring = false,
   onRiskDetected,
+  autoJoin = false,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
+  const [timedOut, setTimedOut] = useState(false);
+  const hasAutoJoined = useRef(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { join, participants } = useMeeting({
-    onMeetingJoined: () => setJoined("JOINED"),
+    onMeetingJoined: () => {
+      setJoined("JOINED");
+      setTimedOut(false);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    },
     onMeetingLeft: () => onMeetingLeave(),
   });
 
-  // AI audio monitoring (only active when joined + monitoring enabled)
+  // Auto-join on mount when autoJoin is true
+  useEffect(() => {
+    if (autoJoin && !hasAutoJoined.current && joined === null) {
+      hasAutoJoined.current = true;
+      setJoined("JOINING");
+      join();
+    }
+  }, [autoJoin, join, joined]);
+
+  // Timeout: if JOINING for > 15s, show retry
+  useEffect(() => {
+    if (joined === "JOINING") {
+      timeoutRef.current = setTimeout(() => {
+        setTimedOut(true);
+      }, 15000);
+      return () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      };
+    }
+  }, [joined]);
+
+  // AI audio monitoring
   const audioMonitor = useAudioMonitor({
     sessionId: sessionId || meetingId,
     enabled: enableMonitoring && joined === "JOINED",
@@ -56,14 +87,39 @@ const MeetingView = ({
 
   const joinMeeting = () => {
     setJoined("JOINING");
+    setTimedOut(false);
+    hasAutoJoined.current = true;
     join();
+  };
+
+  const retryJoin = () => {
+    setTimedOut(false);
+    setJoined(null);
+    hasAutoJoined.current = false;
+    setTimeout(() => {
+      setJoined("JOINING");
+      hasAutoJoined.current = true;
+      join();
+    }, 100);
   };
 
   if (joined === "JOINING") {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Joining the session...</p>
+        {timedOut ? (
+          <>
+            <AlertTriangle className="w-8 h-8 text-yellow-400" />
+            <p className="text-muted-foreground text-sm">Connection timed out</p>
+            <Button onClick={retryJoin} variant="outline" className="gap-2">
+              <RefreshCw className="w-4 h-4" /> Retry
+            </Button>
+          </>
+        ) : (
+          <>
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Joining the session...</p>
+          </>
+        )}
       </div>
     );
   }
