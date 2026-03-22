@@ -2,7 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 async function hmacVerify(key: string, message: string, expectedSig: string): Promise<boolean> {
@@ -35,19 +36,14 @@ Deno.serve(async (req) => {
       throw new Error("Invalid QR code format");
     }
 
-    const { institution_id, spoc_id, timestamp, expires_at, signature } = payload;
-    if (!institution_id || !spoc_id || !timestamp || !expires_at || !signature) {
+    const { institution_id, spoc_id, timestamp, signature } = payload;
+    if (!institution_id || !spoc_id || !timestamp || !signature) {
       throw new Error("Invalid QR code data");
-    }
-
-    // Check TTL
-    if (Date.now() > expires_at) {
-      throw new Error("QR code has expired. Please ask your SPOC for a new code.");
     }
 
     // Verify HMAC signature
     const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const message = `${institution_id}|${spoc_id}|${timestamp}|${expires_at}`;
+    const message = `${institution_id}|${spoc_id}|${timestamp}`;
     const valid = await hmacVerify(secret, message, signature);
 
     if (!valid) throw new Error("Invalid QR code signature");

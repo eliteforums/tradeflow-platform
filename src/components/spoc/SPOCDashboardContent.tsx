@@ -521,7 +521,7 @@ const SPOCDashboardContent = () => {
                 Regenerate
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground italic">HMAC-SHA256 signed · Valid for 24 hours · Audited</p>
+            <p className="text-[10px] text-muted-foreground italic">HMAC-SHA256 signed · Regenerable · Audited</p>
           </div>
 
           {/* Bulk Credit Granting */}

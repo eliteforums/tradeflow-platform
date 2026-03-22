@@ -2,7 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 async function hmacSign(key: string, message: string): Promise<string> {
@@ -48,18 +49,15 @@ Deno.serve(async (req) => {
     if (!profile.institution_id) throw new Error("No institution linked");
 
     const timestamp = Date.now();
-    const ttl = 24 * 60 * 60 * 1000; // 24 hours
-    const expiresAt = timestamp + ttl;
 
     const payload = {
       institution_id: profile.institution_id,
       spoc_id: user.id,
       timestamp,
-      expires_at: expiresAt,
     };
 
     const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const message = `${payload.institution_id}|${payload.spoc_id}|${payload.timestamp}|${payload.expires_at}`;
+    const message = `${payload.institution_id}|${payload.spoc_id}|${payload.timestamp}`;
     const signature = await hmacSign(secret, message);
 
     const qrPayload = JSON.stringify({ ...payload, signature });
@@ -70,10 +68,10 @@ Deno.serve(async (req) => {
       action_type: "spoc_qr_generated",
       target_table: "institutions",
       target_id: profile.institution_id,
-      metadata: { expires_at: new Date(expiresAt).toISOString() },
+      metadata: { generated_at: new Date().toISOString() },
     });
 
-    return new Response(JSON.stringify({ qr_payload: qrPayload, expires_at: expiresAt }), {
+    return new Response(JSON.stringify({ qr_payload: qrPayload }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
