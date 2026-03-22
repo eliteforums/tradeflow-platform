@@ -176,7 +176,7 @@ const SPOCTools = () => {
             SPOC Verification QR
           </h3>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-            {qrExpiresAt ? `Expires ${qrExpiresAt.toLocaleTimeString()}` : "24h validity"}
+            Regenerable
           </span>
         </div>
 
