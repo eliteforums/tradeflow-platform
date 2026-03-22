@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { UserPlus, Loader2, Eye, EyeOff, AlertCircle, Users, Building2, ChevronDown, ChevronRight, Plus, Download } from "lucide-react";
 
 const ROLES = [
-  { value: "student", label: "Student" },
   { value: "intern", label: "Intern" },
   { value: "expert", label: "Expert" },
   { value: "spoc", label: "SPOC" },
@@ -61,7 +60,7 @@ export default function MemberManager() {
           username: username.trim(),
           password,
           role: selectedRole,
-          institution_id: (selectedRole === "spoc" || selectedRole === "student") && selectedInstitution && selectedInstitution !== "none" ? selectedInstitution : null,
+          institution_id: selectedRole === "spoc" && selectedInstitution && selectedInstitution !== "none" ? selectedInstitution : null,
         },
       });
       if (error) {
@@ -187,17 +186,17 @@ export default function MemberManager() {
           </div>
           <div>
             <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Role *</label>
-            <Select value={selectedRole} onValueChange={(v) => { setSelectedRole(v); if (v !== "spoc" && v !== "student") setSelectedInstitution(""); }}>
+            <Select value={selectedRole} onValueChange={(v) => { setSelectedRole(v); if (v !== "spoc") setSelectedInstitution(""); }}>
               <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          {(selectedRole === "spoc" || selectedRole === "student") && (
+          {selectedRole === "spoc" && (
             <div>
               <label className="text-[10px] font-medium text-muted-foreground mb-1 block">
-                Institution {selectedRole === "spoc" ? "*" : "(optional)"}
+                Institution *
               </label>
               <Select value={selectedInstitution} onValueChange={setSelectedInstitution}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select institution" /></SelectTrigger>
@@ -234,7 +233,7 @@ export default function MemberManager() {
           Bulk ID Creation
         </h3>
         <p className="text-xs text-muted-foreground">
-          Auto-generate multiple accounts with random passwords for an institution.
+          Auto-generate multiple student accounts with random passwords for an institution.
         </p>
 
         {!showBulkDialog ? (
@@ -277,15 +276,6 @@ export default function MemberManager() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Role</label>
-              <Select value={bulkRole} onValueChange={setBulkRole}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Count (1-500)</label>
@@ -304,7 +294,7 @@ export default function MemberManager() {
                 disabled={!bulkInstitution || bulkMutation.isPending}
               >
                 {bulkMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />}
-                Create {bulkCount} Members
+                Create {bulkCount} Students
               </Button>
               <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowBulkDialog(false)}>
                 Cancel

@@ -52,7 +52,7 @@ serve(async (req) => {
       throw new Error("SPOCs can only create student accounts");
     }
 
-    const validRoles = ["student", "intern", "expert", "spoc", "therapist"];
+    const validRoles = ["intern", "expert", "spoc", "therapist"];
     if (!validRoles.includes(role)) {
       throw new Error(`Invalid role. Must be one of: ${validRoles.join(", ")}`);
     }
