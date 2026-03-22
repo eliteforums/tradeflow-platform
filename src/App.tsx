@@ -30,6 +30,7 @@ const Journaling = lazy(() => import("./pages/dashboard/Journaling"));
 const MoodTrackerPage = lazy(() => import("./pages/dashboard/MoodTracker"));
 const GratitudePage = lazy(() => import("./pages/dashboard/Gratitude"));
 const WreckBuddy = lazy(() => import("./pages/dashboard/WreckBuddy"));
+const TibetanBowl = lazy(() => import("./pages/dashboard/TibetanBowl"));
 const Credits = lazy(() => import("./pages/dashboard/Credits"));
 const Profile = lazy(() => import("./pages/dashboard/Profile"));
 const RecoverySetup = lazy(() => import("./pages/dashboard/RecoverySetup"));
