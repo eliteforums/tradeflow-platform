@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,8 +14,9 @@ import {
   MessageCircle, Coins, Bell, Eye, Loader2,
   CheckCircle, Clock, XCircle, FileText, Plus,
   Search, Filter, Download, LogOut, Lock, Settings,
-  TrendingUp, Music, Gamepad2, Phone,
+  TrendingUp, Music, Gamepad2, Phone, RefreshCw,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 type SPOCTab = "home" | "onboarding" | "flags" | "reports" | "profile";
 
@@ -33,6 +34,7 @@ const SPOCDashboardContent = () => {
     }
   }, [tabFromUrl]);
   const [copiedQR, setCopiedQR] = useState(false);
+  const qrRef = useRef<HTMLDivElement>(null);
   const [showNewEscalation, setShowNewEscalation] = useState(false);
   const [escalationReason, setEscalationReason] = useState("");
   const [reportDateFilter, setReportDateFilter] = useState("30");
@@ -232,25 +234,55 @@ const SPOCDashboardContent = () => {
   const [resetDeviceStudent, setResetDeviceStudent] = useState<string | null>(null);
   const [isResettingDevice, setIsResettingDevice] = useState(false);
 
-  const generateQR = async () => {
-    try {
+  // Dynamic QR code query
+  const { data: qrData, isLoading: qrLoading, error: qrError, refetch: regenerateQR } = useQuery({
+    queryKey: ["spoc-qr", user?.id],
+    queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
-      if (error) throw error;
-      if (data?.qr_payload) {
-        navigator.clipboard.writeText(data.qr_payload);
-        setCopiedQR(true);
-        toast.success("Secure QR code generated & copied!");
-        setTimeout(() => setCopiedQR(false), 2000);
-      }
-    } catch (err: any) {
-      // Fallback to legacy
-      const fallback = `ETERNIA-SPOC-${institutionId}-${user?.id}-${Date.now()}`;
-      navigator.clipboard.writeText(fallback);
-      setCopiedQR(true);
-      toast.success("QR code copied (legacy format)");
-      setTimeout(() => setCopiedQR(false), 2000);
-    }
+      if (error) throw new Error(error.message || "Failed to generate QR");
+      if (data?.error) throw new Error(data.error);
+      return data as { qr_payload: string; expires_at: number };
+    },
+    enabled: !!user && profile?.role === "spoc",
+    staleTime: 1000 * 60 * 60,
+    retry: 2,
+  });
+
+  const qrPayload = qrData?.qr_payload || "";
+  const qrExpiresAt = qrData?.expires_at ? new Date(qrData.expires_at) : null;
+
+  const copyQRPayload = () => {
+    if (!qrPayload) { toast.error("No QR code generated yet"); return; }
+    navigator.clipboard.writeText(qrPayload);
+    setCopiedQR(true);
+    toast.success("QR payload copied!");
+    setTimeout(() => setCopiedQR(false), 2000);
   };
+
+  const downloadQR = useCallback(() => {
+    if (!qrRef.current) return;
+    const svg = qrRef.current.querySelector("svg");
+    if (!svg) return;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const size = 600;
+    canvas.width = size;
+    canvas.height = size;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const img = new Image();
+    img.onload = () => {
+      ctx.fillStyle = "hsl(222, 47%, 6%)";
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, 0, 0, size, size);
+      const a = document.createElement("a");
+      a.download = "eternia-spoc-qr.png";
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+      toast.success("QR code downloaded!");
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  }, []);
 
   const grantCreditsToStudents = async () => {
     if (!user || !institutionId) return;
@@ -437,13 +469,59 @@ const SPOCDashboardContent = () => {
             <p className="text-xs text-muted-foreground">
               Generate HMAC-signed QR code for student onboarding (24h TTL).
             </p>
-            <div className="p-4 rounded-xl bg-muted/30 border border-border text-center">
-              <div className="w-28 h-28 mx-auto bg-card rounded-xl border-2 border-dashed border-primary/30 flex items-center justify-center mb-3">
-                <QrCode className="w-14 h-14 text-primary/60" />
+            <div className="flex flex-col items-center">
+              <div
+                ref={qrRef}
+                className="relative p-5 rounded-2xl bg-background border-2 border-primary/15 shadow-lg shadow-primary/5"
+              >
+                {qrLoading ? (
+                  <div className="w-[200px] h-[200px] flex items-center justify-center">
+                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
+                  </div>
+                ) : qrPayload ? (
+                  <QRCodeSVG
+                    value={qrPayload}
+                    size={200}
+                    bgColor="transparent"
+                    fgColor="hsl(174, 62%, 47%)"
+                    level="H"
+                    includeMargin={false}
+                  />
+                ) : (
+                  <div className="w-[200px] h-[200px] flex flex-col items-center justify-center gap-2">
+                    <QrCode className="w-12 h-12 text-muted-foreground/30" />
+                    <p className="text-xs text-muted-foreground text-center px-4">
+                      {qrError?.message || "Failed to generate QR code"}
+                    </p>
+                    <Button size="sm" variant="outline" className="mt-1 text-xs h-7" onClick={() => regenerateQR()}>
+                      <RefreshCw className="w-3 h-3 mr-1" /> Try Again
+                    </Button>
+                  </div>
+                )}
+                <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary/40 rounded-tl-lg" />
+                <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary/40 rounded-tr-lg" />
+                <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary/40 rounded-bl-lg" />
+                <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-primary/40 rounded-br-lg" />
               </div>
-              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={generateQR}>
-                {copiedQR ? <Check className="w-3.5 h-3.5 text-eternia-success" /> : <Copy className="w-3.5 h-3.5" />}
-                {copiedQR ? "Copied!" : "Generate & Copy"}
+              {qrExpiresAt && (
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Expires {qrExpiresAt.toLocaleTimeString()} · Scan to join
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={copyQRPayload} disabled={!qrPayload}>
+                {copiedQR ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                Copy
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={downloadQR} disabled={!qrPayload}>
+                <Download className="w-3.5 h-3.5" />
+                Download
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={() => regenerateQR()} disabled={qrLoading}>
+                <RefreshCw className={`w-3.5 h-3.5 ${qrLoading ? "animate-spin" : ""}`} />
+                Regenerate
               </Button>
             </div>
             <p className="text-[10px] text-muted-foreground italic">HMAC-SHA256 signed · Valid for 24 hours · Audited</p>
