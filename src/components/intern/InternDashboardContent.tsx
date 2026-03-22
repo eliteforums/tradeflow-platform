@@ -237,7 +237,7 @@ const InternDashboardContent = () => {
         {/* =================== TRAINING TAB =================== */}
         {activeTab === "training" && !currentModule && (
           <div className="space-y-4">
-            <div className="p-4 rounded-xl bg-eternia-warning/10 border border-eternia-warning/20">
+             <div className="p-4 rounded-xl bg-eternia-warning/10 border border-eternia-warning/20">
               <div className="flex items-center gap-3 mb-2">
                 <BookOpen className="w-5 h-5 text-eternia-warning" />
                 <p className="font-medium text-sm">
@@ -247,6 +247,37 @@ const InternDashboardContent = () => {
               <Progress value={trainingProgress} className="h-2" />
               <p className="text-xs text-muted-foreground mt-1">{completedModules.length}/{trainingModules.length} completed</p>
             </div>
+
+            {/* Final Interview Card */}
+            {isInterviewPending && (
+              <div className="p-5 rounded-xl border border-primary/20 bg-primary/5 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Award className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">Final Interview — Day 7</h3>
+                    <p className="text-xs text-muted-foreground">Your training modules are complete</p>
+                  </div>
+                </div>
+                {(profile as any)?.is_verified ? (
+                  <div className="p-3 rounded-lg bg-eternia-success/10 border border-eternia-success/20 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-eternia-success" />
+                    <p className="text-sm font-medium text-eternia-success">Verified! Your dashboard is being unlocked.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      An Eternia expert will schedule a brief interview with you. They will share a meeting link externally (email/chat). Once the interview is complete and approved, an admin will verify your account and unlock Peer Connect.
+                    </p>
+                    <div className="p-2.5 rounded-lg bg-muted/30 border border-border/30 flex items-start gap-2">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                      <p className="text-[11px] text-muted-foreground">Awaiting expert interview & admin verification</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               {trainingModules.map((mod) => {
