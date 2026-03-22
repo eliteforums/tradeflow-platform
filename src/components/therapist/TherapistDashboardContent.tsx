@@ -305,9 +305,17 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
           .limit(1);
 
         if (spocs && spocs.length > 0) {
+          // Store only trigger snippet (±context), not full conversation — CR v1.8 §4.1
+          const triggerSnippet = escalationReason.length > 500
+            ? escalationReason.substring(0, 500)
+            : escalationReason;
+
           await supabase.from("escalation_requests").insert({
             spoc_id: spocs[0].id,
             justification_encrypted: escalationReason,
+            trigger_snippet: triggerSnippet,
+            trigger_timestamp: new Date().toISOString(),
+            escalation_level: level,
             status: level >= 3 ? "critical" : "pending",
           });
         }
@@ -347,6 +355,21 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
             .eq("id", activeSession.id);
 
           toast.warning("Critical escalation — session transferred to M.Phil expert");
+
+          // CR v1.8 §5.2: Fetch and display emergency contact on L3
+          try {
+            const { data: emergencyData } = await supabase.functions.invoke("get-emergency-contact", {
+              body: { student_id: activeSession.student_id, session_id: activeSession.id },
+            });
+            if (emergencyData?.contact?.phone && emergencyData.contact.phone !== "Not provided") {
+              toast.warning("🚨 Emergency Contact", {
+                description: `${emergencyData.contact.name} (${emergencyData.contact.relation}): ${emergencyData.contact.phone}`,
+                duration: 60000,
+              });
+            }
+          } catch (e) {
+            console.error("Failed to fetch emergency contact:", e);
+          }
         } else {
           // No M.Phil available, mark as escalated
           await supabase
