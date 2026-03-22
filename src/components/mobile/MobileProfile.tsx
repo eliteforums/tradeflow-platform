@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   User, Shield, Bell, Lock, Building2, Calendar, Coins, CheckCircle, Settings,
   ChevronRight, Save, Loader2, Phone, UserCircle, LogOut, BadgeCheck, AlertCircle,
+  Award, BookOpen, Stethoscope, Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
@@ -23,13 +25,12 @@ const MobileProfile = () => {
   const navigate = useNavigate();
   const { balance } = useCredits();
   const [bio, setBio] = useState(profile?.bio || "");
+  const [specialty, setSpecialty] = useState(profile?.specialty || "");
 
-  // APAAR
+  // Student-only state
   const [studentId, setStudentId] = useState("");
   const [isVerifyingId, setIsVerifyingId] = useState(false);
   const [idVerified, setIdVerified] = useState(false);
-
-  // Emergency
   const [contactIsSelf, setContactIsSelf] = useState<boolean | null>(null);
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
@@ -38,8 +39,14 @@ const MobileProfile = () => {
   const [isSavingEmergency, setIsSavingEmergency] = useState(false);
   const [notifications, setNotifications] = useState({ sessions: true, credits: true, wellness: false });
 
+  const isStudent = profile?.role === "student";
+  const isExpert = profile?.role === "expert";
+  const isIntern = profile?.role === "intern";
+  const isTherapist = (profile as any)?.role === "therapist";
+  const isSPOC = profile?.role === "spoc";
+
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isStudent) return;
     const loadPrivate = async () => {
       const { data } = await supabase.from("user_private").select("*").eq("user_id", user.id).maybeSingle();
       if (data) {
@@ -51,13 +58,15 @@ const MobileProfile = () => {
       }
     };
     loadPrivate();
-  }, [user]);
+  }, [user, isStudent]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
     setIsSaving(true);
     try {
-      await supabase.from("profiles").update({ bio, updated_at: new Date().toISOString() }).eq("id", user.id);
+      const updates: Record<string, any> = { bio, updated_at: new Date().toISOString() };
+      if (isExpert || isTherapist) updates.specialty = specialty;
+      await supabase.from("profiles").update(updates).eq("id", user.id);
       await refreshProfile();
       toast.success("Saved");
     } catch (e: any) { toast.error(e.message); }
@@ -99,6 +108,10 @@ const MobileProfile = () => {
     finally { setIsSavingEmergency(false); }
   };
 
+  const trainingProgress = (profile as any)?.training_progress as number[] | null;
+  const completedModules = trainingProgress || [];
+  const trainingStatus = (profile as any)?.training_status || "not_started";
+
   return (
     <DashboardLayout>
       <div className="space-y-5 pb-24">
@@ -120,7 +133,7 @@ const MobileProfile = () => {
           <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
             {[
               { icon: Calendar, val: profile?.total_sessions || 0, label: "Sessions" },
-              ...(profile?.role === "student" ? [{ icon: Coins, val: balance, label: "Credits" }] : []),
+              ...(isStudent ? [{ icon: Coins, val: balance, label: "Credits" }] : []),
               { icon: Shield, val: profile?.streak_days || 0, label: "Streak" },
             ].map((s) => (
               <div key={s.label} className="text-center">
@@ -130,7 +143,7 @@ const MobileProfile = () => {
               </div>
             ))}
           </div>
-          {(profile as any)?.student_id && (
+          {isStudent && (profile as any)?.student_id && (
             <div className="mt-3 pt-3 border-t border-border">
               <p className="text-xs text-muted-foreground">Student ID</p>
               <p className="text-sm font-mono font-medium text-primary">{(profile as any).student_id}</p>
@@ -138,33 +151,91 @@ const MobileProfile = () => {
           )}
         </div>
 
-        {/* APAAR / Student ID */}
-        <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
-          <h3 className="font-semibold text-sm flex items-center gap-2">
-            <BadgeCheck className="w-4 h-4 text-primary" />Student Verification
-          </h3>
-          <p className="text-xs text-muted-foreground">APAAR / ABC ID (university) or ERP ID (school)</p>
-          {idVerified ? (
-            <div className="p-3 rounded-xl bg-eternia-success/10 border border-eternia-success/20 flex items-center gap-2.5">
-              <CheckCircle className="w-4 h-4 text-eternia-success shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-eternia-success">Verified</p>
-                <p className="text-[11px] text-muted-foreground">Securely stored.</p>
-              </div>
+        {/* Expert/Therapist: Professional Details */}
+        {(isExpert || isTherapist) && (
+          <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <Stethoscope className="w-4 h-4 text-primary" />Professional Details
+            </h3>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Specialty</label>
+              <Input placeholder="e.g., Clinical Psychology" value={specialty} onChange={(e) => setSpecialty(e.target.value)} className="bg-muted/30 h-10 text-sm" />
             </div>
-          ) : (
-            <div className="space-y-2">
-              <Input placeholder="Enter APAAR / ABC / ERP ID" value={studentId} onChange={(e) => setStudentId(e.target.value)} className="bg-muted/30 h-10 text-sm" maxLength={30} />
-              <Button onClick={handleVerifyStudentId} disabled={!studentId.trim() || isVerifyingId} size="sm" className="gap-1.5 h-9 text-xs">
-                {isVerifyingId ? <Loader2 className="w-4 h-4 animate-spin" /> : <BadgeCheck className="w-4 h-4" />}Verify
-              </Button>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">CRR Verification</span>
+              {profile?.is_verified ? (
+                <span className="text-sm font-medium text-eternia-success flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" />Verified</span>
+              ) : (
+                <span className="text-sm font-medium text-eternia-warning flex items-center gap-1"><Clock className="w-3.5 h-3.5" />Pending</span>
+              )}
             </div>
-          )}
-          <div className="p-2 rounded-lg bg-muted/30 flex items-start gap-2">
-            <AlertCircle className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-            <p className="text-[10px] text-muted-foreground">Encrypted. Only accessible during formal escalation.</p>
           </div>
-        </div>
+        )}
+
+        {/* Intern: Training Status */}
+        {isIntern && (
+          <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" />Training Status
+            </h3>
+            <Progress value={(completedModules.length / 7) * 100} className="h-2" />
+            <p className="text-xs text-muted-foreground">{completedModules.length}/7 modules · {trainingStatus === "active" || trainingStatus === "completed" ? "Certified" : trainingStatus === "interview_pending" ? "Interview Pending" : "In Progress"}</p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">CRR Verification</span>
+              {profile?.is_verified ? (
+                <span className="text-sm font-medium text-eternia-success flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" />Verified</span>
+              ) : (
+                <span className="text-sm font-medium text-eternia-warning flex items-center gap-1"><Clock className="w-3.5 h-3.5" />Pending</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* SPOC: Institution Info */}
+        {isSPOC && (
+          <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" />Institution
+            </h3>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Status</span>
+              <span className="text-sm font-medium">{profile?.institution_id ? "Linked" : "Not linked"}</span>
+            </div>
+            <Link to="/dashboard/spoc">
+              <Button variant="outline" className="w-full justify-between h-10 text-sm">SPOC Dashboard<ChevronRight className="w-4 h-4" /></Button>
+            </Link>
+          </div>
+        )}
+
+        {/* APAAR / Student ID — Student Only */}
+        {isStudent && (
+          <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <BadgeCheck className="w-4 h-4 text-primary" />Student Verification
+            </h3>
+            <p className="text-xs text-muted-foreground">APAAR / ABC ID (university) or ERP ID (school)</p>
+            {idVerified ? (
+              <div className="p-3 rounded-xl bg-eternia-success/10 border border-eternia-success/20 flex items-center gap-2.5">
+                <CheckCircle className="w-4 h-4 text-eternia-success shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-eternia-success">Verified</p>
+                  <p className="text-[11px] text-muted-foreground">Securely stored.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Input placeholder="Enter APAAR / ABC / ERP ID" value={studentId} onChange={(e) => setStudentId(e.target.value)} className="bg-muted/30 h-10 text-sm" maxLength={30} />
+                <Button onClick={handleVerifyStudentId} disabled={!studentId.trim() || isVerifyingId} size="sm" className="gap-1.5 h-9 text-xs">
+                  {isVerifyingId ? <Loader2 className="w-4 h-4 animate-spin" /> : <BadgeCheck className="w-4 h-4" />}Verify
+                </Button>
+              </div>
+            )}
+            <div className="p-2 rounded-lg bg-muted/30 flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+              <p className="text-[10px] text-muted-foreground">Encrypted. Only accessible during formal escalation.</p>
+            </div>
+          </div>
+        )}
 
         {/* Bio */}
         <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
@@ -175,60 +246,58 @@ const MobileProfile = () => {
           </Button>
         </div>
 
-        {/* Emergency Contact */}
-        <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
-          <h3 className="font-semibold text-sm flex items-center gap-2"><Phone className="w-4 h-4 text-primary" />Emergency Contact</h3>
-          <p className="text-xs text-muted-foreground">Encrypted, only for escalation.</p>
-
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Whose number? *</label>
-            <Select
-              value={contactIsSelf === null ? "" : contactIsSelf ? "self" : "other"}
-              onValueChange={(v) => {
-                setContactIsSelf(v === "self");
-                if (v === "self") { setEmergencyName(""); setEmergencyRelation("self"); }
-              }}
-            >
-              <SelectTrigger className="h-10 text-sm bg-muted/30"><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="self">My own number</SelectItem>
-                <SelectItem value="other">Someone else's</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Phone Number *</label>
-            <Input placeholder="+91 XXXXX XXXXX" value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} className="bg-muted/30 h-10 text-sm" maxLength={15} />
-          </div>
-
-          {contactIsSelf === false && (
-            <div className="space-y-2">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Contact Name *</label>
-                <Input placeholder="e.g., Parent" value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} className="bg-muted/30 h-10 text-sm" maxLength={100} />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Relationship *</label>
-                <Select value={emergencyRelation} onValueChange={setEmergencyRelation}>
-                  <SelectTrigger className="h-10 text-sm bg-muted/30"><SelectValue placeholder="Select..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mother">Mother</SelectItem>
-                    <SelectItem value="father">Father</SelectItem>
-                    <SelectItem value="guardian">Guardian</SelectItem>
-                    <SelectItem value="sibling">Sibling</SelectItem>
-                    <SelectItem value="spouse">Spouse</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Emergency Contact — Student Only */}
+        {isStudent && (
+          <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2"><Phone className="w-4 h-4 text-primary" />Emergency Contact</h3>
+            <p className="text-xs text-muted-foreground">Encrypted, only for escalation.</p>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Whose number? *</label>
+              <Select
+                value={contactIsSelf === null ? "" : contactIsSelf ? "self" : "other"}
+                onValueChange={(v) => {
+                  setContactIsSelf(v === "self");
+                  if (v === "self") { setEmergencyName(""); setEmergencyRelation("self"); }
+                }}
+              >
+                <SelectTrigger className="h-10 text-sm bg-muted/30"><SelectValue placeholder="Select..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="self">My own number</SelectItem>
+                  <SelectItem value="other">Someone else's</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
-
-          <Button onClick={handleSaveEmergency} disabled={isSavingEmergency || contactIsSelf === null || !emergencyPhone.trim()} variant="outline" size="sm" className="gap-1.5 h-9 text-xs">
-            {isSavingEmergency ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}Save
-          </Button>
-        </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Phone Number *</label>
+              <Input placeholder="+91 XXXXX XXXXX" value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} className="bg-muted/30 h-10 text-sm" maxLength={15} />
+            </div>
+            {contactIsSelf === false && (
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Contact Name *</label>
+                  <Input placeholder="e.g., Parent" value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} className="bg-muted/30 h-10 text-sm" maxLength={100} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Relationship *</label>
+                  <Select value={emergencyRelation} onValueChange={setEmergencyRelation}>
+                    <SelectTrigger className="h-10 text-sm bg-muted/30"><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mother">Mother</SelectItem>
+                      <SelectItem value="father">Father</SelectItem>
+                      <SelectItem value="guardian">Guardian</SelectItem>
+                      <SelectItem value="sibling">Sibling</SelectItem>
+                      <SelectItem value="spouse">Spouse</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            <Button onClick={handleSaveEmergency} disabled={isSavingEmergency || contactIsSelf === null || !emergencyPhone.trim()} variant="outline" size="sm" className="gap-1.5 h-9 text-xs">
+              {isSavingEmergency ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}Save
+            </Button>
+          </div>
+        )}
 
         {/* Settings */}
         <div className="p-4 rounded-2xl bg-card border border-border space-y-3">
@@ -246,7 +315,7 @@ const MobileProfile = () => {
           <h3 className="font-semibold text-sm flex items-center gap-2"><Bell className="w-4 h-4 text-primary" />Notifications</h3>
           {[
             { key: "sessions" as const, label: "Session Reminders", desc: "Upcoming appointments" },
-            { key: "credits" as const, label: "Credit Updates", desc: "Credits earned/spent" },
+            ...(isStudent ? [{ key: "credits" as const, label: "Credit Updates", desc: "Credits earned/spent" }] : []),
             { key: "wellness" as const, label: "Wellness Tips", desc: "Daily reminders" },
           ].map((item) => (
             <div key={item.key} className="flex items-center justify-between gap-3 py-1">

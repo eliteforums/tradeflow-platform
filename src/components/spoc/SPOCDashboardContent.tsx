@@ -179,6 +179,16 @@ const SPOCDashboardContent = () => {
     },
   });
 
+  const { data: stabilityPoolBalance = 0 } = useQuery({
+    queryKey: ["stability-pool", institutionId],
+    queryFn: async () => {
+      if (!institutionId) return 0;
+      const { data, error } = await supabase.rpc("get_pool_balance", { _institution_id: institutionId });
+      if (error) throw error;
+      return data || 0;
+    },
+    enabled: !!institutionId,
+  });
   const { data: auditLogs = [] } = useQuery({
     queryKey: ["spoc-audit-logs"],
     queryFn: async () => {
@@ -763,6 +773,19 @@ const SPOCDashboardContent = () => {
                 <p className="text-[10px] text-muted-foreground">{stat.desc}</p>
               </div>
             ))}
+          </div>
+
+          {/* ECC Stability Pool */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <Coins className="w-4 h-4 text-primary" />
+                ECC Stability Pool
+              </h4>
+              <span className="text-xs text-muted-foreground">Institution Reserve</span>
+            </div>
+            <p className="text-2xl font-bold text-primary">{stabilityPoolBalance} <span className="text-sm font-normal text-muted-foreground">ECC</span></p>
+            <p className="text-[10px] text-muted-foreground mt-1">Auto-contributed from institutional credit pool for emergency grants</p>
           </div>
 
           {/* Risk Overview */}

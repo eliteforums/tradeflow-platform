@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 import {
   User, Shield, Bell, Lock, Building2, Calendar, Coins, CheckCircle, Settings,
   ChevronRight, Save, Loader2, Phone, UserCircle, BadgeCheck, AlertCircle,
+  Award, BookOpen, Stethoscope, Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
@@ -26,13 +28,14 @@ const Profile = () => {
   const { user, profile, refreshProfile } = useAuth();
   const { balance } = useCredits();
   const [bio, setBio] = useState(profile?.bio || "");
+  const [specialty, setSpecialty] = useState(profile?.specialty || "");
 
-  // APAAR / Student ID
+  // APAAR / Student ID (student only)
   const [studentId, setStudentId] = useState("");
   const [isVerifyingId, setIsVerifyingId] = useState(false);
   const [idVerified, setIdVerified] = useState(false);
 
-  // Emergency contact
+  // Emergency contact (student only)
   const [contactIsSelf, setContactIsSelf] = useState<boolean | null>(null);
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
@@ -41,9 +44,15 @@ const Profile = () => {
   const [isSavingEmergency, setIsSavingEmergency] = useState(false);
   const [notifications, setNotifications] = useState({ sessions: true, credits: true, wellness: false });
 
-  // Load existing private data
+  const isStudent = profile?.role === "student";
+  const isExpert = profile?.role === "expert";
+  const isIntern = profile?.role === "intern";
+  const isTherapist = (profile as any)?.role === "therapist";
+  const isSPOC = profile?.role === "spoc";
+
+  // Load existing private data (student only)
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isStudent) return;
     const loadPrivate = async () => {
       const { data } = await supabase
         .from("user_private")
@@ -56,19 +65,21 @@ const Profile = () => {
         setEmergencyPhone(data.emergency_phone_encrypted || "");
         setEmergencyRelation(data.emergency_relation || "");
         if (data.student_id_encrypted) {
-          setStudentId("••••••••"); // masked
+          setStudentId("••••••••");
           setIdVerified(true);
         }
       }
     };
     loadPrivate();
-  }, [user]);
+  }, [user, isStudent]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
     setIsSaving(true);
     try {
-      const { error } = await supabase.from("profiles").update({ bio, updated_at: new Date().toISOString() }).eq("id", user.id);
+      const updates: Record<string, any> = { bio, updated_at: new Date().toISOString() };
+      if (isExpert || isTherapist) updates.specialty = specialty;
+      const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
       if (error) throw error;
       await refreshProfile();
       toast.success("Profile updated");
@@ -134,6 +145,11 @@ const Profile = () => {
 
   if (isMobile) return <MobileProfile />;
 
+  // Training progress for interns
+  const trainingProgress = (profile as any)?.training_progress as number[] | null;
+  const completedModules = trainingProgress || [];
+  const trainingStatus = (profile as any)?.training_status || "not_started";
+
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto space-y-6">
@@ -162,14 +178,14 @@ const Profile = () => {
               </p>
             </div>
           </div>
-         <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
+          <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border">
             <div className="text-center"><Calendar className="w-5 h-5 text-primary mx-auto mb-1" /><p className="text-2xl font-bold">{profile?.total_sessions || 0}</p><p className="text-sm text-muted-foreground">Sessions</p></div>
-            {profile?.role === "student" && (
+            {isStudent && (
               <div className="text-center"><Coins className="w-5 h-5 text-primary mx-auto mb-1" /><p className="text-2xl font-bold">{balance}</p><p className="text-sm text-muted-foreground">Credits</p></div>
             )}
             <div className="text-center"><Shield className="w-5 h-5 text-primary mx-auto mb-1" /><p className="text-2xl font-bold">{profile?.streak_days || 0}</p><p className="text-sm text-muted-foreground">Streak</p></div>
           </div>
-          {(profile as any)?.student_id && (
+          {isStudent && (profile as any)?.student_id && (
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-xs text-muted-foreground">Student ID</p>
               <p className="text-sm font-mono font-medium text-primary">{(profile as any).student_id}</p>
@@ -177,142 +193,220 @@ const Profile = () => {
           )}
         </div>
 
-        {/* APAAR / Student ID Verification */}
-        <div className="p-6 rounded-2xl bg-card border border-border space-y-3">
-          <h3 className="font-semibold font-display text-sm flex items-center gap-2">
-            <BadgeCheck className="w-4 h-4 text-primary" />Student Verification (APAAR / ABC / ERP ID)
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            Submit your APAAR ID (university/college) or ERP ID (school) for institutional verification. This ID is encrypted and never visible publicly.
-          </p>
-          {idVerified ? (
-            <div className="p-3 rounded-xl bg-eternia-success/10 border border-eternia-success/20 flex items-center gap-2.5">
-              <CheckCircle className="w-4 h-4 text-eternia-success shrink-0" />
+        {/* Role-Specific Sections */}
+
+        {/* Expert/Therapist: Specialty & Licence */}
+        {(isExpert || isTherapist) && (
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
+            <h3 className="font-semibold font-display text-sm flex items-center gap-2">
+              <Stethoscope className="w-4 h-4 text-primary" />Professional Details
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm font-medium text-eternia-success">Verified</p>
-                <p className="text-[11px] text-muted-foreground">Your student ID has been securely stored.</p>
+                <label className="text-xs text-muted-foreground mb-1 block">Specialty</label>
+                <Input
+                  placeholder="e.g., Clinical Psychology"
+                  value={specialty}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  className="bg-muted/30 h-9 text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">CRR Verification</label>
+                <div className="flex items-center gap-1.5 h-9">
+                  {profile?.is_verified ? (
+                    <><CheckCircle className="w-4 h-4 text-eternia-success" /><span className="text-sm font-medium text-eternia-success">Verified</span></>
+                  ) : (
+                    <><Clock className="w-4 h-4 text-eternia-warning" /><span className="text-sm font-medium text-eternia-warning">Pending</span></>
+                  )}
+                </div>
               </div>
             </div>
-          ) : (
-            <div className="space-y-2">
-              <Input
-                placeholder="Enter APAAR / ABC / ERP ID"
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                className="bg-muted/30 h-9 text-sm"
-                maxLength={30}
-              />
-              <Button
-                onClick={handleVerifyStudentId}
-                disabled={!studentId.trim() || isVerifyingId}
-                size="sm"
-                className="gap-1.5 h-8"
-              >
-                {isVerifyingId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BadgeCheck className="w-3.5 h-3.5" />}
-                Verify & Store
-              </Button>
-            </div>
-          )}
-          <div className="p-2.5 rounded-lg bg-muted/30 border border-border flex items-start gap-2">
-            <AlertCircle className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-            <p className="text-[10px] text-muted-foreground">
-              Your ID is AES-256 encrypted and accessible only by Eternia Admin during formal escalation. It is never exposed in any API response.
-            </p>
           </div>
-        </div>
+        )}
+
+        {/* Intern: Training Status */}
+        {isIntern && (
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
+            <h3 className="font-semibold font-display text-sm flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" />Training Status
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Progress</p>
+                <Progress value={(completedModules.length / 7) * 100} className="h-2 mb-1" />
+                <p className="text-xs text-muted-foreground">{completedModules.length}/7 modules completed</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Status</p>
+                <p className={`text-sm font-medium ${trainingStatus === "active" || trainingStatus === "completed" ? "text-eternia-success" : "text-eternia-warning"}`}>
+                  {trainingStatus === "active" || trainingStatus === "completed" ? "Certified" : trainingStatus === "interview_pending" ? "Interview Pending" : "In Progress"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">CRR Verification</p>
+                <div className="flex items-center gap-1.5">
+                  {profile?.is_verified ? (
+                    <><CheckCircle className="w-4 h-4 text-eternia-success" /><span className="text-sm font-medium text-eternia-success">Verified</span></>
+                  ) : (
+                    <><Clock className="w-4 h-4 text-eternia-warning" /><span className="text-sm font-medium text-eternia-warning">Pending</span></>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SPOC: Institution Info */}
+        {isSPOC && (
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-3">
+            <h3 className="font-semibold font-display text-sm flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-primary" />Institution Management
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Institution</p>
+                <p className="text-sm font-medium">{profile?.institution_id ? "Linked" : "Not linked"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Verification</p>
+                <div className="flex items-center gap-1.5">
+                  {profile?.is_verified ? (
+                    <><CheckCircle className="w-4 h-4 text-eternia-success" /><span className="text-sm font-medium text-eternia-success">Verified</span></>
+                  ) : (
+                    <><Clock className="w-4 h-4 text-eternia-warning" /><span className="text-sm font-medium text-eternia-warning">Pending</span></>
+                  )}
+                </div>
+              </div>
+            </div>
+            <Link to="/dashboard/spoc">
+              <Button variant="outline" size="sm" className="w-full justify-between h-9 text-xs mt-2">
+                Go to SPOC Dashboard<ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        {/* APAAR / Student ID Verification — Student Only */}
+        {isStudent && (
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-3">
+            <h3 className="font-semibold font-display text-sm flex items-center gap-2">
+              <BadgeCheck className="w-4 h-4 text-primary" />Student Verification (APAAR / ABC / ERP ID)
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Submit your APAAR ID (university/college) or ERP ID (school) for institutional verification. This ID is encrypted and never visible publicly.
+            </p>
+            {idVerified ? (
+              <div className="p-3 rounded-xl bg-eternia-success/10 border border-eternia-success/20 flex items-center gap-2.5">
+                <CheckCircle className="w-4 h-4 text-eternia-success shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-eternia-success">Verified</p>
+                  <p className="text-[11px] text-muted-foreground">Your student ID has been securely stored.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Input
+                  placeholder="Enter APAAR / ABC / ERP ID"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  className="bg-muted/30 h-9 text-sm"
+                  maxLength={30}
+                />
+                <Button
+                  onClick={handleVerifyStudentId}
+                  disabled={!studentId.trim() || isVerifyingId}
+                  size="sm"
+                  className="gap-1.5 h-8"
+                >
+                  {isVerifyingId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BadgeCheck className="w-3.5 h-3.5" />}
+                  Verify & Store
+                </Button>
+              </div>
+            )}
+            <div className="p-2.5 rounded-lg bg-muted/30 border border-border flex items-start gap-2">
+              <AlertCircle className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+              <p className="text-[10px] text-muted-foreground">
+                Your ID is AES-256 encrypted and accessible only by Eternia Admin during formal escalation. It is never exposed in any API response.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Bio */}
         <div className="p-6 rounded-2xl bg-card border border-border space-y-3">
           <h3 className="font-semibold font-display text-sm flex items-center gap-2"><UserCircle className="w-4 h-4 text-primary" />About You</h3>
           <Textarea placeholder="Tell us about yourself..." value={bio} onChange={(e) => setBio(e.target.value)} className="min-h-[100px] bg-muted/30 border-border resize-none text-sm" />
           <Button onClick={handleSaveProfile} disabled={isSaving} size="sm" className="gap-1.5 h-8">
-            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}Save Bio
+            {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}Save Profile
           </Button>
         </div>
 
-        {/* Emergency Contact */}
-        <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
-          <h3 className="font-semibold font-display text-sm flex items-center gap-2">
-            <Phone className="w-4 h-4 text-primary" />Emergency Contact
-          </h3>
-          <p className="text-xs text-muted-foreground">Encrypted and only accessible during escalation.</p>
+        {/* Emergency Contact — Student Only */}
+        {isStudent && (
+          <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
+            <h3 className="font-semibold font-display text-sm flex items-center gap-2">
+              <Phone className="w-4 h-4 text-primary" />Emergency Contact
+            </h3>
+            <p className="text-xs text-muted-foreground">Encrypted and only accessible during escalation.</p>
 
-          {/* Self or Other selection */}
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-              Whose number is this? *
-            </label>
-            <Select
-              value={contactIsSelf === null ? "" : contactIsSelf ? "self" : "other"}
-              onValueChange={(v) => {
-                setContactIsSelf(v === "self");
-                if (v === "self") {
-                  setEmergencyName("");
-                  setEmergencyRelation("self");
-                }
-              }}
-            >
-              <SelectTrigger className="h-9 text-sm bg-muted/30"><SelectValue placeholder="Select..." /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="self">My own number</SelectItem>
-                <SelectItem value="other">Someone else's number</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Phone — always shown */}
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Phone Number *</label>
-            <Input
-              placeholder="+91 XXXXX XXXXX"
-              value={emergencyPhone}
-              onChange={(e) => setEmergencyPhone(e.target.value)}
-              className="bg-muted/30 h-9 text-sm"
-              maxLength={15}
-            />
-          </div>
-
-          {/* Relationship + Name — only when "not self" */}
-          {contactIsSelf === false && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Contact Name *</label>
-                <Input
-                  placeholder="e.g., Parent / Guardian"
-                  value={emergencyName}
-                  onChange={(e) => setEmergencyName(e.target.value)}
-                  className="bg-muted/30 h-9 text-sm"
-                  maxLength={100}
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Relationship *</label>
-                <Select value={emergencyRelation} onValueChange={setEmergencyRelation}>
-                  <SelectTrigger className="h-9 text-sm bg-muted/30"><SelectValue placeholder="Select..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mother">Mother</SelectItem>
-                    <SelectItem value="father">Father</SelectItem>
-                    <SelectItem value="guardian">Guardian</SelectItem>
-                    <SelectItem value="sibling">Sibling</SelectItem>
-                    <SelectItem value="spouse">Spouse</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Whose number is this? *</label>
+              <Select
+                value={contactIsSelf === null ? "" : contactIsSelf ? "self" : "other"}
+                onValueChange={(v) => {
+                  setContactIsSelf(v === "self");
+                  if (v === "self") { setEmergencyName(""); setEmergencyRelation("self"); }
+                }}
+              >
+                <SelectTrigger className="h-9 text-sm bg-muted/30"><SelectValue placeholder="Select..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="self">My own number</SelectItem>
+                  <SelectItem value="other">Someone else's number</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          )}
 
-          <Button
-            onClick={handleSaveEmergency}
-            disabled={isSavingEmergency || contactIsSelf === null || !emergencyPhone.trim()}
-            variant="outline"
-            size="sm"
-            className="gap-1.5 h-8"
-          >
-            {isSavingEmergency ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-            Save Emergency Contact
-          </Button>
-        </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Phone Number *</label>
+              <Input placeholder="+91 XXXXX XXXXX" value={emergencyPhone} onChange={(e) => setEmergencyPhone(e.target.value)} className="bg-muted/30 h-9 text-sm" maxLength={15} />
+            </div>
+
+            {contactIsSelf === false && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Contact Name *</label>
+                  <Input placeholder="e.g., Parent / Guardian" value={emergencyName} onChange={(e) => setEmergencyName(e.target.value)} className="bg-muted/30 h-9 text-sm" maxLength={100} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Relationship *</label>
+                  <Select value={emergencyRelation} onValueChange={setEmergencyRelation}>
+                    <SelectTrigger className="h-9 text-sm bg-muted/30"><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mother">Mother</SelectItem>
+                      <SelectItem value="father">Father</SelectItem>
+                      <SelectItem value="guardian">Guardian</SelectItem>
+                      <SelectItem value="sibling">Sibling</SelectItem>
+                      <SelectItem value="spouse">Spouse</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={handleSaveEmergency}
+              disabled={isSavingEmergency || contactIsSelf === null || !emergencyPhone.trim()}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 h-8"
+            >
+              {isSavingEmergency ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              Save Emergency Contact
+            </Button>
+          </div>
+        )}
 
         {/* Account Settings */}
         <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
@@ -334,7 +428,7 @@ const Profile = () => {
           <div className="space-y-3">
             {[
               { key: "sessions" as const, label: "Session Reminders", desc: "Upcoming appointments" },
-              { key: "credits" as const, label: "Credit Updates", desc: "Credits earned or spent" },
+              ...(isStudent ? [{ key: "credits" as const, label: "Credit Updates", desc: "Credits earned or spent" }] : []),
               { key: "wellness" as const, label: "Wellness Tips", desc: "Daily self-care reminders" },
             ].map((item) => (
               <div key={item.key} className="flex items-center justify-between gap-3">

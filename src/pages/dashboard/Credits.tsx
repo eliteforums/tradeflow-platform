@@ -4,16 +4,30 @@ import MobileCredits from "@/components/mobile/MobileCredits";
 import { useState } from "react";
 import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award, TrendingUp, Loader2, AlertCircle, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useCredits } from "@/hooks/useCredits";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
 const Credits = () => {
   const isMobile = useIsMobile();
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
+
+  const { data: dailyEarned = 0 } = useQuery({
+    queryKey: ["daily-earn-total", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data, error } = await supabase.rpc("get_daily_earn_total", { _user_id: user.id });
+      if (error) throw error;
+      return data || 0;
+    },
+    enabled: !!user,
+  });
 
   if (isMobile) return <MobileCredits />;
 
@@ -57,7 +71,11 @@ const Credits = () => {
           <div className="grid grid-cols-3 gap-4 pt-4 border-t border-background/20">
             <div><p className="text-background/70 text-sm">Earned</p><p className="font-semibold text-lg flex items-center gap-1"><TrendingUp className="w-4 h-4" />+{earnedThisMonth}</p></div>
             <div><p className="text-background/70 text-sm">Spent</p><p className="font-semibold text-lg">-{spentThisMonth}</p></div>
-            <div><p className="text-background/70 text-sm">Daily Cap</p><p className="font-semibold text-lg">5/day</p></div>
+            <div>
+              <p className="text-background/70 text-sm">Daily Cap</p>
+              <p className="font-semibold text-lg">{dailyEarned}/5</p>
+              <Progress value={(dailyEarned / 5) * 100} className="h-1.5 mt-1 bg-background/20" />
+            </div>
           </div>
         </div>
 
