@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 const PeerConnect = () => {
   const isMobile = useIsMobile();
