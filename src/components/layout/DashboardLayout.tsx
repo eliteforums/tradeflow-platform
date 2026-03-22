@@ -123,6 +123,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     if (role === "spoc") return spocNavItems;
     if (role === "expert") return expertNavItems;
     if (role === "intern") return internNavItems;
+    if (role === "therapist") return therapistNavItems;
     return studentNavItems;
   }, [role]);
 
