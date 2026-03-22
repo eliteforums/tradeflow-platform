@@ -1,29 +1,34 @@
 
 
-## Plan: Clean Up Quest Cards — Remove Dead Code and Fix Duplicate Data
+## Plan: Beautify Quest Cards with Solitaire-Style Visual Design
 
-### Current State
-The Quest Cards module is **already fully functional** with real database integration:
-- Card flipping with CSS 3D animations works
-- Answers save to `quest_completions` table with the `answer` column
-- Admin "Quest Cards" tab in the dashboard has CRUD for questions and answer viewing
-- 16 quest cards exist in the database (but there are **duplicates** — same titles appear twice from multiple seed migrations)
+### What Changes
+Redesign the Quest Cards page visually to feel like a premium solitaire card game — rich card backs with patterns, smooth flip animations, card shadows, a proper deck stack, and a felt-like table surface. All 2D with CSS.
 
-### Issues Found
-1. **Dead code in shuffle logic** — Lines 19-24 in `QuestCards.tsx` create a `shuffled` array that's never used
-2. **Duplicate quest cards in database** — 8 unique questions appear twice each (16 rows total), causing the same question to potentially appear multiple times in the 6-card deal
-3. **No other "dummy" code** — all queries, mutations, and UI are real and functional
+### Changes to `src/App.css`
+Add richer card animation utilities:
+- Card hover lift with shadow (`card-hover`)
+- Smoother flip transition with spring-like easing
+- Card deal stagger animation (cards slide in one by one on load)
+- Subtle card wobble on hover
+- Green felt-like table background class
 
-### Changes
+### Changes to `src/pages/dashboard/QuestCards.tsx`
+- **Table surface**: Wrap card grid in a felt-green rounded container with inner shadow (like a card table)
+- **Card backs**: Replace emoji + plain gradient with a rich patterned design — ornate border pattern using CSS, a central logo/emblem, and a gradient back (teal-to-lavender). Add inner decorative border lines using `before`/`after` pseudo-elements or nested divs
+- **Card fronts**: Add a parchment-like light background, decorative corner ornaments (Unicode suits or symbols), cleaner typography
+- **Hover**: Cards lift up with shadow on hover, slight wobble
+- **Flip**: Smoother 600ms transition with ease-out-back curve
+- **Deal animation**: Cards stagger-animate in from the deck position on mount (translate + fade, 100ms stagger per card)
+- **Deck stack**: Make deck look more realistic — 5 stacked cards with slight offsets, card back pattern visible
+- **Completed cards**: Subtle golden glow border, checkmark overlay
+- **Answer panel**: Styled as a card-table overlay with glass effect
 
-**1. Clean up `src/pages/dashboard/QuestCards.tsx`**
-- Remove the dead `shuffled` variable (lines 19-24)
-- Improve the seeded shuffle to use a proper hash function for better randomization
-
-**2. Remove duplicate quest cards from database**
-- Use the insert tool (DELETE query) to remove the 8 duplicate rows, keeping only one copy of each question
+### Changes to `src/index.css`
+Add a `.card-table` utility class with the felt-like green-dark background and inner shadow.
 
 ### Files to modify
-- `src/pages/dashboard/QuestCards.tsx` — Remove dead code, improve shuffle
-- Database — Delete duplicate quest card rows
+- `src/pages/dashboard/QuestCards.tsx` — Visual redesign
+- `src/App.css` — Card animation utilities
+- `src/index.css` — Card table utility class
 
