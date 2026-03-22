@@ -63,6 +63,10 @@ const MobileBlackBox = () => {
               <p className="text-base font-semibold font-display leading-relaxed text-foreground">
                 Hello! I am Nova. How can I help you today?
               </p>
+            ) : isConnectingToSession ? (
+              <p className="text-sm text-muted-foreground">
+                A therapist accepted. Setting up secure connection…
+              </p>
             ) : isQueued ? (
               <p className="text-sm text-muted-foreground">
                 You're in the queue. A professional will connect shortly.

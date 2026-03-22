@@ -69,6 +69,10 @@ const BlackBox = () => {
               <p className="text-lg font-semibold font-display leading-relaxed text-foreground">
                 Hello! I am Nova. How can I help you today?
               </p>
+            ) : isConnectingToSession ? (
+              <p className="text-base text-muted-foreground leading-relaxed">
+                A therapist accepted. Setting up secure connection…
+              </p>
             ) : isQueued ? (
               <p className="text-base text-muted-foreground leading-relaxed">
                 You're in the queue. A professional will connect with you shortly.
