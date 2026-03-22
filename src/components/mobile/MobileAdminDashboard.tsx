@@ -275,6 +275,7 @@ const MobileAdminDashboard = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (!inst.eternia_code_hash) return;
                           navigator.clipboard.writeText(inst.eternia_code_hash);
                           setCopiedId(inst.id);
                           setTimeout(() => setCopiedId(null), 2000);
