@@ -102,7 +102,7 @@ const MobileSoundTherapy = () => {
                 transition={{ type: "spring", damping: 20 }}
                 className={`w-48 h-48 rounded-3xl bg-gradient-to-br ${gradients[currentTrack % gradients.length]} flex items-center justify-center shadow-2xl`}
               >
-                <span className="text-6xl">{currentTrackData.cover_emoji || "🎵"}</span>
+                <span className="text-6xl">{(currentTrackData.cover_emoji || "🎵").slice(0, 2)}</span>
               </motion.div>
             </div>
 
