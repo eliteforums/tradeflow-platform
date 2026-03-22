@@ -89,6 +89,23 @@ const MobileInternDashboard = () => {
     }, enabled: !!user,
   });
 
+  // Realtime subscription for new/updated peer sessions
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`intern-peer-sessions-mobile-${user.id}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "peer_sessions",
+        filter: `intern_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ["intern-sessions", user.id] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, queryClient]);
+
   const submitEscalation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Not authenticated");
