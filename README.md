@@ -187,6 +187,71 @@ Full platform control via grouped sidebar navigation:
 | **Audit Trail** | All admin/SPOC actions logged to `audit_logs` table with actor ID, timestamp, and metadata |
 | **JWT Rotation** | Device sessions table tracks refresh tokens with expiry and revocation |
 
+### Security Headers
+
+All responses include hardened HTTP security headers enforced via `vercel.json`:
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `Content-Security-Policy` | Strict source whitelist (self + backend + fonts + VideoSDK + Razorpay) | Prevents XSS, code injection, and data exfiltration |
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` | Forces HTTPS for 2 years with HSTS preload |
+| `X-Frame-Options` | `DENY` | Prevents clickjacking via iframe embedding |
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing attacks |
+| `Cross-Origin-Opener-Policy` | `same-origin` | Isolates browsing context from cross-origin popups |
+| `Cross-Origin-Embedder-Policy` | `credentialless` | Prevents cross-origin resource credential leaks |
+| `Cross-Origin-Resource-Policy` | `same-site` | Blocks cross-origin resource loading |
+| `Permissions-Policy` | `camera=(self), microphone=(self), geolocation=(), payment=(), usb=()` | Restricts browser API access — camera/mic for video calls only |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer information leakage |
+| `X-DNS-Prefetch-Control` | `on` | Enables DNS prefetching for performance |
+
+### Edge Function Security
+
+All 17 edge functions are hardened with defense-in-depth:
+
+| Protection | Details |
+|------------|---------|
+| **Rate Limiting** | In-memory IP-based rate limiter per function (10–30 req/min depending on sensitivity) |
+| **JWT Validation** | `getClaims()` for token verification — faster than `getUser()`, prevents session replay |
+| **Input Sanitization** | Length limits, null-byte stripping, UUID format validation, type coercion |
+| **Amount Caps** | `spend-credits`: 1–500 ECC, `grant-credits`: 1–10,000 ECC per transaction |
+| **Ownership Checks** | `purchase-credits` verifies Razorpay `order.notes.user_id` matches authenticated caller |
+| **Role Enforcement** | `grant-credits` requires admin/SPOC role; `reset-device` requires SPOC/admin with institution scoping |
+| **Error Sanitization** | Generic error messages in production; no stack traces or internal details leaked |
+
+### RLS Hardening (Vulnerability Patches)
+
+Critical Row-Level Security vulnerabilities identified and patched:
+
+| Vulnerability | Severity | Fix Applied |
+|---------------|----------|-------------|
+| **Self-insert credit transactions** — any authenticated user could fabricate unlimited ECC | 🔴 Critical | Removed `System can insert credit transactions` policy; credits now only via trusted edge functions |
+| **All profiles readable** — any user could read all profiles including sensitive fields | 🔴 Critical | Replaced with scoped policies: own profile (students), all profiles (admin/spoc), session-related (staff) |
+| **Escalation request impersonation** — experts/interns could insert requests with arbitrary `spoc_id` | 🟡 Medium | Added `WITH CHECK` binding session/entry ownership to `auth.uid()` |
+| **Institution codes exposed to anon** — unauthenticated users could enumerate institution join codes | 🟡 Medium | Removed broad anon policy; re-added minimal anon access for onboarding verification only |
+
+### Client-Side Security
+
+| Protection | Details |
+|------------|---------|
+| **Password Strength** | Minimum 8 chars, requires uppercase + lowercase + number + special character |
+| **Password Blacklist** | Password cannot contain username |
+| **Login Brute-Force** | 5-attempt lockout with 5-minute cooldown (client-side) |
+| **Username Validation** | Alphanumeric + underscore only, 4–30 characters |
+| **Phone Validation** | Indian mobile format only (`+91 6-9XXXXXXXXX`) |
+| **Input Length Limits** | All form fields capped (username: 30, password: 128, notes: 200–500) |
+
+### Database-Level Rate Limiting
+
+A `rate_limits` table with `check_rate_limit()` SECURITY DEFINER function provides database-level rate limiting:
+
+```sql
+-- Check if a request is within limits (60 requests per minute default)
+SELECT public.check_rate_limit('function:user_id', 60, 60);
+```
+
+- Service-role access only (RLS blocks all authenticated users)
+- Auto-cleanup via `cleanup_rate_limits()` function (entries expire after 1 hour)
+
 ---
 
 ## Project Structure
