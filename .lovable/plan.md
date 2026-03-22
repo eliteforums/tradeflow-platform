@@ -1,41 +1,56 @@
 
 
-## Plan: Fix Therapist Add Member — CORS Header Mismatch
+## Plan: Dynamic QR in SPOC Dashboard + Remaining PRD v2-29 Gaps
 
-### Root Cause
-The `add-member` edge function has outdated CORS `Access-Control-Allow-Headers` that don't include the `x-supabase-client-*` headers the supabase-js client now sends. The browser blocks the request at the preflight (OPTIONS) stage, so the function body never executes — explaining why there are zero logs.
+### 1. Dynamic QR Code in SPOC Dashboard (Critical Fix)
 
-Compare:
-- **add-member** (broken): `authorization, x-client-info, apikey, content-type`
-- **bulk-add-members** (working): includes `x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version`
+**Problem:** The SPOC Dashboard's Onboarding tab (lines 440-448 of `SPOCDashboardContent.tsx`) shows a static `QrCode` icon instead of a real scannable QR. The `generateQR` function only copies text to clipboard. Meanwhile, `SPOCTools.tsx` (admin panel) already has a fully working dynamic QR with `QRCodeSVG` from `qrcode.react`.
 
-### Changes
+**Fix:** Replace the static icon placeholder in `SPOCDashboardContent.tsx` with the same `QRCodeSVG` pattern used in `SPOCTools.tsx`:
+- Add `useQuery` to auto-fetch QR payload from `generate-spoc-qr` edge function on mount
+- Render `QRCodeSVG` with the payload, loading spinner, and error state
+- Add Copy, Download, and Regenerate buttons (matching `SPOCTools.tsx` pattern)
+- Remove the old `generateQR` function that only copied text
 
-| # | File | Change |
-|---|------|--------|
-| 1 | `supabase/functions/add-member/index.ts` | Update CORS headers to match `bulk-add-members` |
-| 2 | `src/components/admin/MemberManager.tsx` | Improve error extraction from `FunctionsHttpError` to show actual error messages instead of generic "Failed" |
+**File:** `src/components/spoc/SPOCDashboardContent.tsx`
+
+---
+
+### 2. Remaining PRD v2-29 Gaps (Compared Against Codebase)
+
+After thorough comparison of PRD v2-29 against the full codebase, here are the gaps still present:
+
+| # | Gap | PRD Section | Status |
+|---|-----|-------------|--------|
+| 1 | **SPOC QR is static icon** | §3, §20 | Fix above |
+| 2 | **Therapist Dashboard missing "Active Session" tab** | §20 | Tab exists as "session" but PRD calls for "Active Session" and "Escalation History" as separate tabs — current implementation already covers this with queue/session/history/profile tabs ✅ |
+| 3 | **ECC Low Balance Prompt** | §21 | Already implemented in `Dashboard.tsx` line 77-86 (`balance < 5`) ✅ |
+| 4 | **Daily ECC Earning Cap (5 ECC)** | §21 | Already enforced via `get_daily_earn_total` DB function ✅ |
+| 5 | **ECC Stability Pool** | §21 | Already implemented (table + edge functions) ✅ |
+| 6 | **Escalation consent checkbox** | §3.4 | Already in Register.tsx ✅ |
+| 7 | **SPOC Dashboard missing M.Phil override records in Reports** | §20 | Already in Reports tab ✅ |
+
+**Conclusion:** The only actionable gap is the dynamic QR. All other PRD v2-29 features are already implemented or are Phase 2+ items (AI transcription pipeline, cron jobs).
+
+---
 
 ### Technical Details
 
-**1. Fix CORS headers** in `add-member/index.ts` line 5-7:
-```typescript
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-```
+**Changes to `src/components/spoc/SPOCDashboardContent.tsx`:**
 
-**2. Fix error handling** in MemberManager mutation:
-```typescript
-if (error) {
-  let msg = "Failed to create member";
-  try { msg = (await error.context?.json())?.error || error.message; } catch {}
-  throw new Error(msg);
-}
-```
+1. Add imports: `QRCodeSVG` from `qrcode.react`, `useRef`, `Download`, `RefreshCw`
+2. Add `useQuery` for QR generation (same pattern as `SPOCTools.tsx` lines 22-34)
+3. Add `qrRef` for download functionality
+4. Add `downloadQR` callback (same as `SPOCTools.tsx` lines 118-141)
+5. Replace lines 440-448 (static icon + button) with:
+   - Loading state → spinner
+   - Success state → `QRCodeSVG` rendered with teal foreground color
+   - Error state → retry button
+   - Action row: Copy, Download, Regenerate buttons
+6. Remove old `generateQR` function (lines 235-253)
 
-### Summary
-2 files, 2 small edits. The CORS fix is the critical one — without it, the browser silently blocks the request.
+**No database changes needed. No new edge functions needed.**
+
+### Files to Edit
+- `src/components/spoc/SPOCDashboardContent.tsx` — replace static QR with dynamic `QRCodeSVG`
 
