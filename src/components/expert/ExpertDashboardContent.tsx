@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
   Home, Calendar, MessageCircle, FileText, User, Clock, CheckCircle,
   AlertTriangle, Video, Phone, Loader2, Plus, Trash2, Search,
@@ -106,29 +106,6 @@ const ExpertDashboardContent = () => {
     },
   });
 
-  // AI risk: fetch blackbox entries with flag levels for students in upcoming appointments
-  const studentIds = useMemo(() => [...new Set(myAppointments.filter(a => a.status !== "completed" && a.status !== "cancelled").map((a: any) => a.student_id))], [myAppointments]);
-  const { data: studentRiskMap = {} } = useQuery({
-    queryKey: ["expert-student-risk", studentIds],
-    queryFn: async () => {
-      if (studentIds.length === 0) return {};
-      const { data, error } = await supabase
-        .from("blackbox_entries")
-        .select("user_id, ai_flag_level")
-        .in("user_id", studentIds)
-        .gt("ai_flag_level", 0)
-        .order("ai_flag_level", { ascending: false });
-      if (error) throw error;
-      const map: Record<string, number> = {};
-      (data || []).forEach((e: any) => {
-        if (!map[e.user_id] || e.ai_flag_level > map[e.user_id]) {
-          map[e.user_id] = e.ai_flag_level;
-        }
-      });
-      return map;
-    },
-    enabled: studentIds.length > 0,
-  });
 
   // Mutations
   const createSlot = useMutation({
@@ -286,12 +263,6 @@ const ExpertDashboardContent = () => {
             <h1 className="text-2xl xl:text-3xl font-bold font-display">Expert Dashboard</h1>
             <p className="text-sm text-muted-foreground">Manage appointments, schedule & sessions</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-eternia-warning/10 border border-eternia-warning/20">
-              <AlertTriangle className="w-4 h-4 text-eternia-warning" />
-            </div>
-            <span className="text-xs text-muted-foreground">AI Risk Monitor Active</span>
-          </div>
         </div>
 
         {/* Tab Bar */}
@@ -349,13 +320,6 @@ const ExpertDashboardContent = () => {
                         <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-semibold text-sm truncate">{apt.student?.username || "Student"}</p>
-                          {studentRiskMap[apt.student_id] && (
-                            <span className={cn("px-1.5 py-0.5 rounded text-[10px] font-medium",
-                              studentRiskMap[apt.student_id] >= 3 ? "bg-destructive/10 text-destructive" : "bg-eternia-warning/10 text-eternia-warning"
-                            )}>
-                              AI Risk L{studentRiskMap[apt.student_id]}
-                            </span>
-                          )}
                           <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium",
                             apt.status === "completed" ? "bg-eternia-success/10 text-eternia-success"
                               : apt.status === "confirmed" ? "bg-primary/10 text-primary"
