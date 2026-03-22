@@ -979,6 +979,7 @@ export type Database = {
     }
     Functions: {
       get_credit_balance: { Args: { _user_id: string }; Returns: number }
+      get_credit_balance_fast: { Args: { _user_id: string }; Returns: number }
       get_daily_earn_total: { Args: { _user_id: string }; Returns: number }
       get_pool_balance: { Args: { _institution_id: string }; Returns: number }
       has_role: {

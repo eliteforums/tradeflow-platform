@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
 
 export interface BlackBoxEntry {
@@ -14,9 +15,12 @@ export interface BlackBoxEntry {
   updated_at: string;
 }
 
+const PAGE_SIZE = 30;
+
 export function useBlackBox() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [hasMore, setHasMore] = useState(true);
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["blackbox-entries", user?.id],
@@ -25,15 +29,36 @@ export function useBlackBox() {
       
       const { data, error } = await supabase
         .from("blackbox_entries")
-        .select("*")
+        .select("id, user_id, content_encrypted, content_type, ai_flag_level, is_private, created_at, updated_at")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
 
       if (error) throw error;
+      setHasMore((data?.length || 0) >= PAGE_SIZE);
       return data as BlackBoxEntry[];
     },
     enabled: !!user,
+    staleTime: 30_000,
   });
+
+  const loadMore = useCallback(async () => {
+    if (!user || entries.length === 0 || !hasMore) return;
+    const oldest = entries[entries.length - 1];
+    const { data, error } = await supabase
+      .from("blackbox_entries")
+      .select("id, user_id, content_encrypted, content_type, ai_flag_level, is_private, created_at, updated_at")
+      .eq("user_id", user.id)
+      .lt("created_at", oldest.created_at)
+      .order("created_at", { ascending: false })
+      .limit(PAGE_SIZE);
+
+    if (error) { console.error(error); return; }
+    if ((data?.length || 0) < PAGE_SIZE) setHasMore(false);
+    if (data && data.length > 0) {
+      queryClient.setQueryData(["blackbox-entries", user.id], [...entries, ...data]);
+    }
+  }, [user, entries, hasMore, queryClient]);
 
   const createEntry = useMutation({
     mutationFn: async ({ content, isPrivate }: { content: string; isPrivate: boolean }) => {
@@ -49,7 +74,6 @@ export function useBlackBox() {
 
       if (error) throw error;
 
-      // Only trigger AI moderation for non-private entries (PRD §4.3)
       if (data?.id && !isPrivate) {
         supabase.functions.invoke("ai-moderate", {
           body: { content, entry_id: data.id },
@@ -91,6 +115,8 @@ export function useBlackBox() {
   return {
     entries,
     isLoading,
+    hasMore,
+    loadMore,
     createEntry: createEntry.mutate,
     deleteEntry: deleteEntry.mutate,
     isCreating: createEntry.isPending,

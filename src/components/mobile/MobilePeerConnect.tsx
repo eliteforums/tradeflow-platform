@@ -1,28 +1,53 @@
-import { useState, useRef, useEffect } from "react";
-import { MessageCircle, Search, Circle, Phone, Send, X, Shield, Users, Loader2, AlertCircle, ArrowLeft, Flag } from "lucide-react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { MessageCircle, Search, Circle, Phone, Send, X, Shield, Users, Loader2, AlertCircle, ArrowLeft, Flag, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import VideoCallModal from "@/components/videosdk/VideoCallModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { format } from "date-fns";
 
 const MobilePeerConnect = () => {
   const [message, setMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { user, profile, creditBalance } = useAuth();
-  const { interns, activeSession, messages: chatMessages, isLoading, activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession, flagSession, isRequesting, isSending, isFlagging, internStatuses } = usePeerConnect();
+  const {
+    interns, activeSession, messages: chatMessages, isLoading,
+    activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
+    flagSession, isRequesting, isSending, isFlagging, internStatuses,
+    hasMoreMessages, isLoadingMore, loadMoreMessages,
+  } = usePeerConnect();
   const isIntern = profile?.role === "intern";
+
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
+  const filteredInterns = useMemo(() => {
+    if (!debouncedSearch) return interns;
+    const q = debouncedSearch.toLowerCase();
+    return interns.filter(
+      (i) => i.username.toLowerCase().includes(q) || (i.specialty || "").toLowerCase().includes(q)
+    );
+  }, [interns, debouncedSearch]);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
   useEffect(() => { if (activeSession && !activeSessionId) { setActiveSessionId(activeSession.id); setMobileView("chat"); } }, [activeSession, activeSessionId, setActiveSessionId]);
 
-  const handleSendMessage = () => { if (!message.trim() || !activeSessionId) return; sendMessage({ sessionId: activeSessionId, content: message }); setMessage(""); };
-  const handleStartSession = (internId: string) => { if (creditBalance < 20) return; requestSession(internId); setMobileView("chat"); };
+  const handleSendMessage = useCallback(() => {
+    if (!message.trim() || !activeSessionId) return;
+    sendMessage({ sessionId: activeSessionId, content: message });
+    setMessage("");
+  }, [message, activeSessionId, sendMessage]);
+
+  const handleStartSession = useCallback((internId: string) => {
+    if (creditBalance < 20) return;
+    requestSession(internId);
+    setMobileView("chat");
+  }, [creditBalance, requestSession]);
 
   const statusColors: Record<string, string> = { online: "bg-eternia-success", busy: "bg-eternia-warning", offline: "bg-muted-foreground" };
   const selectedIntern = activeSessionId ? interns.find((i) => i.id === activeSession?.intern_id) : null;
@@ -51,14 +76,14 @@ const MobilePeerConnect = () => {
 
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Search interns..." className="pl-10 bg-card h-10 text-sm" />
+              <Input placeholder="Search interns..." className="pl-10 bg-card h-10 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
 
             {isLoading ? <div className="flex items-center justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-              : interns.length === 0 ? <div className="text-center py-10 text-muted-foreground"><Users className="w-10 h-10 mx-auto mb-3 opacity-50" /><p className="text-sm">No interns available</p></div>
+              : filteredInterns.length === 0 ? <div className="text-center py-10 text-muted-foreground"><Users className="w-10 h-10 mx-auto mb-3 opacity-50" /><p className="text-sm">{searchTerm ? "No matching interns" : "No interns available"}</p></div>
               : (
                 <div className="space-y-2">
-                  {interns.map((intern) => {
+                  {filteredInterns.map((intern) => {
                     const status = internStatuses[intern.id] || "offline";
                     return (
                       <button key={intern.id} onClick={() => { if (!activeSessionId && status === "online") handleStartSession(intern.id); }}
@@ -105,6 +130,14 @@ const MobilePeerConnect = () => {
                   </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {hasMoreMessages && (
+                    <div className="text-center">
+                      <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={loadMoreMessages} disabled={isLoadingMore}>
+                        {isLoadingMore ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <ChevronUp className="w-3 h-3 mr-1" />}
+                        Load earlier
+                      </Button>
+                    </div>
+                  )}
                   {chatMessages.length === 0 ? <p className="text-center py-10 text-muted-foreground text-sm">Say hello!</p>
                     : chatMessages.map((msg) => (
                       <div key={msg.id} className={`flex ${msg.sender_id === user?.id ? "justify-end" : "justify-start"}`}>
