@@ -848,6 +848,18 @@ const SPOCDashboardContent = () => {
                                 <p className="text-xs font-bold text-destructive">🚨 Emergency Contact</p>
                               </div>
                               <div className="grid grid-cols-2 gap-2 text-xs">
+                                {parsed.student_eternia_id && (
+                                  <div>
+                                    <p className="text-[10px] text-muted-foreground">Eternia ID</p>
+                                    <p className="font-semibold font-mono">{parsed.student_eternia_id}</p>
+                                  </div>
+                                )}
+                                {parsed.student_username && (
+                                  <div>
+                                    <p className="text-[10px] text-muted-foreground">Username</p>
+                                    <p className="font-semibold">{parsed.student_username}</p>
+                                  </div>
+                                )}
                                 <div>
                                   <p className="text-[10px] text-muted-foreground">Name</p>
                                   <p className="font-semibold">{parsed.name || "Not provided"}</p>
@@ -867,6 +879,12 @@ const SPOCDashboardContent = () => {
                                   </div>
                                 )}
                               </div>
+                              {parsed.transcript_snippet && (
+                                <div className="mt-2 p-2 rounded-lg bg-muted/30 border border-border/50">
+                                  <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript Snippet</p>
+                                  <p className="text-[11px] text-foreground italic">"{parsed.transcript_snippet}"</p>
+                                </div>
+                              )}
                             </div>
                           );
                         }

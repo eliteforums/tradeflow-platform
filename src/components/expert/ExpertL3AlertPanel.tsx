@@ -21,7 +21,11 @@ interface L3Session {
   created_at: string;
 }
 
-const ExpertL3AlertPanel = () => {
+interface ExpertL3AlertPanelProps {
+  captureEscalationSnippet?: () => string;
+}
+
+const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProps) => {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const [l3Sessions, setL3Sessions] = useState<L3Session[]>([]);
@@ -99,6 +103,9 @@ const ExpertL3AlertPanel = () => {
     if (!user || !activeSession) return;
     setEscalating(true);
     try {
+      // 0. Capture ±10s transcript snippet (selective retention)
+      const transcriptSnippet = captureEscalationSnippet ? captureEscalationSnippet() : "";
+
       // 1. Fetch emergency contact
       const { data: contactData, error: contactError } = await supabase.functions.invoke(
         "get-emergency-contact",
@@ -108,14 +115,11 @@ const ExpertL3AlertPanel = () => {
       if (contactError) throw new Error(contactError.message || "Failed to fetch emergency contact");
 
       const contact = contactData?.contact;
-      const contactInfo = contact
-        ? `Emergency Contact: ${contact.name} (${contact.relation}) — ${contact.phone}${contact.is_self ? " [Self]" : ""}`
-        : "No emergency contact on file";
 
-      // 2. Find the student's institution SPOC
+      // 1b. Fetch student profile for Eternia ID + username
       const { data: studentProfile } = await supabase
         .from("profiles")
-        .select("institution_id")
+        .select("institution_id, student_id, username")
         .eq("id", activeSession.student_id)
         .single();
 
@@ -130,7 +134,7 @@ const ExpertL3AlertPanel = () => {
         if (spocs && spocs.length > 0) spocId = spocs[0].id;
       }
 
-      // 3. Create L3 escalation request with emergency contact in trigger_snippet
+      // 3. Create L3 escalation request with enriched trigger_snippet
       const { error: escError } = await supabase.from("escalation_requests").insert({
         spoc_id: spocId,
         justification_encrypted: `L3 Emergency escalation by expert during BlackBox session. ${activeSession.escalation_reason || "Critical risk detected by AI."}`,
@@ -139,6 +143,9 @@ const ExpertL3AlertPanel = () => {
         trigger_snippet: JSON.stringify({
           type: "emergency_contact",
           ...contact,
+          student_eternia_id: studentProfile?.student_id || null,
+          student_username: studentProfile?.username || null,
+          transcript_snippet: transcriptSnippet || null,
           session_id: activeSession.id,
         }),
         trigger_timestamp: new Date().toISOString(),
