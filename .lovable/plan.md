@@ -1,38 +1,24 @@
 
 
-## Plan: Allow Institutes (SPOCs) to Add Members and Students
+## Plan: Clarify Admin Member Management Roles
 
-### Overview
-
-Currently, only admins can add members (`add-member`) and bulk-create students (`bulk-add-members`). SPOCs need these capabilities for their own institution.
+### Problem
+The "Add Member" form currently includes "Student" in the role list — students should only be created via Bulk ID Creation. The Bulk ID Creation role selector shows all roles — it should default to and primarily support "Student".
 
 ### Changes
 
-#### 1. Edge Function: `add-member/index.ts`
-- Allow SPOCs in addition to admins (check `has_role(caller, 'spoc')`)
-- When caller is SPOC: force `institution_id` to their own institution (from their profile), allow only `student` role
-- When caller is admin: keep existing behavior (all roles, any institution)
-- Add `"student"` back to valid roles list (SPOCs need it)
+#### 1. `src/components/admin/MemberManager.tsx`
+- **Remove "Student"** from the `ROLES` array used in Add Member (keep only intern, expert, spoc, therapist)
+- **Bulk ID Creation**: lock role selector to "Student" only (remove the role dropdown from bulk form since bulk is specifically for student creation at institutes)
+- Update description text: "Auto-generate multiple student accounts for an institution"
 
-#### 2. Edge Function: `bulk-add-members/index.ts`
-- Allow SPOCs in addition to admins
-- When caller is SPOC: force `institution_id` to their own institution, restrict role to `student`
-- When caller is admin: keep existing behavior
+#### 2. `supabase/functions/add-member/index.ts`
+- Remove `"student"` from the `validRoles` array (students only via bulk)
 
-#### 3. SPOC Dashboard: `SPOCDashboardContent.tsx`
-- Add "Add Student" form in the Onboarding tab (username + password, role locked to "student", institution auto-set)
-- Add "Bulk ID Allocation" button+dialog (reuse same pattern as `InstitutionManager` bulk dialog) calling `bulk-add-members`
-
-#### 4. Admin `MemberManager.tsx`
-- Re-add `"student"` to the ROLES array so admins can also create individual students
-- Show institution selector when role is `student` or `spoc`
-
-### Files Modified
+No other files need changes. The edge functions already handle SPOC institution-binding and universal roles correctly.
 
 | File | Change |
 |------|--------|
-| `supabase/functions/add-member/index.ts` | Allow SPOC callers, add student role |
-| `supabase/functions/bulk-add-members/index.ts` | Allow SPOC callers |
-| `src/components/spoc/SPOCDashboardContent.tsx` | Add student creation form + bulk dialog in Onboarding tab |
-| `src/components/admin/MemberManager.tsx` | Re-add student role with institution selector |
+| `src/components/admin/MemberManager.tsx` | Remove Student from individual Add Member roles; lock bulk to student-only |
+| `supabase/functions/add-member/index.ts` | Remove "student" from validRoles |
 
