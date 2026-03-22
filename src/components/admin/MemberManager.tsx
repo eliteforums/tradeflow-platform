@@ -87,6 +87,40 @@ export default function MemberManager() {
     onError: (err: any) => toast.error(err.message),
   });
 
+  // Bulk create mutation
+  const bulkMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("bulk-add-members", {
+        body: {
+          institution_id: bulkInstitution,
+          count: parseInt(bulkCount),
+          prefix: bulkPrefix || undefined,
+          role: bulkRole,
+        },
+      });
+      if (error) throw new Error(error.message || "Failed to bulk create");
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`${data.created_count} members created`);
+      queryClient.invalidateQueries({ queryKey: ["admin-all-members"] });
+      setBulkResults(data.members);
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  const downloadBulkCSV = () => {
+    if (!bulkResults) return;
+    const csv = "Username,Password\n" + bulkResults.map((m: any) => `${m.username},${m.password}`).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "bulk-credentials.csv";
+    a.click();
+    toast.success("Credentials CSV downloaded");
+  };
+
   const getRoleDesc = (role: string) => {
     const map: Record<string, string> = {
       student: "Institution-specific — Self-help tools, peer sessions, quests",
