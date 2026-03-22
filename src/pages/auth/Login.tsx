@@ -9,12 +9,17 @@ import { supabase } from "@/integrations/supabase/client";
 import EterniaLogo from "@/components/EterniaLogo";
 import { motion } from "framer-motion";
 
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
 const Login = () => {
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -22,14 +27,33 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.username || !formData.password) {
+    
+    // Check lockout
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      const remainingMins = Math.ceil((lockoutUntil - Date.now()) / 60000);
+      toast.error(`Too many failed attempts. Try again in ${remainingMins} minute(s).`);
+      return;
+    }
+    
+    const username = formData.username.trim();
+    if (!username || !formData.password) {
       toast.error("Please enter both username and password");
       return;
     }
+    if (username.length > 100 || formData.password.length > 128) {
+      toast.error("Invalid credentials");
+      return;
+    }
+    
     setIsLoading(true);
     try {
-      const { error } = await signIn(formData.username, formData.password);
+      const { error } = await signIn(username, formData.password);
       if (error) throw error;
+      
+      // Reset attempts on success
+      setLoginAttempts(0);
+      setLockoutUntil(null);
+      
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
@@ -38,7 +62,15 @@ const Login = () => {
       toast.success("Welcome back!");
       navigate(isAdmin ? "/admin" : "/dashboard");
     } catch {
-      toast.error("Invalid username or password");
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+      
+      if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+        setLockoutUntil(Date.now() + LOCKOUT_DURATION_MS);
+        toast.error("Too many failed attempts. Account locked for 5 minutes.");
+      } else {
+        toast.error(`Invalid username or password (${MAX_LOGIN_ATTEMPTS - newAttempts} attempts remaining)`);
+      }
     } finally {
       setIsLoading(false);
     }

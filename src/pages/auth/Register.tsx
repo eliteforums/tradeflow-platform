@@ -49,12 +49,49 @@ const Register = () => {
 
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.username || formData.username.length < 4) {
+    const username = formData.username.trim();
+    
+    // Username validation
+    if (!username || username.length < 4) {
       toast.error("Username must be at least 4 characters");
       return;
     }
+    if (username.length > 30) {
+      toast.error("Username must be 30 characters or less");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      toast.error("Username can only contain letters, numbers, and underscores");
+      return;
+    }
+    
+    // Password strength validation
     if (!formData.password || formData.password.length < 8) {
       toast.error("Password must be at least 8 characters");
+      return;
+    }
+    if (formData.password.length > 128) {
+      toast.error("Password must be 128 characters or less");
+      return;
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      toast.error("Password must contain at least one uppercase letter");
+      return;
+    }
+    if (!/[a-z]/.test(formData.password)) {
+      toast.error("Password must contain at least one lowercase letter");
+      return;
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      toast.error("Password must contain at least one number");
+      return;
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)) {
+      toast.error("Password must contain at least one special character");
+      return;
+    }
+    if (formData.password.toLowerCase().includes(username.toLowerCase())) {
+      toast.error("Password cannot contain your username");
       return;
     }
     if (formData.password !== formData.confirmPassword) {
@@ -66,20 +103,34 @@ const Register = () => {
 
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.emergencyName) {
-      toast.error("Emergency contact name is required");
+    
+    const emergencyName = formData.emergencyName.trim();
+    const emergencyContact = formData.emergencyContact.trim();
+    const studentId = formData.studentId.trim();
+    
+    if (!emergencyName || emergencyName.length < 2 || emergencyName.length > 100) {
+      toast.error("Emergency contact name must be 2-100 characters");
       return;
     }
-    if (!formData.emergencyContact) {
+    if (!/^[a-zA-Z\s.'-]+$/.test(emergencyName)) {
+      toast.error("Emergency contact name contains invalid characters");
+      return;
+    }
+    if (!emergencyContact) {
       toast.error("Emergency contact number is required");
       return;
     }
-    if (!formData.contactIsSelf && !formData.emergencyRelation) {
+    // Indian phone number validation
+    if (!/^(\+91[\s-]?)?[6-9]\d{9}$/.test(emergencyContact.replace(/[\s-]/g, ""))) {
+      toast.error("Please enter a valid Indian phone number");
+      return;
+    }
+    if (!formData.contactIsSelf && !formData.emergencyRelation?.trim()) {
       toast.error("Please specify the relationship to the contact person");
       return;
     }
-    if (!formData.studentId) {
-      toast.error("Student verification ID is required");
+    if (!studentId || studentId.length < 3 || studentId.length > 50) {
+      toast.error("Student verification ID must be 3-50 characters");
       return;
     }
     if (!acceptedConsent) {
