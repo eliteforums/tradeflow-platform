@@ -161,13 +161,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         } bg-sidebar border-r border-sidebar-border`}
       >
         <div className="h-14 flex items-center justify-between px-3 border-b border-sidebar-border">
-          <Link to="/dashboard" className="flex items-center gap-2.5 min-w-0">
-            <EterniaLogo size={30} />
-            {sidebarOpen && (
-              <span className="text-base font-bold font-display text-sidebar-foreground truncate">
-                Eternia
-              </span>
-            )}
+          <Link to="/dashboard" className="flex items-center min-w-0">
+            <EterniaLogo size={sidebarOpen ? 36 : 30} />
           </Link>
           <Button
             variant="ghost"
