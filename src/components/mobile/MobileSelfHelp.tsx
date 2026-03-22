@@ -8,10 +8,7 @@ const activeTools = [
   { name: "Mood Tracker", emoji: "🎭", icon: BarChart3, description: "Track your emotional patterns", gradient: "from-cyan-500 to-blue-500", path: "/dashboard/mood-tracker" },
   { name: "Gratitude", emoji: "🙏", icon: Heart, description: "Daily gratitude practice", gradient: "from-pink-500 to-rose-500", path: "/dashboard/gratitude" },
   { name: "Wreck the Buddy", emoji: "🥊", icon: Heart, description: "Release stress through ragdoll bashing", gradient: "from-red-500 to-pink-500", path: "/dashboard/wreck-buddy" },
-];
-
-const comingSoonTools = [
-  { name: "Tibetan Bowl", emoji: "🔔", description: "4-7-8 breathing with singing bowls", gradient: "from-violet-500 to-purple-500" },
+  { name: "Tibetan Bowl", emoji: "🔔", icon: Heart, description: "Interactive sound meditation", gradient: "from-violet-500 to-purple-500", path: "/dashboard/tibetan-bowl" },
 ];
 
 const MobileSelfHelp = () => {
