@@ -336,6 +336,11 @@ const MobileAdminDashboard = () => {
               </Suspense>
             )}
 
+            {/* TOOLS (Quest Cards) */}
+            {activeTab === "tools" && (
+              <div><QuestCardManager /></div>
+            )}
+
             {/* INSTITUTION DETAIL */}
             {activeTab === "institution-detail" && selectedInstitution && (
               <InstitutionDetailView
