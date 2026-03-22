@@ -54,9 +54,9 @@ const Dashboard = () => {
   ];
 
   const quickTools = [
-    { name: "Quest Cards", icon: Award, path: "/dashboard/self-help", color: "text-amber-400" },
-    { name: "Wreck Buddy", icon: Sparkles, path: "/dashboard/self-help", color: "text-pink-400" },
-    { name: "Tibetan Bowl", icon: Music, path: "/dashboard/self-help", color: "text-violet-400" },
+    { name: "Quest Cards", icon: Award, path: "/dashboard/quest-cards", color: "text-amber-400" },
+    { name: "Journaling", icon: Sparkles, path: "/dashboard/journaling", color: "text-emerald-400" },
+    { name: "Mood", icon: Music, path: "/dashboard/mood-tracker", color: "text-cyan-400" },
     { name: "Wallet", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
   ];
 

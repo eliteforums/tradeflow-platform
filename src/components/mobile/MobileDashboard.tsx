@@ -84,7 +84,8 @@ const MobileDashboard = () => {
   ];
 
   const quickTools = [
-    { name: "Tibetan Bowl", icon: Music, path: "/dashboard/self-help", color: "text-violet-400" },
+    { name: "Mood", icon: Music, path: "/dashboard/mood-tracker", color: "text-cyan-400" },
+    { name: "Gratitude", icon: Sparkles, path: "/dashboard/gratitude", color: "text-pink-400" },
     { name: "Wallet", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
   ];
 
