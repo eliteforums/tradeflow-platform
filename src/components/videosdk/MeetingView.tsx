@@ -15,6 +15,7 @@ interface MeetingViewProps {
   enableMonitoring?: boolean;
   onRiskDetected?: (level: number, snippet: string) => void;
   autoJoin?: boolean;
+  onError?: (error: string) => void;
 }
 
 const riskColors: Record<number, string> = {
@@ -39,9 +40,11 @@ const MeetingView = ({
   enableMonitoring = false,
   onRiskDetected,
   autoJoin = false,
+  onError,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
+  const [sdkError, setSdkError] = useState<string | null>(null);
   const hasAutoJoined = useRef(false);
   const joinAttempts = useRef(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,19 +52,39 @@ const MeetingView = ({
 
   const { join, participants, meetingId: sdkMeetingId } = useMeeting({
     onMeetingJoined: () => {
+      console.log("[MeetingView] onMeetingJoined fired");
       setJoined("JOINED");
       setTimedOut(false);
+      setSdkError(null);
       joinAttempts.current = 0;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     },
-    onMeetingLeft: () => onMeetingLeave(),
+    onMeetingLeft: () => {
+      console.log("[MeetingView] onMeetingLeft fired");
+      onMeetingLeave();
+    },
+    onError: (error: any) => {
+      console.error("[MeetingView] SDK onError:", error);
+      const msg = error?.message || error?.code
+        ? `VideoSDK error ${error.code || ""}: ${error.message || "Unknown"}`
+        : "Video service connection failed";
+      setSdkError(msg);
+      setJoined(null);
+      setTimedOut(true);
+      onError?.(msg);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    },
+    onMeetingStateChanged: (data: any) => {
+      console.log("[MeetingView] Meeting state changed:", data?.state || data);
+    },
   });
 
   // Auto-join: wait for SDK readiness (sdkMeetingId populated), then retry up to 3 times
   useEffect(() => {
     if (!autoJoin || hasAutoJoined.current) return;
-    if (!sdkMeetingId) return; // SDK not ready yet
+    if (!sdkMeetingId) return;
 
     hasAutoJoined.current = true;
     joinAttempts.current = 0;
@@ -69,16 +92,15 @@ const MeetingView = ({
     const attemptJoin = () => {
       if (joinAttempts.current >= 3) return;
       joinAttempts.current += 1;
-      console.log(`[MeetingView] Join attempt ${joinAttempts.current}`);
+      console.log(`[MeetingView] Join attempt ${joinAttempts.current}, meetingId: ${sdkMeetingId}`);
       setJoined("JOINING");
       join();
 
-      // If not JOINED after 3s, retry
       retryTimerRef.current = setTimeout(() => {
         if (joinAttempts.current < 3) {
           attemptJoin();
         }
-      }, 3000);
+      }, 5000);
     };
 
     attemptJoin();
@@ -88,12 +110,13 @@ const MeetingView = ({
     };
   }, [autoJoin, sdkMeetingId, join]);
 
-  // Timeout: if JOINING for > 15s, show retry
+  // Timeout: if JOINING for > 20s, show retry
   useEffect(() => {
     if (joined === "JOINING") {
       timeoutRef.current = setTimeout(() => {
+        console.warn("[MeetingView] Join timed out after 20s");
         setTimedOut(true);
-      }, 15000);
+      }, 20000);
       return () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
       };
@@ -113,25 +136,34 @@ const MeetingView = ({
   const joinMeeting = () => {
     setJoined("JOINING");
     setTimedOut(false);
+    setSdkError(null);
     hasAutoJoined.current = true;
     join();
   };
 
   const retryJoin = () => {
     setTimedOut(false);
+    setSdkError(null);
     setJoined("JOINING");
+    hasAutoJoined.current = false;
+    joinAttempts.current = 0;
     join();
   };
 
-  if (joined === "JOINING") {
+  if (joined === "JOINING" || (timedOut && joined !== "JOINED")) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         {timedOut ? (
           <>
             <AlertTriangle className="w-8 h-8 text-yellow-400" />
-            <p className="text-muted-foreground text-sm">Connection timed out</p>
+            <p className="text-muted-foreground text-sm">
+              {sdkError || "Connection timed out — the video service may be unavailable"}
+            </p>
             <Button onClick={retryJoin} variant="outline" className="gap-2">
               <RefreshCw className="w-4 h-4" /> Retry
+            </Button>
+            <Button onClick={onMeetingLeave} variant="ghost" size="sm" className="text-xs">
+              Leave
             </Button>
           </>
         ) : (
@@ -163,7 +195,6 @@ const MeetingView = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* AI Monitoring Status Bar */}
       {enableMonitoring && (
         <div className="px-4 py-2 border-b border-border flex items-center justify-between bg-card/50">
           <div className="flex items-center gap-2">

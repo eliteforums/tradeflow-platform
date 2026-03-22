@@ -84,10 +84,13 @@ export const useBlackBoxSession = () => {
         const session = data[0] as unknown as BlackBoxSession;
         setActiveSession(session);
         if (session.room_id && (session.status === "accepted" || session.status === "active")) {
+          console.log("[BlackBox] Reconnecting to session:", session.id, "room:", session.room_id);
           try {
             const t = await getVideoSDKToken();
+            console.log("[BlackBox] Token obtained, length:", t?.length);
             setToken(t);
           } catch (error: any) {
+            console.error("[BlackBox] Token fetch failed:", error);
             toast.error(error.message || "Failed to reconnect to session");
           }
         }
