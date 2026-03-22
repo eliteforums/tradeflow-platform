@@ -1,5 +1,5 @@
 # Memory: index.md
-Updated: 2026-03-21
+Updated: 2026-03-22
 
 # Eternia Project Memory
 
@@ -16,7 +16,7 @@ Updated: 2026-03-21
 
 ## AI Integration
 - **Groq AI** used for all AI moderation/transcription (GROQ_API_KEY secret)
-- Model: llama-3.3-70b-versatile
+- Model: openai/gpt-oss-20b (GPT OSS 20B 128k)
 - Edge functions: ai-moderate (BlackBox entries), ai-transcribe (voice keyword detection)
 - L1/L2/L3 escalation levels with trigger snippets
 
@@ -28,7 +28,7 @@ Updated: 2026-03-21
 - Student IDs auto-generated: ETN-{INST}-{SEQ}
 
 ## User Roles (RBAC)
-- Student, Intern, Expert, SPOC, Admin
+- Student, Intern, Expert, SPOC, Admin, Therapist
 - Credits system: student-only (role-gated)
 - Recovery hints: predefined dropdown questions (not free text)
 
