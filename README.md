@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/favicon.svg" alt="Eternia Logo" width="80" height="80" />
+  <img src="public/eternia_logo_main.svg" alt="Eternia Logo" width="200" />
 </p>
 
 <h1 align="center">Eternia</h1>
