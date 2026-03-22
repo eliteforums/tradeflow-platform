@@ -230,6 +230,13 @@ export const useBlackBoxSession = () => {
     setToken(null);
   }, [activeSession]);
 
+  const retryConnection = useCallback(async () => {
+    if (!activeSession) return;
+    setToken(null);
+    tokenRef.current = null;
+    await fetchTokenIfNeeded(activeSession);
+  }, [activeSession, fetchTokenIfNeeded]);
+
   return {
     activeSession,
     isRequesting,
@@ -238,5 +245,6 @@ export const useBlackBoxSession = () => {
     requestSession,
     cancelSession,
     endSession,
+    retryConnection,
   };
 };
