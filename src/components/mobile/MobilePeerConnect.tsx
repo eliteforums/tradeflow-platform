@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { MessageCircle, Search, Circle, Phone, Send, X, Shield, Users, Loader2, AlertCircle, ArrowLeft, Flag, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,8 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { format } from "date-fns";
 
 const MobilePeerConnect = () => {
+  const [searchParams] = useSearchParams();
+  const urlSessionId = searchParams.get("sessionId");
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
@@ -22,7 +25,7 @@ const MobilePeerConnect = () => {
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses,
     hasMoreMessages, isLoadingMore, loadMoreMessages,
-  } = usePeerConnect();
+  } = usePeerConnect(urlSessionId);
   const isIntern = profile?.role === "intern";
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);

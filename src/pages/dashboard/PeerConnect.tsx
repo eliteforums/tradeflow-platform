@@ -1,6 +1,7 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobilePeerConnect from "@/components/mobile/MobilePeerConnect";
 import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
 import { MessageCircle, Search, Circle, Phone, Send, X, Clock, Shield, Users, Loader2, AlertCircle, Flag, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,8 @@ import { format } from "date-fns";
 
 const PeerConnect = () => {
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
+  const urlSessionId = searchParams.get("sessionId");
   const { user, profile, creditBalance } = useAuth();
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,7 +27,7 @@ const PeerConnect = () => {
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses,
     hasMoreMessages, isLoadingMore, loadMoreMessages,
-  } = usePeerConnect();
+  } = usePeerConnect(urlSessionId);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
 

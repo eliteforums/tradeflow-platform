@@ -534,7 +534,7 @@ const InternDashboardContent = () => {
                       <div className="flex items-center gap-2 shrink-0">
                         {session.status === "active" && (
                           <>
-                            <Button size="sm" className="gap-1 h-7 text-[11px] px-2.5" onClick={() => navigate("/dashboard/peer-connect")}>Join</Button>
+                            <Button size="sm" className="gap-1 h-7 text-[11px] px-2.5" onClick={() => navigate(`/dashboard/peer-connect?sessionId=${session.id}`)}>Join</Button>
                             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={async () => {
                               await supabase.from("peer_sessions").update({ status: "completed" as any, ended_at: new Date().toISOString() }).eq("id", session.id);
                               queryClient.invalidateQueries({ queryKey: ["intern-sessions"] });
