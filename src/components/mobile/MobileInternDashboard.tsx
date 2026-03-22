@@ -42,6 +42,7 @@ interface TrainingModule {
 const MobileInternDashboard = () => {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>("training");
   const [activeModule, setActiveModule] = useState<number | null>(null);
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
