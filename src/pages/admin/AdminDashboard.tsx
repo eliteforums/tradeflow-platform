@@ -6,7 +6,7 @@ import {
   Users, Calendar, MessageCircle, AlertTriangle, TrendingUp, Coins,
   Shield, Activity, Eye, CheckCircle, Clock, BarChart3, Search, Loader2,
   UserPlus, Settings, Music, Building2, FileText, QrCode, Crown, UserCheck,
-  Stethoscope, GraduationCap, Phone, Zap, Filter, BookOpen, LogOut, ArrowLeft,
+  Stethoscope, GraduationCap, Phone, Zap, Filter, BookOpen, LogOut, ArrowLeft, Gamepad2,
   ChevronLeft, ChevronRight, PanelLeftClose, PanelLeft,
 } from "lucide-react";
 import InstitutionManager from "@/components/admin/InstitutionManager";
