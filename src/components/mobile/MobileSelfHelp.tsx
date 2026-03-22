@@ -7,10 +7,10 @@ const activeTools = [
   { name: "Journaling", emoji: "📝", icon: PenLine, description: "Guided reflective writing prompts", gradient: "from-emerald-500 to-teal-500", path: "/dashboard/journaling" },
   { name: "Mood Tracker", emoji: "🎭", icon: BarChart3, description: "Track your emotional patterns", gradient: "from-cyan-500 to-blue-500", path: "/dashboard/mood-tracker" },
   { name: "Gratitude", emoji: "🙏", icon: Heart, description: "Daily gratitude practice", gradient: "from-pink-500 to-rose-500", path: "/dashboard/gratitude" },
+  { name: "Wreck the Buddy", emoji: "🥊", icon: Heart, description: "Release stress through ragdoll bashing", gradient: "from-red-500 to-pink-500", path: "/dashboard/wreck-buddy" },
 ];
 
 const comingSoonTools = [
-  { name: "Wreck the Buddy", emoji: "🥊", description: "Release stress through tapping", gradient: "from-red-500 to-pink-500" },
   { name: "Tibetan Bowl", emoji: "🔔", description: "4-7-8 breathing with singing bowls", gradient: "from-violet-500 to-purple-500" },
 ];
 
