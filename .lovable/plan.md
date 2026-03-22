@@ -1,72 +1,55 @@
 
 
-## Plan: BlackBox L3 Escalation Flow — Expert Notifications, Call Join, Emergency Contact to SPOC
+## Plan: Selective Transcription ±10s Retention, Admin Escalation Logs, SPOC Emergency Contact with Student Details
 
-### What exists today
+### Current State
 
-1. **`ai-transcribe` edge function**: Already classifies live call transcripts (L1-L3), updates `blackbox_sessions.flag_level`, and creates `escalation_requests` for L2+. For L3, it sets `status: "critical"`.
-2. **`useAudioMonitor` hook**: Runs Web Speech API during BlackBox calls, sends transcript chunks to `ai-transcribe` every 15s.
-3. **`MeetingView`**: Shows AI risk badge, supports therapist controls.
-4. **`get-emergency-contact` edge function**: Fetches emergency contact from `user_private` for L3 sessions — already validates therapist + L3 flag.
-5. **SPOC Dashboard**: Already has realtime subscription on `escalation_requests` INSERT — shows toast for critical escalations. Already displays escalations list.
-6. **Expert Dashboard**: Has NO awareness of BlackBox sessions or L3 alerts. Only handles scheduled appointments.
+1. **`useAudioMonitor`** captures live speech via Web Speech API, maintains a rolling 30s buffer, and sends to `ai-transcribe` every 15s. On risk detection, a `trigger_snippet` (±200 chars around keyword) is stored. But it does NOT implement true ±10s selective retention — it keeps everything in the buffer until the window expires.
 
-### What's missing
+2. **`ExpertL3AlertPanel`** lets experts escalate and share emergency contacts with SPOCs, but does NOT capture the ±10s audio snippet around the escalation button click.
 
-1. **Expert Dashboard**: No notification when an L3 BlackBox session is flagged. No way to see/accept/join an active BlackBox call.
-2. **Expert joining BlackBox call**: No mechanism for an expert to join an ongoing BlackBox session mid-call.
-3. **Emergency contact flow**: The `get-emergency-contact` function exists but nothing in the UI calls it or sends the result to the SPOC dashboard.
+3. **Admin `EscalationManager`** shows escalations but does NOT display the trigger snippet, student ID, username, or emergency contact details — it only shows justification text.
 
-### Solution
+4. **SPOC Dashboard** already parses emergency contact JSON from `trigger_snippet` and shows name/phone/relation, but does NOT show Eternia ID or username.
 
-#### 1. Expert Dashboard: Add L3 Emergency Alert Panel
+### Changes
 
-Add a realtime subscription on `blackbox_sessions` in the Expert Dashboard. When a session has `flag_level >= 3` and `status` is `active` or `accepted`:
-- Show an **emergency alert banner** at the top of the home tab with a pulsing red indicator
-- Display session details (flag level, escalation reason snippet, time created)
-- Provide an **"Accept & Join Call"** button
+#### 1. `src/hooks/useAudioMonitor.ts` — Add ±10s selective retention on escalation
 
-When expert clicks "Accept & Join":
-- Update `blackbox_sessions` to add themselves as a secondary participant (or replace therapist if none)
-- Fetch VideoSDK token via existing `videosdk-token` function
-- Open MeetingView in a modal with `isTherapistView=true` so they get session controls
-- Show an **"Escalate — Share Emergency Contact"** button in the session controls
+- Add a `captureEscalationSnippet()` method that grabs ±10s of transcript from the buffer around the current timestamp
+- Export this method so the escalation button can call it
+- After capture, purge the buffer (selective retention — discard everything else)
 
-#### 2. Emergency Contact Escalation Button
+#### 2. `src/components/expert/ExpertL3AlertPanel.tsx` — Capture ±10s snippet on escalation click
 
-Inside the expert's BlackBox session view, add an "Emergency Escalation" button that:
-- Calls `get-emergency-contact` edge function with `student_id` and `session_id`
-- Creates an `escalation_request` with `escalation_level: 3`, `status: "critical"`, and the emergency contact info in the `trigger_snippet` field
-- The SPOC dashboard already picks this up via realtime and shows it
+- When "Confirm Escalation" is clicked, call `captureEscalationSnippet()` from audio monitor (pass via context or prop)
+- Include the captured snippet in the escalation request's `trigger_snippet` alongside emergency contact
+- Fetch student profile (Eternia ID, username) and include in the escalation payload
 
-#### 3. SPOC Dashboard: Display Emergency Contact in Escalation Detail
+#### 3. `src/components/videosdk/MeetingView.tsx` — Pass audio monitor ref to escalation controls
 
-Update the escalation display in SPOCDashboardContent to:
-- For L3/critical escalations, parse and show emergency contact info from `trigger_snippet`
-- Highlight critical escalations with a distinct red styling
+- Expose `audioMonitor.captureEscalationSnippet` via a callback prop or ref so ExpertL3AlertPanel can access it when the expert is in a session
+
+#### 4. `src/components/admin/EscalationManager.tsx` — Show full escalation details
+
+- Parse `trigger_snippet` JSON (same as SPOC dashboard does)
+- Display: escalation level badge, student Eternia ID, username, emergency contact, ±10s transcript snippet, timestamp
+- Add distinct red styling for L3/critical escalations
+
+#### 5. `src/components/spoc/SPOCDashboardContent.tsx` — Add Eternia ID + username to emergency contact display
+
+- When rendering emergency contact from `trigger_snippet`, also show `student_id` (Eternia ID) and `student_username` fields
+
+#### 6. `src/components/expert/ExpertL3AlertPanel.tsx` — Enrich escalation payload
+
+- Before creating escalation request, fetch student's profile to get `student_id` (Eternia ID) and `username`
+- Include in `trigger_snippet` JSON: `{ type: "emergency_contact", name, phone, relation, is_self, student_eternia_id, student_username, transcript_snippet, session_id }`
 
 ### Files to modify
 
-1. **`src/components/expert/ExpertDashboardContent.tsx`**
-   - Add query for active L3 BlackBox sessions
-   - Add realtime subscription on `blackbox_sessions` for `flag_level >= 3`
-   - Add emergency alert banner UI on home tab
-   - Add "Accept & Join" flow with VideoSDK token fetch + MeetingProvider modal
-   - Add "Escalate — Share Emergency Contact" button that calls `get-emergency-contact` then creates escalation_request
-
-2. **`src/components/mobile/MobileExpertDashboard.tsx`**
-   - Same L3 alert + join flow for mobile layout
-
-3. **`src/components/spoc/SPOCDashboardContent.tsx`**
-   - In the escalations/flags tab, for critical escalations with emergency contact data in `trigger_snippet`, display contact name/phone/relation prominently
-
-### Technical details
-
-- The `get-emergency-contact` function uses `auth.getClaims()` which may not work with the anon key. Since `verify_jwt = false` is not set for this function, we need to ensure the expert sends their auth token. The function already validates the caller is the session's therapist — we may need to also allow experts (check `has_role('expert')` as an alternative auth path).
-- We'll update `get-emergency-contact` to also accept experts who have `has_role('expert')` if the session `flag_level >= 3`, not just the assigned therapist.
-- Realtime filter: `supabase.channel('expert-l3-alerts').on('postgres_changes', { event: '*', schema: 'public', table: 'blackbox_sessions' }, callback)` — filter in the callback for `flag_level >= 3`.
-
-### Config changes
-
-- Add `[functions.get-emergency-contact]` with `verify_jwt = false` to `supabase/config.toml` (since we validate auth in code)
+1. **`src/hooks/useAudioMonitor.ts`** — Add `captureEscalationSnippet()` method (grabs ±10s from buffer, returns text, then purges)
+2. **`src/components/expert/ExpertL3AlertPanel.tsx`** — Enrich payload with student details + transcript snippet
+3. **`src/components/admin/EscalationManager.tsx`** — Parse and display full escalation details (student ID, username, contact, snippet)
+4. **`src/components/spoc/SPOCDashboardContent.tsx`** — Show Eternia ID + username in emergency contact card
+5. **`src/components/videosdk/MeetingView.tsx`** — Expose audio monitor's capture method for escalation use
 
