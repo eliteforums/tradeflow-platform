@@ -558,7 +558,7 @@ const SPOCDashboardContent = () => {
                 Regenerate
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground italic">Single-use temp credential · Auto-assigned · Audited</p>
+            <p className="text-[10px] text-muted-foreground italic">HMAC-signed · Institution verification · Audited</p>
           </div>
 
           {/* Temp Credential Pool Stats */}
