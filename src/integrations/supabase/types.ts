@@ -213,8 +213,10 @@ export type Database = {
           escalation_reason: string | null
           flag_level: number
           id: string
+          refunded: boolean
           room_id: string | null
           session_notes_encrypted: string | null
+          silence_duration_sec: number | null
           started_at: string | null
           status: string
           student_id: string
@@ -227,8 +229,10 @@ export type Database = {
           escalation_reason?: string | null
           flag_level?: number
           id?: string
+          refunded?: boolean
           room_id?: string | null
           session_notes_encrypted?: string | null
+          silence_duration_sec?: number | null
           started_at?: string | null
           status?: string
           student_id: string
@@ -241,8 +245,10 @@ export type Database = {
           escalation_reason?: string | null
           flag_level?: number
           id?: string
+          refunded?: boolean
           room_id?: string | null
           session_notes_encrypted?: string | null
+          silence_duration_sec?: number | null
           started_at?: string | null
           status?: string
           student_id?: string
