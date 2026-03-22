@@ -231,7 +231,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
 
       const { data } = await supabase
         .from("blackbox_sessions")
-        .select("*")
+        .select("id, student_id, therapist_id, status, flag_level, room_id, escalation_history, escalation_reason, session_notes_encrypted, started_at, ended_at, created_at")
         .eq("id", sessionId)
         .single();
 
