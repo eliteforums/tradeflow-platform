@@ -40,10 +40,7 @@ const SPOCDashboardContent = () => {
   const [escalationReason, setEscalationReason] = useState("");
   const [reportDateFilter, setReportDateFilter] = useState("30");
   const [searchQuery, setSearchQuery] = useState("");
-  // Student creation state
-  const [newStudentUsername, setNewStudentUsername] = useState("");
-  const [newStudentPassword, setNewStudentPassword] = useState("");
-  const [showStudentPassword, setShowStudentPassword] = useState(false);
+  // Student creation state removed — students onboard via temp IDs + QR
   const [bulkCount, setBulkCount] = useState("10");
   const [bulkPrefix, setBulkPrefix] = useState("");
   const [showBulkDialog, setShowBulkDialog] = useState(false);
