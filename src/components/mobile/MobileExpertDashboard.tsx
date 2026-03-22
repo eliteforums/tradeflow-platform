@@ -101,6 +101,25 @@ const MobileExpertDashboard = () => {
   const completed = myAppointments.filter((a) => a.status === "completed");
   const futureSlots = mySlots.filter((s) => new Date(s.start_time) > new Date());
 
+  const submitEscalation = useMutation({
+    mutationFn: async () => {
+      if (!user || !escalationDialog.appointmentId) throw new Error("Missing data");
+      const appointment = myAppointments.find(a => a.id === escalationDialog.appointmentId);
+      let spocId = user.id;
+      if ((appointment?.student as any)?.institution_id) {
+        const { data: spocs } = await supabase.from("profiles").select("id").eq("institution_id", (appointment!.student as any).institution_id).eq("role", "spoc").limit(1);
+        if (spocs && spocs.length > 0) spocId = spocs[0].id;
+      }
+      const { error } = await supabase.from("escalation_requests").insert({
+        spoc_id: spocId, justification_encrypted: escalationReason, session_id: null, entry_id: null,
+        trigger_timestamp: appointment?.slot_time || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Escalation submitted"); setEscalationDialog({ open: false }); setEscalationReason(""); },
+    onError: (e) => toast.error(e.message),
+  });
+
   if (isLoading) return <DashboardLayout><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></DashboardLayout>;
 
   const tabs: { key: TabType; icon: typeof Home; label: string }[] = [
