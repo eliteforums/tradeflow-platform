@@ -248,6 +248,11 @@ const InternDashboardContent = () => {
               <p className="text-xs text-muted-foreground mt-1">{completedModules.length}/{trainingModules.length} completed</p>
             </div>
 
+            {/* Referral Code Skip */}
+            {!isTrainingComplete && !isInterviewPending && (
+              <ReferralCodeInput user={user} queryClient={queryClient} />
+            )}
+
             {/* Final Interview Card */}
             {isInterviewPending && (
               <div className="p-5 rounded-xl border border-primary/20 bg-primary/5 space-y-3">

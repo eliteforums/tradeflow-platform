@@ -469,6 +469,106 @@ export default function MemberManager() {
           </div>
         )}
       </div>
+      {/* Referral Codes */}
+      <div className="p-3 rounded-xl bg-card border border-border/50 space-y-3">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Gift className="w-4 h-4 text-primary" />
+          Referral Codes
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Generate a referral code that allows an intern to skip training and immediately unlock their dashboard.
+        </p>
+        <ReferralCodeSection queryClient={queryClient} />
+      </div>
+    </div>
+  );
+}
+
+function generateCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let result = "REF-";
+  for (let i = 0; i < 8; i++) result += chars[Math.floor(Math.random() * chars.length)];
+  return result;
+}
+
+function ReferralCodeSection({ queryClient }: { queryClient: ReturnType<typeof useQueryClient> }) {
+  const { data: codes = [], isLoading } = useQuery({
+    queryKey: ["admin-referral-codes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("intern_referral_codes")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const code = generateCode();
+      const { error } = await supabase.from("intern_referral_codes").insert({
+        code,
+        created_by: user.id,
+      });
+      if (error) throw error;
+      return code;
+    },
+    onSuccess: (code) => {
+      toast.success(`Referral code created: ${code}`);
+      navigator.clipboard.writeText(code);
+      queryClient.invalidateQueries({ queryKey: ["admin-referral-codes"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  return (
+    <div className="space-y-3">
+      <Button
+        size="sm"
+        className="gap-1.5 h-8 text-xs"
+        onClick={() => createMutation.mutate()}
+        disabled={createMutation.isPending}
+      >
+        {createMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+        Generate Code
+      </Button>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : codes.length === 0 ? (
+        <p className="text-xs text-muted-foreground py-2 text-center">No referral codes yet.</p>
+      ) : (
+        <div className="max-h-[250px] overflow-y-auto space-y-1">
+          {codes.map((c: any) => (
+            <div key={c.id} className="flex items-center justify-between text-xs px-2 py-1.5 bg-muted/30 rounded">
+              <div className="flex items-center gap-2">
+                <span className="font-mono font-medium">{c.code}</span>
+                <span className={`px-1.5 py-0.5 rounded text-[10px] ${c.is_used ? "bg-eternia-success/10 text-eternia-success" : "bg-primary/10 text-primary"}`}>
+                  {c.is_used ? "Used" : "Unused"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                {!c.is_used && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => { navigator.clipboard.writeText(c.code); toast.success("Copied!"); }}
+                  >
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
