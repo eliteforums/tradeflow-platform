@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Home, MessageCircle, FileText, User, Clock, CheckCircle,
   AlertTriangle, Loader2, Search, LogOut, Lock,
-  Play, Award, BookOpen, ChevronLeft, Shield
+  Play, Award, BookOpen, ChevronLeft, Shield, Gift, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
