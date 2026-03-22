@@ -445,3 +445,67 @@ const MobileInternDashboard = () => {
 };
 
 export default MobileInternDashboard;
+
+function MobileReferralCodeInput({ user, queryClient }: { user: any; queryClient: any }) {
+  const [showInput, setShowInput] = useState(false);
+  const [code, setCode] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleRedeem = async () => {
+    if (!code.trim() || !user) return;
+    setLoading(true);
+    try {
+      const { data: codeRow, error } = await supabase
+        .from("intern_referral_codes")
+        .select("*")
+        .eq("code", code.trim().toUpperCase())
+        .single();
+      if (error || !codeRow) { toast.error("Invalid referral code"); return; }
+      if (codeRow.is_used) { toast.error("This code has already been used"); return; }
+      if (codeRow.expires_at && new Date(codeRow.expires_at) < new Date()) { toast.error("This code has expired"); return; }
+
+      await supabase.from("intern_referral_codes").update({
+        is_used: true,
+        assigned_to: user.id,
+        used_at: new Date().toISOString(),
+      }).eq("id", codeRow.id);
+
+      await supabase.from("profiles").update({
+        training_status: "active",
+        is_verified: true,
+        training_progress: [1, 2, 3, 4, 5, 6, 7],
+      }).eq("id", user.id);
+
+      toast.success("Referral code applied! Dashboard unlocked.");
+      queryClient.invalidateQueries({ queryKey: ["user-profile"] });
+      window.location.reload();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to redeem code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!showInput) {
+    return (
+      <button onClick={() => setShowInput(true)} className="flex items-center gap-1.5 text-xs text-primary hover:underline">
+        <Gift className="w-3.5 h-3.5" />Have a referral code?
+      </button>
+    );
+  }
+
+  return (
+    <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 space-y-2">
+      <p className="text-xs font-medium flex items-center gap-1.5"><Gift className="w-3.5 h-3.5 text-primary" />Enter Referral Code</p>
+      <div className="flex gap-2">
+        <Input placeholder="REF-ABC12345" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="h-8 text-xs font-mono flex-1" />
+        <Button size="sm" className="h-8 text-xs" onClick={handleRedeem} disabled={!code.trim() || loading}>
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Apply"}
+        </Button>
+        <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setShowInput(false); setCode(""); }}>
+          <X className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
