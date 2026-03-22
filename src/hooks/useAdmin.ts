@@ -119,7 +119,7 @@ export function useAdmin() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("blackbox_entries")
-        .select("*")
+        .select("id, user_id, content_type, ai_flag_level, is_private, created_at")
         .gt("ai_flag_level", 0)
         .order("ai_flag_level", { ascending: false })
         .limit(20);
