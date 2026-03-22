@@ -52,9 +52,8 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-4 sm:px-5 py-2.5 flex items-center justify-between">
         {/* Logo - left */}
-        <Link to="/" className="flex items-center gap-2">
-          <EterniaLogo size={26} />
-          <span className="text-sm font-bold font-display text-foreground">Eternia</span>
+        <Link to="/" className="flex items-center">
+          <EterniaLogo size={32} />
         </Link>
 
         {/* Nav links - right side with dropdowns */}

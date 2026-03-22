@@ -258,9 +258,8 @@ const Register = () => {
           {step === 1 ? "Back" : "Back to Credentials"}
         </button>
 
-        <div className="flex items-center gap-2.5 mb-5">
-          <EterniaLogo size={36} />
-          <span className="text-lg font-bold font-display">Eternia</span>
+        <div className="flex items-center mb-5">
+          <EterniaLogo size={44} />
         </div>
 
         {/* Progress Steps */}

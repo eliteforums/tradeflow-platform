@@ -38,9 +38,8 @@ const Terms = () => (
         Back to Home
       </Link>
 
-      <div className="flex items-center gap-3 mb-8">
-        <EterniaLogo size={36} />
-        <span className="text-xl font-bold font-display">Eternia</span>
+      <div className="flex items-center mb-8">
+        <EterniaLogo size={44} />
       </div>
 
       <h1 className="text-3xl font-bold font-display mb-2">Terms of Service</h1>

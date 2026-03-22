@@ -91,7 +91,7 @@ const Login = () => {
             transition={{ duration: 0.5 }}
             className="mb-8"
           >
-            <EterniaLogo size={72} />
+            <EterniaLogo size={80} />
           </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 12 }}
@@ -163,9 +163,8 @@ const Login = () => {
           </Link>
 
           {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-6 lg:hidden">
-            <EterniaLogo size={36} />
-            <span className="text-lg font-bold font-display">Eternia</span>
+          <div className="flex items-center mb-6 lg:hidden">
+            <EterniaLogo size={44} />
           </div>
 
           <div className="mb-6">

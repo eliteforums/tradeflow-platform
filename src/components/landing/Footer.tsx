@@ -25,9 +25,8 @@ const Footer = () => (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
         {/* Brand */}
         <div className="col-span-2 sm:col-span-1">
-          <Link to="/" className="flex items-center gap-2 mb-3">
-            <EterniaLogo size={28} />
-            <span className="text-sm font-bold font-display text-foreground">Eternia</span>
+          <Link to="/" className="flex items-center mb-3">
+            <EterniaLogo size={32} />
           </Link>
           <p className="text-xs text-muted-foreground/60 leading-relaxed max-w-[200px] mb-3">
             Anonymous student wellbeing, built for institutions.
