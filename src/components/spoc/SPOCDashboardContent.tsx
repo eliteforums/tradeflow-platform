@@ -240,51 +240,25 @@ const SPOCDashboardContent = () => {
   const [resetDeviceStudent, setResetDeviceStudent] = useState<string | null>(null);
   const [isResettingDevice, setIsResettingDevice] = useState(false);
 
-  // Add single student mutation
-  const addStudentMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("add-member", {
-        body: {
-          username: newStudentUsername.trim(),
-          password: newStudentPassword,
-          role: "student",
-          institution_id: institutionId,
-        },
+  // Query temp credential pool stats
+  const { data: tempCredStats } = useQuery({
+    queryKey: ["spoc-temp-creds-stats", institutionId],
+    queryFn: async () => {
+      if (!institutionId) return { unused: 0, assigned: 0, activated: 0 };
+      const { data, error } = await supabase
+        .from("temp_credentials")
+        .select("status")
+        .eq("institution_id", institutionId);
+      if (error) throw error;
+      const stats = { unused: 0, assigned: 0, activated: 0 };
+      (data || []).forEach((c: any) => {
+        if (c.status === "unused") stats.unused++;
+        else if (c.status === "assigned") stats.assigned++;
+        else if (c.status === "activated") stats.activated++;
       });
-      if (error) throw new Error(error.message || "Failed to create student");
-      if (data?.error) throw new Error(data.error);
-      return data;
+      return stats;
     },
-    onSuccess: (data) => {
-      toast.success(`Student "${data.username}" created`);
-      queryClient.invalidateQueries({ queryKey: ["spoc-students"] });
-      setNewStudentUsername("");
-      setNewStudentPassword("");
-    },
-    onError: (err: any) => toast.error(err.message),
-  });
-
-  // Bulk create students mutation
-  const bulkCreateMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("bulk-add-members", {
-        body: {
-          institution_id: institutionId,
-          count: parseInt(bulkCount),
-          prefix: bulkPrefix || undefined,
-          role: "student",
-        },
-      });
-      if (error) throw new Error(error.message || "Failed to bulk create");
-      if (data?.error) throw new Error(data.error);
-      return data;
-    },
-    onSuccess: (data) => {
-      toast.success(`${data.created_count} students created`);
-      queryClient.invalidateQueries({ queryKey: ["spoc-students"] });
-      setBulkResults(data.members);
-    },
-    onError: (err: any) => toast.error(err.message),
+    enabled: !!institutionId,
   });
 
   const downloadBulkCSV = () => {
