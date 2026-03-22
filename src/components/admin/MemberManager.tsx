@@ -276,15 +276,6 @@ export default function MemberManager() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Role</label>
-              <Select value={bulkRole} onValueChange={setBulkRole}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Count (1-500)</label>
