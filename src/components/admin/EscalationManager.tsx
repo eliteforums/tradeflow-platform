@@ -147,14 +147,26 @@ const EscalationManager = () => {
           {escalations.map((esc: any) => {
             const config = statusConfig[esc.status] || statusConfig.pending;
             const StatusIcon = config.icon;
+            let parsed: any = null;
+            try { parsed = JSON.parse(esc.trigger_snippet); } catch {}
+            const isCritical = esc.escalation_level === 3 || esc.status === "critical";
             return (
-              <div key={esc.id} className="p-3 rounded-xl bg-card border border-border/50">
+              <div key={esc.id} className={`p-3 rounded-xl ${isCritical ? "bg-destructive/5 border-2 border-destructive/30" : "bg-card border border-border/50"}`}>
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className={`px-2 py-0.5 rounded-lg text-[10px] font-medium flex items-center gap-1 ${config.color}`}>
                       <StatusIcon className="w-3 h-3" />
                       {config.label}
                     </span>
+                    {esc.escalation_level && (
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        esc.escalation_level === 3 ? "bg-destructive text-destructive-foreground"
+                          : esc.escalation_level === 2 ? "bg-yellow-500/20 text-yellow-400"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        L{esc.escalation_level}
+                      </span>
+                    )}
                     <span className="text-[10px] text-muted-foreground">
                       by {esc.spoc?.username || "SPOC"}
                     </span>
@@ -168,8 +180,64 @@ const EscalationManager = () => {
                   {esc.justification_encrypted}
                 </p>
 
+                {/* Parsed trigger_snippet: student details + emergency contact + transcript */}
+                {parsed?.type === "emergency_contact" && (
+                  <div className="mt-2 p-3 rounded-lg bg-destructive/10 border-2 border-destructive/30 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-destructive shrink-0" />
+                      <p className="text-xs font-bold text-destructive">🚨 Emergency Contact</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {parsed.student_eternia_id && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Eternia ID</p>
+                          <p className="font-semibold font-mono">{parsed.student_eternia_id}</p>
+                        </div>
+                      )}
+                      {parsed.student_username && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Username</p>
+                          <p className="font-semibold">{parsed.student_username}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Name</p>
+                        <p className="font-semibold">{parsed.name || "Not provided"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Phone</p>
+                        <p className="font-semibold font-mono">{parsed.phone || "Not provided"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Relation</p>
+                        <p className="font-medium">{parsed.relation || "Not specified"}</p>
+                      </div>
+                      {parsed.is_self && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Note</p>
+                          <p className="font-medium text-yellow-400">Contact is student themselves</p>
+                        </div>
+                      )}
+                    </div>
+                    {parsed.transcript_snippet && (
+                      <div className="mt-1 p-2 rounded-lg bg-muted/30 border border-border/50">
+                        <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript Snippet</p>
+                        <p className="text-[11px] text-foreground italic">"{parsed.transcript_snippet}"</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Non-JSON trigger snippet fallback */}
+                {esc.trigger_snippet && !parsed?.type && (
+                  <div className="mt-2 p-2 rounded-lg bg-destructive/5 border border-destructive/10">
+                    <p className="text-[10px] font-medium text-destructive mb-0.5">Trigger Snippet</p>
+                    <p className="text-[11px] text-muted-foreground italic">"{esc.trigger_snippet}"</p>
+                  </div>
+                )}
+
                 {isAdmin && esc.status === "pending" && (
-                  <div className="flex items-center gap-1.5 pt-2 border-t border-border flex-wrap">
+                  <div className="flex items-center gap-1.5 pt-2 border-t border-border flex-wrap mt-2">
                     <Button size="sm" className="gap-1 h-7 text-[11px] px-2"
                       onClick={() => updateEscalation.mutate({ id: esc.id, status: "approved" })}>
                       <CheckCircle className="w-3 h-3" /> Approve
