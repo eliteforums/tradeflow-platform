@@ -1,30 +1,31 @@
 
 
-## Plan: Fix QR Generation Error Handling
+## Plan: Restore Institution Code Step in Onboarding Flow
 
 ### Problem
-The `generate-spoc-qr` edge function returns HTTP 400 for business errors (not SPOC, no temp IDs, etc.). The Supabase client's `functions.invoke()` treats any non-2xx as a `FunctionsHttpError` with a generic message "Edge Function returned a non-2xx status code", hiding the actual error reason.
-
-Most likely cause: the logged-in user either isn't a SPOC, has no institution, or there are no unused temp credentials in the pool. The real error message is lost because of the 400 status code.
+The `/institution-code` route was removed from `App.tsx` during the temp-ID refactor, but:
+1. The PRD v2-34 (Section 3.1) explicitly requires a 3-layer onboarding: **Eternia Code → SPOC QR → Account Setup**
+2. The `InstitutionCode.tsx` page file still exists but is not routed — clicking "Get Started" from landing page leads to a 404
+3. Multiple components still link to `/institution-code`: Navbar, HeroSection, CTASection, AnnouncementBanner, Login page
 
 ### Fix
 
-#### 1. Edge Function: Return 200 with error in body
-Change the catch block in `generate-spoc-qr/index.ts` to return HTTP 200 with `{ error: "..." }` in the JSON body instead of HTTP 400. This lets `supabase.functions.invoke()` pass the response through to `data`, where the client already checks `data?.error`.
+#### 1. Restore `/institution-code` route in `App.tsx`
+- Re-add the lazy import for `InstitutionCode`
+- Re-add the `<Route path="/institution-code">` before `/qr-scan`
+- Remove the comment saying it was removed
 
-**File**: `supabase/functions/generate-spoc-qr/index.ts`  
-**Change**: Line 83 — change `status: 400` to `status: 200`
-
-#### 2. Client: Better error extraction (defensive)
-Update `SPOCTools.tsx` query to also try parsing the error context from `FunctionsHttpError` as a fallback, so even if status is non-200 the real message surfaces.
-
-**File**: `src/components/admin/SPOCTools.tsx`  
-**Change**: In the queryFn, when `error` is present, attempt to read `error.context?.json()` to get the actual message.
+#### 2. No other file changes needed
+- `InstitutionCode.tsx` already exists and works correctly — validates the code against the `institutions` table, stores `eternia_institution_code` and `eternia_institution_id` in sessionStorage, then navigates to `/qr-scan`
+- All landing page links already point to `/institution-code`
+- `QRScan.tsx` and `Register.tsx` already read from sessionStorage
 
 ### Files Modified
 
 | File | Change |
 |------|--------|
-| `supabase/functions/generate-spoc-qr/index.ts` | Return 200 instead of 400 for errors |
-| `src/components/admin/SPOCTools.tsx` | Better error message extraction |
+| `src/App.tsx` | Add lazy import for InstitutionCode, restore route |
+
+### Result
+Flow restored to: Landing → `/institution-code` → `/qr-scan` → `/register` — matching PRD Section 3.1.
 
