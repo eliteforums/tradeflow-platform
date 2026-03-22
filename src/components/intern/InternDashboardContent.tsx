@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Home, MessageCircle, FileText, User, Clock, CheckCircle,
   AlertTriangle, Loader2, Search, Shield, LogOut, Lock,
-  Play, Award, BookOpen, ChevronRight, ChevronLeft, X
+  Play, Award, BookOpen, ChevronRight, ChevronLeft, X, Gift
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
