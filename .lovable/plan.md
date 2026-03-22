@@ -1,62 +1,65 @@
 
 
-## Plan: Comprehensive README with Copyright, License & Credits
+## Plan: Activate Self-Help Tools (Quest Cards, Journaling, Mood Tracker, Gratitude)
 
-### What Changes
+### Overview
 
-Rewrite `README.md` to be a detailed, professional open-source-style README with:
+Make 4 self-help tools fully functional with dedicated sub-pages: **Quest Cards** (already has backend), **Journaling**, **Mood Tracker**, and **Gratitude**. Keep **Wreck the Buddy** and **Tibetan Bowl** as "Coming Soon".
 
-1. **Header** — Logo/badge area, tagline, developed by Elite Forums credit
-2. **About** — Expanded project description with mission statement
-3. **All existing sections preserved** — Architecture, Features, ECC Economy, Dashboards, Privacy, Project Structure, Database Schema, Onboarding, Performance, DPDP, Dev Setup, PWA
-4. **New sections added:**
-   - **Screenshots / Demo** placeholder section
-   - **Environment Variables** — Required secrets and API keys
-   - **Edge Functions** — Complete list of all 16 edge functions with descriptions
-   - **API Reference** — Key endpoints
-   - **Contributing** — Guidelines (or note that it's proprietary)
-   - **Acknowledgements** — Libraries and tools used
-   - **Team** — Developed by Elite Forums (eliteforums.in) under the guidance of Mr. Harsh Santosh Tambade (Founder of Elite Forums) and Team ETERNIA
-   - **Contact** — Elite Forums website link
-5. **Copyright & License** — Detailed proprietary license block:
-   - All rights reserved by Elite Forums
-   - No reproduction, distribution, or modification without written consent
-   - Year and entity attribution
+### Database Changes (Migration)
 
-### File
+Create 3 new tables:
 
-| File | Action |
+| Table | Columns | Purpose |
+|-------|---------|---------|
+| `journal_entries` | id, user_id, title, content, mood_tag, created_at | Guided reflective writing |
+| `mood_entries` | id, user_id, mood (1-5 scale), note, created_at | Daily emotional tracking |
+| `gratitude_entries` | id, user_id, entry_1, entry_2, entry_3, created_at | Daily 3-item gratitude practice |
+
+All tables: RLS enabled, user can only CRUD own rows. Each tool awards ECC on daily completion (using existing `useEccEarn` cap logic).
+
+### New Hooks (3 files)
+
+| Hook | File | Purpose |
+|------|------|---------|
+| `useJournaling` | `src/hooks/useJournaling.ts` | CRUD journal entries, daily ECC earn on first entry |
+| `useMoodTracker` | `src/hooks/useMoodTracker.ts` | Insert mood, query history/trends |
+| `useGratitude` | `src/hooks/useGratitude.ts` | Submit daily 3 gratitudes, ECC earn |
+
+### New Pages/Components (8 files)
+
+| File | Purpose |
+|------|---------|
+| `src/pages/dashboard/QuestCards.tsx` | Quest cards page using existing `useQuests` + `QuestCard3D` |
+| `src/pages/dashboard/Journaling.tsx` | Journal entry form + past entries list |
+| `src/pages/dashboard/MoodTracker.tsx` | Mood selector (1-5 emoji scale) + 7-day visual history |
+| `src/pages/dashboard/Gratitude.tsx` | 3-field gratitude form + past entries |
+| `src/components/mobile/MobileQuestCards.tsx` | Mobile variant |
+| `src/components/mobile/MobileJournaling.tsx` | Mobile variant |
+| `src/components/mobile/MobileMoodTracker.tsx` | Mobile variant |
+| `src/components/mobile/MobileGratitude.tsx` | Mobile variant |
+
+### Modified Files
+
+| File | Change |
 |------|--------|
-| `README.md` | Full rewrite — comprehensive, ~400 lines |
+| `src/pages/dashboard/SelfHelp.tsx` | Hub page — active cards link to sub-routes; Wreck Buddy & Tibetan Bowl show lock |
+| `src/components/mobile/MobileSelfHelp.tsx` | Same hub logic for mobile |
+| `src/App.tsx` | Add 4 new protected routes: `/dashboard/quest-cards`, `/dashboard/journaling`, `/dashboard/mood-tracker`, `/dashboard/gratitude` |
+| `src/components/mobile/MobileDashboard.tsx` | Update self-help quick links to point to new routes |
+| `src/pages/dashboard/Dashboard.tsx` | Update self-help quick links to point to new routes |
 
-### License Section (Draft)
+### Self-Help Hub Behavior
 
-```
-## License
+- **Active tools** (Quest Cards, Journaling, Mood Tracker, Gratitude): Full-color cards, clickable, link to their dedicated pages
+- **Coming Soon** (Wreck the Buddy, Tibetan Bowl): Greyed out with lock icon, non-clickable
+- "Coming Soon" banner only shown for the locked tools, not the whole page
 
-Copyright © 2026 Elite Forums (eliteforums.in). All rights reserved.
+### ECC Integration
 
-This software and its source code are proprietary and confidential.
-Unauthorized copying, modification, distribution, or use of this software,
-via any medium, is strictly prohibited without prior written permission
-from Elite Forums.
-
-Developed under the guidance of Mr. Harsh Santosh Tambade
-(Founder, Elite Forums) and Team ETERNIA.
-
-For licensing inquiries, contact: eliteforums.in
-```
-
-### Team Section (Draft)
-
-```
-## Team
-
-**Eternia** is developed by **Elite Forums** (https://eliteforums.in)
-under the guidance of **Mr. Harsh Santosh Tambade** — Founder of Elite Forums.
-
-Built with dedication by **Team ETERNIA**.
-```
-
-All existing technical content (architecture table, features, database schema, performance notes, DPDP compliance) will be preserved and enhanced with better formatting and additional detail where appropriate.
+Each tool awards ECC on first daily use (respecting the existing daily cap from `useEccEarn`):
+- Quest Cards: existing logic (per-quest XP)
+- Journaling: +5 ECC for first journal entry of the day
+- Mood Tracker: +3 ECC for first mood log of the day
+- Gratitude: +5 ECC for first gratitude entry of the day
 
