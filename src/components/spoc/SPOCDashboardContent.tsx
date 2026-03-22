@@ -34,6 +34,7 @@ const SPOCDashboardContent = () => {
     }
   }, [tabFromUrl]);
   const [copiedQR, setCopiedQR] = useState(false);
+  const qrRef = useRef<HTMLDivElement>(null);
   const [showNewEscalation, setShowNewEscalation] = useState(false);
   const [escalationReason, setEscalationReason] = useState("");
   const [reportDateFilter, setReportDateFilter] = useState("30");
