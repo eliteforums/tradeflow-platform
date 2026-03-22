@@ -16,7 +16,18 @@ const Credits = () => {
   const isMobile = useIsMobile();
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
+
+  const { data: dailyEarned = 0 } = useQuery({
+    queryKey: ["daily-earn-total", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data, error } = await supabase.rpc("get_daily_earn_total", { _user_id: user.id });
+      if (error) throw error;
+      return data || 0;
+    },
+    enabled: !!user,
+  });
 
   if (isMobile) return <MobileCredits />;
 
