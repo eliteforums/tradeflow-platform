@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
   Calendar, MessageCircle, Box, Music, Sparkles, Coins,
-  ArrowRight, Award, Heart,
+  ArrowRight, Award, Heart, BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
@@ -84,8 +84,10 @@ const MobileDashboard = () => {
   ];
 
   const quickTools = [
-    { name: "Mood", icon: Music, path: "/dashboard/mood-tracker", color: "text-cyan-400" },
-    { name: "Gratitude", icon: Sparkles, path: "/dashboard/gratitude", color: "text-pink-400" },
+    { name: "Quest Cards", icon: Award, path: "/dashboard/quest-cards", color: "text-amber-400" },
+    { name: "Journaling", icon: Sparkles, path: "/dashboard/journaling", color: "text-emerald-400" },
+    { name: "Mood", icon: BarChart3, path: "/dashboard/mood-tracker", color: "text-cyan-400" },
+    { name: "Gratitude", icon: Heart, path: "/dashboard/gratitude", color: "text-pink-400" },
     { name: "Wallet", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
   ];
 
