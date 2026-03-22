@@ -1,22 +1,28 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useQuests } from "@/hooks/useQuests";
-import { Award, ArrowLeft, AlertCircle, Loader2, Send, RotateCcw } from "lucide-react";
+import { Award, ArrowLeft, AlertCircle, Loader2, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useMemo, useCallback } from "react";
 
-const CARD_BACKS = ["🌊", "🔥", "🌿", "⭐", "🎯", "💎"];
+const SUIT_ICONS = ["♠", "♥", "♦", "♣", "★", "♠"];
+const CARD_COLORS = [
+  "from-primary to-accent",
+  "from-accent to-primary",
+  "from-primary to-secondary",
+  "from-secondary to-primary",
+  "from-accent to-secondary",
+  "from-secondary to-accent",
+];
 
 const QuestCards = () => {
   const { quests, completions, isLoading, error, completeQuest, isCompleting, completedToday, totalXpToday } = useQuests();
   const completedIds = completions.map((c) => c.quest_id);
 
-  // Pick 6 random quests, stable per day
   const dealtCards = useMemo(() => {
     if (quests.length === 0) return [];
-    // Seeded shuffle: consistent per day, good distribution via simple hash
     const today = new Date().toISOString().split("T")[0];
     const seed = today.split("").reduce((acc, ch, i) => acc + ch.charCodeAt(0) * (i + 1), 0);
     const hashId = (id: string) => {
@@ -91,10 +97,12 @@ const QuestCards = () => {
         )}
 
         {isLoading ? (
-          <div className="grid grid-cols-3 gap-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />
-            ))}
+          <div className="card-table rounded-2xl p-6">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="aspect-[3/4] rounded-xl bg-white/10" />
+              ))}
+            </div>
           </div>
         ) : dealtCards.length === 0 && !error ? (
           <div className="rounded-2xl border border-border/50 bg-card p-8 text-center">
@@ -103,67 +111,153 @@ const QuestCards = () => {
           </div>
         ) : (
           <>
-            {/* Card Grid */}
-            <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
-              {dealtCards.map((quest, idx) => {
-                const isCompleted = completedIds.includes(quest.id);
-                const isFlipped = flippedId === quest.id;
+            {/* Card Table Surface */}
+            <div className="card-table rounded-2xl p-5 sm:p-6 relative">
+              {/* Felt texture label */}
+              <div className="absolute top-3 left-4 text-[10px] uppercase tracking-[0.2em] text-white/20 font-semibold select-none">
+                Quest Table
+              </div>
 
-                return (
-                  <div key={quest.id} className="perspective-1000">
-                    <button
-                      onClick={() => handleFlip(quest.id)}
-                      disabled={isCompleted || isCompleting}
-                      className="w-full"
-                    >
+              {/* Card Grid + Deck layout */}
+              <div className="flex gap-4 sm:gap-5 items-start mt-4">
+                {/* 6-card grid */}
+                <div className="grid grid-cols-3 gap-2.5 sm:gap-3 flex-1">
+                  {dealtCards.map((quest, idx) => {
+                    const isCompleted = completedIds.includes(quest.id);
+                    const isFlipped = flippedId === quest.id;
+
+                    return (
                       <div
-                        className={`relative w-full aspect-[3/4] transition-transform duration-500 transform-style-3d ${
-                          isFlipped || isCompleted ? "rotate-y-180" : ""
-                        }`}
+                        key={quest.id}
+                        className="perspective-1000 card-deal-in"
+                        style={{ animationDelay: `${idx * 100}ms` }}
                       >
-                        {/* Card Back */}
-                        <div className={`absolute inset-0 backface-hidden rounded-2xl border-2 flex flex-col items-center justify-center gap-2 transition-all ${
-                          isCompleted
-                            ? "border-muted/30 bg-muted/10"
-                            : "border-primary/30 bg-gradient-to-br from-primary/20 to-accent/20 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 cursor-pointer active:scale-[0.97]"
-                        }`}>
-                          <span className="text-3xl sm:text-4xl">{CARD_BACKS[idx]}</span>
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                            {isCompleted ? "Done ✓" : "Tap to flip"}
-                          </span>
-                        </div>
+                        <button
+                          onClick={() => handleFlip(quest.id)}
+                          disabled={isCompleted || isCompleting}
+                          className={`w-full ${!isCompleted && !isFlipped ? "card-hover-lift" : ""}`}
+                        >
+                          <div
+                            className={`relative w-full aspect-[3/4] transform-style-3d card-flip-transition ${
+                              isFlipped || isCompleted ? "rotate-y-180" : ""
+                            }`}
+                          >
+                            {/* ===== CARD BACK ===== */}
+                            <div className={`absolute inset-0 backface-hidden rounded-xl overflow-hidden ${
+                              isCompleted ? "opacity-40" : "cursor-pointer"
+                            }`}>
+                              {/* Gradient base */}
+                              <div className={`absolute inset-0 bg-gradient-to-br ${CARD_COLORS[idx]} opacity-90`} />
+                              {/* Diamond pattern overlay */}
+                              <div className="absolute inset-0 card-back-pattern" />
+                              {/* Inner ornate border */}
+                              <div className="absolute inset-[5px] sm:inset-[6px] rounded-lg border border-white/20" />
+                              <div className="absolute inset-[9px] sm:inset-[10px] rounded-md border border-white/10" />
+                              {/* Center emblem */}
+                              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                                  <span className="text-base sm:text-lg text-white/80 font-bold">Q</span>
+                                </div>
+                                <span className="text-[8px] sm:text-[9px] text-white/40 font-semibold tracking-widest uppercase">
+                                  Quest
+                                </span>
+                              </div>
+                              {/* Corner suits */}
+                              <span className="absolute top-1.5 left-2 text-[10px] sm:text-xs text-white/30 font-bold">{SUIT_ICONS[idx]}</span>
+                              <span className="absolute bottom-1.5 right-2 text-[10px] sm:text-xs text-white/30 font-bold rotate-180">{SUIT_ICONS[idx]}</span>
+                              {/* Card shadow */}
+                              <div className="absolute inset-0 rounded-xl shadow-lg shadow-black/30" />
+                            </div>
 
-                        {/* Card Front */}
-                        <div className={`absolute inset-0 backface-hidden rotate-y-180 rounded-2xl border-2 p-3 flex flex-col items-center justify-center text-center ${
-                          isCompleted
-                            ? "border-emerald-500/30 bg-emerald-500/5"
-                            : "border-primary/40 bg-card"
-                        }`}>
-                          <p className="text-xs sm:text-sm font-semibold leading-tight mb-1">{quest.title}</p>
-                          <p className="text-[10px] text-muted-foreground leading-snug line-clamp-3">{quest.description}</p>
-                          <div className="mt-2">
-                            <span className={`text-[10px] font-bold ${isCompleted ? "text-emerald-500" : "text-primary"}`}>
-                              {isCompleted ? "✓ Completed" : `+${quest.xp_reward} XP`}
-                            </span>
+                            {/* ===== CARD FRONT ===== */}
+                            <div className={`absolute inset-0 backface-hidden rotate-y-180 rounded-xl overflow-hidden ${
+                              isCompleted ? "card-completed-glow" : "shadow-lg shadow-black/20"
+                            }`}>
+                              {/* Parchment background */}
+                              <div className={`absolute inset-0 ${isCompleted ? "bg-amber-50" : "card-front-parchment"}`} />
+                              {/* Inner border */}
+                              <div className={`absolute inset-[4px] sm:inset-[5px] rounded-lg border ${
+                                isCompleted ? "border-amber-300/40" : "border-primary/20"
+                              }`} />
+                              {/* Corner ornaments */}
+                              <span className="absolute top-1 left-2 text-[10px] text-primary/30 font-serif">{SUIT_ICONS[idx]}</span>
+                              <span className="absolute bottom-1 right-2 text-[10px] text-primary/30 font-serif rotate-180">{SUIT_ICONS[idx]}</span>
+                              {/* Content */}
+                              <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center">
+                                {isCompleted && (
+                                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center">
+                                    <span className="text-[10px] text-white font-bold">✓</span>
+                                  </div>
+                                )}
+                                <p className="text-[11px] sm:text-xs font-bold leading-tight mb-1 text-foreground/90">{quest.title}</p>
+                                <p className="text-[9px] sm:text-[10px] text-foreground/50 leading-snug line-clamp-3">{quest.description}</p>
+                                <div className="mt-2">
+                                  <span className={`text-[10px] font-bold ${isCompleted ? "text-amber-600" : "text-primary"}`}>
+                                    {isCompleted ? "Completed" : `+${quest.xp_reward} XP`}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
+                        </button>
                       </div>
-                    </button>
+                    );
+                  })}
+                </div>
+
+                {/* Deck Stack */}
+                <div className="hidden sm:flex flex-col items-center gap-2 pt-2">
+                  <div className="relative w-16 h-[88px]">
+                    {[4, 3, 2, 1, 0].map((i) => (
+                      <div
+                        key={i}
+                        className="absolute inset-0 rounded-lg overflow-hidden deck-shadow"
+                        style={{
+                          transform: `translateX(${i * 1.5}px) translateY(${i * 1.5}px)`,
+                          zIndex: 5 - i,
+                        }}
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary to-accent opacity-80" />
+                        <div className="absolute inset-0 card-back-pattern" />
+                        <div className="absolute inset-[3px] rounded border border-white/15" />
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
+                  <p className="text-[10px] text-white/30 text-center leading-tight">
+                    {quests.length - dealtCards.length}<br />remaining
+                  </p>
+                </div>
+              </div>
+
+              {/* Mobile deck indicator */}
+              <div className="flex sm:hidden items-center justify-center gap-2 mt-4 text-white/30">
+                <div className="relative w-8 h-11">
+                  {[2, 1, 0].map((i) => (
+                    <div
+                      key={i}
+                      className="absolute inset-0 rounded border border-white/15 bg-gradient-to-br from-primary/60 to-accent/60"
+                      style={{ transform: `translateX(${i * 1.5}px) translateY(${i * 1.5}px)` }}
+                    />
+                  ))}
+                </div>
+                <p className="text-[10px]">
+                  {quests.length - dealtCards.length} more · refreshes daily
+                </p>
+              </div>
             </div>
 
-            {/* Answer Input - shown when a card is flipped */}
+            {/* Answer Input */}
             {flippedId && !completedIds.includes(flippedId) && (
-              <div className="rounded-2xl border border-primary/30 bg-card p-4 space-y-3 animate-in slide-in-from-bottom-4 duration-300">
+              <div className="rounded-2xl border border-primary/30 bg-card p-4 space-y-3 animate-in slide-in-from-bottom-4 duration-300 shadow-lg shadow-primary/5">
                 <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-primary shrink-0" />
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                    <Award className="w-3.5 h-3.5 text-primary-foreground" />
+                  </div>
                   <p className="text-sm font-semibold">
                     {dealtCards.find(q => q.id === flippedId)?.title}
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground pl-9">
                   {dealtCards.find(q => q.id === flippedId)?.description}
                 </p>
                 <div className="flex gap-2">
@@ -186,22 +280,6 @@ const QuestCards = () => {
                 </div>
               </div>
             )}
-
-            {/* Deck indicator */}
-            <div className="flex items-center justify-center gap-2 text-muted-foreground">
-              <div className="relative w-10 h-14">
-                {[2, 1, 0].map((i) => (
-                  <div
-                    key={i}
-                    className="absolute inset-0 rounded-lg border border-border/50 bg-card"
-                    style={{ transform: `translateX(${i * 2}px) translateY(${i * 2}px)` }}
-                  />
-                ))}
-              </div>
-              <p className="text-xs">
-                {quests.length - dealtCards.length} more in deck · refreshes daily
-              </p>
-            </div>
           </>
         )}
       </div>
