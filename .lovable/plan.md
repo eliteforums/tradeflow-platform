@@ -1,31 +1,31 @@
 
 
-## Plan: Restore Institution Code Step in Onboarding Flow
+## Plan: Restore Eternia Code Display in Mobile Admin Institution Cards
 
 ### Problem
-The `/institution-code` route was removed from `App.tsx` during the temp-ID refactor, but:
-1. The PRD v2-34 (Section 3.1) explicitly requires a 3-layer onboarding: **Eternia Code → SPOC QR → Account Setup**
-2. The `InstitutionCode.tsx` page file still exists but is not routed — clicking "Get Started" from landing page leads to a 404
-3. Multiple components still link to `/institution-code`: Navbar, HeroSection, CTASection, AnnouncementBanner, Login page
+The `MobileAdminDashboard.tsx` renders institution cards inline (lines 257-274) in the "spoc" tab but never displays `eternia_code_hash`. The desktop admin dashboard uses `InstitutionManager` component which does show the code, but the mobile version has a custom inline layout that omits it.
 
 ### Fix
 
-#### 1. Restore `/institution-code` route in `App.tsx`
-- Re-add the lazy import for `InstitutionCode`
-- Re-add the `<Route path="/institution-code">` before `/qr-scan`
-- Remove the comment saying it was removed
+**File**: `src/components/mobile/MobileAdminDashboard.tsx`  
+**Change**: Add an Eternia Code display row with copy button to the institution card, between the SPOC info and the stats grid (after line 268, before line 269).
 
-#### 2. No other file changes needed
-- `InstitutionCode.tsx` already exists and works correctly — validates the code against the `institutions` table, stores `eternia_institution_code` and `eternia_institution_id` in sessionStorage, then navigates to `/qr-scan`
-- All landing page links already point to `/institution-code`
-- `QRScan.tsx` and `Register.tsx` already read from sessionStorage
+Add a row like:
+```
+<div className="flex items-center justify-between p-2.5 rounded-xl bg-muted/30 border border-border/30">
+  <div>
+    <p className="text-[10px] font-medium text-muted-foreground mb-0.5">Eternia Code</p>
+    <code className="text-sm font-mono font-bold tracking-widest">{inst.eternia_code_hash}</code>
+  </div>
+  <copy button>
+</div>
+```
+
+Will need to add `Copy`, `Check` icon imports and a `copiedId` state for the copy-to-clipboard interaction.
 
 ### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/App.tsx` | Add lazy import for InstitutionCode, restore route |
-
-### Result
-Flow restored to: Landing → `/institution-code` → `/qr-scan` → `/register` — matching PRD Section 3.1.
+| `src/components/mobile/MobileAdminDashboard.tsx` | Add Eternia Code display + copy button to institution cards |
 
