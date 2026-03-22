@@ -591,7 +591,6 @@ const SPOCDashboardContent = () => {
               </div>
             )}
           </div>
-          </div>
 
 
           <div className="p-4 rounded-2xl bg-card border border-border/50 space-y-3">
