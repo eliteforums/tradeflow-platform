@@ -75,9 +75,10 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
   const fetchQueue = useCallback(async () => {
     const { data } = await supabase
       .from("blackbox_sessions")
-      .select("*")
+      .select("id, student_id, status, flag_level, created_at")
       .eq("status", "queued")
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true })
+      .limit(50);
 
     if (data) {
       // Fetch student usernames
