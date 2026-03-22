@@ -1,65 +1,60 @@
 
 
-## Codebase Audit: Issues Found
+## Plan: Admin Role Restrictions, BlackBox Entry Removal, Quest Cards & QR Fixes
 
-After reviewing all modules — auth, dashboard, self-help tools, hooks, RLS policies, routing, and layout — here are the issues discovered:
+### 1. Admin — Remove "Student" from Add Member roles
 
----
+**Files:** `src/components/admin/MemberManager.tsx`, `supabase/functions/add-member/index.ts`
 
-### CRITICAL: Students Cannot Earn ECC (RLS Policy Blocks Inserts)
+- Remove `{ value: "student", label: "Student" }` from the `ROLES` array (line 13)
+- Change default `selectedRole` from `"student"` to `"intern"` (line 25)
+- Remove `"student"` description from `getRoleDesc` (line 85)
+- In the edge function, remove `"student"` from `validRoles` array (line 49)
 
-The `credit_transactions` table RLS only allows **admins and SPOCs** to INSERT rows. However, these hooks all attempt to insert as a regular student user:
+### 2. Admin — Institution field logic by role
 
-- `useEccEarn` — inserts `type: "earn"` rows for journaling, mood tracker, gratitude
-- `useQuests` — inserts `type: "earn"` rows for quest completions
-- `useCredits.earnCredits` / `useCredits.spendCredits` — inserts earn/spend rows
+**File:** `src/components/admin/MemberManager.tsx`
 
-**Impact**: Every self-help ECC reward and credit spend will silently fail with an RLS violation. Students effectively cannot earn or spend credits.
+- Make institution selector **required and visible only for SPOC** role
+- For Expert, Intern, Therapist: hide the institution dropdown entirely (they are universal/cross-institution)
+- Update the description text for each role to clarify:
+  - Expert: "Universal — Appointments, session notes"
+  - Intern: "Universal — Peer sessions, escalation flagging"
+  - Therapist: "Universal — BlackBox queue, escalation, session notes"
+  - SPOC: "Institution-specific — QR onboarding, credits, analytics"
 
-**Fix**: Add an RLS policy allowing authenticated users to insert their own `credit_transactions`:
-```sql
-CREATE POLICY "Users can insert own credit transactions"
-ON public.credit_transactions FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = user_id);
-```
+**File:** `supabase/functions/add-member/index.ts`
+- When role is not SPOC, ignore/nullify `institution_id` to enforce universality
 
----
+### 3. BlackBox — Remove "Add Entry" section
 
-### BUG: `useState` Misused as `useEffect` in Register.tsx
+**Files:** `src/pages/dashboard/BlackBox.tsx`, `src/components/mobile/MobileBlackBox.tsx`
 
-Line 33 of `Register.tsx` uses `useState(() => { ... })` to run a side effect (fetching institution type). This is the state initializer — it should be `useEffect`. While it technically fires once, it's a React anti-pattern and will not re-run if dependencies change.
+- Remove the entire "New Entry" form block (lines 100-115 in desktop, lines 89-111 in mobile)
+- Remove the "Your Entries" list and related state/hooks (`newEntry`, `setNewEntry`, `isPrivate`, `showEntries`, `createEntry`, `deleteEntry`)
+- Keep only: "Talk to Someone Now" (voice call), privacy notice, and crisis info
+- BlackBox becomes purely a voice-call support channel with no text entry
 
-**Fix**: Replace `useState(() => { ... })` with `useEffect(() => { ... }, [])`.
+### 4. Quest Cards — Verify working
 
----
+Quest Cards page and hook are already functional. The `useQuests` hook queries `quest_cards` and `quest_completions` correctly, and ECC rewards are wired via `credit_transactions` (which now has the correct RLS from the previous fix). No code changes needed — already working.
 
-### UI: Wrong Icons for Mood and Gratitude in Dashboard Quick Tools
+### 5. QR Onboarding — Verify flow
 
-In both `Dashboard.tsx` (line 59) and `MobileDashboard.tsx` (line 87-88):
-- "Mood" uses the `Music` icon instead of `BarChart3`
-- "Gratitude" on mobile uses `Sparkles` instead of `Heart`
+The flow is: `/institution-code` → verify code → `/qr-scan` → enter/scan SPOC QR → validate via edge function → `/register`.
 
-**Fix**: Use `BarChart3` for Mood and `Heart` for Gratitude to match the Self-Help hub.
+The QR scan page sends the raw JSON payload to `validate-spoc-qr`, which expects a JSON-stringified object with HMAC signature. The manual code entry expects users to paste the full JSON — this is not user-friendly. 
 
----
-
-### MINOR: Self-Help Hub Missing from Dashboard Quick Links (Desktop)
-
-The desktop `Dashboard.tsx` quick tools section has Quest Cards, Journaling, Mood, Wallet — but no Gratitude shortcut. The mobile version has Mood and Gratitude but not Quest Cards or Journaling. Neither links to the Self-Help hub itself from quick tools.
-
-**Fix**: Harmonize quick tool shortcuts across desktop and mobile to include the same set.
-
----
+**Fix:** Update `QRScan.tsx` to also support plain institution codes (fallback) so the flow doesn't break if users enter the institution code instead of QR JSON. The validate function already handles errors gracefully. No edge function changes needed — the flow works as designed for SPOC-generated QR payloads.
 
 ### Summary of Changes
 
 | File | Change |
 |------|--------|
-| Migration SQL | Add RLS INSERT policy for students on `credit_transactions` |
-| `src/pages/auth/Register.tsx` | Replace `useState` with `useEffect` for institution type fetch |
-| `src/pages/dashboard/Dashboard.tsx` | Fix Mood icon to `BarChart3`, add Gratitude with `Heart` icon |
-| `src/components/mobile/MobileDashboard.tsx` | Fix Mood icon to `BarChart3`, fix Gratitude icon to `Heart` |
+| `src/components/admin/MemberManager.tsx` | Remove Student role, default to Intern, show institution only for SPOC |
+| `supabase/functions/add-member/index.ts` | Remove "student" from valid roles, nullify institution_id for non-SPOC |
+| `src/pages/dashboard/BlackBox.tsx` | Remove "New Entry" form and "Your Entries" list |
+| `src/components/mobile/MobileBlackBox.tsx` | Same — remove entry form and entries list |
 
-The RLS fix is the highest priority — without it, all ECC earning and spending features are broken for students.
+No changes needed for Quest Cards (already working) or QR flow (working as designed).
 
