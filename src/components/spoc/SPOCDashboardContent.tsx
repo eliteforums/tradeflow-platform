@@ -54,7 +54,7 @@ const SPOCDashboardContent = () => {
       if (!institutionId) return null;
       const { data, error } = await supabase
         .from("institutions")
-        .select("id, name, plan_type, credits_pool, is_active, institution_type")
+        .select("id, name, plan_type, credits_pool, is_active, institution_type, eternia_code_hash")
         .eq("id", institutionId)
         .single();
       if (error) throw error;
@@ -419,11 +419,28 @@ const SPOCDashboardContent = () => {
               <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
                 <Shield className="w-5 h-5 text-primary" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h2 className="font-semibold text-sm font-display">{institution?.name || "Your Institution"}</h2>
                 <p className="text-xs text-muted-foreground">
                   {activeStudents} active students · {institution?.plan_type || "Basic"} plan
                 </p>
+                {institution?.eternia_code_hash && (
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-muted-foreground">Eternia Code:</span>
+                    <code className="text-xs font-mono bg-background/50 px-2 py-0.5 rounded border border-border/50 text-foreground">
+                      {institution.eternia_code_hash}
+                    </code>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(institution.eternia_code_hash);
+                        toast.success("Eternia code copied!");
+                      }}
+                      className="text-xs text-primary hover:text-primary/80 transition-colors"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

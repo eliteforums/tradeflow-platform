@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface Profile {
   id: string;
   username: string;
-  role: "student" | "intern" | "expert" | "spoc" | "admin";
+  role: "student" | "intern" | "expert" | "spoc" | "admin" | "therapist";
   institution_id: string | null;
   is_active: boolean;
   is_verified: boolean;
