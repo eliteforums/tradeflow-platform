@@ -26,7 +26,7 @@ const PeerConnect = () => {
     interns, sessions, activeSession, messages: chatMessages, isLoading,
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses,
-    hasMoreMessages, isLoadingMore, loadMoreMessages,
+    hasMoreMessages, isLoadingMore, loadMoreMessages, ensureSessionRoom,
   } = usePeerConnect(urlSessionId);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
