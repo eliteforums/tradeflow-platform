@@ -37,10 +37,10 @@ export type InternStatus = "online" | "busy" | "offline";
 
 const MESSAGE_PAGE_SIZE = 50;
 
-export function usePeerConnect() {
+export function usePeerConnect(initialSessionId?: string | null) {
   const { user, profile, refreshCredits } = useAuth();
   const queryClient = useQueryClient();
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(initialSessionId || null);
   const [messages, setMessages] = useState<PeerMessage[]>([]);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);

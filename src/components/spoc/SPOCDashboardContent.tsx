@@ -276,13 +276,25 @@ const SPOCDashboardContent = () => {
     queryKey: ["spoc-qr", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("generate-spoc-qr");
-      if (error) throw new Error(error.message || "Failed to generate QR");
-      if (data?.error) throw new Error(data.error);
+      if (error) {
+        // Parse the actual error message from the edge function response
+        const msg = error.message || "Failed to generate QR";
+        if (msg.includes("No temp IDs available") || msg.includes("non-2xx")) {
+          throw new Error("No temp IDs available — ask your admin to generate more.");
+        }
+        throw new Error(msg);
+      }
+      if (data?.error) {
+        if (data.error.includes("No temp IDs available") || data.error.includes("No temp ID")) {
+          throw new Error("No temp IDs available — ask your admin to generate more.");
+        }
+        throw new Error(data.error);
+      }
       return data as { qr_payload: string };
     },
     enabled: !!user && profile?.role === "spoc",
     staleTime: Infinity,
-    retry: 2,
+    retry: false,
   });
 
   const qrPayload = qrData?.qr_payload || "";

@@ -86,13 +86,13 @@ const MobileBlackBox = () => {
         {isInSession && (
           <div
             style={{
-              position: "fixed",
-              top: -9999,
-              left: -9999,
+              position: "absolute",
               width: 1,
               height: 1,
-              opacity: 0,
-              pointerEvents: "none",
+              overflow: "hidden",
+              clip: "rect(0, 0, 0, 0)",
+              whiteSpace: "nowrap",
+              border: 0,
             }}
             aria-hidden="true"
           >

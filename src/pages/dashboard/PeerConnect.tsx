@@ -14,6 +14,8 @@ import { format } from "date-fns";
 
 const PeerConnect = () => {
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
+  const urlSessionId = searchParams.get("sessionId");
   const { user, profile, creditBalance } = useAuth();
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -25,7 +27,7 @@ const PeerConnect = () => {
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses,
     hasMoreMessages, isLoadingMore, loadMoreMessages,
-  } = usePeerConnect();
+  } = usePeerConnect(urlSessionId);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
 

@@ -25,7 +25,7 @@ const MobilePeerConnect = () => {
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses,
     hasMoreMessages, isLoadingMore, loadMoreMessages,
-  } = usePeerConnect();
+  } = usePeerConnect(urlSessionId);
   const isIntern = profile?.role === "intern";
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
