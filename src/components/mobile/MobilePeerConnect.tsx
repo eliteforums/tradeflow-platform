@@ -11,6 +11,8 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { format } from "date-fns";
 
 const MobilePeerConnect = () => {
+  const [searchParams] = useSearchParams();
+  const urlSessionId = searchParams.get("sessionId");
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio" }>({ open: false, mode: "audio" });
