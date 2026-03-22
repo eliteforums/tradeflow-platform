@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Link, Navigate } from "react-router-dom";
 import {
   Calendar, MessageCircle, Box, Music, Sparkles, Coins,
-  ArrowRight, Award, Heart,
+  ArrowRight, Award, Heart, BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
