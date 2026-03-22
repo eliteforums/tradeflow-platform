@@ -91,7 +91,7 @@ const Login = () => {
             transition={{ duration: 0.5 }}
             className="mb-8"
           >
-            <EterniaLogo size={72} />
+            <EterniaLogo size={80} />
           </motion.div>
           <motion.h2
             initial={{ opacity: 0, y: 12 }}
