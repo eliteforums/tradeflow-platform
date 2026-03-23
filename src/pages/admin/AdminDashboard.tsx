@@ -28,6 +28,7 @@ import EscalationManager from "@/components/admin/EscalationManager";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import QuestCardManager from "@/components/admin/QuestCardManager";
 
