@@ -268,12 +268,13 @@ export function usePeerConnect(initialSessionId?: string | null) {
         return existingStudentSession;
       }
 
-      // 2. Check if the target intern already has an active/pending session
+      // 2. Check if the target intern already has a FRESH active/pending session
       const { data: existingInternSession } = await supabase
         .from("peer_sessions")
         .select("id")
         .eq("intern_id", internId)
         .in("status", ["pending", "active"])
+        .gte("created_at", TWO_HOURS_AGO)
         .limit(1)
         .maybeSingle();
 
