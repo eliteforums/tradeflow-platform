@@ -21,7 +21,7 @@ const MobilePeerConnect = () => {
 
   const { user, profile, creditBalance } = useAuth();
   const {
-    interns, activeSession, messages: chatMessages, isLoading,
+    interns, sessions, activeSession, messages: chatMessages, isLoading,
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses,
     hasMoreMessages, isLoadingMore, loadMoreMessages, ensureSessionRoom,
