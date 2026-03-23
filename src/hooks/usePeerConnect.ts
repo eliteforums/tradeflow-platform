@@ -98,7 +98,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
       let query = supabase
         .from("peer_sessions")
-        .select("id, student_id, intern_id, status, is_flagged, started_at, ended_at, created_at, room_id, intern:profiles!peer_sessions_intern_id_fkey(id, username, specialty, is_active, training_status), student:profiles!peer_sessions_student_id_fkey(id, username, specialty, role)" as any)
+        .select("id, student_id, intern_id, status, is_flagged, started_at, ended_at, created_at, room_id, escalation_note_encrypted, intern:profiles!peer_sessions_intern_id_fkey(id, username, specialty, is_active, training_status), student:profiles!peer_sessions_student_id_fkey(id, username, specialty, role)")
         .order("created_at", { ascending: false })
         .limit(50);
 
@@ -228,20 +228,20 @@ export function usePeerConnect(initialSessionId?: string | null) {
   // Helper: ensure a shared room_id exists on the session
   const ensureSessionRoom = useCallback(async (sessionId: string): Promise<string | null> => {
     // Check if session already has a room_id
-    const { data: session } = await supabase
-      .from("peer_sessions")
-      .select("room_id" as any)
-      .eq("id", sessionId)
-      .single();
+      const { data: session } = await supabase
+        .from("peer_sessions")
+        .select("room_id")
+        .eq("id", sessionId)
+        .single();
 
-    if ((session as any)?.room_id) return (session as any).room_id;
+      if (session?.room_id) return session.room_id;
 
     // Create a new room and persist it
     try {
       const { roomId } = await createVideoSDKRoom();
       await supabase
         .from("peer_sessions")
-        .update({ room_id: roomId } as any)
+        .update({ room_id: roomId })
         .eq("id", sessionId);
       return roomId;
     } catch (err) {
