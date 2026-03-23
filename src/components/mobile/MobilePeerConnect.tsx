@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  MessageCircle, Search, Circle, Phone, Send, X, Shield, Users,
+  MessageCircle, Search, Circle, Send, X, Shield, Users,
   Loader2, AlertCircle, ArrowLeft, Flag, ChevronUp, CheckCheck, Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
