@@ -91,7 +91,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
     return statuses;
   }, [interns, activeSessions]);
 
-  // Get user's sessions (both as student AND as intern) — include student relation for intern view
+  // Get user's sessions — include student relation for intern view
   const { data: sessions = [], isLoading: isLoadingSessions } = useQuery({
     queryKey: ["peer-sessions", user?.id, isIntern],
     queryFn: async () => {
@@ -111,10 +111,23 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as unknown as PeerSession[];
+
+      // Client-side: auto-expire sessions older than 2 hours
+      const TWO_HOURS = 2 * 60 * 60 * 1000;
+      const now = Date.now();
+      return ((data || []) as unknown as PeerSession[]).map((s) => {
+        if (
+          (s.status === "active" || s.status === "pending") &&
+          now - new Date(s.created_at).getTime() > TWO_HOURS
+        ) {
+          return { ...s, status: "completed" as const, _expired: true };
+        }
+        return s;
+      });
     },
     enabled: !!user,
     staleTime: 10_000,
+    refetchInterval: 15_000,
   });
   // Fetch last message per session for conversation list preview
   const { data: lastMessages = {} } = useQuery({
