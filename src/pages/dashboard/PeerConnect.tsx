@@ -208,7 +208,7 @@ const PeerConnect = () => {
                 <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                   <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center mb-4"><MessageCircle className="w-10 h-10 text-white" /></div>
                   <h3 className="text-lg font-semibold font-display mb-1">Start a Conversation</h3>
-                  <p className="text-sm text-muted-foreground max-w-xs">Select an available intern to begin.</p>
+                  <p className="text-sm text-muted-foreground max-w-xs">{isIntern ? "Select a student session from the left." : "Select an available intern to begin."}</p>
                 </div>
               )}
             </div>

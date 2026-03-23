@@ -205,7 +205,7 @@ const MobilePeerConnect = () => {
                   <MessageCircle className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-base font-semibold font-display mb-1">Start a Conversation</h3>
-                <p className="text-sm text-muted-foreground">Select an intern to begin.</p>
+                <p className="text-sm text-muted-foreground">{isIntern ? "Select a student session." : "Select an intern to begin."}</p>
                 <Button variant="outline" className="mt-4 h-10 text-sm" onClick={() => setMobileView("list")}>Back to list</Button>
               </div>
             )}
