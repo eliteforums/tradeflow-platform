@@ -436,6 +436,11 @@ const PeerConnect = () => {
                     : "Select a conversation or start a new chat with an available intern."
                   }
                 </p>
+                {!isIntern && (
+                  <Button className="mt-4" onClick={() => setShowNewChat(true)}>
+                    <Plus className="w-4 h-4 mr-2" /> Start New Chat
+                  </Button>
+                )}
                 <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
                   <Shield className="w-3.5 h-3.5" />
                   <span>End-to-end anonymous · 20 ECC per session</span>
