@@ -144,36 +144,6 @@ const PeerConnect = () => {
     );
   }
 
-  const formatMessageTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    if (isToday(date)) return format(date, "h:mm a");
-    if (isYesterday(date)) return "Yesterday";
-    return format(date, "MMM d");
-  };
-
-  // Group messages by date for dividers
-  const groupedMessages = useMemo(() => {
-    const groups: { date: string; messages: typeof chatMessages }[] = [];
-    let currentDate = "";
-    for (const msg of chatMessages) {
-      const msgDate = format(new Date(msg.created_at), "yyyy-MM-dd");
-      if (msgDate !== currentDate) {
-        currentDate = msgDate;
-        groups.push({ date: msgDate, messages: [msg] });
-      } else {
-        groups[groups.length - 1].messages.push(msg);
-      }
-    }
-    return groups;
-  }, [chatMessages]);
-
-  const getDateLabel = (dateStr: string) => {
-    const date = new Date(dateStr);
-    if (isToday(date)) return "Today";
-    if (isYesterday(date)) return "Yesterday";
-    return format(date, "MMMM d, yyyy");
-  };
-
   if (isMobile) return <MobilePeerConnect />;
 
   return (
