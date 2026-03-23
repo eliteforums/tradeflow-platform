@@ -241,7 +241,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
       const { roomId } = await createVideoSDKRoom();
       await supabase
         .from("peer_sessions")
-        .update({ room_id: roomId } as any)
+        .update({ room_id: roomId })
         .eq("id", sessionId);
       return roomId;
     } catch (err) {
