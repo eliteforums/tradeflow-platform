@@ -60,6 +60,9 @@ export type Database = {
           credits_charged: number
           expert_id: string
           id: string
+          reschedule_reason: string | null
+          rescheduled_by: string | null
+          rescheduled_from: string | null
           room_id: string | null
           session_notes_encrypted: string | null
           session_type: string
@@ -75,6 +78,9 @@ export type Database = {
           credits_charged?: number
           expert_id: string
           id?: string
+          reschedule_reason?: string | null
+          rescheduled_by?: string | null
+          rescheduled_from?: string | null
           room_id?: string | null
           session_notes_encrypted?: string | null
           session_type?: string
@@ -90,6 +96,9 @@ export type Database = {
           credits_charged?: number
           expert_id?: string
           id?: string
+          reschedule_reason?: string | null
+          rescheduled_by?: string | null
+          rescheduled_from?: string | null
           room_id?: string | null
           session_notes_encrypted?: string | null
           session_type?: string
@@ -659,6 +668,39 @@ export type Database = {
           id?: string
           mood?: number
           note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
           user_id?: string
         }
         Relationships: []
