@@ -366,7 +366,7 @@ const ExpertDashboardContent = () => {
                             }}>
                               {apt.session_type === "video" ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}Join Session
                             </Button>
-                            <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-3" onClick={() => toast.info("Reschedule request sent")}>
+                            <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-3" onClick={() => setRescheduleDialog({ open: true, appointmentId: apt.id, currentTime: apt.slot_time, studentId: apt.student_id, studentName: apt.student?.username })}>
                               <RefreshCw className="w-3 h-3" />Reschedule
                             </Button>
                             <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-3 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}>
