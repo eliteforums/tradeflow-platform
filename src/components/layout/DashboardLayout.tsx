@@ -163,12 +163,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <Link to="/dashboard" className="flex items-center min-w-0">
             <EterniaLogo size={sidebarOpen ? 36 : 30} />
           </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-sidebar-foreground hover:bg-sidebar-accent h-7 w-7 shrink-0"
-          >
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-sidebar-foreground hover:bg-sidebar-accent h-7 w-7 shrink-0"
+            >
             <ChevronLeft className={`w-4 h-4 transition-transform ${!sidebarOpen ? "rotate-180" : ""}`} />
           </Button>
         </div>
