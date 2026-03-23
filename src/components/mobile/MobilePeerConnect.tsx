@@ -279,8 +279,13 @@ const MobilePeerConnect = () => {
                   </div>
                 </div>
               ) : (
-                <div className="px-3 py-3 border-t border-border bg-muted/30 text-center">
+              <div className="px-3 py-3 border-t border-border bg-muted/30 text-center space-y-2">
                   <p className="text-xs text-muted-foreground">This session has ended</p>
+                  {!isIntern && (
+                    <Button variant="outline" size="sm" className="text-xs" onClick={() => setMobileView("newchat")}>
+                      <Plus className="w-3 h-3 mr-1" /> Start New Chat
+                    </Button>
+                  )}
                 </div>
               )}
             </>
