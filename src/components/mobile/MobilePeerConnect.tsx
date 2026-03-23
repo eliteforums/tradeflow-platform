@@ -207,13 +207,6 @@ const MobilePeerConnect = () => {
                       <Flag className={`w-4 h-4 ${activeSession?.is_flagged ? "fill-current" : ""}`} />
                     </Button>
                   )}
-                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={async () => {
-                    if (!activeSessionId) return;
-                    const roomId = await ensureSessionRoom(activeSessionId);
-                    if (roomId) setCallModal({ open: true, mode: "audio", roomId });
-                  }}>
-                    <Phone className="w-4 h-4" />
-                  </Button>
                   {activeSession.status === "active" && (
                     <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive"
                       onClick={() => { endSession(activeSessionId); setMobileView("list"); }}>
