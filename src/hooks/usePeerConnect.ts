@@ -252,17 +252,19 @@ export function usePeerConnect(initialSessionId?: string | null) {
       if (!user) throw new Error("Not authenticated");
       if (isIntern) throw new Error("Interns cannot request peer sessions");
 
-      // 1. Check if student already has an active/pending session
+      // 1. Check if student already has a FRESH active/pending session (< 2 hours old)
+      const TWO_HOURS_AGO = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       const { data: existingStudentSession } = await supabase
         .from("peer_sessions")
         .select("*")
         .eq("student_id", user.id)
         .in("status", ["pending", "active"])
+        .gte("created_at", TWO_HOURS_AGO)
         .limit(1)
         .maybeSingle();
 
       if (existingStudentSession) {
-        // Reuse existing session instead of creating a duplicate
+        // Reuse existing fresh session instead of creating a duplicate
         return existingStudentSession;
       }
 
