@@ -1,20 +1,20 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobilePeerConnect from "@/components/mobile/MobilePeerConnect";
-import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  MessageCircle, Search, Circle, Phone, Send, X, Clock, Shield, Users,
+  MessageCircle, Search, Circle, Send, X, Shield, Users,
   Loader2, AlertCircle, Flag, ChevronUp, CheckCheck, Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-const LazyVideoCallModal = lazy(() => import("@/components/videosdk/VideoCallModal"));
+
 import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { format, isToday, isYesterday } from "date-fns";
-import { toast } from "sonner";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const PeerConnect = () => {
@@ -24,14 +24,14 @@ const PeerConnect = () => {
   const { user, profile, creditBalance } = useAuth();
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; roomId?: string }>({ open: false, mode: "audio" });
+  
   const [showNewChat, setShowNewChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     interns, sessions, activeSession, messages: chatMessages, isLoading,
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses, lastMessages,
-    hasMoreMessages, isLoadingMore, loadMoreMessages, ensureSessionRoom,
+    hasMoreMessages, isLoadingMore, loadMoreMessages,
   } = usePeerConnect(urlSessionId);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
@@ -333,14 +333,6 @@ const PeerConnect = () => {
                         <Flag className={`w-4 h-4 ${activeSession?.is_flagged ? "fill-current" : ""}`} />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={async () => {
-                      if (!activeSessionId) return;
-                      const roomId = await ensureSessionRoom(activeSessionId);
-                      if (roomId) setCallModal({ open: true, mode: "audio", roomId });
-                      else toast.error("Failed to create call room");
-                    }}>
-                      <Phone className="w-4 h-4" />
-                    </Button>
                     {activeSession.status === "active" && (
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={handleEndSession}>
                         <X className="w-4 h-4" />
@@ -446,15 +438,6 @@ const PeerConnect = () => {
           </div>
         </div>
       </div>
-      <Suspense fallback={null}>
-        <LazyVideoCallModal
-          isOpen={callModal.open}
-          onClose={() => setCallModal({ open: false, mode: "audio" })}
-          participantName={profile?.username || "Student"}
-          mode={callModal.mode}
-          existingRoomId={callModal.roomId}
-        />
-      </Suspense>
     </DashboardLayout>
   );
 };

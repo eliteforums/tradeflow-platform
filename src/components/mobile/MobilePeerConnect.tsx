@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
-  MessageCircle, Search, Circle, Phone, Send, X, Shield, Users,
+  MessageCircle, Search, Circle, Send, X, Shield, Users,
   Loader2, AlertCircle, ArrowLeft, Flag, ChevronUp, CheckCheck, Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import VideoCallModal from "@/components/videosdk/VideoCallModal";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -19,7 +19,7 @@ const MobilePeerConnect = () => {
   const urlSessionId = searchParams.get("sessionId");
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; roomId?: string }>({ open: false, mode: "audio" });
+  
   const [mobileView, setMobileView] = useState<"list" | "chat" | "newchat">("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -28,7 +28,7 @@ const MobilePeerConnect = () => {
     interns, sessions, activeSession, messages: chatMessages, isLoading,
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses, lastMessages,
-    hasMoreMessages, isLoadingMore, loadMoreMessages, ensureSessionRoom,
+    hasMoreMessages, isLoadingMore, loadMoreMessages,
   } = usePeerConnect(urlSessionId);
   const isIntern = profile?.role === "intern";
 
@@ -207,13 +207,6 @@ const MobilePeerConnect = () => {
                       <Flag className={`w-4 h-4 ${activeSession?.is_flagged ? "fill-current" : ""}`} />
                     </Button>
                   )}
-                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={async () => {
-                    if (!activeSessionId) return;
-                    const roomId = await ensureSessionRoom(activeSessionId);
-                    if (roomId) setCallModal({ open: true, mode: "audio", roomId });
-                  }}>
-                    <Phone className="w-4 h-4" />
-                  </Button>
                   {activeSession.status === "active" && (
                     <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive"
                       onClick={() => { endSession(activeSessionId); setMobileView("list"); }}>
@@ -299,7 +292,7 @@ const MobilePeerConnect = () => {
             </div>
           )}
         </div>
-        <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "audio" })} participantName={profile?.username || "Student"} mode={callModal.mode} existingRoomId={callModal.roomId} />
+        
       </DashboardLayout>
     );
   }
