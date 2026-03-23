@@ -752,6 +752,7 @@ export type Database = {
           id: string
           intern_id: string | null
           is_flagged: boolean
+          room_id: string | null
           started_at: string | null
           status: Database["public"]["Enums"]["peer_session_status"]
           student_id: string
@@ -763,6 +764,7 @@ export type Database = {
           id?: string
           intern_id?: string | null
           is_flagged?: boolean
+          room_id?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["peer_session_status"]
           student_id: string
@@ -774,6 +776,7 @@ export type Database = {
           id?: string
           intern_id?: string | null
           is_flagged?: boolean
+          room_id?: string | null
           started_at?: string | null
           status?: Database["public"]["Enums"]["peer_session_status"]
           student_id?: string
