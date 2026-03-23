@@ -267,15 +267,17 @@ const MobilePeerConnect = () => {
               {/* Input */}
               {activeSession.status === "active" ? (
                 <div className="px-3 py-2.5 border-t border-border bg-card">
-                  <div className="flex items-center gap-2">
-                    <Input
+                  <div className="flex items-end gap-2">
+                    <EmojiPicker onSelect={(emoji) => setMessage((prev) => prev + emoji)} />
+                    <Textarea
                       placeholder="Type a message..."
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-                      className="flex-1 bg-muted/50 h-10 text-sm border-none"
+                      className="flex-1 bg-muted/50 text-sm border-none resize-none min-h-[40px] max-h-[120px]"
+                      rows={1}
                     />
-                    <Button size="icon" className="bg-primary text-primary-foreground h-10 w-10 rounded-full" onClick={handleSendMessage} disabled={!message.trim() || isSending}>
+                    <Button size="icon" className="bg-primary text-primary-foreground h-10 w-10 rounded-full shrink-0" onClick={handleSendMessage} disabled={!message.trim() || isSending}>
                       {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     </Button>
                   </div>

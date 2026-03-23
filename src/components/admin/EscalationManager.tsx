@@ -167,13 +167,33 @@ const EscalationManager = () => {
                         L{esc.escalation_level}
                       </span>
                     )}
-                    <span className="text-[10px] text-muted-foreground">
-                      by {esc.spoc?.username || "SPOC"}
-                    </span>
                   </div>
                   <span className="text-[10px] text-muted-foreground shrink-0">
                     {format(new Date(esc.created_at), "MMM d, h:mm a")}
                   </span>
+                </div>
+
+                {/* Party Info */}
+                <div className="flex items-center gap-3 mb-2 text-xs">
+                  <div className="flex items-center gap-1">
+                    <User className="w-3 h-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">Filed by:</span>
+                    <span className="font-medium">{esc.spoc?.username || "SPOC"}</span>
+                  </div>
+                  {esc.session?.student?.username && (
+                    <div className="flex items-center gap-1">
+                      <User className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">Student:</span>
+                      <span className="font-medium">{esc.session.student.username}</span>
+                    </div>
+                  )}
+                  {esc.session?.intern?.username && (
+                    <div className="flex items-center gap-1">
+                      <User className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">Intern:</span>
+                      <span className="font-medium">{esc.session.intern.username}</span>
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-xs text-muted-foreground mb-2.5 bg-muted/30 p-2.5 rounded-lg line-clamp-3">
