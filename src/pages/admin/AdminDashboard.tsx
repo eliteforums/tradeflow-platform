@@ -1,7 +1,16 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileAdminDashboard from "@/components/mobile/MobileAdminDashboard";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Users, Calendar, MessageCircle, AlertTriangle, TrendingUp, Coins,
   Shield, Activity, Eye, CheckCircle, Clock, BarChart3, Search, Loader2,
