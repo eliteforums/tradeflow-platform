@@ -383,7 +383,7 @@ const PeerConnect = () => {
                                   ? "bg-primary text-primary-foreground rounded-br-sm"
                                   : "bg-card border border-border rounded-bl-sm"
                               }`}>
-                                <p className="text-sm leading-relaxed">{msg.content_encrypted}</p>
+                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content_encrypted}</p>
                                 <div className={`flex items-center justify-end gap-1 mt-1 ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                                   <span className="text-[10px]">{format(new Date(msg.created_at), "h:mm a")}</span>
                                   {isMine && <CheckCheck className="w-3 h-3" />}
