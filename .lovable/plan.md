@@ -1,36 +1,27 @@
 
 
-## Plan: Remove Call Function from Peer Connect + PRD Alignment
-
-### What the PRD says (Section 4.2)
-Peer Connect is an **intern-moderated anonymous chat** system where:
-- Student sees available interns with training badge, focus areas, availability status
-- Student selects intern, initiates session request; intern must **accept** within a time window
-- Real-time **chat** communication (text-based)
-- Interns can flag/escalate sessions
-- 20 ECC per completed session
-
-The PRD mentions "audio call or chat" but per your request, **calls will be removed entirely**.
+## Plan: Update README with Latest Changes
 
 ### Changes
 
-#### 1. Remove call functionality from Desktop `PeerConnect.tsx`
-- Remove `Phone` icon import and the call button from the chat header (lines 336-343)
-- Remove `callModal` state and the `LazyVideoCallModal` / `Suspense` wrapper
-- Remove `ensureSessionRoom` from the hook destructure
-- Remove the lazy import of `VideoCallModal`
+#### 1. Core Features Table (line 98)
+Update Peer Connect description from "Realtime encrypted audio + chat with trained psychology interns (audio-only, no video)" to "WhatsApp-style encrypted text chat with trained psychology interns (real-time messaging)".
 
-#### 2. Remove call functionality from Mobile `MobilePeerConnect.tsx`
-- Remove `Phone` icon import and the call button from the chat header (lines 210-214)
-- Remove `callModal` state and the `VideoCallModal` component at bottom
-- Remove `ensureSessionRoom` from the hook destructure
+#### 2. Video & Audio Sessions section (lines 122-130)
+- Remove line 128 ("Peer Connect — Audio-only + encrypted text chat") since Peer Connect no longer has audio/call functionality.
 
-#### 3. Clean up `usePeerConnect.ts`
-- Remove `ensureSessionRoom` helper function and its export (it creates VideoSDK rooms)
-- Remove `createVideoSDKRoom` and `getVideoSDKToken` imports since they're no longer needed
+#### 3. Recent Updates section (lines 642-676)
+Add new entries for March 2026:
+
+- **Peer Connect WhatsApp-like Rebuild**: Dual-panel desktop layout (conversation list + chat area), mobile full-screen chat flow, message preview with timestamps, online/busy status indicators, date dividers, WhatsApp-style message bubbles.
+- **Peer Connect Call Removal**: Removed all video/audio call functionality from Peer Connect per PRD alignment — now text-chat only.
+- **Database Schema Fixes**: Added foreign key constraints on `peer_sessions` (student_id, intern_id → profiles) and `peer_messages` (session_id → peer_sessions), added `room_id` column, enabled Supabase Realtime on `peer_messages`.
+- **Intern Visibility Fix**: Relaxed intern filter to show all active interns regardless of training_status during early platform stage.
+
+#### 4. PRD Implementation Memory
+Update `.lovable/memory/features/prd-implementation.md` item 24 from "Peer Connect audio-only" to "Peer Connect text-chat only (WhatsApp-like UI, calls removed)".
 
 ### Files Modified
-- `src/pages/dashboard/PeerConnect.tsx` — Remove call button, modal, lazy import
-- `src/components/mobile/MobilePeerConnect.tsx` — Remove call button, modal
-- `src/hooks/usePeerConnect.ts` — Remove `ensureSessionRoom`, VideoSDK imports
+- `README.md` — 4 sections updated
+- `.lovable/memory/features/prd-implementation.md` — Item 24 updated
 
