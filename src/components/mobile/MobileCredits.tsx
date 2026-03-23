@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award, TrendingUp, Loader2, AlertCircle, ShieldAlert } from "lucide-react";
+import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award, TrendingUp, Loader2, AlertCircle, ShieldAlert, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -8,11 +8,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { usePurchaseCredits } from "@/hooks/usePurchaseCredits";
 
 const MobileCredits = () => {
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
   const { user, profile } = useAuth();
+  const { purchaseCredits, isPurchasing, purchasingCredits, PACKAGES } = usePurchaseCredits();
   const filtered = filter === "all" ? transactions : transactions.filter((t) => t.type === filter);
 
   const { data: dailyEarned = 0 } = useQuery({
@@ -26,7 +28,6 @@ const MobileCredits = () => {
     enabled: !!user,
   });
 
-  // Only students can access credits
   if (profile?.role && profile.role !== "student") {
     return (
       <DashboardLayout>
@@ -83,9 +84,32 @@ const MobileCredits = () => {
           </div>
         </div>
 
+        {/* Bundle Packs */}
+        <div className="space-y-3">
+          <h3 className="font-semibold text-sm flex items-center gap-1.5"><ShoppingCart className="w-3.5 h-3.5 text-primary" />Buy Credits</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {PACKAGES.map((pkg) => (
+              <div key={pkg.credits} className={`relative p-3 rounded-2xl border ${pkg.popular ? "bg-primary/5 border-primary/30" : "bg-card border-border"}`}>
+                {pkg.popular && <span className="absolute -top-2 right-2 text-[9px] font-semibold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">POPULAR</span>}
+                <p className="font-semibold text-sm">{pkg.credits} ECC</p>
+                <p className="text-xs text-muted-foreground mb-2">{pkg.price}</p>
+                <Button
+                  size="sm"
+                  variant={pkg.popular ? "default" : "outline"}
+                  className="w-full h-7 text-xs"
+                  onClick={() => purchaseCredits(pkg.credits)}
+                  disabled={isPurchasing}
+                >
+                  {isPurchasing && purchasingCredits === pkg.credits ? <Loader2 className="w-3 h-3 animate-spin" /> : "Buy"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* How to Get Credits */}
         <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
-          <h3 className="font-semibold text-sm">How to Get Credits</h3>
+          <h3 className="font-semibold text-sm">How to Earn</h3>
           <div>
             <h4 className="text-xs font-medium flex items-center gap-1.5 mb-1"><Award className="w-3.5 h-3.5 text-primary" />Earn (5 ECC/day)</h4>
             <p className="text-xs text-muted-foreground">Quest Cards, Wreck Buddy, Tibetan Bowl, Sound Therapy</p>

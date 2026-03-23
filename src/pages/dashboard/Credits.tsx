@@ -2,7 +2,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import MobileCredits from "@/components/mobile/MobileCredits";
 
 import { useState } from "react";
-import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award, TrendingUp, Loader2, AlertCircle, ShieldAlert } from "lucide-react";
+import { Coins, ArrowUpRight, ArrowDownRight, Calendar, CreditCard, Gift, Award, TrendingUp, Loader2, AlertCircle, ShieldAlert, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -11,12 +11,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { usePurchaseCredits } from "@/hooks/usePurchaseCredits";
 
 const Credits = () => {
   const isMobile = useIsMobile();
   const [filter, setFilter] = useState("all");
   const { balance, transactions, isLoadingTransactions } = useCredits();
   const { user, profile } = useAuth();
+  const { purchaseCredits, isPurchasing, purchasingCredits, PACKAGES } = usePurchaseCredits();
 
   const { data: dailyEarned = 0 } = useQuery({
     queryKey: ["daily-earn-total", user?.id],
@@ -105,7 +107,33 @@ const Credits = () => {
               })}</div>}
           </div>
           <div className="space-y-4">
-            <h3 className="font-semibold font-display text-base">How to Get Credits</h3>
+            {/* Bundle Packs */}
+            <h3 className="font-semibold font-display text-base flex items-center gap-2"><ShoppingCart className="w-4 h-4 text-primary" />Buy Credits</h3>
+            <div className="space-y-2">
+              {PACKAGES.map((pkg) => (
+                <div key={pkg.credits} className={`relative p-4 rounded-xl border transition-colors ${pkg.popular ? "bg-primary/5 border-primary/30" : "bg-card border-border hover:border-primary/20"}`}>
+                  {pkg.popular && <span className="absolute -top-2.5 right-3 text-[10px] font-semibold bg-primary text-primary-foreground px-2 py-0.5 rounded-full">POPULAR</span>}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-sm">{pkg.credits} ECC</p>
+                      <p className="text-xs text-muted-foreground">{pkg.price}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={pkg.popular ? "default" : "outline"}
+                      className="h-8 text-xs"
+                      onClick={() => purchaseCredits(pkg.credits)}
+                      disabled={isPurchasing}
+                    >
+                      {isPurchasing && purchasingCredits === pkg.credits ? <Loader2 className="w-3 h-3 animate-spin" /> : "Buy"}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* How to earn */}
+            <h3 className="font-semibold font-display text-base">How to Earn</h3>
             <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-3">
               <div>
                 <h4 className="font-medium text-sm mb-1.5 flex items-center gap-2"><Award className="w-4 h-4 text-primary" />Earn (5 ECC/day max)</h4>
@@ -120,9 +148,6 @@ const Credits = () => {
                 <h4 className="font-medium text-sm mb-1.5 flex items-center gap-2"><Gift className="w-4 h-4 text-primary" />Institution Grants</h4>
                 <p className="text-sm text-muted-foreground">Your SPOC can allocate bulk credits to all students at the start of each term.</p>
               </div>
-            </div>
-            <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
-              <p className="text-xs text-muted-foreground text-center">Need more credits? Ask your institution's SPOC for a grant.</p>
             </div>
           </div>
         </div>
