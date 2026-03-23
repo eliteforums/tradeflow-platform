@@ -1,29 +1,42 @@
 
 
-## Fix: Arrow positioning and curve to match reference image
+## PRD Gap Fix — Remaining Missing Modules
 
-### Problem
-The reference image (image-31) shows:
-- The tooltip bubble sits above and slightly LEFT of center
-- The arrow is a simple **)** parenthesis-shaped curve positioned at the **right edge** of the bubble, curving downward toward the card
-- It's NOT centered under the bubble — it hangs off the right side
+After detailed code review, most items from the gap analysis are **already implemented**:
+- Sound Therapy ECC earn ✓
+- Peer Connect credit deduction (20 ECC) ✓  
+- Expert Appointment credit deduction ✓
+- Expert escalation button + AI Monitor badge ✓
+- SPOC bulk credit allocation ✓
+- Account deletion with 30-day grace period ✓
 
-Current code centers both the tooltip and arrow with `left-1/2 -translate-x-1/2`, which doesn't match the reference.
+### Actually Missing (3 items)
 
-### Fix
+#### 1. Wreck Buddy — ECC Earn on Activity
+**File:** `src/pages/dashboard/WreckBuddy.tsx`
+- Add `useEccEarn` hook
+- Listen for `postMessage` from the iframe when the ragdoll session completes (or use a "Done" button outside the iframe)
+- Award 1 ECC via `earnFromActivity({ amount: 1, activity: "Wreck the Buddy session" })`
+- Show daily earn status (remaining ECC today)
 
-**File: `src/components/landing/TrustLogos.tsx`**
+#### 2. Tibetan Bowl — ECC Earn on Activity  
+**File:** `src/pages/dashboard/TibetanBowl.tsx`
+- Same pattern: add `useEccEarn` hook
+- Add a "Complete Session" button below the iframe
+- Award 1 ECC on completion
+- Show daily earn status
 
-1. **Reposition the arrow SVG**: Move from `left-1/2 -translate-x-1/2` to `right-0` or `right-2` so it hangs off the right edge of the bubble, matching the reference.
+#### 3. ECC Bundle Packs UI on Credits Page
+**File:** `src/pages/dashboard/Credits.tsx` + `src/components/mobile/MobileCredits.tsx`
+- Add bundle pack cards in the sidebar (50 ECC/₹99, 100 ECC/₹179, 250 ECC/₹399, 500 ECC/₹699) using existing `usePurchaseCredits` hook
+- Show "Coming Soon" or connect to the existing `purchaseCredits` flow
+- Replace the current "Ask your SPOC" prompt with bundle cards + purchase buttons
 
-2. **Redraw the curve as a simple ")" arc**: The reference shows a clean half-parenthesis curve — starts at the top, arcs right, then curves back down-left. Much simpler than the current S-curve. New path: approximately `M12 2 C 40 8, 40 32, 18 42` — a single cubic bezier that bulges right then sweeps down-left.
+### Technical Details
 
-3. **Adjust arrowhead**: Point the arrowhead downward-left to match the curve's end direction: `M14 36 L18 42 L24 38`.
-
-4. **Keep tooltip centered**: The bubble itself stays at `left-1/2 -translate-x-1/2` so it's above the hovered card — only the arrow moves to the right edge.
-
-### Changes summary
-- Line 82: Change arrow class from `left-1/2 -translate-x-1/2` to `right-0`
-- Lines 84-85: Redraw main path as a simple right-bulging arc
-- Lines 92-93: Update arrowhead coordinates to match new path end
+- `useEccEarn` is already built with daily cap (5 ECC), `earnFromActivity()` mutation, and toast feedback
+- `usePurchaseCredits` hook already exists with Razorpay integration and 4 package tiers
+- No database migrations needed
+- No new edge functions needed
+- Changes span 4 files total
 
