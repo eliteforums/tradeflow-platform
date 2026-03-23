@@ -4,7 +4,7 @@ import {
   AlertTriangle, Video, Phone, Loader2, Plus, Trash2, Search,
   Shield, LogOut, Lock, Settings, Ban, RefreshCw, ChevronRight, Bell
 } from "lucide-react";
-import NotificationBell from "@/components/notifications/NotificationBell";
+
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";

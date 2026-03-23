@@ -6,7 +6,7 @@ import { useState } from "react";
 import {
   Calendar, Clock, User, Video, Phone, CheckCircle, Search, Coins, X, Loader2,
 } from "lucide-react";
-import NotificationBell from "@/components/notifications/NotificationBell";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

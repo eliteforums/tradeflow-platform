@@ -278,11 +278,14 @@ const AdminDashboard = () => {
       <main className="flex-1 min-w-0 overflow-y-auto">
         <div className="max-w-5xl mx-auto p-6 space-y-5">
           {/* Page Header */}
-          <div>
-            <h1 className="text-xl font-bold font-display">{activeLabel}</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {isSuperAdmin ? "Super Admin" : "SPOC"} · {members.length} members · {stats.totalSessions} sessions
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold font-display">{activeLabel}</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isSuperAdmin ? "Super Admin" : "SPOC"} · {members.length} members · {stats.totalSessions} sessions
+              </p>
+            </div>
+            <NotificationBell />
           </div>
 
           {isLoading ? (

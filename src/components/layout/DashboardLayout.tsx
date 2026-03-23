@@ -215,14 +215,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <Link to="/dashboard" className="flex items-center">
           <EterniaLogo size={28} />
         </Link>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleLogout}
-          className="h-9 w-9 text-muted-foreground hover:text-destructive"
-        >
-          <LogOut className="w-4.5 h-4.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            className="h-9 w-9 text-muted-foreground hover:text-destructive"
+          >
+            <LogOut className="w-4.5 h-4.5" />
+          </Button>
+        </div>
       </header>
 
       {/* Mobile Bottom Navigation — hidden on expert dashboard (it has its own tabs) */}
