@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import {
   Home, Calendar, MessageCircle, FileText, User, Clock, CheckCircle,
   AlertTriangle, Video, Phone, Loader2, Plus, Trash2, Search,
-  Shield, LogOut, Lock, Settings, Ban, RefreshCw, ChevronRight
+  Shield, LogOut, Lock, Settings, Ban, RefreshCw, ChevronRight, Bell
 } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,11 @@ const ExpertDashboardContent = () => {
   // Escalation dialog
   const [escalationDialog, setEscalationDialog] = useState<{ open: boolean; appointmentId?: string }>({ open: false });
   const [escalationReason, setEscalationReason] = useState("");
+
+  // Reschedule dialog
+  const [rescheduleDialog, setRescheduleDialog] = useState<{ open: boolean; appointmentId?: string; currentTime?: string; studentId?: string; studentName?: string }>({ open: false });
+  const [rescheduleSlotId, setRescheduleSlotId] = useState<string>("");
+  const [rescheduleReason, setRescheduleReason] = useState("");
 
   // Notes search/filter
   const [notesSearch, setNotesSearch] = useState("");
@@ -278,6 +284,7 @@ const ExpertDashboardContent = () => {
             <h1 className="text-2xl xl:text-3xl font-bold font-display">Expert Dashboard</h1>
             <p className="text-sm text-muted-foreground">Manage appointments, schedule & sessions</p>
           </div>
+          <NotificationBell />
         </div>
 
         {/* Tab Bar */}
@@ -359,7 +366,7 @@ const ExpertDashboardContent = () => {
                             }}>
                               {apt.session_type === "video" ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}Join Session
                             </Button>
-                            <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-3" onClick={() => toast.info("Reschedule request sent")}>
+                            <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-3" onClick={() => setRescheduleDialog({ open: true, appointmentId: apt.id, currentTime: apt.slot_time, studentId: apt.student_id, studentName: apt.student?.username })}>
                               <RefreshCw className="w-3 h-3" />Reschedule
                             </Button>
                             <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-3 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}>
@@ -527,7 +534,7 @@ const ExpertDashboardContent = () => {
                               {apt.session_type === "video" ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}Join
                             </Button>
                             <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => updateAppointmentStatus.mutate({ id: apt.id, status: "cancelled" })}>Cancel</Button>
-                            <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => toast.info("Reschedule request sent")}>
+                            <Button size="sm" variant="outline" className="h-7 text-[11px] px-2.5" onClick={() => setRescheduleDialog({ open: true, appointmentId: apt.id, currentTime: apt.slot_time, studentId: apt.student_id, studentName: (apt as any).student?.username })}>
                               <RefreshCw className="w-3 h-3" />
                             </Button>
                           </>
@@ -748,6 +755,95 @@ const ExpertDashboardContent = () => {
             <Button variant="outline" onClick={() => setEscalationDialog({ open: false })}>Cancel</Button>
             <Button variant="destructive" disabled={!escalationReason.trim() || submitEscalation.isPending} onClick={() => submitEscalation.mutate()}>
               {submitEscalation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}Submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Dialog */}
+      <Dialog open={rescheduleDialog.open} onOpenChange={(o) => { if (!o) { setRescheduleDialog({ open: false }); setRescheduleReason(""); setRescheduleSlotId(""); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><RefreshCw className="w-5 h-5 text-primary" />Reschedule Appointment</DialogTitle>
+            <DialogDescription>Pick a new slot and provide a reason for rescheduling.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {rescheduleDialog.currentTime && (
+              <div className="p-3 rounded-lg bg-muted/30 border border-border text-sm">
+                <p className="text-xs text-muted-foreground mb-1">Current time</p>
+                <p className="font-medium">{format(new Date(rescheduleDialog.currentTime), "EEE, MMM d · h:mm a")}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">New Slot</label>
+              <Select value={rescheduleSlotId} onValueChange={setRescheduleSlotId}>
+                <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select a slot" /></SelectTrigger>
+                <SelectContent>
+                  {futureSlots.filter(s => !s.is_booked).map((slot) => (
+                    <SelectItem key={slot.id} value={slot.id}>
+                      {format(new Date(slot.start_time), "EEE, MMM d · h:mm a")} – {format(new Date(slot.end_time), "h:mm a")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Reason for rescheduling</label>
+              <Textarea placeholder="e.g. Emergency, schedule conflict..." value={rescheduleReason} onChange={(e) => setRescheduleReason(e.target.value)} className="min-h-[80px] text-sm" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRescheduleDialog({ open: false }); setRescheduleReason(""); setRescheduleSlotId(""); }}>Cancel</Button>
+            <Button
+              disabled={!rescheduleSlotId || !rescheduleReason.trim()}
+              onClick={async () => {
+                if (!user || !rescheduleDialog.appointmentId) return;
+                const selectedSlot = futureSlots.find(s => s.id === rescheduleSlotId);
+                if (!selectedSlot) return;
+                try {
+                  // Update appointment
+                  const { error } = await supabase.from("appointments").update({
+                    slot_time: selectedSlot.start_time,
+                    slot_id: selectedSlot.id,
+                    rescheduled_from: rescheduleDialog.currentTime,
+                    rescheduled_by: user.id,
+                    reschedule_reason: rescheduleReason,
+                  } as any).eq("id", rescheduleDialog.appointmentId);
+                  if (error) throw error;
+
+                  // Mark new slot as booked
+                  await supabase.from("expert_availability").update({ is_booked: true }).eq("id", selectedSlot.id);
+
+                  // Notify student
+                  if (rescheduleDialog.studentId) {
+                    await supabase.from("notifications").insert({
+                      user_id: rescheduleDialog.studentId,
+                      type: "reschedule",
+                      title: "Appointment Rescheduled",
+                      message: `Dr. ${profile?.username || "Expert"} rescheduled your appointment. Reason: ${rescheduleReason}`,
+                      metadata: {
+                        appointment_id: rescheduleDialog.appointmentId,
+                        old_time: rescheduleDialog.currentTime,
+                        new_time: selectedSlot.start_time,
+                        expert_name: profile?.username,
+                        reason: rescheduleReason,
+                      },
+                    } as any);
+                  }
+
+                  queryClient.invalidateQueries({ queryKey: ["expert-appointments"] });
+                  queryClient.invalidateQueries({ queryKey: ["expert-slots"] });
+                  toast.success("Appointment rescheduled & student notified");
+                  setRescheduleDialog({ open: false });
+                  setRescheduleReason("");
+                  setRescheduleSlotId("");
+                } catch (err: any) {
+                  toast.error(err.message || "Failed to reschedule");
+                }
+              }}
+              className="gap-1.5"
+            >
+              <RefreshCw className="w-4 h-4" />Confirm Reschedule
             </Button>
           </DialogFooter>
         </DialogContent>

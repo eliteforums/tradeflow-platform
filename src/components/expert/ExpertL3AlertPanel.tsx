@@ -153,6 +153,29 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
 
       if (escError) throw escError;
 
+      // Insert notification for all experts about the emergency
+      const { data: expertProfiles } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("role", "expert")
+        .eq("is_active", true)
+        .neq("id", user.id);
+
+      if (expertProfiles && expertProfiles.length > 0) {
+        const notifRows = expertProfiles.map((e) => ({
+          user_id: e.id,
+          type: "emergency_escalation",
+          title: "🚨 Emergency Case Escalated",
+          message: `A critical BlackBox session (L${activeSession.flag_level}) has been escalated. ${activeSession.escalation_reason || "Immediate attention required."}`,
+          metadata: {
+            session_id: activeSession.id,
+            student_id: activeSession.student_id,
+            escalated_by: user.id,
+          },
+        }));
+        await supabase.from("notifications").insert(notifRows as any);
+      }
+
       // 4. Audit log
       await supabase.from("audit_logs").insert({
         actor_id: user.id,

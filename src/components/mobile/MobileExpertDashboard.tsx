@@ -4,6 +4,7 @@ import {
   AlertTriangle, Video, Phone, Loader2, Plus, Trash2, Search,
   LogOut, RefreshCw, ChevronRight
 } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,11 @@ const MobileExpertDashboard = () => {
   // Escalation
   const [escalationDialog, setEscalationDialog] = useState<{ open: boolean; appointmentId?: string }>({ open: false });
   const [escalationReason, setEscalationReason] = useState("");
+
+  // Reschedule
+  const [rescheduleDialog, setRescheduleDialog] = useState<{ open: boolean; appointmentId?: string; currentTime?: string; studentId?: string }>({ open: false });
+  const [rescheduleSlotId, setRescheduleSlotId] = useState("");
+  const [rescheduleReason, setRescheduleReason] = useState("");
 
   // Notes
   const [notesSearch, setNotesSearch] = useState("");
@@ -134,9 +140,12 @@ const MobileExpertDashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-5 pb-28">
-        <div>
-          <h1 className="text-xl font-bold font-display">Expert Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Manage your practice</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold font-display">Expert Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Manage your practice</p>
+          </div>
+          <NotificationBell />
         </div>
 
         {/* Fixed bottom tab bar - replaces DashboardLayout's bottom nav */}
@@ -202,7 +211,7 @@ const MobileExpertDashboard = () => {
                     {apt.status !== "completed" && apt.status !== "cancelled" && (
                       <div className="flex gap-2 mt-2 flex-wrap">
                         <Button size="sm" className="gap-1 h-7 text-[10px] px-2" onClick={() => setCallModal({ open: true, mode: apt.session_type === "video" ? "video" : "audio", appointmentId: apt.id })}>Join</Button>
-                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => toast.info("Reschedule sent")}><RefreshCw className="w-3 h-3" /></Button>
+                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => setRescheduleDialog({ open: true, appointmentId: apt.id, currentTime: apt.slot_time, studentId: apt.student_id })}><RefreshCw className="w-3 h-3" /></Button>
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}><AlertTriangle className="w-3 h-3" /></Button>
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => setSelectedAppointment(apt.id)}>Complete</Button>
                       </div>
@@ -339,6 +348,60 @@ const MobileExpertDashboard = () => {
             <Button disabled={!escalationReason.trim() || submitEscalation.isPending} onClick={() => submitEscalation.mutate()} className="gap-1.5">
               {submitEscalation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}Submit
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Dialog */}
+      <Dialog open={rescheduleDialog.open} onOpenChange={(o) => { if (!o) { setRescheduleDialog({ open: false }); setRescheduleReason(""); setRescheduleSlotId(""); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><RefreshCw className="w-5 h-5 text-primary" />Reschedule</DialogTitle><DialogDescription>Pick a new slot and provide a reason.</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            {rescheduleDialog.currentTime && (
+              <div className="p-3 rounded-xl bg-muted/30 border border-border text-sm">
+                <p className="text-xs text-muted-foreground mb-0.5">Current</p>
+                <p className="font-medium text-sm">{format(new Date(rescheduleDialog.currentTime), "EEE, MMM d · h:mm a")}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">New Slot</label>
+              <Select value={rescheduleSlotId} onValueChange={setRescheduleSlotId}>
+                <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select slot" /></SelectTrigger>
+                <SelectContent>
+                  {futureSlots.filter(s => !s.is_booked).map((slot) => (
+                    <SelectItem key={slot.id} value={slot.id}>{format(new Date(slot.start_time), "MMM d, h:mm a")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Textarea placeholder="Reason..." value={rescheduleReason} onChange={(e) => setRescheduleReason(e.target.value)} className="min-h-[70px] text-sm" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRescheduleDialog({ open: false }); setRescheduleReason(""); setRescheduleSlotId(""); }}>Cancel</Button>
+            <Button disabled={!rescheduleSlotId || !rescheduleReason.trim()} onClick={async () => {
+              if (!user || !rescheduleDialog.appointmentId) return;
+              const selectedSlot = futureSlots.find(s => s.id === rescheduleSlotId);
+              if (!selectedSlot) return;
+              try {
+                const { error } = await supabase.from("appointments").update({
+                  slot_time: selectedSlot.start_time, slot_id: selectedSlot.id,
+                  rescheduled_from: rescheduleDialog.currentTime, rescheduled_by: user.id, reschedule_reason: rescheduleReason,
+                } as any).eq("id", rescheduleDialog.appointmentId);
+                if (error) throw error;
+                await supabase.from("expert_availability").update({ is_booked: true }).eq("id", selectedSlot.id);
+                if (rescheduleDialog.studentId) {
+                  await supabase.from("notifications").insert({
+                    user_id: rescheduleDialog.studentId, type: "reschedule", title: "Appointment Rescheduled",
+                    message: `Dr. ${profile?.username || "Expert"} rescheduled your appointment. Reason: ${rescheduleReason}`,
+                    metadata: { appointment_id: rescheduleDialog.appointmentId, old_time: rescheduleDialog.currentTime, new_time: selectedSlot.start_time, expert_name: profile?.username, reason: rescheduleReason },
+                  } as any);
+                }
+                queryClient.invalidateQueries({ queryKey: ["expert-appointments"] });
+                queryClient.invalidateQueries({ queryKey: ["expert-slots"] });
+                toast.success("Rescheduled & student notified");
+                setRescheduleDialog({ open: false }); setRescheduleReason(""); setRescheduleSlotId("");
+              } catch (err: any) { toast.error(err.message); }
+            }} className="gap-1"><RefreshCw className="w-4 h-4" />Confirm</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
