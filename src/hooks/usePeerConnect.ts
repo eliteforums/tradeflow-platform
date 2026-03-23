@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { spendCredits } from "./useSpendCredits";
-import { createVideoSDKRoom, getVideoSDKToken } from "@/lib/videosdk";
+
 
 export interface Intern {
   id: string;
