@@ -49,7 +49,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const isIntern = profile?.role === "intern";
 
-  // Get available interns — column-specific select, training filter (PRD §4.2)
+  // Get available interns — show all active interns (relaxed filter for early platform stage)
   const { data: interns = [], isLoading: isLoadingInterns } = useQuery({
     queryKey: ["interns"],
     queryFn: async () => {
@@ -57,13 +57,37 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .from("profiles")
         .select("id, username, specialty, is_active, training_status")
         .eq("role", "intern")
-        .eq("is_active", true)
-        .in("training_status", ["active", "completed"]);
+        .eq("is_active", true);
 
       if (error) throw error;
       return data as Intern[];
     },
     staleTime: 30_000,
+  });
+
+  // Fetch last message per session for conversation list preview
+  const { data: lastMessages = {} } = useQuery({
+    queryKey: ["peer-last-messages", sessions.map(s => s.id).join(",")],
+    queryFn: async () => {
+      if (sessions.length === 0) return {};
+      const result: Record<string, PeerMessage> = {};
+      // Fetch last message for each session in parallel
+      const promises = sessions.map(async (session) => {
+        const { data } = await supabase
+          .from("peer_messages")
+          .select("id, session_id, sender_id, content_encrypted, created_at")
+          .eq("session_id", session.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) {
+          result[session.id] = data[0] as PeerMessage;
+        }
+      });
+      await Promise.all(promises);
+      return result;
+    },
+    enabled: sessions.length > 0,
+    staleTime: 10_000,
   });
 
   // Get active peer sessions for busy status derivation
