@@ -49,9 +49,9 @@ export function usePeerConnect(initialSessionId?: string | null) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const isIntern = profile?.role === "intern";
 
-  // Get available interns — show all active interns (relaxed filter for early platform stage)
+  // Get available interns — exclude self, show all active interns
   const { data: interns = [], isLoading: isLoadingInterns } = useQuery({
-    queryKey: ["interns"],
+    queryKey: ["interns", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -60,7 +60,8 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .eq("is_active", true);
 
       if (error) throw error;
-      return data as Intern[];
+      // Exclude self so interns don't see themselves as available
+      return (data as Intern[]).filter((i) => i.id !== user?.id);
     },
     staleTime: 30_000,
   });
