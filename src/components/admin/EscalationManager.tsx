@@ -200,7 +200,28 @@ const EscalationManager = () => {
                   {esc.justification_encrypted}
                 </p>
 
-                {/* Parsed trigger_snippet: student details + emergency contact + transcript */}
+                {/* Parsed trigger_snippet: student details + emergency contact + transcript or peer session flag */}
+                {parsed?.type === "peer_session_flag" && (
+                  <div className="mt-2 p-2.5 rounded-lg bg-muted/30 border border-border/50 space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Flag className="w-3.5 h-3.5 text-destructive" />
+                      <span className="font-medium">Peer Session Flagged</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Student</p>
+                        <p className="font-semibold">{parsed.student_username}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">Intern</p>
+                        <p className="font-semibold">{parsed.intern_username}</p>
+                      </div>
+                    </div>
+                    {parsed.reason && (
+                      <p className="text-[11px] text-muted-foreground italic">"{parsed.reason}"</p>
+                    )}
+                  </div>
+                )}
                 {parsed?.type === "emergency_contact" && (
                   <div className="mt-2 p-3 rounded-lg bg-destructive/10 border-2 border-destructive/30 space-y-2">
                     <div className="flex items-center gap-2">
