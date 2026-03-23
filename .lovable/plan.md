@@ -1,43 +1,30 @@
 
 
-## Plan: Emoji Picker + Multi-line Chat Input + Notification Sound + Escalation Usernames
+## Plan: Fix Verification — Auto-verify Students + Admin Verify Button
 
-### 1. Emoji Picker & Multi-line Input for Chat
+### Problem
+All new accounts have `is_verified: false` by default. The admin panel only shows a "Verify & Activate" button for interns with `training_status === "interview_pending"`. Students and other roles appear as "Pending Verification" with no way for admins to verify them.
 
-**Files:** `PeerConnect.tsx`, `MobilePeerConnect.tsx`
+### Changes
 
-- Replace the single-line `<Input>` in the chat input bar with a `<Textarea>` that auto-grows (1-4 rows)
-- Change Enter behavior: Enter sends, Shift+Enter adds newline
-- Add an emoji picker button (using a simple emoji grid popover with common emojis — no external dependency needed)
-- Render message text with `whitespace-pre-wrap` so newlines display correctly in bubbles
+#### 1. Auto-verify students on account activation (`supabase/functions/activate-account/index.ts`)
+When a student activates their account via temp credentials, set `is_verified: true` on their profile. This is the logical verification point — they proved they have a valid institution-issued temp ID.
 
-### 2. Notification Sound on New Notifications
+Update the `profiles.update(...)` call to include `is_verified: true`.
 
-**File:** `useNotifications.ts`
+#### 2. Auto-verify students on direct signup (`handle_new_user` trigger)
+Update the database trigger so new signups default to `is_verified: true` for students (they authenticated via institution code).
 
-- Add an `Audio` object with a short notification sound (use a small embedded base64 chime or a public domain sound file)
-- In the realtime subscription's `INSERT` handler, play the sound before invalidating the query
-- Respect a simple check: only play if the document is visible or the tab is active
+Migration: `ALTER` the `handle_new_user` function to set `is_verified = true` in the profile insert.
 
-### 3. Escalation Manager — Show Both Party Usernames
+#### 3. Add a general "Verify" button in admin panel (`src/components/admin/MemberManager.tsx`)
+For any member where `is_verified === false`, show a small verify button (regardless of role). This gives admins a manual override for any account.
 
-**File:** `EscalationManager.tsx`
-
-- Update the Supabase query to also join the student username:
-  - For escalations with `session_id`: join `peer_sessions` to get `student_id`, then join `profiles` for the student username
-  - Since Supabase JS can't do deep nested joins across FK chains easily, use a two-step approach: fetch escalations, then batch-fetch the session's student profiles
-- Alternatively, simpler approach: the `trigger_snippet` JSON already contains `student_username` and `student_eternia_id` for emergency-type escalations. For peer session escalations, update the `flagSession` mutation in `usePeerConnect.ts` to include student/intern usernames in the `trigger_snippet` JSON
-- Display: Show "Filed by: {spoc/intern username}" and "Regarding: {student username}" in each escalation card
-
-**Detailed approach for escalation usernames:**
-- Update `EscalationManager.tsx` query: join session data via `session:peer_sessions!escalation_requests_session_id_fkey(student_id, intern_id, student:profiles!peer_sessions_student_id_fkey(username), intern:profiles!peer_sessions_intern_id_fkey(username))`
-- In the card UI, show the filer (spoc username — already available) and the affected student (from session join or trigger_snippet)
-- For escalations created by interns via `flagSession`, update `usePeerConnect.ts` to embed both usernames in `trigger_snippet` JSON
+- Show a small "Verify" button next to any unverified member
+- Show a "Pending" badge for unverified members (all roles, not just interns)
 
 ### Files Modified
-- `src/pages/dashboard/PeerConnect.tsx` — Textarea + emoji picker + whitespace-pre-wrap
-- `src/components/mobile/MobilePeerConnect.tsx` — Same textarea + emoji changes
-- `src/hooks/useNotifications.ts` — Play sound on new notification
-- `src/components/admin/EscalationManager.tsx` — Join + display both party usernames
-- `src/hooks/usePeerConnect.ts` — Embed usernames in escalation trigger_snippet
+- `supabase/functions/activate-account/index.ts` — Add `is_verified: true` to profile update
+- Database migration — Update `handle_new_user` trigger to set `is_verified: true`
+- `src/components/admin/MemberManager.tsx` — Add verify button for all unverified members, show pending badge
 
