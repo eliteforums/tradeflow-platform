@@ -1,25 +1,20 @@
 
 
-## Plan: Make "Start New Session" Prominent in Peer Connect
+## Fix: Intern's Sent Messages Not Appearing in Chat UI
 
-### Problem
-The "+" button to start a new chat is small and easy to miss. When all sessions are completed, users see old conversations but no obvious way to start a new one. The right panel's empty state says "start a new chat" as text but has no actionable button.
+### Root Cause
+The `sendMessage` mutation in `usePeerConnect.ts` does not optimistically add the sent message to local state. It relies entirely on the Supabase realtime subscription to echo the message back. If realtime has any delay or fails to deliver (which can happen with complex RLS subqueries on the SELECT policy), the intern never sees their own message.
 
 ### Changes
 
-#### 1. Desktop (`src/pages/dashboard/PeerConnect.tsx`)
-- **Right panel empty state**: Add a prominent "New Chat" button (not just text) that triggers `setShowNewChat(true)` for students
-- **Right panel when viewing a completed session**: Add a "Start New Chat" button below the "This session has ended" bar so users can immediately start fresh
-- **Auto-open new chat panel** when there are no active/pending sessions and user is a student — set `showNewChat` to default `true` if no open sessions exist
+#### `src/hooks/usePeerConnect.ts`
+1. **Optimistic message insert**: After the `supabase.from("peer_messages").insert(...)` call succeeds, immediately add the message to the local `messages` state with a temporary ID and the current timestamp
+2. **Deduplication in realtime handler**: Update the realtime `INSERT` handler to skip adding a message if one with the same `id` already exists in state (prevents duplicates when realtime also delivers the message)
 
-#### 2. Mobile (`src/components/mobile/MobilePeerConnect.tsx`)
-- **List view**: When all sessions are completed, add a prominent "Start New Chat" button/card above the session list (not just the small "+" icon)
-- **Chat view "session ended" bar**: Add a "Start New Chat" button so users don't have to navigate back to list → tap "+"
-
-#### 3. Hook cleanup (`src/hooks/usePeerConnect.ts`)
-- No changes needed — the hook already exposes `hasOpenSession` correctly and all sessions in DB are properly `completed`
+### Technical Details
+- Generate a temporary UUID for the optimistic message; when the realtime event arrives with the real ID, the dedup check by `id` will add it (since temp ID differs), but we can also dedup by matching `sender_id + content + close timestamp` to avoid visual duplicates
+- Simpler approach: return the inserted row from the mutation using `.select().single()` and add it to state in `onSuccess`, then dedup realtime by `id`
 
 ### Files Modified
-- `src/pages/dashboard/PeerConnect.tsx` — Add CTA buttons, auto-show new chat panel
-- `src/components/mobile/MobilePeerConnect.tsx` — Add prominent start buttons
+- `src/hooks/usePeerConnect.ts` — Add optimistic update + realtime dedup
 
