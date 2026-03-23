@@ -381,6 +381,7 @@ const SPOCDashboardContent = () => {
 
   const statusConfig: Record<string, { icon: typeof Clock; color: string; label: string }> = {
     pending: { icon: Clock, color: "text-eternia-warning bg-eternia-warning/10", label: "Pending" },
+    critical: { icon: AlertTriangle, color: "text-destructive bg-destructive/10 animate-pulse", label: "Critical" },
     approved: { icon: CheckCircle, color: "text-eternia-success bg-eternia-success/10", label: "Approved" },
     rejected: { icon: XCircle, color: "text-destructive bg-destructive/10", label: "Rejected" },
     resolved: { icon: Shield, color: "text-primary bg-primary/10", label: "Resolved" },
