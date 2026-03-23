@@ -37,7 +37,7 @@ const TrustLogos = () => {
           Our Partners & Clients
         </motion.p>
 
-        <div className="relative overflow-hidden mask-gradient">
+        <div className="relative overflow-x-clip overflow-y-visible mask-gradient pt-24">
           <div className="flex gap-4 sm:gap-6 animate-[scroll_60s_linear_infinite] hover:[animation-play-state:paused]">
             {[...partners, ...partners, ...partners].map((partner, i) => {
               const compliment = compliments[i % compliments.length];
