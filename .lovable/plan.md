@@ -1,72 +1,30 @@
 
-Goal: make BlackBox call joining deterministic so student and therapist always land in the same live call (not just UI state), with minimal surface-area changes.
 
-### What’s actually failing now
-- Backend room creation + token generation is working (logs show room created by therapist and tokens issued to both users).
-- The recurring failure is in call-join lifecycle on the client:
-  1) student UI marks “in session” before real join confirmation,  
-  2) student call runs in hidden mode with weak recovery visibility,  
-  3) no persistent “both participants joined” handshake in session data.
+## Fix: Partner hover tooltip + arrow not visible
 
-### Implementation plan
+### Root cause
+The tooltip is positioned `absolute bottom-full` (above the card) inside a container with `overflow-hidden`. The `overflow-hidden` on the scroll wrapper (line 40) clips everything that extends beyond its bounds — the tooltip never renders visibly.
 
-1. **Add explicit call-join handshake fields (backend migration)**
-- Extend `blackbox_sessions` with:
-  - `student_joined_at timestamptz null`
-  - `therapist_joined_at timestamptz null`
-  - `last_join_error text null`
-- Add index for therapist-side open-session safety:
-  - one open session per therapist for statuses `accepted/active` (partial unique index).
-- Keep current app structure; only add deterministic connection metadata.
+### Fix
 
-2. **Make therapist accept flow deterministic**
-- In `TherapistDashboardContent.tsx`:
-  - Keep room creation on accept, but set status to `accepted` first (not immediately “active”).
-  - Persist `room_id + therapist_id + started_at` on successful claim.
-  - Update logic to use returned updated row from the claim query (avoid silent no-op accepts).
-- When therapist actually joins meeting, write `therapist_joined_at`.
-- Promote status to `active` only after both `therapist_joined_at` and `student_joined_at` exist.
+**File: `src/components/landing/TrustLogos.tsx`**
 
-3. **Fix student BlackBox join logic (core issue)**
-- In `useBlackBoxSession.ts`:
-  - separate UI state from real meeting state (`waiting`, `joining`, `joined`, `failed`).
-  - clear stale token on terminal statuses (`completed/cancelled/escalated`) and on session-id change.
-  - fetch fresh token per session-room transition.
-- In `BlackBox.tsx` and `MobileBlackBox.tsx`:
-  - replace “hidden-only autojoin” behavior with an explicit join path:
-    - show “Therapist ready — Join call” CTA when room exists,
-    - show retry UI on join failure,
-    - only show connected state after actual join callback.
-  - Keep existing orb UX; just make join confirmation real.
+1. Remove `overflow-hidden` from the scroll wrapper and move it to an outer wrapper that has enough vertical padding to accommodate the tooltip.
+2. Give the outer section enough top padding so the tooltip bubble + arrow have room to render above the cards without being clipped.
+3. Alternatively (simpler): change the tooltip to appear **below** the card (`top-full mt-3`) instead of above, since there's natural space below — matching the reference image which shows the arrow pointing downward from bubble to card.
 
-4. **Extend `MeetingView` with parent callbacks**
-- In `MeetingView.tsx`, add callbacks:
-  - `onJoined`, `onJoinError`, `onJoinStateChange`.
-- Use these callbacks in student + therapist screens to:
-  - write joined timestamps to session row,
-  - persist last join error,
-  - drive accurate UI (“connecting”, “joined”, “retry”).
+**Chosen approach** (matches reference image): Keep tooltip above, but fix clipping:
+- Wrap the scroll div in a container with `overflow-x: hidden; overflow-y: visible` (or use `clip` with `clip-path` that only clips horizontally).
+- The simplest reliable fix: set `overflow: visible` on the immediate parent of the cards and use a grandparent with `overflow-x: clip` (CSS `clip` doesn't affect positioned descendants the same way `hidden` does — actually it does). 
 
-5. **Stability guardrails**
-- Force meeting remount when `session.id` or `room_id` changes (keyed provider).
-- Ensure reconnect button retries join lifecycle (not token fetch only).
-- Keep changes scoped to BlackBox files only; no unrelated peer/appointment logic touched.
+**Actual simplest fix**: Move the tooltip to render in a **portal-like** position by pulling it outside the `overflow-hidden` container using a fixed/portal approach — but that's complex.
 
-### Files to update
-- `supabase/migrations/*` (new migration for join metadata + unique therapist open-session guard)
-- `src/components/therapist/TherapistDashboardContent.tsx`
-- `src/hooks/useBlackBoxSession.ts`
-- `src/pages/dashboard/BlackBox.tsx`
-- `src/components/mobile/MobileBlackBox.tsx`
-- `src/components/videosdk/MeetingView.tsx`
+**Pragmatic fix**:
+- Change `overflow-hidden` to `overflow-x-clip overflow-y-visible` on the scroll container. CSS `overflow-x: clip` clips the horizontal scroll without creating a new clipping context for `overflow-y`, unlike `overflow: hidden` which forces both axes to clip when one is set to hidden/scroll.
 
-### Technical details (concise)
-- Current issue is not room creation failure; it is missing “join-confirmed” state management.
-- Session should be considered active only after real meeting join events, not just token+room presence.
-- Student must have a visible/recoverable join path; hidden-only call lifecycle is the unstable point.
+This single class change should make the tooltip visible above the cards while still masking the horizontal scroll edges.
 
-### Validation checklist
-1. Student requests session → therapist accepts → both see same `room_id` in session row.
-2. Student taps Join, therapist joins → both `*_joined_at` set, status becomes `active`.
-3. If student join fails (permissions/network), UI shows retry and `last_join_error`.
-4. Desktop + mobile both tested end-to-end with two real users.
+### Changes
+- **Line 40**: Replace `overflow-hidden` with `overflow-x-clip overflow-y-visible`
+- Add `py-16` or similar vertical padding to ensure the tooltip has rendering space within the section
+
