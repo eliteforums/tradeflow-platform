@@ -1,50 +1,60 @@
 
 
-## Fix: BlackBox Call Not Connecting on Student Side
+## Fix: BlackBox Student Side Stuck at "Connecting"
 
 ### Root Cause
 
-There's a state machine deadlock in the student's BlackBox flow:
+The student must manually click "Therapist Ready — Join Call" to trigger `fetchToken()`, then wait for the MeetingProvider to mount and auto-join. There are two issues:
 
-1. Student clicks "Join" → `fetchToken()` sets `callState = "joining"` → token arrives → `setToken(t)`
-2. The MeetingProvider **only renders** when `isJoined` is true (`callState === "joined" && token && room_id`)
-3. But `callState` can only become `"joined"` when MeetingView fires `onCallJoined` — which requires the MeetingProvider to be mounted
-4. **Deadlock**: MeetingProvider waits for "joined" state, "joined" state waits for MeetingProvider
+1. **No auto-connect**: When the session transitions to "accepted" with a room_id, the student sees a "Join" button but nothing happens automatically. If the student doesn't notice or the UI re-renders, they can miss it.
 
-The therapist side works because `TherapistDashboardContent.tsx` renders MeetingProvider with a simpler guard: `token && activeSession.room_id` (line 594) — no callState check.
+2. **Polling stops too early**: The polling fallback (every 3s) only runs while `status === "queued"`. If the realtime subscription fails to deliver the "accepted" update, there's no fallback — the student stays stuck at "waiting" forever.
+
+3. **callState can get stuck**: If the token is fetched but the MeetingView's `onMeetingJoined` callback never fires (e.g., VideoSDK SDK glitch), callState remains "joining" indefinitely with no recovery path.
 
 ### Fix Plan
 
-#### 1. `src/hooks/useBlackBoxSession.ts` — Fix callState derivation
+#### 1. `src/hooks/useBlackBoxSession.ts` — Auto-fetch token on "ready"
 
-The `useEffect` (line 54-70) that derives callState from session status has a gap: when token is set and status is "accepted"/"active", it falls through without setting any state. Add a branch: if token is present and room exists, keep callState as-is (managed by MeetingView callbacks).
+Add a new effect: when callState transitions to "ready" (therapist accepted, room_id available), automatically call `fetchToken()` instead of waiting for the student to click. This removes the manual step and makes the flow seamless like the therapist side.
 
-#### 2. `src/pages/dashboard/BlackBox.tsx` — Fix MeetingProvider guard
-
-Change the MeetingProvider render condition from:
-```
-isJoined && activeSession?.room_id && token
-```
-to:
-```
-!!token && !!activeSession?.room_id && callState !== "idle"
+```ts
+// Auto-connect when therapist is ready
+useEffect(() => {
+  if (callState === "ready" && activeSession?.room_id && !tokenRef.current) {
+    fetchToken();
+  }
+}, [callState, activeSession?.room_id, fetchToken]);
 ```
 
-This allows the MeetingProvider to mount as soon as the token is fetched, so MeetingView can auto-join and fire `onCallJoined` to set `callState = "joined"`.
+#### 2. `src/hooks/useBlackBoxSession.ts` — Extend polling to accepted/active
 
-Keep the "In session" pill and controls gated on `isJoined` for UI purposes.
+Change the polling fallback to also run while `status === "accepted"` or `status === "active"` (not just "queued"). This ensures the student picks up session updates even if realtime fails.
 
-#### 3. `src/components/mobile/MobileBlackBox.tsx` — Same guard fix
+```ts
+// Poll while queued OR accepted (realtime fallback)
+useEffect(() => {
+  if (!activeSession?.id || !["queued", "accepted", "active"].includes(activeSession.status)) return;
+  const interval = setInterval(async () => { ... }, 3000);
+  return () => clearInterval(interval);
+}, [activeSession?.id, activeSession?.status]);
+```
 
-Apply the identical MeetingProvider guard change for mobile.
+#### 3. `src/pages/dashboard/BlackBox.tsx` & `MobileBlackBox.tsx` — Remove manual "Join" button
 
-#### 4. `src/components/videosdk/MeetingView.tsx` — Fix retry loop clearing
+Since token fetch is now automatic, remove the `isReady` state UI that shows "Therapist Ready — Join Call". Replace it with a "Connecting…" indicator since the system will auto-connect. Keep the "Retry" button for failed state.
 
-The auto-join retry timer (line 117-119) keeps firing even after `onMeetingJoined` runs if the timer was already scheduled. Add a ref flag `joinSucceeded` to prevent retries after successful join.
+#### 4. `src/hooks/useBlackBoxSession.ts` — Add joining timeout recovery
 
-### Summary
+Add a 30-second timeout: if callState has been "joining" for 30s without transitioning to "joined" or "failed", automatically set it to "failed" so the retry button appears.
 
-- 4 files changed, ~10 lines each
-- No database changes
-- Core fix: decouple MeetingProvider mount from "joined" state — mount it when token + room_id are available
+### Files Modified
+- `src/hooks/useBlackBoxSession.ts` — auto-fetch, extended polling, joining timeout
+- `src/pages/dashboard/BlackBox.tsx` — remove manual join button, update UI states
+- `src/components/mobile/MobileBlackBox.tsx` — same UI updates
+
+### Technical Notes
+- No database or edge function changes needed
+- The therapist side already works because it uses a simpler flow (token obtained during accept)
+- Auto-connect makes the student experience match: request → wait → auto-connected
 
