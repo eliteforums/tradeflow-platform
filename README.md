@@ -125,7 +125,6 @@ To make professional mental health support accessible to every college student i
 - **Auto-Join with Retry** — Sessions auto-join on acceptance with up to 3 retry attempts and a 20-second timeout with manual retry option
 - **JWT-authenticated rooms** — Each session gets a unique room ID via the `videosdk-token` edge function
 - **Session notes** — Experts can write AES-256 encrypted session notes post-call
-- **Peer Connect** — Audio-only + encrypted text chat (no video for privacy)
 - **BlackBox Talk Now** — Voice sessions between students and therapists, queued and matched in real-time
 
 ---
