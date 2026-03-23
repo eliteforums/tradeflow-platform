@@ -140,9 +140,12 @@ const MobileExpertDashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-5 pb-28">
-        <div>
-          <h1 className="text-xl font-bold font-display">Expert Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Manage your practice</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold font-display">Expert Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Manage your practice</p>
+          </div>
+          <NotificationBell />
         </div>
 
         {/* Fixed bottom tab bar - replaces DashboardLayout's bottom nav */}
