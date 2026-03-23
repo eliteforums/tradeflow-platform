@@ -144,13 +144,13 @@ const MobilePeerConnect = () => {
           </div>
         ) : (
           <div className="flex flex-col h-[calc(100dvh-7rem)]">
-            {activeSessionId && selectedIntern ? (
+            {activeSessionId && (selectedIntern || isIntern) ? (
               <>
                 <div className="p-3 border-b border-border flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setMobileView("list")}><ArrowLeft className="w-5 h-5" /></Button>
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center"><Users className="w-4 h-4 text-white" /></div>
-                    <div><h3 className="font-semibold text-sm">{selectedIntern.username}</h3><p className="text-xs text-muted-foreground">{selectedIntern.specialty || "General"}</p></div>
+                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${isIntern ? "from-blue-500 to-cyan-500" : "from-pink-500 to-rose-500"} flex items-center justify-center`}><Users className="w-4 h-4 text-white" /></div>
+                    <div><h3 className="font-semibold text-sm">{chatPartnerName}</h3><p className="text-xs text-muted-foreground">{isIntern ? "Student" : selectedIntern?.specialty || "General"}</p></div>
                   </div>
                   <div className="flex items-center gap-1">
                     {isIntern && activeSessionId && (
