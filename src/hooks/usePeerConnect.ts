@@ -369,6 +369,16 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .single();
 
       if (session) {
+        // Fetch student + intern usernames for escalation context
+        const { data: sessionFull } = await supabase
+          .from("peer_sessions")
+          .select("student_id, intern_id, student:profiles!peer_sessions_student_id_fkey(username), intern:profiles!peer_sessions_intern_id_fkey(username)")
+          .eq("id", sessionId)
+          .single();
+
+        const studentUsername = (sessionFull as any)?.student?.username || "Unknown";
+        const internUsername = (sessionFull as any)?.intern?.username || profile?.username || "Unknown";
+
         const { data: studentProfile } = await supabase
           .from("profiles")
           .select("institution_id")
@@ -384,7 +394,12 @@ export function usePeerConnect(initialSessionId?: string | null) {
             .limit(1);
 
           if (spocs && spocs.length > 0) {
-            const triggerSnippet = (reason || "Peer Connect session flagged by intern").substring(0, 500);
+            const triggerSnippet = JSON.stringify({
+              type: "peer_session_flag",
+              student_username: studentUsername,
+              intern_username: internUsername,
+              reason: (reason || "Peer Connect session flagged by intern").substring(0, 500),
+            });
             await supabase.from("escalation_requests").insert({
               session_id: sessionId,
               spoc_id: spocs[0].id,
