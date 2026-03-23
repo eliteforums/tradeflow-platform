@@ -228,13 +228,13 @@ export function usePeerConnect(initialSessionId?: string | null) {
   // Helper: ensure a shared room_id exists on the session
   const ensureSessionRoom = useCallback(async (sessionId: string): Promise<string | null> => {
     // Check if session already has a room_id
-    const { data: session } = await supabase
-      .from("peer_sessions")
-      .select("room_id" as any)
-      .eq("id", sessionId)
-      .single();
+      const { data: session } = await supabase
+        .from("peer_sessions")
+        .select("room_id")
+        .eq("id", sessionId)
+        .single();
 
-    if ((session as any)?.room_id) return (session as any).room_id;
+      if (session?.room_id) return session.room_id;
 
     // Create a new room and persist it
     try {
