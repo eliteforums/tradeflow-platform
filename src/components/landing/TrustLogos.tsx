@@ -61,9 +61,9 @@ const TrustLogos = () => {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-4 z-30 pointer-events-none"
+                        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 pointer-events-none"
                       >
-                        <div className="relative flex items-center gap-1">
+                        <div className="relative">
                           {/* Tooltip bubble */}
                           <div className="px-5 py-3 rounded-2xl bg-popover border border-border shadow-2xl max-w-[260px]">
                             <p className="text-sm font-bold text-foreground whitespace-nowrap">
@@ -73,25 +73,26 @@ const TrustLogos = () => {
                               {compliment.line2}
                             </p>
                           </div>
-                          {/* Curved arrow pointing right-down toward the card */}
+                          {/* Hand-drawn curved arrow pointing down toward the card */}
                           <svg
-                            width="50"
+                            width="60"
                             height="50"
-                            viewBox="0 0 50 50"
+                            viewBox="0 0 60 50"
                             fill="none"
-                            className="flex-shrink-0 -ml-1"
+                            className="absolute -bottom-11 right-2"
                           >
                             <path
-                              d="M6 8 C 20 8, 34 16, 38 30 C 40 36, 42 40, 46 44"
+                              d="M8 4 C 18 4, 30 8, 38 18 C 44 26, 48 34, 50 42"
                               stroke="hsl(var(--foreground))"
-                              strokeWidth="2.5"
+                              strokeWidth="2.8"
                               strokeLinecap="round"
                               fill="none"
                             />
+                            {/* Arrowhead */}
                             <path
-                              d="M42 40 L46 44 L40 44"
+                              d="M45 38 L50 42 L54 36"
                               stroke="hsl(var(--foreground))"
-                              strokeWidth="2.5"
+                              strokeWidth="2.8"
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               fill="none"
