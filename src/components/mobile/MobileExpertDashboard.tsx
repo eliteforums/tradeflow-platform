@@ -211,7 +211,7 @@ const MobileExpertDashboard = () => {
                     {apt.status !== "completed" && apt.status !== "cancelled" && (
                       <div className="flex gap-2 mt-2 flex-wrap">
                         <Button size="sm" className="gap-1 h-7 text-[10px] px-2" onClick={() => setCallModal({ open: true, mode: apt.session_type === "video" ? "video" : "audio", appointmentId: apt.id })}>Join</Button>
-                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => toast.info("Reschedule sent")}><RefreshCw className="w-3 h-3" /></Button>
+                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => setRescheduleDialog({ open: true, appointmentId: apt.id, currentTime: apt.slot_time, studentId: apt.student_id })}><RefreshCw className="w-3 h-3" /></Button>
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}><AlertTriangle className="w-3 h-3" /></Button>
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => setSelectedAppointment(apt.id)}>Complete</Button>
                       </div>
