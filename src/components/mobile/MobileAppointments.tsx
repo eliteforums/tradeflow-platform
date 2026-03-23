@@ -42,8 +42,11 @@ const MobileAppointments = () => {
             <h1 className="text-xl font-bold font-display">Appointments</h1>
             <p className="text-sm text-muted-foreground">Book sessions with professionals</p>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border">
-            <Coins className="w-4 h-4 text-primary" /><span className="font-semibold text-sm">{balance} ECC</span>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border">
+              <Coins className="w-4 h-4 text-primary" /><span className="font-semibold text-sm">{balance} ECC</span>
+            </div>
+            <NotificationBell />
           </div>
         </div>
 
