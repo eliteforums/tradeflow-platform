@@ -1,7 +1,16 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileAdminDashboard from "@/components/mobile/MobileAdminDashboard";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Users, Calendar, MessageCircle, AlertTriangle, TrendingUp, Coins,
   Shield, Activity, Eye, CheckCircle, Clock, BarChart3, Search, Loader2,
@@ -138,7 +147,36 @@ const AdminDashboard = () => {
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [appointments, peerSessions, blackboxSessions, sessionFilter]);
 
-  if (isMobile) return <MobileAdminDashboard />;
+  const [showMobileWarning, setShowMobileWarning] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !localStorage.getItem("admin_mobile_warning_dismissed");
+    }
+    return true;
+  });
+
+  if (isMobile) return (
+    <>
+      <AlertDialog open={showMobileWarning && isMobile} onOpenChange={setShowMobileWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Best Viewed on Desktop</AlertDialogTitle>
+            <AlertDialogDescription>
+              The Admin Dashboard is optimized for larger screens. For the best experience with all analytics, tables, and management tools, please open this on a desktop or laptop.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => {
+              localStorage.setItem("admin_mobile_warning_dismissed", "true");
+              setShowMobileWarning(false);
+            }}>
+              Got it, continue anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <MobileAdminDashboard />
+    </>
+  );
 
   if (!isAdmin) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
