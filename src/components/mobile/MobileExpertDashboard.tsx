@@ -43,6 +43,11 @@ const MobileExpertDashboard = () => {
   const [escalationDialog, setEscalationDialog] = useState<{ open: boolean; appointmentId?: string }>({ open: false });
   const [escalationReason, setEscalationReason] = useState("");
 
+  // Reschedule
+  const [rescheduleDialog, setRescheduleDialog] = useState<{ open: boolean; appointmentId?: string; currentTime?: string; studentId?: string }>({ open: false });
+  const [rescheduleSlotId, setRescheduleSlotId] = useState("");
+  const [rescheduleReason, setRescheduleReason] = useState("");
+
   // Notes
   const [notesSearch, setNotesSearch] = useState("");
 
