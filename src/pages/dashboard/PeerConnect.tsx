@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { format, isToday, isYesterday } from "date-fns";
-import { toast } from "sonner";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const PeerConnect = () => {
