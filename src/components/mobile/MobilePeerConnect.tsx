@@ -325,6 +325,13 @@ const MobilePeerConnect = () => {
           <Input placeholder="Search..." className="pl-10 bg-card h-10 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
 
+        {/* Start New Chat prominent button */}
+        {!isIntern && !hasOpenSession && filteredSessions.length > 0 && (
+          <Button className="w-full mb-4" onClick={() => setMobileView("newchat")}>
+            <Plus className="w-4 h-4 mr-2" /> Start New Chat
+          </Button>
+        )}
+
         {/* Conversation List */}
         {isLoading ? (
           <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
