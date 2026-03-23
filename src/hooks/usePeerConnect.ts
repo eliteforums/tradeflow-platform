@@ -153,15 +153,21 @@ export function usePeerConnect(initialSessionId?: string | null) {
     staleTime: 10_000,
   });
 
-  // Get active session — prefer initialSessionId if provided
+  // Get selected session — match by activeSessionId (set via click or URL)
   const activeSession = useMemo(() => {
+    // First try the currently selected session ID
+    if (activeSessionId) {
+      return sessions.find((s) => s.id === activeSessionId) || null;
+    }
+    // Fallback: URL param
     if (initialSessionId) {
       return sessions.find((s) => s.id === initialSessionId) || null;
     }
+    // Fallback: first active session
     return sessions.find((s) => s.status === "active") || null;
-  }, [sessions, initialSessionId]);
+  }, [sessions, activeSessionId, initialSessionId]);
 
-  // Sync activeSessionId from activeSession
+  // Sync activeSessionId from activeSession (only on first load)
   useEffect(() => {
     if (activeSession && !activeSessionId) {
       setActiveSessionId(activeSession.id);
