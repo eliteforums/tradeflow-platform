@@ -1,6 +1,6 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobilePeerConnect from "@/components/mobile/MobilePeerConnect";
-import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   MessageCircle, Search, Circle, Phone, Send, X, Clock, Shield, Users,
