@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Calendar, Clock, User, Video, Phone, CheckCircle, Coins, X, Loader2 } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import DashboardLayout from "@/components/layout/DashboardLayout";
