@@ -307,10 +307,15 @@ export function usePeerConnect(initialSessionId?: string | null) {
     },
   });
 
-  // Send message
+  // Send message — guard against completed sessions
   const sendMessage = useMutation({
     mutationFn: async ({ sessionId, content }: { sessionId: string; content: string }) => {
       if (!user) throw new Error("Not authenticated");
+      // Client-side guard: don't send to non-active sessions
+      const session = sessions.find((s) => s.id === sessionId);
+      if (session && session.status !== "active") {
+        throw new Error("This session has ended. You cannot send messages.");
+      }
       const { error } = await supabase.from("peer_messages").insert({
         session_id: sessionId,
         sender_id: user.id,
@@ -319,7 +324,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
       if (error) throw error;
     },
     onError: (error) => {
-      toast.error("Failed to send message");
+      toast.error(error.message || "Failed to send message");
       console.error(error);
     },
   });
