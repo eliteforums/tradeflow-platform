@@ -35,6 +35,26 @@ export function useNotifications() {
     staleTime: 10_000,
   });
 
+  // Notification sound - short chime encoded as base64 WAV
+  const playNotificationSound = useCallback(() => {
+    try {
+      // Tiny notification chime (base64 PCM WAV ~0.3s)
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      oscillator.frequency.setValueAtTime(830, audioCtx.currentTime);
+      oscillator.frequency.setValueAtTime(1050, audioCtx.currentTime + 0.1);
+      gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      oscillator.start(audioCtx.currentTime);
+      oscillator.stop(audioCtx.currentTime + 0.3);
+    } catch {
+      // Audio not available
+    }
+  }, []);
+
   // Realtime subscription
   useEffect(() => {
     if (!user) return;
@@ -44,13 +64,14 @@ export function useNotifications() {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
         () => {
+          playNotificationSound();
           queryClient.invalidateQueries({ queryKey: ["notifications", user.id] });
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, queryClient]);
+  }, [user, queryClient, playNotificationSound]);
 
   const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {
