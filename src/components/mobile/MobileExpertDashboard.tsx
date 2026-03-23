@@ -352,6 +352,60 @@ const MobileExpertDashboard = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Reschedule Dialog */}
+      <Dialog open={rescheduleDialog.open} onOpenChange={(o) => { if (!o) { setRescheduleDialog({ open: false }); setRescheduleReason(""); setRescheduleSlotId(""); } }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><RefreshCw className="w-5 h-5 text-primary" />Reschedule</DialogTitle><DialogDescription>Pick a new slot and provide a reason.</DialogDescription></DialogHeader>
+          <div className="space-y-3">
+            {rescheduleDialog.currentTime && (
+              <div className="p-3 rounded-xl bg-muted/30 border border-border text-sm">
+                <p className="text-xs text-muted-foreground mb-0.5">Current</p>
+                <p className="font-medium text-sm">{format(new Date(rescheduleDialog.currentTime), "EEE, MMM d · h:mm a")}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">New Slot</label>
+              <Select value={rescheduleSlotId} onValueChange={setRescheduleSlotId}>
+                <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select slot" /></SelectTrigger>
+                <SelectContent>
+                  {futureSlots.filter(s => !s.is_booked).map((slot) => (
+                    <SelectItem key={slot.id} value={slot.id}>{format(new Date(slot.start_time), "MMM d, h:mm a")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Textarea placeholder="Reason..." value={rescheduleReason} onChange={(e) => setRescheduleReason(e.target.value)} className="min-h-[70px] text-sm" />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setRescheduleDialog({ open: false }); setRescheduleReason(""); setRescheduleSlotId(""); }}>Cancel</Button>
+            <Button disabled={!rescheduleSlotId || !rescheduleReason.trim()} onClick={async () => {
+              if (!user || !rescheduleDialog.appointmentId) return;
+              const selectedSlot = futureSlots.find(s => s.id === rescheduleSlotId);
+              if (!selectedSlot) return;
+              try {
+                const { error } = await supabase.from("appointments").update({
+                  slot_time: selectedSlot.start_time, slot_id: selectedSlot.id,
+                  rescheduled_from: rescheduleDialog.currentTime, rescheduled_by: user.id, reschedule_reason: rescheduleReason,
+                } as any).eq("id", rescheduleDialog.appointmentId);
+                if (error) throw error;
+                await supabase.from("expert_availability").update({ is_booked: true }).eq("id", selectedSlot.id);
+                if (rescheduleDialog.studentId) {
+                  await supabase.from("notifications").insert({
+                    user_id: rescheduleDialog.studentId, type: "reschedule", title: "Appointment Rescheduled",
+                    message: `Dr. ${profile?.username || "Expert"} rescheduled your appointment. Reason: ${rescheduleReason}`,
+                    metadata: { appointment_id: rescheduleDialog.appointmentId, old_time: rescheduleDialog.currentTime, new_time: selectedSlot.start_time, expert_name: profile?.username, reason: rescheduleReason },
+                  } as any);
+                }
+                queryClient.invalidateQueries({ queryKey: ["expert-appointments"] });
+                queryClient.invalidateQueries({ queryKey: ["expert-slots"] });
+                toast.success("Rescheduled & student notified");
+                setRescheduleDialog({ open: false }); setRescheduleReason(""); setRescheduleSlotId("");
+              } catch (err: any) { toast.error(err.message); }
+            }} className="gap-1"><RefreshCw className="w-4 h-4" />Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} />
     </DashboardLayout>
   );
