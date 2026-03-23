@@ -109,11 +109,19 @@ const AdminDashboard = () => {
 
   // Unified session feed
   const unifiedSessions = useMemo(() => {
-    const items: { id: string; type: "appointment" | "peer" | "blackbox"; description: string; date: string; status: string; flagged?: boolean }[] = [];
+    const items: { id: string; type: "appointment" | "peer" | "blackbox"; description: string; date: string; status: string; flagged?: boolean; rescheduled?: boolean; rescheduleReason?: string; rescheduledFrom?: string; expertName?: string }[] = [];
 
     if (sessionFilter === "all" || sessionFilter === "appointment") {
       appointments.forEach((apt: any) => {
-        items.push({ id: apt.id, type: "appointment", description: `${apt.expert?.username || "Expert"} → ${apt.student?.username || "Student"}`, date: apt.slot_time, status: apt.status });
+        items.push({
+          id: apt.id, type: "appointment",
+          description: `${apt.expert?.username || "Expert"} → ${apt.student?.username || "Student"}`,
+          date: apt.slot_time, status: apt.status,
+          rescheduled: !!apt.reschedule_reason,
+          rescheduleReason: apt.reschedule_reason,
+          rescheduledFrom: apt.rescheduled_from,
+          expertName: apt.expert?.username,
+        });
       });
     }
     if (sessionFilter === "all" || sessionFilter === "peer") {
