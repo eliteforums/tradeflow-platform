@@ -62,9 +62,12 @@ const MeetingView = ({
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const joinSucceeded = useRef(false);
+
   const { join, participants, meetingId: sdkMeetingId } = useMeeting({
     onMeetingJoined: () => {
       console.log("[MeetingView] onMeetingJoined fired");
+      joinSucceeded.current = true;
       setJoined("JOINED");
       setTimedOut(false);
       setSdkError(null);
@@ -115,7 +118,7 @@ const MeetingView = ({
       join();
 
       retryTimerRef.current = setTimeout(() => {
-        if (joinAttempts.current < 3) attemptJoin();
+        if (!joinSucceeded.current && joinAttempts.current < 3) attemptJoin();
       }, 5000);
     };
 
