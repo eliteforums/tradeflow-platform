@@ -49,9 +49,9 @@ export function usePeerConnect(initialSessionId?: string | null) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const isIntern = profile?.role === "intern";
 
-  // Get available interns — show all active interns (relaxed filter for early platform stage)
+  // Get available interns — exclude self, show all active interns
   const { data: interns = [], isLoading: isLoadingInterns } = useQuery({
-    queryKey: ["interns"],
+    queryKey: ["interns", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -60,7 +60,8 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .eq("is_active", true);
 
       if (error) throw error;
-      return data as Intern[];
+      // Exclude self so interns don't see themselves as available
+      return (data as Intern[]).filter((i) => i.id !== user?.id);
     },
     staleTime: 30_000,
   });
@@ -90,7 +91,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
     return statuses;
   }, [interns, activeSessions]);
 
-  // Get user's sessions (both as student AND as intern) — include student relation for intern view
+  // Get user's sessions — include student relation for intern view
   const { data: sessions = [], isLoading: isLoadingSessions } = useQuery({
     queryKey: ["peer-sessions", user?.id, isIntern],
     queryFn: async () => {
@@ -110,10 +111,23 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as unknown as PeerSession[];
+
+      // Client-side: auto-expire sessions older than 2 hours
+      const TWO_HOURS = 2 * 60 * 60 * 1000;
+      const now = Date.now();
+      return ((data || []) as unknown as PeerSession[]).map((s) => {
+        if (
+          (s.status === "active" || s.status === "pending") &&
+          now - new Date(s.created_at).getTime() > TWO_HOURS
+        ) {
+          return { ...s, status: "completed" as const, _expired: true };
+        }
+        return s;
+      });
     },
     enabled: !!user,
     staleTime: 10_000,
+    refetchInterval: 15_000,
   });
   // Fetch last message per session for conversation list preview
   const { data: lastMessages = {} } = useQuery({
@@ -293,10 +307,15 @@ export function usePeerConnect(initialSessionId?: string | null) {
     },
   });
 
-  // Send message
+  // Send message — guard against completed sessions
   const sendMessage = useMutation({
     mutationFn: async ({ sessionId, content }: { sessionId: string; content: string }) => {
       if (!user) throw new Error("Not authenticated");
+      // Client-side guard: don't send to non-active sessions
+      const session = sessions.find((s) => s.id === sessionId);
+      if (session && session.status !== "active") {
+        throw new Error("This session has ended. You cannot send messages.");
+      }
       const { error } = await supabase.from("peer_messages").insert({
         session_id: sessionId,
         sender_id: user.id,
@@ -305,7 +324,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
       if (error) throw error;
     },
     onError: (error) => {
-      toast.error("Failed to send message");
+      toast.error(error.message || "Failed to send message");
       console.error(error);
     },
   });
