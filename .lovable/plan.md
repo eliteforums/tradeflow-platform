@@ -1,35 +1,25 @@
 
 
-## Fix: Partner hover tooltip arrow to match reference images
+## Fix: Arrow points to wrong card — should point back to the hovered card
 
-### What needs to change
+### Problem
+The tooltip is centered above the hovered card (`left-1/2 -translate-x-1/2`), but the arrow is positioned at `right-2` with a curve going right and down. This makes the arrow visually point toward the **next card** to the right instead of back down to the hovered card.
 
-Looking at the reference images:
-- **Image 28**: Tooltip bubble sits above-left of the card. A smooth curved arrow starts from the bubble's right side and curves downward-right, pointing at the card below.
-- **Image 29**: Shows the text style — bold first line with emoji, lighter second line. Arrow is a thick, smooth downward-curving stroke with an arrowhead.
+Looking at the reference image (image-30), the arrow should curve from the bubble downward and land on the **same card** that is hovered — specifically curving from the center/right of the bubble down toward the center of the card below.
 
-### Current issues
-1. The arrow SVG path doesn't match the reference — it's too small and the curve shape is wrong.
-2. The tooltip + arrow layout uses `flex items-center gap-1` which places them side-by-side horizontally, but the reference shows the bubble on top-left with the arrow curving down-right from it.
-3. The arrow should be positioned to the right of the bubble, curving downward toward the hovered card.
-
-### Plan
+### Fix
 
 **File: `src/components/landing/TrustLogos.tsx`**
 
-1. **Restructure tooltip layout**: Change from horizontal flex to a positioned layout where the bubble is top-left and the arrow SVG is placed at the bottom-right of the bubble, curving downward toward the card.
+1. **Reposition the arrow**: Move the SVG from `right-2` to center it horizontally under the bubble, so it points straight down toward the hovered card.
 
-2. **Redraw the SVG arrow**: Create a new path that matches the reference — a smooth curve starting from top-left, sweeping right and down, ending with a proper arrowhead. Approximately 60×50px, thicker stroke (~2.5-3px), round caps.
+2. **Redraw the curve**: The arrow should start from the bubble's bottom-center area, curve slightly to the right, then sweep back down to point at the card. Match the reference: a smooth S-curve that ends pointing downward at the card center.
 
-3. **Position the arrow**: Place the SVG absolutely so it hangs from the right edge of the bubble and points down toward the card. The arrow tip should visually point at or near the hovered card.
-
-4. **Keep text styling**: Bold first line + emoji, smaller muted second line — already correct.
+3. **Adjust the SVG path**: New path starts from top-center, curves right then back down-left to land centered on the card. Arrow positioned at `left-1/2 -translate-x-1/2 -bottom-11` so it's always centered under the bubble (and thus over the hovered card).
 
 ### Changes (single file)
 
-- **`src/components/landing/TrustLogos.tsx`** lines 64-100:
-  - Replace the `flex items-center gap-1` wrapper with a `flex flex-col items-end` layout
-  - Bubble on top, arrow SVG below it offset to the right
-  - New SVG: curve from top-left → down-right with arrowhead, matching the hand-drawn style in the reference
-  - Adjust `mb-4` to `mb-2` since the arrow itself bridges the gap to the card
+- **`src/components/landing/TrustLogos.tsx`** line 82: Change arrow positioning from `absolute -bottom-11 right-2` to `absolute -bottom-11 left-1/2 -translate-x-1/4` 
+- **Lines 84-85**: Redraw SVG path to curve from top-left, sweep right, then curve back down-center — matching the reference where the arrow tip lands on the hovered card, not the neighbor
+- **Lines 92-93**: Adjust arrowhead to match new path endpoint
 
