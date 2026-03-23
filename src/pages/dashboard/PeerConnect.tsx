@@ -37,6 +37,13 @@ const PeerConnect = () => {
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
   const isIntern = profile?.role === "intern";
 
+  // Auto-open new chat panel for students with no open sessions
+  useEffect(() => {
+    if (!isLoading && !isIntern && !hasOpenSession && sessions.length > 0) {
+      setShowNewChat(true);
+    }
+  }, [isLoading, isIntern, hasOpenSession, sessions.length]);
+
   const filteredInterns = useMemo(() => {
     if (!debouncedSearch) return interns;
     const q = debouncedSearch.toLowerCase();
@@ -412,8 +419,13 @@ const PeerConnect = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="px-4 py-3 border-t border-border bg-muted/30 text-center">
+                  <div className="px-4 py-3 border-t border-border bg-muted/30 text-center space-y-2">
                     <p className="text-xs text-muted-foreground">This session has ended</p>
+                    {!isIntern && (
+                      <Button variant="outline" size="sm" className="text-xs" onClick={() => setShowNewChat(true)}>
+                        <Plus className="w-3 h-3 mr-1" /> Start New Chat
+                      </Button>
+                    )}
                   </div>
                 )}
               </>
@@ -429,6 +441,11 @@ const PeerConnect = () => {
                     : "Select a conversation or start a new chat with an available intern."
                   }
                 </p>
+                {!isIntern && (
+                  <Button className="mt-4" onClick={() => setShowNewChat(true)}>
+                    <Plus className="w-4 h-4 mr-2" /> Start New Chat
+                  </Button>
+                )}
                 <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
                   <Shield className="w-3.5 h-3.5" />
                   <span>End-to-end anonymous · 20 ECC per session</span>

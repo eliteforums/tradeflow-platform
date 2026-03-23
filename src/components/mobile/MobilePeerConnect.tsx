@@ -279,8 +279,13 @@ const MobilePeerConnect = () => {
                   </div>
                 </div>
               ) : (
-                <div className="px-3 py-3 border-t border-border bg-muted/30 text-center">
+              <div className="px-3 py-3 border-t border-border bg-muted/30 text-center space-y-2">
                   <p className="text-xs text-muted-foreground">This session has ended</p>
+                  {!isIntern && (
+                    <Button variant="outline" size="sm" className="text-xs" onClick={() => setMobileView("newchat")}>
+                      <Plus className="w-3 h-3 mr-1" /> Start New Chat
+                    </Button>
+                  )}
                 </div>
               )}
             </>
@@ -319,6 +324,13 @@ const MobilePeerConnect = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search..." className="pl-10 bg-card h-10 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
+
+        {/* Start New Chat prominent button */}
+        {!isIntern && !hasOpenSession && filteredSessions.length > 0 && (
+          <Button className="w-full mb-4" onClick={() => setMobileView("newchat")}>
+            <Plus className="w-4 h-4 mr-2" /> Start New Chat
+          </Button>
+        )}
 
         {/* Conversation List */}
         {isLoading ? (
