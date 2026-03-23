@@ -95,7 +95,7 @@ To make professional mental health support accessible to every college student i
 | Feature | Description | Cost |
 |---------|-------------|------|
 | **Expert Appointments** | Book video/audio sessions with verified M.Phil RCI-licensed professionals | 50 ECC |
-| **Peer Connect** | Realtime encrypted audio + chat with trained psychology interns (audio-only, no video) | 20 ECC |
+| **Peer Connect** | WhatsApp-style encrypted text chat with trained psychology interns (real-time messaging) | 20 ECC |
 | **BlackBox** | Anonymous emotional expression journal with AI crisis detection (flag levels 0–3) | Free (journal) / 30 ECC (Talk Now voice session) |
 | **Sound Therapy** | Curated audio library for meditation, relaxation, deep sleep, and focus | Free |
 | **Self-Help Tools** | Interactive 3D tools — Quest Cards, Wreck the Buddy (stress relief), Tibetan Bowl (breathing) | Free |
@@ -125,7 +125,6 @@ To make professional mental health support accessible to every college student i
 - **Auto-Join with Retry** — Sessions auto-join on acceptance with up to 3 retry attempts and a 20-second timeout with manual retry option
 - **JWT-authenticated rooms** — Each session gets a unique room ID via the `videosdk-token` edge function
 - **Session notes** — Experts can write AES-256 encrypted session notes post-call
-- **Peer Connect** — Audio-only + encrypted text chat (no video for privacy)
 - **BlackBox Talk Now** — Voice sessions between students and therapists, queued and matched in real-time
 
 ---
@@ -662,6 +661,20 @@ The app will work offline for cached pages and API responses.
 - AI-powered audio classification during live voice sessions at 15-second intervals
 - Risk level badges displayed in-session (Normal → L1 Mild → L2 Moderate → L3 Critical)
 - Automatic escalation triggers on sustained high-risk audio patterns
+
+#### Peer Connect WhatsApp-like Rebuild
+- Dual-panel desktop layout (conversation list + chat area) with WhatsApp-style message bubbles
+- Mobile full-screen chat flow with conversation list → chat view transitions
+- Message preview with timestamps, online/busy/offline status indicators, date dividers
+- Removed all video/audio call functionality — now text-chat only per PRD alignment
+
+#### Database Schema Fixes
+- Added foreign key constraints on `peer_sessions` (student_id, intern_id → profiles) and `peer_messages` (session_id → peer_sessions)
+- Added `room_id` column to `peer_sessions`
+- Enabled Supabase Realtime on `peer_messages` for live chat updates
+
+#### Intern Visibility Fix
+- Relaxed intern filter to show all active interns regardless of `training_status` during early platform stage
 
 #### Additional Features
 - Mood Tracker with daily mood logging and visual history

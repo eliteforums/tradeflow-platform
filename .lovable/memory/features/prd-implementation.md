@@ -24,7 +24,7 @@
 21. **Therapist redirect from /dashboard** — Dashboard.tsx + MobileDashboard.tsx redirect to /dashboard/therapist
 22. **Therapist RLS on blackbox_sessions** — SELECT + UPDATE policies for therapist and intern roles
 23. **AI model updated** — Groq API (GPT OSS 20B 128k) for content moderation
-24. **Peer Connect audio-only** — video removed, audio + chat only per CR v1.7
+24. **Peer Connect text-chat only** — WhatsApp-like UI, all call functionality removed per PRD alignment
 25. **Dynamic SPOC QR** — QRCodeSVG with regeneration, no expiry
 26. **Emergency Contact on L3** — get-emergency-contact edge function + toast display (CR v1.8 §5.2)
 27. **Trigger Snippet Storage** — escalation_requests populated with trigger_snippet + trigger_timestamp (CR v1.8 §4.1)
