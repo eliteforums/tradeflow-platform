@@ -424,17 +424,44 @@ const AdminDashboard = () => {
                   ) : (
                     <div className="space-y-2 max-h-[600px] overflow-y-auto">
                       {unifiedSessions.map((s) => (
-                        <div key={s.id} className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${s.flagged ? "bg-destructive/5 border-destructive/20" : "bg-card border-border/50"}`}>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium">{s.description}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(s.date), "MMM d, yyyy · h:mm a")}</p>
+                        <div key={s.id} className={`rounded-xl border ${s.flagged ? "bg-destructive/5 border-destructive/20" : s.rescheduled ? "bg-amber-500/5 border-amber-500/20" : "bg-card border-border/50"}`}>
+                          <div className="p-3 flex items-center justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium">{s.description}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(s.date), "MMM d, yyyy · h:mm a")}</p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {s.rescheduled && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-500 font-medium">⟳ Rescheduled</span>
+                              )}
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] capitalize ${getSessionTypeBadge(s.type)}`}>{s.type}</span>
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] ${s.flagged ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
+                                {s.flagged ? "⚠ Flagged" : s.status}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] capitalize ${getSessionTypeBadge(s.type)}`}>{s.type}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] ${s.flagged ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
-                              {s.flagged ? "⚠ Flagged" : s.status}
-                            </span>
-                          </div>
+                          {s.rescheduled && (
+                            <div className="px-3 pb-3 pt-0">
+                              <div className="p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/10 text-xs space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-muted-foreground">Original:</span>
+                                  <span className="font-medium">{s.rescheduledFrom ? format(new Date(s.rescheduledFrom), "MMM d, h:mm a") : "—"}</span>
+                                  <span className="text-muted-foreground">→</span>
+                                  <span className="font-medium">{format(new Date(s.date), "MMM d, h:mm a")}</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-muted-foreground shrink-0">Reason:</span>
+                                  <span>{s.rescheduleReason}</span>
+                                </div>
+                                {s.expertName && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">By:</span>
+                                    <span className="font-medium">{s.expertName}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
