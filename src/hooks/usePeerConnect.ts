@@ -115,6 +115,29 @@ export function usePeerConnect(initialSessionId?: string | null) {
     enabled: !!user,
     staleTime: 10_000,
   });
+  // Fetch last message per session for conversation list preview
+  const { data: lastMessages = {} } = useQuery({
+    queryKey: ["peer-last-messages", sessions.map(s => s.id).join(",")],
+    queryFn: async () => {
+      if (sessions.length === 0) return {};
+      const result: Record<string, PeerMessage> = {};
+      const promises = sessions.map(async (session) => {
+        const { data } = await supabase
+          .from("peer_messages")
+          .select("id, session_id, sender_id, content_encrypted, created_at")
+          .eq("session_id", session.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) {
+          result[session.id] = data[0] as PeerMessage;
+        }
+      });
+      await Promise.all(promises);
+      return result;
+    },
+    enabled: sessions.length > 0,
+    staleTime: 10_000,
+  });
 
   // Get active session — prefer initialSessionId if provided
   const activeSession = useMemo(() => {
