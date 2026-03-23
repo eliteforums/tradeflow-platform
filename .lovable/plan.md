@@ -1,42 +1,87 @@
 
 
-## PRD Gap Fix — Remaining Missing Modules
+## Expert Reschedule, Notifications & Admin Session Tracking
 
-After detailed code review, most items from the gap analysis are **already implemented**:
-- Sound Therapy ECC earn ✓
-- Peer Connect credit deduction (20 ECC) ✓  
-- Expert Appointment credit deduction ✓
-- Expert escalation button + AI Monitor badge ✓
-- SPOC bulk credit allocation ✓
-- Account deletion with 30-day grace period ✓
+### What We're Building
 
-### Actually Missing (3 items)
+1. **Notifications table** — stores notifications for students (reschedule alerts) and experts (emergency case connection requests from therapist BlackBox escalations)
+2. **Expert Dashboard — Notification Window** — shows emergency case connection requests escalated by therapists during BlackBox sessions (L3+ escalations where experts need to be informed)
+3. **Expert Dashboard — Reschedule Dialog** — replaces the toast stub with a proper dialog: pick a new slot + enter a reason, updates the appointment with new time and reason
+4. **Student Dashboard — Notification Window** — shows reschedule notifications with expert name, old time, new time, and reason
+5. **Admin Sessions Tab — Reschedule Info** — shows rescheduled appointments with the reason given by the expert for admin assurance checks
 
-#### 1. Wreck Buddy — ECC Earn on Activity
-**File:** `src/pages/dashboard/WreckBuddy.tsx`
-- Add `useEccEarn` hook
-- Listen for `postMessage` from the iframe when the ragdoll session completes (or use a "Done" button outside the iframe)
-- Award 1 ECC via `earnFromActivity({ amount: 1, activity: "Wreck the Buddy session" })`
-- Show daily earn status (remaining ECC today)
+---
 
-#### 2. Tibetan Bowl — ECC Earn on Activity  
-**File:** `src/pages/dashboard/TibetanBowl.tsx`
-- Same pattern: add `useEccEarn` hook
-- Add a "Complete Session" button below the iframe
-- Award 1 ECC on completion
-- Show daily earn status
+### Database Changes (Migration)
 
-#### 3. ECC Bundle Packs UI on Credits Page
-**File:** `src/pages/dashboard/Credits.tsx` + `src/components/mobile/MobileCredits.tsx`
-- Add bundle pack cards in the sidebar (50 ECC/₹99, 100 ECC/₹179, 250 ECC/₹399, 500 ECC/₹699) using existing `usePurchaseCredits` hook
-- Show "Coming Soon" or connect to the existing `purchaseCredits` flow
-- Replace the current "Ask your SPOC" prompt with bundle cards + purchase buttons
+**New table: `notifications`**
+```sql
+CREATE TABLE public.notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  type text NOT NULL,           -- 'reschedule', 'emergency_escalation', etc.
+  title text NOT NULL,
+  message text NOT NULL,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  is_read boolean NOT NULL DEFAULT false,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+-- Users can view/update own notifications
+CREATE POLICY "Users can view own notifications" ON public.notifications FOR SELECT TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own notifications" ON public.notifications FOR UPDATE TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "System can insert notifications" ON public.notifications FOR INSERT TO authenticated WITH CHECK (true);
+-- Enable realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+```
+
+**Alter `appointments` table** — add reschedule columns:
+```sql
+ALTER TABLE public.appointments
+  ADD COLUMN IF NOT EXISTS reschedule_reason text,
+  ADD COLUMN IF NOT EXISTS rescheduled_from timestamptz,
+  ADD COLUMN IF NOT EXISTS rescheduled_by uuid;
+```
+
+---
+
+### File Changes
+
+#### 1. New Hook: `src/hooks/useNotifications.ts`
+- Query notifications for current user, sorted by newest
+- Realtime subscription for live updates
+- `markAsRead` mutation
+- `markAllAsRead` mutation
+
+#### 2. New Component: `src/components/notifications/NotificationBell.tsx`
+- Bell icon with unread count badge
+- Dropdown/popover listing notifications
+- Used in both Expert and Student dashboards
+
+#### 3. Expert Dashboard Updates (`ExpertDashboardContent.tsx` + `MobileExpertDashboard.tsx`)
+- **Add NotificationBell** in header — shows emergency case escalation alerts from therapist BlackBox sessions
+- **Replace Reschedule stub** (currently `toast.info("Reschedule request sent")`) with a dialog:
+  - Dropdown to pick a new available slot from expert's own slots
+  - Textarea for reschedule reason
+  - On confirm: update appointment `slot_time`, `rescheduled_from`, `rescheduled_by`, `reschedule_reason` + insert notification for the student
+
+#### 4. Student Appointments (`MobileAppointments.tsx` + `src/pages/dashboard/Appointments.tsx`)
+- **Add NotificationBell** in header
+- Notifications popover shows reschedule alerts with old/new time + reason
+
+#### 5. Admin Sessions Tab (`AdminDashboard.tsx`)
+- In the Sessions tab, for appointments that have `reschedule_reason`, show a "Rescheduled" badge + expandable row with: original time, new time, reason, expert name
+- Add a filter option for "Rescheduled" sessions
+
+#### 6. Expert L3 Alert → Notification
+- When therapist triggers L3 emergency escalation in `ExpertL3AlertPanel.tsx`, also insert a notification for available experts with type `emergency_escalation`
+
+---
 
 ### Technical Details
 
-- `useEccEarn` is already built with daily cap (5 ECC), `earnFromActivity()` mutation, and toast feedback
-- `usePurchaseCredits` hook already exists with Razorpay integration and 4 package tiers
-- No database migrations needed
-- No new edge functions needed
-- Changes span 4 files total
+- Notifications use Supabase realtime for instant delivery
+- Reschedule updates the existing appointment row (no new row) — stores `rescheduled_from` (old time) for audit trail
+- Admin sees reschedule info via the existing appointments query in `useAdmin` — just needs the new columns in the select
+- NotificationBell component is reusable across all dashboards
 
