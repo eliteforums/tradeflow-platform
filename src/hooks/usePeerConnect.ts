@@ -418,6 +418,12 @@ export function usePeerConnect(initialSessionId?: string | null) {
     },
   });
 
+  // Whether the user has a genuinely open (non-expired) session
+  const hasOpenSession = useMemo(() =>
+    sessions.some((s) => (s.status === "active" || s.status === "pending") && !(s as any)._expired),
+    [sessions]
+  );
+
   return {
     interns,
     sessions,
@@ -428,6 +434,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
     hasMoreMessages,
     isLoadingMore,
     loadMoreMessages,
+    hasOpenSession,
     isLoading: isLoadingInterns || isLoadingSessions,
     activeSessionId,
     setActiveSessionId,
