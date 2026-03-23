@@ -284,6 +284,7 @@ const ExpertDashboardContent = () => {
             <h1 className="text-2xl xl:text-3xl font-bold font-display">Expert Dashboard</h1>
             <p className="text-sm text-muted-foreground">Manage appointments, schedule & sessions</p>
           </div>
+          <NotificationBell />
         </div>
 
         {/* Tab Bar */}
