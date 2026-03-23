@@ -62,11 +62,13 @@ export const useBlackBoxSession = () => {
       return;
     }
     if (status === "queued") { setCallState("waiting"); return; }
-    if ((status === "accepted" || status === "active") && room_id && !tokenRef.current) {
-      setCallState("ready"); // therapist ready, student can fetch token & join
+    if ((status === "accepted" || status === "active") && room_id) {
+      if (!tokenRef.current) {
+        setCallState("ready"); // therapist ready, student can fetch token & join
+      }
+      // If we have token, callState is managed by MeetingView callbacks (joining/joined/failed)
       return;
     }
-    // If we have token, callState is managed by MeetingView callbacks
   }, [activeSession?.status, activeSession?.room_id, token]);
 
   // Fetch token for the current session

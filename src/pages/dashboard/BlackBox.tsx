@@ -124,7 +124,7 @@ const BlackBox = () => {
         </div>
 
         {/* Meeting provider — keyed by session+room so it remounts on change */}
-        {isJoined && activeSession?.room_id && token && (
+        {!!token && !!activeSession?.room_id && callState !== "idle" && (
           <div
             key={`${activeSession.id}-${activeSession.room_id}`}
             style={{

@@ -111,7 +111,7 @@ const MobileBlackBox = () => {
         </div>
 
         {/* Meeting provider — keyed so it remounts on session/room change */}
-        {isJoined && activeSession?.room_id && token && (
+        {!!token && !!activeSession?.room_id && callState !== "idle" && (
           <div
             key={`${activeSession.id}-${activeSession.room_id}`}
             style={{

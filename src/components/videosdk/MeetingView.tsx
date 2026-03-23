@@ -118,7 +118,7 @@ const MeetingView = ({
       join();
 
       retryTimerRef.current = setTimeout(() => {
-        if (joinAttempts.current < 3) attemptJoin();
+        if (!joinSucceeded.current && joinAttempts.current < 3) attemptJoin();
       }, 5000);
     };
 
