@@ -1,42 +1,63 @@
 
-Issue restated: therapist can join the BlackBox room, but student stays on “Setting up secure connection…” and then fails.  
-Do I know what the issue is? Yes. The student flow relies on hidden `MeetingView` auto-join, but auto-join is gated by `sdkMeetingId` in `MeetingView`. If that value isn’t ready, join never starts. Therapist can still recover by clicking the visible “Join Session” button, while student cannot (hidden view), so student times out.
 
-Implementation plan (targeted, not a full rewrite):
+## Plan: Fix SPOC Emergency Module + Rebuild Peer Connect as WhatsApp-like Chat
 
-1) Fix auto-join deadlock in `src/components/videosdk/MeetingView.tsx`
-- Remove dependency on `sdkMeetingId` for auto-join start.
-- Trigger `join()` based on `autoJoin + meetingId prop` (which is already known), with retry control.
-- Keep retry timer cancellation and `joinSucceeded` guard.
-- Ensure timeout path sends `onJoinError` consistently with a concrete message.
+### Issue 1: SPOC Emergency/Escalation Module Not Working
 
-2) Add provider-level auto-join safety net
-- In all MeetingProvider call sites used for BlackBox:
-  - `src/pages/dashboard/BlackBox.tsx`
-  - `src/components/mobile/MobileBlackBox.tsx`
-  - `src/components/therapist/TherapistDashboardContent.tsx`
-  - `src/components/videosdk/VideoCallModal.tsx`
-- Pass `joinWithoutUserInteraction` so room entry does not depend on a visible manual button.
+**Root cause:** The escalation query in `SPOCDashboardContent.tsx` uses a Supabase join with `profiles!escalation_requests_spoc_id_fkey(username)`, but no foreign key constraint exists on `escalation_requests.spoc_id` referencing `profiles.id`. This causes the query to fail silently, returning no data.
 
-3) Give student a real fallback when hidden join fails
-- Keep current orb UI, but when `callState === "failed"` show:
-  - room/session reference (`activeSession.room_id`)
-  - explicit error reason (from join error / timeout)
-  - retry action that remounts provider and retriggers join.
-- Avoid “silent failure” where hidden `MeetingView` is the only place with recovery UI.
+**Fix:**
+1. **Database migration**: Add a foreign key constraint on `escalation_requests.spoc_id` referencing `profiles.id`.
+2. Also add FK for `admin_id` and `session_id` columns while we're at it, for consistency.
 
-4) Strengthen state/error tracking in `src/hooks/useBlackBoxSession.ts`
-- On 30s joining timeout, also persist `last_join_error` (currently this path can fail without persisted reason).
-- Ensure transition from `joining -> failed` is deterministic and debuggable.
-- Keep polling+realtime behavior unchanged otherwise.
+### Issue 2: Peer Connect — Rebuild as WhatsApp-like Chat Interface
 
-5) PRD alignment checks (from uploaded tech spec)
-- Preserve same room continuity (no room swap for basic connect flow).
-- Ensure student auto-enters accepted session without manual action.
-- Keep escalation/host-transfer behavior untouched.
+**Current problems:**
+- Shows "No interns available" because the query filters by `training_status IN ('active', 'completed')` — if no interns have completed training, the list is empty.
+- UI is a basic sidebar + chat panel, not a WhatsApp-like conversation interface.
+- No conversation history list with last message preview and timestamps.
+- No unread indicators.
 
-Validation plan (must run end-to-end):
-- Student requests session → therapist accepts → student auto-joins without seeing manual join UI.
-- Verify both `therapist_joined_at` and `student_joined_at` are written.
-- Force failure (deny mic / network drop) and confirm student gets actionable retry + visible error.
-- Re-test on mobile BlackBox flow with same accept/connect sequence.
+**Per PRD (Section 4.2):**
+- Student sees list of available interns with status, focus areas, training badge.
+- Student selects intern, initiates session request.
+- Real-time chat with messages.
+- Session costs 20 ECC.
+
+**Rebuild plan — WhatsApp-like UI:**
+
+#### A. `usePeerConnect.ts` changes:
+- Relax training filter: also include interns with `training_status = 'not_started'` during early platform stage (no interns have completed training yet), OR remove the filter and show all active interns.
+- Add a `lastMessages` map: for each session, fetch the most recent message to show as preview in conversation list.
+- Add `unreadCounts` tracking per session.
+
+#### B. Desktop `PeerConnect.tsx` — WhatsApp layout:
+- **Left panel**: Two sections — "Conversations" (active/recent sessions with last message preview, timestamp, unread badge) and below "Available Interns" (tappable to start new session).
+- **Right panel**: Full chat area with message bubbles, input bar, call button.
+- Conversation list items show: intern/student avatar, name, last message preview (truncated), timestamp, unread count badge, online status dot.
+- Search filters both conversations and interns.
+
+#### C. Mobile `MobilePeerConnect.tsx` — Same WhatsApp treatment:
+- Full-screen conversation list view with same preview cards.
+- Tap to open full-screen chat.
+- Back arrow to return to list.
+
+#### D. Visual polish:
+- WhatsApp-style message bubbles (teal for sent, dark card for received).
+- Typing indicator placeholder.
+- "Today"/"Yesterday" date dividers between message groups.
+- Double-check mark for delivered messages (visual only).
+
+### Files Modified
+
+1. **Migration** — Add FK on `escalation_requests.spoc_id` → `profiles.id`
+2. `src/hooks/usePeerConnect.ts` — Relax intern filter, add last message + unread tracking
+3. `src/pages/dashboard/PeerConnect.tsx` — Full WhatsApp-like rebuild (desktop)
+4. `src/components/mobile/MobilePeerConnect.tsx` — Full WhatsApp-like rebuild (mobile)
+5. `src/components/spoc/SPOCDashboardContent.tsx` — Minor: update escalation query if FK name changes
+
+### Technical Notes
+- No edge function changes needed.
+- The FK migration is safe — existing data should already have valid `spoc_id` values referencing profiles.
+- Peer Connect session flow (create, send message, end, flag) remains unchanged — only the UI presentation and intern visibility filter change.
+
