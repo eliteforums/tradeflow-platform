@@ -1,20 +1,43 @@
 
 
-## Fix: Intern's Sent Messages Not Appearing in Chat UI
+## Plan: Emoji Picker + Multi-line Chat Input + Notification Sound + Escalation Usernames
 
-### Root Cause
-The `sendMessage` mutation in `usePeerConnect.ts` does not optimistically add the sent message to local state. It relies entirely on the Supabase realtime subscription to echo the message back. If realtime has any delay or fails to deliver (which can happen with complex RLS subqueries on the SELECT policy), the intern never sees their own message.
+### 1. Emoji Picker & Multi-line Input for Chat
 
-### Changes
+**Files:** `PeerConnect.tsx`, `MobilePeerConnect.tsx`
 
-#### `src/hooks/usePeerConnect.ts`
-1. **Optimistic message insert**: After the `supabase.from("peer_messages").insert(...)` call succeeds, immediately add the message to the local `messages` state with a temporary ID and the current timestamp
-2. **Deduplication in realtime handler**: Update the realtime `INSERT` handler to skip adding a message if one with the same `id` already exists in state (prevents duplicates when realtime also delivers the message)
+- Replace the single-line `<Input>` in the chat input bar with a `<Textarea>` that auto-grows (1-4 rows)
+- Change Enter behavior: Enter sends, Shift+Enter adds newline
+- Add an emoji picker button (using a simple emoji grid popover with common emojis — no external dependency needed)
+- Render message text with `whitespace-pre-wrap` so newlines display correctly in bubbles
 
-### Technical Details
-- Generate a temporary UUID for the optimistic message; when the realtime event arrives with the real ID, the dedup check by `id` will add it (since temp ID differs), but we can also dedup by matching `sender_id + content + close timestamp` to avoid visual duplicates
-- Simpler approach: return the inserted row from the mutation using `.select().single()` and add it to state in `onSuccess`, then dedup realtime by `id`
+### 2. Notification Sound on New Notifications
+
+**File:** `useNotifications.ts`
+
+- Add an `Audio` object with a short notification sound (use a small embedded base64 chime or a public domain sound file)
+- In the realtime subscription's `INSERT` handler, play the sound before invalidating the query
+- Respect a simple check: only play if the document is visible or the tab is active
+
+### 3. Escalation Manager — Show Both Party Usernames
+
+**File:** `EscalationManager.tsx`
+
+- Update the Supabase query to also join the student username:
+  - For escalations with `session_id`: join `peer_sessions` to get `student_id`, then join `profiles` for the student username
+  - Since Supabase JS can't do deep nested joins across FK chains easily, use a two-step approach: fetch escalations, then batch-fetch the session's student profiles
+- Alternatively, simpler approach: the `trigger_snippet` JSON already contains `student_username` and `student_eternia_id` for emergency-type escalations. For peer session escalations, update the `flagSession` mutation in `usePeerConnect.ts` to include student/intern usernames in the `trigger_snippet` JSON
+- Display: Show "Filed by: {spoc/intern username}" and "Regarding: {student username}" in each escalation card
+
+**Detailed approach for escalation usernames:**
+- Update `EscalationManager.tsx` query: join session data via `session:peer_sessions!escalation_requests_session_id_fkey(student_id, intern_id, student:profiles!peer_sessions_student_id_fkey(username), intern:profiles!peer_sessions_intern_id_fkey(username))`
+- In the card UI, show the filer (spoc username — already available) and the affected student (from session join or trigger_snippet)
+- For escalations created by interns via `flagSession`, update `usePeerConnect.ts` to embed both usernames in `trigger_snippet` JSON
 
 ### Files Modified
-- `src/hooks/usePeerConnect.ts` — Add optimistic update + realtime dedup
+- `src/pages/dashboard/PeerConnect.tsx` — Textarea + emoji picker + whitespace-pre-wrap
+- `src/components/mobile/MobilePeerConnect.tsx` — Same textarea + emoji changes
+- `src/hooks/useNotifications.ts` — Play sound on new notification
+- `src/components/admin/EscalationManager.tsx` — Join + display both party usernames
+- `src/hooks/usePeerConnect.ts` — Embed usernames in escalation trigger_snippet
 
