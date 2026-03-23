@@ -171,8 +171,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-sidebar-foreground hover:bg-sidebar-accent h-7 w-7 shrink-0"
             >
-            <ChevronLeft className={`w-4 h-4 transition-transform ${!sidebarOpen ? "rotate-180" : ""}`} />
-          </Button>
+              <ChevronLeft className={`w-4 h-4 transition-transform ${!sidebarOpen ? "rotate-180" : ""}`} />
+            </Button>
+          </div>
         </div>
 
         <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
