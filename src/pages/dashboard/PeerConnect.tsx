@@ -31,7 +31,7 @@ const PeerConnect = () => {
     interns, sessions, activeSession, messages: chatMessages, isLoading,
     activeSessionId, setActiveSessionId, requestSession, sendMessage, endSession,
     flagSession, isRequesting, isSending, isFlagging, internStatuses, lastMessages,
-    hasMoreMessages, isLoadingMore, loadMoreMessages,
+    hasMoreMessages, isLoadingMore, loadMoreMessages, hasOpenSession,
   } = usePeerConnect(urlSessionId);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
@@ -197,7 +197,7 @@ const PeerConnect = () => {
                         <button
                           key={intern.id}
                           onClick={() => status === "online" && handleStartSession(intern.id)}
-                          disabled={status !== "online" || isRequesting || !!activeSessionId}
+                          disabled={status !== "online" || isRequesting || hasOpenSession}
                           className="w-full px-4 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors disabled:opacity-50"
                         >
                           <div className="relative shrink-0">

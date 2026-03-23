@@ -104,7 +104,8 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .limit(50);
 
       if (isIntern) {
-        query = query.or(`student_id.eq.${user.id},intern_id.eq.${user.id}`);
+        // Only show sessions where this user is the assigned intern (not corrupted student_id rows)
+        query = query.eq("intern_id", user.id);
       } else {
         query = query.eq("student_id", user.id);
       }
@@ -251,26 +252,29 @@ export function usePeerConnect(initialSessionId?: string | null) {
       if (!user) throw new Error("Not authenticated");
       if (isIntern) throw new Error("Interns cannot request peer sessions");
 
-      // 1. Check if student already has an active/pending session
+      // 1. Check if student already has a FRESH active/pending session (< 2 hours old)
+      const TWO_HOURS_AGO = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       const { data: existingStudentSession } = await supabase
         .from("peer_sessions")
         .select("*")
         .eq("student_id", user.id)
         .in("status", ["pending", "active"])
+        .gte("created_at", TWO_HOURS_AGO)
         .limit(1)
         .maybeSingle();
 
       if (existingStudentSession) {
-        // Reuse existing session instead of creating a duplicate
+        // Reuse existing fresh session instead of creating a duplicate
         return existingStudentSession;
       }
 
-      // 2. Check if the target intern already has an active/pending session
+      // 2. Check if the target intern already has a FRESH active/pending session
       const { data: existingInternSession } = await supabase
         .from("peer_sessions")
         .select("id")
         .eq("intern_id", internId)
         .in("status", ["pending", "active"])
+        .gte("created_at", TWO_HOURS_AGO)
         .limit(1)
         .maybeSingle();
 
@@ -414,6 +418,12 @@ export function usePeerConnect(initialSessionId?: string | null) {
     },
   });
 
+  // Whether the user has a genuinely open (non-expired) session
+  const hasOpenSession = useMemo(() =>
+    sessions.some((s) => (s.status === "active" || s.status === "pending") && !(s as any)._expired),
+    [sessions]
+  );
+
   return {
     interns,
     sessions,
@@ -424,6 +434,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
     hasMoreMessages,
     isLoadingMore,
     loadMoreMessages,
+    hasOpenSession,
     isLoading: isLoadingInterns || isLoadingSessions,
     activeSessionId,
     setActiveSessionId,
