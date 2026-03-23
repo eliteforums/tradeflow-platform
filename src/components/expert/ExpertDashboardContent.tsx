@@ -59,6 +59,11 @@ const ExpertDashboardContent = () => {
   const [escalationDialog, setEscalationDialog] = useState<{ open: boolean; appointmentId?: string }>({ open: false });
   const [escalationReason, setEscalationReason] = useState("");
 
+  // Reschedule dialog
+  const [rescheduleDialog, setRescheduleDialog] = useState<{ open: boolean; appointmentId?: string; currentTime?: string; studentId?: string; studentName?: string }>({ open: false });
+  const [rescheduleSlotId, setRescheduleSlotId] = useState<string>("");
+  const [rescheduleReason, setRescheduleReason] = useState("");
+
   // Notes search/filter
   const [notesSearch, setNotesSearch] = useState("");
   const [notesFilterInstitution, setNotesFilterInstitution] = useState<string>("all");
