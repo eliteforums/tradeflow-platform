@@ -54,6 +54,9 @@ const MobilePeerConnect = () => {
 
   const statusColors: Record<string, string> = { online: "bg-eternia-success", busy: "bg-eternia-warning", offline: "bg-muted-foreground" };
   const selectedIntern = activeSessionId ? interns.find((i) => i.id === activeSession?.intern_id) : null;
+  const chatPartnerName = isIntern
+    ? (activeSession as any)?.student?.username || "Student"
+    : selectedIntern?.username || "Intern";
 
   return (
     <DashboardLayout>
@@ -62,54 +65,82 @@ const MobilePeerConnect = () => {
           <div className="space-y-5">
             <div>
               <h1 className="text-xl font-bold font-display">Peer Connect</h1>
-              <p className="text-sm text-muted-foreground">Anonymous support from trained interns</p>
+              <p className="text-sm text-muted-foreground">{isIntern ? "Your student sessions" : "Anonymous support from trained interns"}</p>
             </div>
 
             <div className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-eternia-subtle border border-border">
               <Shield className="w-5 h-5 text-primary shrink-0" />
-              <p className="text-xs text-muted-foreground">Your identity remains anonymous. 20 ECC/session.</p>
+              <p className="text-xs text-muted-foreground">{isIntern ? "Respond to students who need support." : "Your identity remains anonymous. 20 ECC/session."}</p>
             </div>
 
-            {creditBalance < 20 && (
+            {!isIntern && creditBalance < 20 && (
               <div className="flex items-center gap-3 p-4 rounded-2xl bg-destructive/10 border border-destructive/20">
                 <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
                 <p className="text-sm text-destructive">Need at least 20 ECC.</p>
               </div>
             )}
 
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Search interns..." className="pl-10 bg-card h-10 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-
-            {isLoading ? <div className="flex items-center justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-              : filteredInterns.length === 0 ? <div className="text-center py-10 text-muted-foreground"><Users className="w-10 h-10 mx-auto mb-3 opacity-50" /><p className="text-sm">{searchTerm ? "No matching interns" : "No interns available"}</p></div>
-              : (
-                <div className="space-y-2">
-                  {filteredInterns.map((intern) => {
-                    const status = internStatuses[intern.id] || "offline";
-                    return (
-                      <button key={intern.id} onClick={() => { if (!activeSessionId && status === "online") handleStartSession(intern.id); }}
-                        className={`w-full p-4 rounded-2xl text-left border ${activeSession?.intern_id === intern.id ? "bg-primary/10 border-primary" : "bg-card border-border"}`}
-                        disabled={status !== "online" || isRequesting || !!activeSessionId}>
-                        <div className="flex items-center gap-3">
-                          <div className="relative shrink-0">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center"><Users className="w-5 h-5 text-white" /></div>
-                            <Circle className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${statusColors[status]} rounded-full border-2 border-card`} fill="currentColor" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-0.5">
-                              <h3 className="font-semibold text-sm truncate">{intern.username}</h3>
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">Certified</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">{status === "online" ? "Available now" : status === "busy" ? "In session" : "Offline"}</p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+            {isIntern ? (
+              <>
+                {isLoading ? <div className="flex items-center justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                  : (() => {
+                      const activeSessions = sessions.filter(s => s.status === "active" || s.status === "pending");
+                      return activeSessions.length === 0
+                        ? <div className="text-center py-10 text-muted-foreground"><Users className="w-10 h-10 mx-auto mb-3 opacity-50" /><p className="text-sm">No active student sessions</p></div>
+                        : <div className="space-y-2">{activeSessions.map((sess) => {
+                            const studentName = (sess as any)?.student?.username || "Student";
+                            return (
+                              <button key={sess.id} onClick={() => { setActiveSessionId(sess.id); setMobileView("chat"); }}
+                                className={`w-full p-4 rounded-2xl text-left border ${activeSessionId === sess.id ? "bg-primary/10 border-primary" : "bg-card border-border"}`}>
+                                <div className="flex items-center gap-3">
+                                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0"><Users className="w-5 h-5 text-white" /></div>
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-sm truncate">{studentName}</h3>
+                                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Circle className={`w-2.5 h-2.5 ${sess.status === "active" ? "text-eternia-success" : "text-eternia-warning"}`} fill="currentColor" />{sess.status === "active" ? "Active" : "Pending"}</p>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}</div>;
+                    })()}
+              </>
+            ) : (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input placeholder="Search interns..." className="pl-10 bg-card h-10 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </div>
-              )}
+
+                {isLoading ? <div className="flex items-center justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                  : filteredInterns.length === 0 ? <div className="text-center py-10 text-muted-foreground"><Users className="w-10 h-10 mx-auto mb-3 opacity-50" /><p className="text-sm">{searchTerm ? "No matching interns" : "No interns available"}</p></div>
+                  : (
+                    <div className="space-y-2">
+                      {filteredInterns.map((intern) => {
+                        const status = internStatuses[intern.id] || "offline";
+                        return (
+                          <button key={intern.id} onClick={() => { if (!activeSessionId && status === "online") handleStartSession(intern.id); }}
+                            className={`w-full p-4 rounded-2xl text-left border ${activeSession?.intern_id === intern.id ? "bg-primary/10 border-primary" : "bg-card border-border"}`}
+                            disabled={status !== "online" || isRequesting || !!activeSessionId}>
+                            <div className="flex items-center gap-3">
+                              <div className="relative shrink-0">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center"><Users className="w-5 h-5 text-white" /></div>
+                                <Circle className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 ${statusColors[status]} rounded-full border-2 border-card`} fill="currentColor" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <h3 className="font-semibold text-sm truncate">{intern.username}</h3>
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">Certified</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{status === "online" ? "Available now" : status === "busy" ? "In session" : "Offline"}</p>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+              </>
+            )}
           </div>
         ) : (
           <div className="flex flex-col h-[calc(100dvh-7rem)]">
