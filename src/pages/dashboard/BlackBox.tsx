@@ -135,6 +135,7 @@ const BlackBox = () => {
                   debugMode: false,
                 }}
                 token={token}
+                joinWithoutUserInteraction={true}
               >
                 <LazyMeetingView
                   meetingId={activeSession.room_id}

@@ -148,11 +148,23 @@ export const useBlackBoxSession = () => {
   // Joining timeout recovery (30s)
   useEffect(() => {
     if (callState !== "joining") return;
-    const timeout = setTimeout(() => {
-      setCallState((prev) => (prev === "joining" ? "failed" : prev));
+    const timeout = setTimeout(async () => {
+      setCallState((prev) => {
+        if (prev === "joining") {
+          console.warn("[BlackBox] Joining timed out after 30s");
+          return "failed";
+        }
+        return prev;
+      });
+      // Persist error for debugging
+      if (activeSession?.id) {
+        await supabase.from("blackbox_sessions")
+          .update({ last_join_error: "Connection timed out after 30s" } as any)
+          .eq("id", activeSession.id);
+      }
     }, 30000);
     return () => clearTimeout(timeout);
-  }, [callState]);
+  }, [callState, activeSession?.id]);
 
   // Polling fallback while queued/accepted/active
   useEffect(() => {

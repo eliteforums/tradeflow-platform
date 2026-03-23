@@ -98,22 +98,26 @@ const MeetingView = ({
     },
   });
 
-  // Auto-join
+  // Auto-join — use meetingId prop, not sdkMeetingId which may be undefined on mount
   useEffect(() => {
     if (!autoJoin || hasAutoJoined.current) return;
-    if (!sdkMeetingId) return;
+    if (!meetingId) return;
 
     hasAutoJoined.current = true;
     joinAttempts.current = 0;
 
     const attemptJoin = () => {
+      if (joinSucceeded.current) return;
       if (joinAttempts.current >= 3) {
         const msg = "Failed to join after 3 attempts";
+        setSdkError(msg);
+        setTimedOut(true);
+        setJoined(null);
         onJoinError?.(msg);
         return;
       }
       joinAttempts.current += 1;
-      console.log(`[MeetingView] Join attempt ${joinAttempts.current}, meetingId: ${sdkMeetingId}`);
+      console.log(`[MeetingView] Join attempt ${joinAttempts.current}, meetingId: ${meetingId}`);
       setJoined("JOINING");
       join();
 
@@ -122,9 +126,13 @@ const MeetingView = ({
       }, 5000);
     };
 
-    attemptJoin();
-    return () => { if (retryTimerRef.current) clearTimeout(retryTimerRef.current); };
-  }, [autoJoin, sdkMeetingId, join, onJoinError]);
+    // Small delay to let MeetingProvider SDK initialize
+    const initDelay = setTimeout(() => attemptJoin(), 300);
+    return () => {
+      clearTimeout(initDelay);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
+  }, [autoJoin, meetingId, join, onJoinError]);
 
   // Timeout
   useEffect(() => {
