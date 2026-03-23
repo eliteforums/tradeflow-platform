@@ -17,7 +17,7 @@ import {
   TrendingUp, Music, Gamepad2, Phone, RefreshCw,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import NotificationBell from "@/components/notifications/NotificationBell";
+
 
 type SPOCTab = "home" | "onboarding" | "flags" | "reports" | "profile";
 
@@ -406,7 +406,7 @@ const SPOCDashboardContent = () => {
             {institution?.name || "Institution"} — Student wellbeing management
           </p>
         </div>
-        <NotificationBell />
+        
       </div>
 
       {/* Tab Navigation */}

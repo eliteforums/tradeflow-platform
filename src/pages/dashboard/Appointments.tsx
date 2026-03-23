@@ -6,7 +6,7 @@ import { useState } from "react";
 import {
   Calendar, Clock, User, Video, Phone, CheckCircle, Search, Coins, X, Loader2,
 } from "lucide-react";
-import NotificationBell from "@/components/notifications/NotificationBell";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -58,7 +58,7 @@ const Appointments = () => {
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border">
               <Coins className="w-4 h-4 text-primary" /><span className="font-semibold text-sm">{balance} ECC</span>
             </div>
-            <NotificationBell />
+            
           </div>
         </div>
 

@@ -4,7 +4,7 @@ import {
   AlertTriangle, Video, Phone, Loader2, Plus, Trash2, Search,
   LogOut, RefreshCw, ChevronRight
 } from "lucide-react";
-import NotificationBell from "@/components/notifications/NotificationBell";
+
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -145,7 +145,7 @@ const MobileExpertDashboard = () => {
             <h1 className="text-xl font-bold font-display">Expert Dashboard</h1>
             <p className="text-sm text-muted-foreground">Manage your practice</p>
           </div>
-          <NotificationBell />
+          
         </div>
 
         {/* Fixed bottom tab bar - replaces DashboardLayout's bottom nav */}

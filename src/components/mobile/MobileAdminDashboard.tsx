@@ -21,6 +21,7 @@ import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
+import NotificationBell from "@/components/notifications/NotificationBell";
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard"));
 import QuestCardManager from "@/components/admin/QuestCardManager";
 
@@ -120,7 +121,10 @@ const MobileAdminDashboard = () => {
       <div className="space-y-5 pb-24">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold font-display">Admin Dashboard</h1>
-          <Button variant="ghost" size="icon" className="h-9 w-9"><Settings className="w-4 h-4" /></Button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <Button variant="ghost" size="icon" className="h-9 w-9"><Settings className="w-4 h-4" /></Button>
+          </div>
         </div>
 
         <div className="rounded-2xl p-5 border border-primary/20" style={{ background: "linear-gradient(135deg, hsl(var(--eternia-teal) / 0.15), hsl(var(--eternia-lavender) / 0.15))" }}>

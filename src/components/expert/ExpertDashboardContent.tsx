@@ -4,7 +4,7 @@ import {
   AlertTriangle, Video, Phone, Loader2, Plus, Trash2, Search,
   Shield, LogOut, Lock, Settings, Ban, RefreshCw, ChevronRight, Bell
 } from "lucide-react";
-import NotificationBell from "@/components/notifications/NotificationBell";
+
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -284,7 +284,7 @@ const ExpertDashboardContent = () => {
             <h1 className="text-2xl xl:text-3xl font-bold font-display">Expert Dashboard</h1>
             <p className="text-sm text-muted-foreground">Manage appointments, schedule & sessions</p>
           </div>
-          <NotificationBell />
+          
         </div>
 
         {/* Tab Bar */}

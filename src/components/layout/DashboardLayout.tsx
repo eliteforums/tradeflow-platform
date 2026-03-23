@@ -18,6 +18,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import EterniaLogo from "@/components/EterniaLogo";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -162,14 +163,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <Link to="/dashboard" className="flex items-center min-w-0">
             <EterniaLogo size={sidebarOpen ? 36 : 30} />
           </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-sidebar-foreground hover:bg-sidebar-accent h-7 w-7 shrink-0"
-          >
-            <ChevronLeft className={`w-4 h-4 transition-transform ${!sidebarOpen ? "rotate-180" : ""}`} />
-          </Button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-sidebar-foreground hover:bg-sidebar-accent h-7 w-7 shrink-0"
+            >
+              <ChevronLeft className={`w-4 h-4 transition-transform ${!sidebarOpen ? "rotate-180" : ""}`} />
+            </Button>
+          </div>
         </div>
 
         <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
@@ -211,14 +215,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <Link to="/dashboard" className="flex items-center">
           <EterniaLogo size={28} />
         </Link>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleLogout}
-          className="h-9 w-9 text-muted-foreground hover:text-destructive"
-        >
-          <LogOut className="w-4.5 h-4.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleLogout}
+            className="h-9 w-9 text-muted-foreground hover:text-destructive"
+          >
+            <LogOut className="w-4.5 h-4.5" />
+          </Button>
+        </div>
       </header>
 
       {/* Mobile Bottom Navigation — hidden on expert dashboard (it has its own tabs) */}
