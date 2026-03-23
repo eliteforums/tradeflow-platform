@@ -51,13 +51,10 @@ const MobileBlackBox = () => {
           )}
 
           {isReady && (
-            <Button
-              className="rounded-full px-6 gap-2 h-12 animate-pulse"
-              onClick={fetchToken}
-            >
-              <Phone className="w-4 h-4" />
-              Therapist Ready — Join
-            </Button>
+            <div className="px-4 py-1.5 rounded-full border border-border bg-card/60 backdrop-blur text-xs text-muted-foreground flex items-center gap-1.5">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Therapist found — connecting…
+            </div>
           )}
 
           {isQueued && (
