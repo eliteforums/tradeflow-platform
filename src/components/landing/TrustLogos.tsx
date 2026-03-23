@@ -45,15 +45,36 @@ const TrustLogos = () => {
                   </span>
                 </div>
 
-                {/* Hover fade-out info popup */}
+                {/* Hover tooltip with arrow */}
                 {hoveredIndex === i && (
                   <motion.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-52 p-3 rounded-lg bg-popover/95 backdrop-blur-xl border border-border shadow-xl z-20"
+                    className="absolute top-full left-1/2 -translate-x-1/2 mt-3 z-20 flex flex-col items-center pointer-events-none"
                   >
-                    <p className="text-xs font-medium text-foreground mb-0.5">{partner.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{partner.info}</p>
+                    {/* Curved arrow */}
+                    <svg width="48" height="36" viewBox="0 0 48 36" fill="none" className="mb-1 -mr-8">
+                      <path
+                        d="M4 4 C 16 4, 28 8, 32 20 C 34 26, 38 30, 44 32"
+                        stroke="hsl(var(--foreground))"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        fill="none"
+                      />
+                      <path
+                        d="M40 28 L44 32 L38 33"
+                        stroke="hsl(var(--foreground))"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                      />
+                    </svg>
+                    {/* Playful text bubble */}
+                    <div className="px-4 py-2.5 rounded-xl bg-popover/95 backdrop-blur-xl border border-border shadow-xl max-w-[200px]">
+                      <p className="text-xs font-bold text-foreground mb-0.5">{partner.name} 🤩</p>
+                      <p className="text-[10px] text-muted-foreground leading-relaxed">{partner.info}</p>
+                    </div>
                   </motion.div>
                 )}
               </div>
