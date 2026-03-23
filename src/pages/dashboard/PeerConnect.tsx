@@ -67,25 +67,6 @@ const PeerConnect = () => {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
 
-  const trainingStatus = (profile as any)?.training_status || "not_started";
-  const isTrainingComplete = trainingStatus === "active" || trainingStatus === "completed";
-
-  if (isIntern && !isTrainingComplete) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
-          <div className="w-16 h-16 rounded-2xl bg-eternia-warning/10 flex items-center justify-center mb-4">
-            <Shield className="w-8 h-8 text-eternia-warning" />
-          </div>
-          <h2 className="text-xl font-bold font-display mb-2">Training Required</h2>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            Complete all 7 training modules before you can access Peer Connect sessions.
-          </p>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   const handleSendMessage = useCallback(() => {
     if (!message.trim() || !activeSessionId) return;
     sendMessage({ sessionId: activeSessionId, content: message });
@@ -107,6 +88,25 @@ const PeerConnect = () => {
   }, [activeSessionId, endSession]);
 
   const statusColors: Record<string, string> = { online: "bg-eternia-success", busy: "bg-eternia-warning", offline: "bg-muted-foreground" };
+
+  const trainingStatus = (profile as any)?.training_status || "not_started";
+  const isTrainingComplete = trainingStatus === "active" || trainingStatus === "completed";
+
+  if (isIntern && !isTrainingComplete) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+          <div className="w-16 h-16 rounded-2xl bg-eternia-warning/10 flex items-center justify-center mb-4">
+            <Shield className="w-8 h-8 text-eternia-warning" />
+          </div>
+          <h2 className="text-xl font-bold font-display mb-2">Training Required</h2>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Complete all 7 training modules before you can access Peer Connect sessions.
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const getPartnerName = (session: any) => {
     return isIntern
