@@ -26,13 +26,6 @@ const PeerConnect = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
   const [showNewChat, setShowNewChat] = useState(false);
-  
-  // Auto-open new chat panel for students with no open sessions
-  useEffect(() => {
-    if (!isLoading && !isIntern && !hasOpenSession && sessions.length > 0) {
-      setShowNewChat(true);
-    }
-  }, [isLoading, isIntern, hasOpenSession, sessions.length]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     interns, sessions, activeSession, messages: chatMessages, isLoading,
@@ -43,6 +36,13 @@ const PeerConnect = () => {
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
   const isIntern = profile?.role === "intern";
+
+  // Auto-open new chat panel for students with no open sessions
+  useEffect(() => {
+    if (!isLoading && !isIntern && !hasOpenSession && sessions.length > 0) {
+      setShowNewChat(true);
+    }
+  }, [isLoading, isIntern, hasOpenSession, sessions.length]);
 
   const filteredInterns = useMemo(() => {
     if (!debouncedSearch) return interns;
