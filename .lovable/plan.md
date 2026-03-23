@@ -1,24 +1,50 @@
 
 
-## Fix: SPOC Dashboard Emergency Contact Visibility
+## Fix: BlackBox Call Not Connecting on Student Side
 
-### Problem
-When an expert escalates a BlackBox session (L3), the emergency contact info IS stored in the `escalation_requests.trigger_snippet` column and the SPOC Flags tab already has UI to parse and display it (lines 851-900). However:
+### Root Cause
 
-1. **No notification sent to SPOC** — the escalation code (ExpertL3AlertPanel.tsx line 156-177) only inserts notifications for other experts, not the SPOC. The SPOC relies solely on realtime subscription toast, which is ephemeral.
-2. **Missing "critical" status config** — `statusConfig` (line 382) lacks a `"critical"` entry, so L3 escalations with `status: "critical"` fall back to "pending" styling instead of showing a red critical badge.
+There's a state machine deadlock in the student's BlackBox flow:
 
-### Changes
+1. Student clicks "Join" → `fetchToken()` sets `callState = "joining"` → token arrives → `setToken(t)`
+2. The MeetingProvider **only renders** when `isJoined` is true (`callState === "joined" && token && room_id`)
+3. But `callState` can only become `"joined"` when MeetingView fires `onCallJoined` — which requires the MeetingProvider to be mounted
+4. **Deadlock**: MeetingProvider waits for "joined" state, "joined" state waits for MeetingProvider
 
-#### 1. `src/components/expert/ExpertL3AlertPanel.tsx`
-- After inserting expert notifications (line 177), also insert a notification for the SPOC with `type: "emergency_escalation"`, including the emergency contact details in `metadata`
+The therapist side works because `TherapistDashboardContent.tsx` renders MeetingProvider with a simpler guard: `token && activeSession.room_id` (line 594) — no callState check.
 
-#### 2. `src/components/spoc/SPOCDashboardContent.tsx`
-- Add `"critical"` to `statusConfig` (line 382) with destructive red styling and an appropriate icon
-- Add NotificationBell to the SPOC dashboard header so the SPOC can see emergency escalation notifications persistently
+### Fix Plan
 
-### Technical Details
-- No database changes needed — notifications table already exists with correct RLS
-- SPOC notification will include emergency contact name/phone/relation in metadata for quick visibility without navigating to Flags tab
-- The Flags tab emergency contact display (lines 851-900) is already correct and will continue working
+#### 1. `src/hooks/useBlackBoxSession.ts` — Fix callState derivation
+
+The `useEffect` (line 54-70) that derives callState from session status has a gap: when token is set and status is "accepted"/"active", it falls through without setting any state. Add a branch: if token is present and room exists, keep callState as-is (managed by MeetingView callbacks).
+
+#### 2. `src/pages/dashboard/BlackBox.tsx` — Fix MeetingProvider guard
+
+Change the MeetingProvider render condition from:
+```
+isJoined && activeSession?.room_id && token
+```
+to:
+```
+!!token && !!activeSession?.room_id && callState !== "idle"
+```
+
+This allows the MeetingProvider to mount as soon as the token is fetched, so MeetingView can auto-join and fire `onCallJoined` to set `callState = "joined"`.
+
+Keep the "In session" pill and controls gated on `isJoined` for UI purposes.
+
+#### 3. `src/components/mobile/MobileBlackBox.tsx` — Same guard fix
+
+Apply the identical MeetingProvider guard change for mobile.
+
+#### 4. `src/components/videosdk/MeetingView.tsx` — Fix retry loop clearing
+
+The auto-join retry timer (line 117-119) keeps firing even after `onMeetingJoined` runs if the timer was already scheduled. Add a ref flag `joinSucceeded` to prevent retries after successful join.
+
+### Summary
+
+- 4 files changed, ~10 lines each
+- No database changes
+- Core fix: decouple MeetingProvider mount from "joined" state — mount it when token + room_id are available
 
