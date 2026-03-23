@@ -153,6 +153,22 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
 
       if (escError) throw escError;
 
+      // Insert notification for SPOC with emergency contact details
+      await supabase.from("notifications").insert({
+        user_id: spocId,
+        type: "emergency_escalation",
+        title: "🚨 L3 Emergency — Contact Info Available",
+        message: `Critical BlackBox session (L${activeSession.flag_level}) escalated. Emergency contact: ${contact?.name || "N/A"} (${contact?.phone || "N/A"}, ${contact?.relation || "N/A"}). ${activeSession.escalation_reason || "Immediate attention required."}`,
+        metadata: {
+          session_id: activeSession.id,
+          student_id: activeSession.student_id,
+          escalated_by: user.id,
+          emergency_contact: contact || null,
+          student_eternia_id: studentProfile?.student_id || null,
+          student_username: studentProfile?.username || null,
+        },
+      } as any);
+
       // Insert notification for all experts about the emergency
       const { data: expertProfiles } = await supabase
         .from("profiles")

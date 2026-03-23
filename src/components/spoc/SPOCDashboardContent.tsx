@@ -398,11 +398,14 @@ const SPOCDashboardContent = () => {
   return (
     <div className="space-y-5 pb-24">
       {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold font-display">SPOC Dashboard</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-          {institution?.name || "Institution"} — Student wellbeing management
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold font-display">SPOC Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            {institution?.name || "Institution"} — Student wellbeing management
+          </p>
+        </div>
+        <NotificationBell />
       </div>
 
       {/* Tab Navigation */}
