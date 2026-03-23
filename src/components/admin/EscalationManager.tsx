@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import {
   AlertTriangle, CheckCircle, XCircle, Clock,
-  Shield, Eye, Loader2, Plus, FileText, Phone, User,
+  Shield, Eye, Loader2, Plus, FileText, Phone, User, Flag,
 } from "lucide-react";
 
 const EscalationManager = () => {
