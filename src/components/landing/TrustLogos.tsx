@@ -79,10 +79,10 @@ const TrustLogos = () => {
                             height="44"
                             viewBox="0 0 50 44"
                             fill="none"
-                            className="absolute -bottom-10 left-1/2 -translate-x-1/2"
+                            className="absolute -bottom-10 right-0"
                           >
                             <path
-                              d="M10 4 C 30 4, 42 14, 36 28 C 33 34, 28 38, 25 42"
+                              d="M12 2 C 40 8, 40 32, 18 42"
                               stroke="hsl(var(--foreground))"
                               strokeWidth="2.8"
                               strokeLinecap="round"
@@ -90,7 +90,7 @@ const TrustLogos = () => {
                             />
                             {/* Arrowhead */}
                             <path
-                              d="M20 37 L25 42 L30 37"
+                              d="M14 36 L18 42 L24 38"
                               stroke="hsl(var(--foreground))"
                               strokeWidth="2.8"
                               strokeLinecap="round"
