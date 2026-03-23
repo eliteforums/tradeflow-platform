@@ -662,6 +662,20 @@ The app will work offline for cached pages and API responses.
 - Risk level badges displayed in-session (Normal → L1 Mild → L2 Moderate → L3 Critical)
 - Automatic escalation triggers on sustained high-risk audio patterns
 
+#### Peer Connect WhatsApp-like Rebuild
+- Dual-panel desktop layout (conversation list + chat area) with WhatsApp-style message bubbles
+- Mobile full-screen chat flow with conversation list → chat view transitions
+- Message preview with timestamps, online/busy/offline status indicators, date dividers
+- Removed all video/audio call functionality — now text-chat only per PRD alignment
+
+#### Database Schema Fixes
+- Added foreign key constraints on `peer_sessions` (student_id, intern_id → profiles) and `peer_messages` (session_id → peer_sessions)
+- Added `room_id` column to `peer_sessions`
+- Enabled Supabase Realtime on `peer_messages` for live chat updates
+
+#### Intern Visibility Fix
+- Relaxed intern filter to show all active interns regardless of `training_status` during early platform stage
+
 #### Additional Features
 - Mood Tracker with daily mood logging and visual history
 - Gratitude Journal with three daily entries
