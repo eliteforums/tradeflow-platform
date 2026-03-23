@@ -236,7 +236,11 @@ export function usePeerConnect(initialSessionId?: string | null) {
           filter: `session_id=eq.${activeSessionId}`,
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as PeerMessage]);
+          const newMsg = payload.new as PeerMessage;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
         }
       )
       .subscribe();
