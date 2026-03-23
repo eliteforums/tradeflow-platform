@@ -161,6 +161,7 @@ const VideoCallModal = ({
                 debugMode: false,
               }}
               token={token}
+              joinWithoutUserInteraction={true}
             >
               <MeetingView
                 meetingId={meetingId}

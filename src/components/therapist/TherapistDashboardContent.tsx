@@ -604,6 +604,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                       debugMode: false,
                     }}
                     token={token}
+                    joinWithoutUserInteraction={true}
                   >
                     <MeetingView
                       meetingId={activeSession.room_id}
