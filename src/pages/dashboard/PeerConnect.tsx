@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-const LazyVideoCallModal = lazy(() => import("@/components/videosdk/VideoCallModal"));
+
 import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
