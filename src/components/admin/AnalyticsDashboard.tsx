@@ -64,7 +64,7 @@ const AnalyticsDashboard = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Pages</SelectItem>
-                {data.allPagePaths.slice(0, 20).map(p => (
+                {data.allPagePaths.slice(0, 20).map((p: string) => (
                   <SelectItem key={p} value={p}>{p}</SelectItem>
                 ))}
               </SelectContent>
