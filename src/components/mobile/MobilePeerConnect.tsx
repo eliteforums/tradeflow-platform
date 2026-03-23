@@ -19,7 +19,7 @@ const MobilePeerConnect = () => {
   const urlSessionId = searchParams.get("sessionId");
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; roomId?: string }>({ open: false, mode: "audio" });
+  
   const [mobileView, setMobileView] = useState<"list" | "chat" | "newchat">("list");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
