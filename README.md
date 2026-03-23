@@ -95,7 +95,7 @@ To make professional mental health support accessible to every college student i
 | Feature | Description | Cost |
 |---------|-------------|------|
 | **Expert Appointments** | Book video/audio sessions with verified M.Phil RCI-licensed professionals | 50 ECC |
-| **Peer Connect** | Realtime encrypted audio + chat with trained psychology interns (audio-only, no video) | 20 ECC |
+| **Peer Connect** | WhatsApp-style encrypted text chat with trained psychology interns (real-time messaging) | 20 ECC |
 | **BlackBox** | Anonymous emotional expression journal with AI crisis detection (flag levels 0–3) | Free (journal) / 30 ECC (Talk Now voice session) |
 | **Sound Therapy** | Curated audio library for meditation, relaxation, deep sleep, and focus | Free |
 | **Self-Help Tools** | Interactive 3D tools — Quest Cards, Wreck the Buddy (stress relief), Tibetan Bowl (breathing) | Free |
