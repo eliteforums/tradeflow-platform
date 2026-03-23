@@ -44,9 +44,17 @@ const MobileBlackBox = () => {
               <div className="px-4 py-1.5 rounded-full border border-destructive/30 bg-destructive/10 text-xs text-destructive">
                 Connection failed
               </div>
-              <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={retryConnection}>
-                <RefreshCw className="w-3 h-3" /> Retry
-              </Button>
+              {activeSession?.last_join_error && (
+                <p className="text-[10px] text-muted-foreground max-w-[200px] text-center">{activeSession.last_join_error}</p>
+              )}
+              <div className="flex gap-1.5">
+                <Button variant="outline" size="sm" className="text-xs h-7 gap-1" onClick={retryConnection}>
+                  <RefreshCw className="w-3 h-3" /> Retry
+                </Button>
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={cancelSession}>
+                  Cancel
+                </Button>
+              </div>
             </div>
           )}
 

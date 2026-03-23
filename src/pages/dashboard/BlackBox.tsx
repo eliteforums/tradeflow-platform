@@ -51,9 +51,17 @@ const BlackBox = () => {
               <div className="px-5 py-2 rounded-full border border-destructive/30 bg-destructive/10 text-sm text-destructive flex items-center gap-2">
                 Connection failed
               </div>
-              <Button variant="outline" size="sm" className="gap-2" onClick={retryConnection}>
-                <RefreshCw className="w-3.5 h-3.5" /> Retry
-              </Button>
+              {activeSession?.last_join_error && (
+                <p className="text-xs text-muted-foreground max-w-xs text-center">{activeSession.last_join_error}</p>
+              )}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="gap-2" onClick={retryConnection}>
+                  <RefreshCw className="w-3.5 h-3.5" /> Retry
+                </Button>
+                <Button variant="ghost" size="sm" onClick={cancelSession}>
+                  Cancel
+                </Button>
+              </div>
             </div>
           )}
 
