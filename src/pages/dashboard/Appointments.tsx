@@ -58,7 +58,7 @@ const Appointments = () => {
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-card border border-border">
               <Coins className="w-4 h-4 text-primary" /><span className="font-semibold text-sm">{balance} ECC</span>
             </div>
-            <NotificationBell />
+            
           </div>
         </div>
 

@@ -406,7 +406,7 @@ const SPOCDashboardContent = () => {
             {institution?.name || "Institution"} — Student wellbeing management
           </p>
         </div>
-        <NotificationBell />
+        
       </div>
 
       {/* Tab Navigation */}
