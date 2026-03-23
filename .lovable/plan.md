@@ -1,30 +1,48 @@
 
 
-## Plan: Fix Verification — Auto-verify Students + Admin Verify Button
+## Plan: Add NotificationBell Globally + Ensure Realtime Works Everywhere
 
 ### Problem
-All new accounts have `is_verified: false` by default. The admin panel only shows a "Verify & Activate" button for interns with `training_status === "interview_pending"`. Students and other roles appear as "Pending Verification" with no way for admins to verify them.
+The NotificationBell component is only present in 5 specific pages (SPOC dashboard, Appointments, Expert dashboard, Mobile Expert, Mobile Appointments). It is missing from the Admin dashboard (desktop + mobile), Intern dashboard, Therapist dashboard, Student dashboard, and all other pages.
+
+### Approach
+Instead of adding NotificationBell to every individual page, add it once in `DashboardLayout.tsx` which wraps all dashboard pages. For the Admin dashboard (which has its own layout), add it to both `AdminDashboard.tsx` and `MobileAdminDashboard.tsx` headers.
+
+Then remove the duplicate NotificationBell imports from the 5 pages that already have it, to avoid showing two bells.
 
 ### Changes
 
-#### 1. Auto-verify students on account activation (`supabase/functions/activate-account/index.ts`)
-When a student activates their account via temp credentials, set `is_verified: true` on their profile. This is the logical verification point — they proved they have a valid institution-issued temp ID.
+#### 1. `src/components/layout/DashboardLayout.tsx`
+- Import `NotificationBell`
+- Add it to the desktop sidebar header (next to the logo/collapse button)
+- Add it to the mobile top bar area
 
-Update the `profiles.update(...)` call to include `is_verified: true`.
+#### 2. `src/pages/admin/AdminDashboard.tsx`
+- Import `NotificationBell`
+- Add it next to the page header (line ~281, next to the title)
 
-#### 2. Auto-verify students on direct signup (`handle_new_user` trigger)
-Update the database trigger so new signups default to `is_verified: true` for students (they authenticated via institution code).
+#### 3. `src/components/mobile/MobileAdminDashboard.tsx`
+- Import `NotificationBell`
+- Add it to the header area
 
-Migration: `ALTER` the `handle_new_user` function to set `is_verified = true` in the profile insert.
+#### 4. Remove duplicate NotificationBell from pages that already have it
+These pages are wrapped by DashboardLayout, so they'd show two bells:
+- `src/components/spoc/SPOCDashboardContent.tsx` — remove
+- `src/pages/dashboard/Appointments.tsx` — remove
+- `src/components/expert/ExpertDashboardContent.tsx` — remove
+- `src/components/mobile/MobileExpertDashboard.tsx` — remove
+- `src/components/mobile/MobileAppointments.tsx` — remove
 
-#### 3. Add a general "Verify" button in admin panel (`src/components/admin/MemberManager.tsx`)
-For any member where `is_verified === false`, show a small verify button (regardless of role). This gives admins a manual override for any account.
-
-- Show a small "Verify" button next to any unverified member
-- Show a "Pending" badge for unverified members (all roles, not just interns)
+#### 5. Realtime already works
+The `useNotifications` hook already has a Supabase Realtime subscription that listens for `INSERT` events on the `notifications` table filtered by `user_id`. The notification sound (Web Audio API chime) is already implemented. No changes needed here — once the bell is visible on all pages, realtime notifications with sound will work for all roles.
 
 ### Files Modified
-- `supabase/functions/activate-account/index.ts` — Add `is_verified: true` to profile update
-- Database migration — Update `handle_new_user` trigger to set `is_verified: true`
-- `src/components/admin/MemberManager.tsx` — Add verify button for all unverified members, show pending badge
+- `src/components/layout/DashboardLayout.tsx` — Add NotificationBell to layout
+- `src/pages/admin/AdminDashboard.tsx` — Add NotificationBell to admin header
+- `src/components/mobile/MobileAdminDashboard.tsx` — Add NotificationBell to mobile admin header
+- `src/components/spoc/SPOCDashboardContent.tsx` — Remove duplicate bell
+- `src/pages/dashboard/Appointments.tsx` — Remove duplicate bell
+- `src/components/expert/ExpertDashboardContent.tsx` — Remove duplicate bell
+- `src/components/mobile/MobileExpertDashboard.tsx` — Remove duplicate bell
+- `src/components/mobile/MobileAppointments.tsx` — Remove duplicate bell
 
