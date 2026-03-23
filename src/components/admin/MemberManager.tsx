@@ -434,29 +434,37 @@ export default function MemberManager() {
                             <span className="font-medium truncate">{m.username}</span>
                             <span className="px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary capitalize">{m.role}</span>
                             {!m.is_active && <span className="px-1.5 py-0.5 rounded text-[10px] bg-destructive/10 text-destructive">Inactive</span>}
-                            {m.role === "intern" && m.is_verified && (
+                            {m.is_verified ? (
                               <span className="px-1.5 py-0.5 rounded text-[10px] bg-eternia-success/10 text-eternia-success flex items-center gap-0.5">
                                 <ShieldCheck className="w-2.5 h-2.5" />Verified
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] bg-eternia-warning/10 text-eternia-warning flex items-center gap-0.5">
+                                <Clock className="w-2.5 h-2.5" />Pending
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
-                            {m.role === "intern" && m.training_status === "interview_pending" && !m.is_verified && (
+                            {!m.is_verified && (
                               <Button
                                 size="sm"
                                 className="h-6 text-[10px] px-2 gap-0.5 bg-eternia-success hover:bg-eternia-success/90"
                                 onClick={async (e) => {
                                   e.stopPropagation();
+                                  const updateData: Record<string, any> = { is_verified: true };
+                                  if (m.role === "intern" && m.training_status === "interview_pending") {
+                                    updateData.training_status = "active";
+                                  }
                                   const { error } = await supabase
                                     .from("profiles")
-                                    .update({ is_verified: true, training_status: "active" })
+                                    .update(updateData)
                                     .eq("id", m.id);
                                   if (error) { toast.error("Failed to verify"); return; }
-                                  toast.success(`${m.username} verified & activated`);
+                                  toast.success(`${m.username} verified`);
                                   queryClient.invalidateQueries({ queryKey: ["admin-all-members"] });
                                 }}
                               >
-                                <ShieldCheck className="w-2.5 h-2.5" />Verify & Activate
+                                <ShieldCheck className="w-2.5 h-2.5" />Verify
                               </Button>
                             )}
                             <span className="text-[10px] text-muted-foreground font-mono">
