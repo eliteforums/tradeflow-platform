@@ -422,6 +422,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
     activeSession,
     messages,
     internStatuses,
+    lastMessages,
     hasMoreMessages,
     isLoadingMore,
     loadMoreMessages,
