@@ -58,14 +58,10 @@ const BlackBox = () => {
           )}
 
           {isReady && (
-            <Button
-              size="lg"
-              className="rounded-full px-8 gap-2 h-14 text-base animate-pulse"
-              onClick={fetchToken}
-            >
-              <Phone className="w-5 h-5" />
-              Therapist Ready — Join Call
-            </Button>
+            <div className="px-5 py-2 rounded-full border border-border bg-card/60 backdrop-blur text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Therapist found — connecting…
+            </div>
           )}
 
           {isQueued && (
@@ -96,11 +92,7 @@ const BlackBox = () => {
               <p className="text-lg font-semibold font-display leading-relaxed text-foreground">
                 Hello! I am Nova. How can I help you today?
               </p>
-            ) : isReady ? (
-              <p className="text-base text-muted-foreground leading-relaxed">
-                A therapist is ready. Tap the button above to join the call.
-              </p>
-            ) : isJoining ? (
+            ) : isReady || isJoining ? (
               <p className="text-base text-muted-foreground leading-relaxed">
                 Setting up secure connection…
               </p>
