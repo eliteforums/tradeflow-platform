@@ -1,48 +1,63 @@
 
 
-## Plan: Add NotificationBell Globally + Ensure Realtime Works Everywhere
+## Plan: Enhanced Analytics Dashboard + Mobile Admin Warning
 
-### Problem
-The NotificationBell component is only present in 5 specific pages (SPOC dashboard, Appointments, Expert dashboard, Mobile Expert, Mobile Appointments). It is missing from the Admin dashboard (desktop + mobile), Intern dashboard, Therapist dashboard, Student dashboard, and all other pages.
+### 1. Mobile Admin Warning Dialog
 
-### Approach
-Instead of adding NotificationBell to every individual page, add it once in `DashboardLayout.tsx` which wraps all dashboard pages. For the Admin dashboard (which has its own layout), add it to both `AdminDashboard.tsx` and `MobileAdminDashboard.tsx` headers.
+**File:** `src/pages/admin/AdminDashboard.tsx`
 
-Then remove the duplicate NotificationBell imports from the 5 pages that already have it, to avoid showing two bells.
+Before rendering `MobileAdminDashboard`, show a dismissable dialog/toast warning users that the admin panel is best viewed on a larger screen. Use a one-time dismissable alert dialog that appears when `isMobile` is true.
 
-### Changes
+### 2. Enhanced Analytics Hook (`src/hooks/useAnalyticsData.ts`)
 
-#### 1. `src/components/layout/DashboardLayout.tsx`
-- Import `NotificationBell`
-- Add it to the desktop sidebar header (next to the logo/collapse button)
-- Add it to the mobile top bar area
+Add the following capabilities:
+- **Date range filter** — accept a `dateRange` parameter (today, 7d, 30d, 90d, custom) instead of hardcoded 30 days
+- **Realtime subscription** — subscribe to `analytics_events` table via Supabase Realtime `INSERT` events, append new events to the cached data and invalidate the query
+- **Daily trend data** — aggregate page views by day for the selected range (for a line/area chart)
+- **Bounce rate approximation** — sessions with only 1 page view / total sessions
+- **Average session duration** — approximate from timestamps per session_hash
+- **Referrer breakdown** — group by referrer domain
+- **New vs returning visitors** — track session_hash first appearance
+- **Live visitor count** — count unique session_hashes in last 5 minutes
 
-#### 2. `src/pages/admin/AdminDashboard.tsx`
-- Import `NotificationBell`
-- Add it next to the page header (line ~281, next to the title)
+### 3. Enhanced Analytics Dashboard (`src/components/admin/AnalyticsDashboard.tsx`)
 
-#### 3. `src/components/mobile/MobileAdminDashboard.tsx`
-- Import `NotificationBell`
-- Add it to the header area
+Complete rewrite with professional layout:
 
-#### 4. Remove duplicate NotificationBell from pages that already have it
-These pages are wrapped by DashboardLayout, so they'd show two bells:
-- `src/components/spoc/SPOCDashboardContent.tsx` — remove
-- `src/pages/dashboard/Appointments.tsx` — remove
-- `src/components/expert/ExpertDashboardContent.tsx` — remove
-- `src/components/mobile/MobileExpertDashboard.tsx` — remove
-- `src/components/mobile/MobileAppointments.tsx` — remove
+**Header area:**
+- Title "Site Analytics" with a green "LIVE" pulse dot
+- Date range selector (Today, 7 Days, 30 Days, 90 Days)
+- Page path filter dropdown
+- Auto-refresh indicator showing last updated time
 
-#### 5. Realtime already works
-The `useNotifications` hook already has a Supabase Realtime subscription that listens for `INSERT` events on the `notifications` table filtered by `user_id`. The notification sound (Web Audio API chime) is already implemented. No changes needed here — once the bell is visible on all pages, realtime notifications with sound will work for all roles.
+**KPI cards row (6 cards):**
+- Views (filtered period) | Unique Visitors | Bounce Rate | Avg Session Duration | Live Now | New vs Returning ratio
+
+**Charts section:**
+- **Daily traffic trend** — bar chart showing views per day across the selected range
+- **Hourly heatmap** — improved version of current hourly chart with better labels and tooltips
+- **Top pages table** — sortable table with page path, views, unique visitors, bounce rate per page
+- **Referrer sources** — horizontal bar chart of top referrer domains
+- **Device breakdown** — donut-style visual with percentages
+- **Cookie consent** — keep existing but with percentage labels
+
+**Realtime indicator:**
+- Small "Live" badge that pulses when new data arrives
+- Auto-append new analytics events without full page reload
+
+### 4. Enable Realtime on analytics_events
+
+**Database migration:** `ALTER PUBLICATION supabase_realtime ADD TABLE public.analytics_events;`
 
 ### Files Modified
-- `src/components/layout/DashboardLayout.tsx` — Add NotificationBell to layout
-- `src/pages/admin/AdminDashboard.tsx` — Add NotificationBell to admin header
-- `src/components/mobile/MobileAdminDashboard.tsx` — Add NotificationBell to mobile admin header
-- `src/components/spoc/SPOCDashboardContent.tsx` — Remove duplicate bell
-- `src/pages/dashboard/Appointments.tsx` — Remove duplicate bell
-- `src/components/expert/ExpertDashboardContent.tsx` — Remove duplicate bell
-- `src/components/mobile/MobileExpertDashboard.tsx` — Remove duplicate bell
-- `src/components/mobile/MobileAppointments.tsx` — Remove duplicate bell
+- `src/pages/admin/AdminDashboard.tsx` — Add mobile warning dialog
+- `src/hooks/useAnalyticsData.ts` — Date range filter, realtime subscription, new metrics
+- `src/components/admin/AnalyticsDashboard.tsx` — Full rewrite with filters, charts, live indicator
+
+### Technical Details
+- Realtime uses `supabase.channel('analytics-realtime').on('postgres_changes', ...)` to listen for new `INSERT` events on `analytics_events`
+- Daily trend computed by grouping events by `date-fns` `format(created_at, 'yyyy-MM-dd')`
+- Bounce rate = sessions with 1 page view / total unique sessions
+- Date range filter passed as state from the dashboard component to the hook
+- Mobile warning uses AlertDialog from shadcn with localStorage flag `admin_mobile_warning_dismissed`
 
