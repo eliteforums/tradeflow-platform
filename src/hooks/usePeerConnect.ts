@@ -98,7 +98,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
       let query = supabase
         .from("peer_sessions")
-        .select("id, student_id, intern_id, status, is_flagged, started_at, ended_at, created_at, room_id, intern:profiles!peer_sessions_intern_id_fkey(id, username, specialty, is_active, training_status), student:profiles!peer_sessions_student_id_fkey(id, username, specialty, role)" as any)
+        .select("id, student_id, intern_id, status, is_flagged, started_at, ended_at, created_at, room_id, escalation_note_encrypted, intern:profiles!peer_sessions_intern_id_fkey(id, username, specialty, is_active, training_status), student:profiles!peer_sessions_student_id_fkey(id, username, specialty, role)")
         .order("created_at", { ascending: false })
         .limit(50);
 
