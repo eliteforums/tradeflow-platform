@@ -104,7 +104,8 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .limit(50);
 
       if (isIntern) {
-        query = query.or(`student_id.eq.${user.id},intern_id.eq.${user.id}`);
+        // Only show sessions where this user is the assigned intern (not corrupted student_id rows)
+        query = query.eq("intern_id", user.id);
       } else {
         query = query.eq("student_id", user.id);
       }
