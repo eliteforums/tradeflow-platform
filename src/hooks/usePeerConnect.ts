@@ -409,6 +409,5 @@ export function usePeerConnect(initialSessionId?: string | null) {
     isRequesting: requestSession.isPending,
     isSending: sendMessage.isPending,
     isFlagging: flagSession.isPending,
-    ensureSessionRoom,
   };
 }

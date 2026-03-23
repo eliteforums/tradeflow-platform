@@ -438,15 +438,6 @@ const PeerConnect = () => {
           </div>
         </div>
       </div>
-      <Suspense fallback={null}>
-        <LazyVideoCallModal
-          isOpen={callModal.open}
-          onClose={() => setCallModal({ open: false, mode: "audio" })}
-          participantName={profile?.username || "Student"}
-          mode={callModal.mode}
-          existingRoomId={callModal.roomId}
-        />
-      </Suspense>
     </DashboardLayout>
   );
 };

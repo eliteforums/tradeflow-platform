@@ -292,7 +292,7 @@ const MobilePeerConnect = () => {
             </div>
           )}
         </div>
-        <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "audio" })} participantName={profile?.username || "Student"} mode={callModal.mode} existingRoomId={callModal.roomId} />
+        
       </DashboardLayout>
     );
   }
