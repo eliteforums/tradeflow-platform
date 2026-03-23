@@ -84,9 +84,9 @@ const MobileBlackBox = () => {
               <p className="text-base font-semibold font-display leading-relaxed text-foreground">
                 Hello! I am Nova. How can I help you today?
               </p>
-            ) : isReady ? (
+            ) : isReady || isJoining ? (
               <p className="text-sm text-muted-foreground">
-                A therapist is ready. Tap above to join.
+                Setting up secure connection…
               </p>
             ) : isQueued ? (
               <p className="text-sm text-muted-foreground">

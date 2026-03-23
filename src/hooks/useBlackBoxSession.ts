@@ -138,9 +138,25 @@ export const useBlackBoxSession = () => {
     return () => { supabase.removeChannel(channel); };
   }, [activeSession?.id]);
 
-  // Polling fallback while queued
+  // Auto-connect when therapist is ready
   useEffect(() => {
-    if (!activeSession?.id || activeSession.status !== "queued") return;
+    if (callState === "ready" && activeSession?.room_id && !tokenRef.current) {
+      fetchToken();
+    }
+  }, [callState, activeSession?.room_id, fetchToken]);
+
+  // Joining timeout recovery (30s)
+  useEffect(() => {
+    if (callState !== "joining") return;
+    const timeout = setTimeout(() => {
+      setCallState((prev) => (prev === "joining" ? "failed" : prev));
+    }, 30000);
+    return () => clearTimeout(timeout);
+  }, [callState]);
+
+  // Polling fallback while queued/accepted/active
+  useEffect(() => {
+    if (!activeSession?.id || !["queued", "accepted", "active"].includes(activeSession.status)) return;
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from("blackbox_sessions")

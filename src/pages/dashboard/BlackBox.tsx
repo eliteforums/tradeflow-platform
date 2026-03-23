@@ -92,11 +92,7 @@ const BlackBox = () => {
               <p className="text-lg font-semibold font-display leading-relaxed text-foreground">
                 Hello! I am Nova. How can I help you today?
               </p>
-            ) : isReady ? (
-              <p className="text-base text-muted-foreground leading-relaxed">
-                A therapist is ready. Tap the button above to join the call.
-              </p>
-            ) : isJoining ? (
+            ) : isReady || isJoining ? (
               <p className="text-base text-muted-foreground leading-relaxed">
                 Setting up secure connection…
               </p>
