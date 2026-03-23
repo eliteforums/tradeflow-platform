@@ -21,6 +21,7 @@ import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import AccountDeletion from "@/components/admin/AccountDeletion";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
+import NotificationBell from "@/components/notifications/NotificationBell";
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard"));
 import QuestCardManager from "@/components/admin/QuestCardManager";
 
