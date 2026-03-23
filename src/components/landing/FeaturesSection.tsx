@@ -1,19 +1,32 @@
-import { Calendar, Heart, Brain, Music, Sparkles, Award, Drum, Trash2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { motion } from "framer-motion";
+import expertConnectImg from "@/assets/services/expert-connect.jpg";
+import peerConnectImg from "@/assets/services/peer-connect.jpg";
+import blackboxImg from "@/assets/services/blackbox.jpg";
+import questCardsImg from "@/assets/services/quest-cards.jpg";
+import tibetanBowlImg from "@/assets/services/tibetan-bowl.jpg";
+import wreckBuddyImg from "@/assets/services/wreck-buddy.jpg";
+import soundTherapyImg from "@/assets/services/sound-therapy.jpg";
+import gratitudeImg from "@/assets/services/gratitude.jpg";
 
 const services = [
-  { icon: Calendar, title: "Expert Connect", description: "Book video/audio sessions with verified mental health professionals", gradient: "from-emerald-500 to-teal-500", tag: "Video + Audio" },
-  { icon: Heart, title: "Peer Connect", description: "Anonymous real-time chat with trained psychology interns", gradient: "from-pink-500 to-rose-500", tag: "Real-time" },
-  { icon: Brain, title: "BlackBox", description: "Express anonymously. AI monitors for crisis signals quietly", gradient: "from-violet-500 to-purple-500", tag: "AI-Monitored" },
-  { icon: Award, title: "Quest Cards", description: "Daily wellness quests with XP rewards and streak building", gradient: "from-amber-400 to-orange-500", tag: "Gamified" },
-  { icon: Drum, title: "Tibetan Bowl", description: "Interactive 3D sound bowl for meditation and focus", gradient: "from-indigo-400 to-violet-500", tag: "3D Interactive" },
-  { icon: Trash2, title: "Wreck Buddy", description: "Emotional release through interactive destruction therapy", gradient: "from-red-400 to-pink-500", tag: "Catharsis" },
-  { icon: Music, title: "Sound Therapy", description: "Curated soundscapes, guided breathing, and meditation tracks", gradient: "from-cyan-500 to-blue-500", tag: "Audio Library" },
+  { title: "Expert Connect", image: expertConnectImg },
+  { title: "Peer Connect", image: peerConnectImg },
+  { title: "BlackBox Model", image: blackboxImg },
+  { title: "Quest Cards", image: questCardsImg },
+  // center slot is the logo
+  { title: "Tibetan Bowl", image: tibetanBowlImg },
+  { title: "Wreck the Buddy", image: wreckBuddyImg },
+  { title: "Sound Therapy", image: soundTherapyImg },
+  { title: "Gratitude", image: gratitudeImg },
 ];
 
 const FeaturesSection = () => {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  // Insert logo card at index 4 (center of 3×3 grid)
+  const gridItems = [
+    ...services.slice(0, 4),
+    { type: "logo" as const },
+    ...services.slice(4),
+  ];
 
   return (
     <section id="features" className="py-14 sm:py-24 px-4 sm:px-6 relative">
@@ -32,72 +45,62 @@ const FeaturesSection = () => {
             Your <span className="text-gradient">wellness toolkit</span>
           </h2>
           <p className="text-muted-foreground text-sm sm:text-base max-w-lg mx-auto">
-            Seven powerful modules. One anonymous identity. Complete institutional control.
+            Eight powerful modules. One anonymous identity. Complete institutional control.
           </p>
         </motion.div>
 
-        {/* Round portal circles */}
-        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 max-w-4xl mx-auto">
-          {services.map((service, index) => (
-            <motion.div
-              key={service.title}
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.06, duration: 0.4 }}
-              className="relative group flex flex-col items-center"
-              onMouseEnter={() => setHoveredIndex(index)}
-              onMouseLeave={() => setHoveredIndex(null)}
-            >
-              {/* Circle portal */}
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br ${service.gradient} flex items-center justify-center cursor-pointer shadow-lg transition-shadow duration-300`}
-                style={{
-                  boxShadow: hoveredIndex === index
-                    ? "0 0 30px 8px hsl(166 72% 46% / 0.15)"
-                    : "0 4px 20px -4px rgba(0,0,0,0.1)",
-                }}
-              >
-                <service.icon className="w-8 h-8 sm:w-10 sm:h-10 text-white drop-shadow-md" />
-
-                {/* Orbit ring on hover */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 max-w-3xl mx-auto">
+          {gridItems.map((item, index) => {
+            if ("type" in item && item.type === "logo") {
+              return (
                 <motion.div
-                  className="absolute inset-[-6px] rounded-full border-2 border-dashed"
-                  style={{ borderColor: "hsl(166 72% 46% / 0.25)" }}
-                  animate={hoveredIndex === index ? { rotate: 360 } : { rotate: 0 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                />
-              </motion.div>
-
-              {/* Label */}
-              <p className="mt-3 text-xs sm:text-sm font-medium text-foreground text-center max-w-[100px]">
-                {service.title}
-              </p>
-
-              {/* Hover popup card */}
-              <AnimatePresence>
-                {hoveredIndex === index && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute top-full mt-2 w-52 p-3.5 rounded-xl bg-popover/95 backdrop-blur-xl border border-border shadow-2xl shadow-black/5 z-20"
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[13px] font-semibold text-foreground">{service.title}</span>
-                      <span className="text-[9px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
-                        {service.tag}
-                      </span>
+                  key="logo-center"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.06, duration: 0.4 }}
+                  className="hidden sm:flex rounded-2xl bg-card/60 border border-border/30 items-center justify-center aspect-[4/3]"
+                >
+                  <div className="text-center space-y-2">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-eternia flex items-center justify-center mx-auto shadow-lg shadow-primary/20">
+                      <span className="text-2xl font-bold font-display text-primary-foreground">∞</span>
                     </div>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">{service.description}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
+                    <p className="text-sm font-bold font-display text-foreground">Eternia</p>
+                    <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-[10px] font-medium text-primary">
+                      All Services
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            }
+
+            const service = item as { title: string; image: string };
+            return (
+              <motion.div
+                key={service.title}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.06, duration: 0.4 }}
+                className="group relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer"
+              >
+                <img
+                  src={service.image}
+                  alt={service.title}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  loading="lazy"
+                />
+                {/* Dark overlay gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                {/* Title */}
+                <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
+                  <h3 className="text-sm sm:text-base font-bold font-display text-white drop-shadow-lg">
+                    {service.title}
+                  </h3>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>
