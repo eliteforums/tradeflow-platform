@@ -75,14 +75,14 @@ const TrustLogos = () => {
                           </div>
                           {/* Hand-drawn curved arrow pointing down toward the card */}
                           <svg
-                            width="60"
-                            height="50"
-                            viewBox="0 0 60 50"
+                            width="50"
+                            height="44"
+                            viewBox="0 0 50 44"
                             fill="none"
-                            className="absolute -bottom-11 right-2"
+                            className="absolute -bottom-10 left-1/2 -translate-x-1/2"
                           >
                             <path
-                              d="M8 4 C 18 4, 30 8, 38 18 C 44 26, 48 34, 50 42"
+                              d="M10 4 C 30 4, 42 14, 36 28 C 33 34, 28 38, 25 42"
                               stroke="hsl(var(--foreground))"
                               strokeWidth="2.8"
                               strokeLinecap="round"
@@ -90,7 +90,7 @@ const TrustLogos = () => {
                             />
                             {/* Arrowhead */}
                             <path
-                              d="M45 38 L50 42 L54 36"
+                              d="M20 37 L25 42 L30 37"
                               stroke="hsl(var(--foreground))"
                               strokeWidth="2.8"
                               strokeLinecap="round"
