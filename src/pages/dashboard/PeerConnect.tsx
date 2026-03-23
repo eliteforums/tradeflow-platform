@@ -89,6 +89,42 @@ const PeerConnect = () => {
 
   const statusColors: Record<string, string> = { online: "bg-eternia-success", busy: "bg-eternia-warning", offline: "bg-muted-foreground" };
 
+  const getPartnerName = (session: any) => {
+    return isIntern
+      ? session?.student?.username || "Student"
+      : session?.intern?.username || "Intern";
+  };
+
+  const formatMessageTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isToday(date)) return format(date, "h:mm a");
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "MMM d");
+  };
+
+  // Group messages by date for dividers
+  const groupedMessages = useMemo(() => {
+    const groups: { date: string; messages: typeof chatMessages }[] = [];
+    let currentDate = "";
+    for (const msg of chatMessages) {
+      const msgDate = format(new Date(msg.created_at), "yyyy-MM-dd");
+      if (msgDate !== currentDate) {
+        currentDate = msgDate;
+        groups.push({ date: msgDate, messages: [msg] });
+      } else {
+        groups[groups.length - 1].messages.push(msg);
+      }
+    }
+    return groups;
+  }, [chatMessages]);
+
+  const getDateLabel = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (isToday(date)) return "Today";
+    if (isYesterday(date)) return "Yesterday";
+    return format(date, "MMMM d, yyyy");
+  };
+
   const trainingStatus = (profile as any)?.training_status || "not_started";
   const isTrainingComplete = trainingStatus === "active" || trainingStatus === "completed";
 
@@ -107,12 +143,6 @@ const PeerConnect = () => {
       </DashboardLayout>
     );
   }
-
-  const getPartnerName = (session: any) => {
-    return isIntern
-      ? session?.student?.username || "Student"
-      : session?.intern?.username || "Intern";
-  };
 
   const formatMessageTime = (dateStr: string) => {
     const date = new Date(dateStr);
