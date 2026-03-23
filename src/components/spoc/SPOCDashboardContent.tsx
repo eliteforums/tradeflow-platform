@@ -17,6 +17,7 @@ import {
   TrendingUp, Music, Gamepad2, Phone, RefreshCw,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 type SPOCTab = "home" | "onboarding" | "flags" | "reports" | "profile";
 
@@ -381,6 +382,7 @@ const SPOCDashboardContent = () => {
 
   const statusConfig: Record<string, { icon: typeof Clock; color: string; label: string }> = {
     pending: { icon: Clock, color: "text-eternia-warning bg-eternia-warning/10", label: "Pending" },
+    critical: { icon: AlertTriangle, color: "text-destructive bg-destructive/10 animate-pulse", label: "Critical" },
     approved: { icon: CheckCircle, color: "text-eternia-success bg-eternia-success/10", label: "Approved" },
     rejected: { icon: XCircle, color: "text-destructive bg-destructive/10", label: "Rejected" },
     resolved: { icon: Shield, color: "text-primary bg-primary/10", label: "Resolved" },
@@ -397,11 +399,14 @@ const SPOCDashboardContent = () => {
   return (
     <div className="space-y-5 pb-24">
       {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold font-display">SPOC Dashboard</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-          {institution?.name || "Institution"} — Student wellbeing management
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold font-display">SPOC Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+            {institution?.name || "Institution"} — Student wellbeing management
+          </p>
+        </div>
+        <NotificationBell />
       </div>
 
       {/* Tab Navigation */}
