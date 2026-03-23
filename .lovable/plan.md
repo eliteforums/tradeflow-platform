@@ -1,30 +1,35 @@
 
 
-## Fix: Partner hover tooltip + arrow not visible
+## Fix: Partner hover tooltip arrow to match reference images
 
-### Root cause
-The tooltip is positioned `absolute bottom-full` (above the card) inside a container with `overflow-hidden`. The `overflow-hidden` on the scroll wrapper (line 40) clips everything that extends beyond its bounds — the tooltip never renders visibly.
+### What needs to change
 
-### Fix
+Looking at the reference images:
+- **Image 28**: Tooltip bubble sits above-left of the card. A smooth curved arrow starts from the bubble's right side and curves downward-right, pointing at the card below.
+- **Image 29**: Shows the text style — bold first line with emoji, lighter second line. Arrow is a thick, smooth downward-curving stroke with an arrowhead.
+
+### Current issues
+1. The arrow SVG path doesn't match the reference — it's too small and the curve shape is wrong.
+2. The tooltip + arrow layout uses `flex items-center gap-1` which places them side-by-side horizontally, but the reference shows the bubble on top-left with the arrow curving down-right from it.
+3. The arrow should be positioned to the right of the bubble, curving downward toward the hovered card.
+
+### Plan
 
 **File: `src/components/landing/TrustLogos.tsx`**
 
-1. Remove `overflow-hidden` from the scroll wrapper and move it to an outer wrapper that has enough vertical padding to accommodate the tooltip.
-2. Give the outer section enough top padding so the tooltip bubble + arrow have room to render above the cards without being clipped.
-3. Alternatively (simpler): change the tooltip to appear **below** the card (`top-full mt-3`) instead of above, since there's natural space below — matching the reference image which shows the arrow pointing downward from bubble to card.
+1. **Restructure tooltip layout**: Change from horizontal flex to a positioned layout where the bubble is top-left and the arrow SVG is placed at the bottom-right of the bubble, curving downward toward the card.
 
-**Chosen approach** (matches reference image): Keep tooltip above, but fix clipping:
-- Wrap the scroll div in a container with `overflow-x: hidden; overflow-y: visible` (or use `clip` with `clip-path` that only clips horizontally).
-- The simplest reliable fix: set `overflow: visible` on the immediate parent of the cards and use a grandparent with `overflow-x: clip` (CSS `clip` doesn't affect positioned descendants the same way `hidden` does — actually it does). 
+2. **Redraw the SVG arrow**: Create a new path that matches the reference — a smooth curve starting from top-left, sweeping right and down, ending with a proper arrowhead. Approximately 60×50px, thicker stroke (~2.5-3px), round caps.
 
-**Actual simplest fix**: Move the tooltip to render in a **portal-like** position by pulling it outside the `overflow-hidden` container using a fixed/portal approach — but that's complex.
+3. **Position the arrow**: Place the SVG absolutely so it hangs from the right edge of the bubble and points down toward the card. The arrow tip should visually point at or near the hovered card.
 
-**Pragmatic fix**:
-- Change `overflow-hidden` to `overflow-x-clip overflow-y-visible` on the scroll container. CSS `overflow-x: clip` clips the horizontal scroll without creating a new clipping context for `overflow-y`, unlike `overflow: hidden` which forces both axes to clip when one is set to hidden/scroll.
+4. **Keep text styling**: Bold first line + emoji, smaller muted second line — already correct.
 
-This single class change should make the tooltip visible above the cards while still masking the horizontal scroll edges.
+### Changes (single file)
 
-### Changes
-- **Line 40**: Replace `overflow-hidden` with `overflow-x-clip overflow-y-visible`
-- Add `py-16` or similar vertical padding to ensure the tooltip has rendering space within the section
+- **`src/components/landing/TrustLogos.tsx`** lines 64-100:
+  - Replace the `flex items-center gap-1` wrapper with a `flex flex-col items-end` layout
+  - Bubble on top, arrow SVG below it offset to the right
+  - New SVG: curve from top-left → down-right with arrowhead, matching the hand-drawn style in the reference
+  - Adjust `mb-4` to `mb-2` since the arrow itself bridges the gap to the card
 
