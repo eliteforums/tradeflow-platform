@@ -36,6 +36,7 @@ const VideoCallModal = ({
   onRiskDetected,
   isTherapistView = false,
   onCaptureSnippetReady,
+  onLeaveReady,
 }: VideoCallModalProps) => {
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
