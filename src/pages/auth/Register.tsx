@@ -312,7 +312,7 @@ const Register = () => {
   const getBackLabel = () => {
     if (step === 1) return "Back";
     if (step === 2) return "Back to Credentials";
-    return "Back to Device Binding";
+    return "Back to Credentials";
   };
 
   return (
