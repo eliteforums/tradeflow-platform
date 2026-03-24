@@ -106,15 +106,21 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
       // 0. Capture ±10s transcript snippet (selective retention)
       const transcriptSnippet = captureEscalationSnippet ? captureEscalationSnippet() : "";
 
-      // 1. Fetch emergency contact
-      const { data: contactData, error: contactError } = await supabase.functions.invoke(
-        "get-emergency-contact",
-        { body: { student_id: activeSession.student_id, session_id: activeSession.id } }
-      );
-
-      if (contactError) throw new Error(contactError.message || "Failed to fetch emergency contact");
-
-      const contact = contactData?.contact;
+      // 1. Fetch emergency contact (non-blocking — escalation proceeds even if this fails)
+      let contact: any = null;
+      try {
+        const { data: contactData, error: contactError } = await supabase.functions.invoke(
+          "get-emergency-contact",
+          { body: { student_id: activeSession.student_id, session_id: activeSession.id } }
+        );
+        if (!contactError) {
+          contact = contactData?.contact;
+        } else {
+          console.warn("Emergency contact fetch failed, proceeding with escalation:", contactError);
+        }
+      } catch (fetchErr) {
+        console.warn("Emergency contact fetch error, proceeding with escalation:", fetchErr);
+      }
 
       // 1b. Fetch student profile for Eternia ID + username
       const { data: studentProfile } = await supabase
