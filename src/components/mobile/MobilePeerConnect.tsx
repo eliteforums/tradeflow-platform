@@ -52,7 +52,7 @@ const MobilePeerConnect = () => {
     flagSession, isRequesting, isSending, isFlagging, internStatuses, lastMessages,
     hasMoreMessages, isLoadingMore, loadMoreMessages, hasOpenSession,
     pendingSessions, pendingRequest, acceptSession, declineSession,
-    isAccepting, isDeclining,
+    isAccepting, isDeclining, startCall, isStartingCall,
   } = usePeerConnect(urlSessionId);
   const isIntern = profile?.role === "intern";
 
