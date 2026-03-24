@@ -1,31 +1,43 @@
 
 
-## Plan: Fix Peer Connect Calling — 3 Bugs
+## Plan: Enable AI Transcription for Peer Connect & Fix Session Type Handling
 
-### Issues Found
+### Current State
+- **Expert Connect (BlackBox)**: `enableMonitoring={true}` — audio monitor runs, classifies via `ai-transcribe`, and `captureEscalationSnippet` captures ±10s on escalation. Works correctly.
+- **Peer Connect**: `enableMonitoring={false}` — no transcription at all. When intern escalates via `flagSession`, the `trigger_snippet` is just a JSON blob with usernames/reason — no transcript data.
+- **`ai-transcribe` edge function**: Hardcoded to update `blackbox_sessions` table — doesn't support `peer_sessions`.
 
-1. **Race condition**: When clicking the phone button with no existing `room_id`, `startCall()` (async mutation) and `setCallMode("audio")` fire simultaneously. The modal opens immediately with `existingRoomId={undefined}` and creates its own room — while `startCall` also creates a separate room. Two rooms, neither properly linked.
+### Changes
 
-2. **Null `activeSessionId`**: On desktop, `startCall(activeSessionId)` passes a potentially `null` value (type is `string | null`). TypeScript may not catch this at runtime but `startCall` mutation will fail with "Session is not active" since no session matches `null`.
+#### 1. `src/pages/dashboard/PeerConnect.tsx` — Enable monitoring for intern side
+- Set `enableMonitoring={true}` on the `VideoCallModal` when the current user is the intern (not the student)
+- Add `onRiskDetected` callback that updates session `is_flagged` if risk level >= 2
+- Pass `captureEscalationSnippet` reference so the flag dialog can capture ±10s transcript
 
-3. **Modal opens before room exists**: The `VideoCallModal` gets `existingRoomId={activeSession?.room_id || undefined}` — but since `room_id` hasn't been saved yet (mutation is still in flight), it's always `undefined` on first call, causing the modal to create a duplicate room.
+#### 2. `src/components/mobile/MobilePeerConnect.tsx` — Same changes for mobile
 
-### Fix
+#### 3. `supabase/functions/ai-transcribe/index.ts` — Support both session types
+- Accept optional `session_type` param (`"blackbox"` default, or `"peer"`)
+- When `session_type === "peer"`, update `peer_sessions` table (`is_flagged`, `escalation_note_encrypted`) instead of `blackbox_sessions`
+- Lookup `student_id` from the correct table based on session type
 
-#### 1. `src/pages/dashboard/PeerConnect.tsx` — Wait for room before opening modal
-- When no `room_id` exists: call `startCall` with an `onSuccess` callback that sets `callMode` only after the room is created and the session query is invalidated
-- When `room_id` exists: set `callMode` directly (existing behavior, works fine)
-- Guard against null `activeSessionId` with early return
+#### 4. `src/hooks/usePeerConnect.ts` — Include transcript snippet in escalation
+- Update `flagSession` mutation to accept optional `transcriptSnippet` parameter
+- If provided, include it in the `trigger_snippet` JSON alongside usernames/reason
+- This connects the intern's manual escalation button with the audio monitor's ±10s capture
 
-#### 2. `src/components/mobile/MobilePeerConnect.tsx` — Same fix
-- Same race condition fix: only open modal after `startCall` mutation succeeds
+#### 5. Add escalation UI to Peer Connect chat header
+- Add a "Flag" button (already exists in intern view) that triggers `captureEscalationSnippet()` before calling `flagSession`
+- Show a reason input dialog before flagging
 
-#### 3. `src/hooks/usePeerConnect.ts` — Return mutateAsync for awaitable calls
-- Expose `startCallAsync: startCall.mutateAsync` so the UI can `await` it before opening the modal
-- Alternative: accept an `onSuccess` callback parameter
+### No full conversation storage
+- Rolling buffer purges every 30s (existing behavior)
+- On escalation: capture ±10s, purge buffer (existing `captureEscalationSnippet` behavior)
+- No transcript persisted to DB except the ±10s snippet
 
 ### Files Modified
-- `src/hooks/usePeerConnect.ts` — Expose `startCallAsync`
-- `src/pages/dashboard/PeerConnect.tsx` — Await room creation before opening modal
-- `src/components/mobile/MobilePeerConnect.tsx` — Same fix
+- `src/pages/dashboard/PeerConnect.tsx` — Enable monitoring, wire escalation snippet
+- `src/components/mobile/MobilePeerConnect.tsx` — Same
+- `supabase/functions/ai-transcribe/index.ts` — Support `peer` session type
+- `src/hooks/usePeerConnect.ts` — Accept transcript snippet in flag mutation
 
