@@ -14,10 +14,12 @@ interface VideoCallModalProps {
   mode?: "video" | "audio";
   appointmentId?: string;
   existingRoomId?: string;
-  sessionId?: string; // BlackBox/peer session ID for AI monitoring
+  sessionId?: string;
   sessionType?: "blackbox" | "peer";
   enableMonitoring?: boolean;
   onRiskDetected?: (level: number, snippet: string) => void;
+  isTherapistView?: boolean;
+  onCaptureSnippetReady?: (captureFn: () => string) => void;
 }
 
 const VideoCallModal = ({
