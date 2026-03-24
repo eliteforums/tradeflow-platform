@@ -274,8 +274,6 @@ const SPOCDashboardContent = () => {
   // ─── Helpers ───
   const [grantAmount, setGrantAmount] = useState("10");
   const [isGranting, setIsGranting] = useState(false);
-  const [resetDeviceStudent, setResetDeviceStudent] = useState<string | null>(null);
-  const [isResettingDevice, setIsResettingDevice] = useState(false);
 
   // Query temp credential pool stats
   const { data: tempCredStats } = useQuery({
