@@ -26,6 +26,7 @@ interface MeetingViewProps {
   onJoined?: () => void;
   onJoinError?: (error: string) => void;
   onCaptureSnippetReady?: (captureFn: () => string) => void;
+  onLeaveReady?: (leaveFn: () => void) => void;
 }
 
 const riskColors: Record<number, string> = {
@@ -57,6 +58,7 @@ const MeetingView = ({
   onJoined,
   onJoinError,
   onCaptureSnippetReady,
+  onLeaveReady,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
@@ -68,7 +70,7 @@ const MeetingView = ({
 
   const joinSucceeded = useRef(false);
 
-  const { join, participants, meetingId: sdkMeetingId } = useMeeting({
+  const { join, leave, participants, meetingId: sdkMeetingId } = useMeeting({
     onMeetingJoined: () => {
       console.log("[MeetingView] onMeetingJoined fired");
       joinSucceeded.current = true;
@@ -167,6 +169,13 @@ const MeetingView = ({
       onCaptureSnippetReady(audioMonitor.captureEscalationSnippet);
     }
   }, [joined, enableMonitoring, onCaptureSnippetReady, audioMonitor.captureEscalationSnippet]);
+
+  // Expose leave function to parent for programmatic disconnect
+  useEffect(() => {
+    if (onLeaveReady) {
+      onLeaveReady(leave);
+    }
+  }, [leave, onLeaveReady]);
 
 
   const handleSilenceAutoEnd = useCallback(async () => {

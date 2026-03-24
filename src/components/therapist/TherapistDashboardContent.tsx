@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Users, Headphones, History, User, Phone, Loader2, AlertTriangle, Clock, Flag, Send, Shield, LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -70,6 +70,9 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
 
   // History
   const [history, setHistory] = useState<EscalationRecord[]>([]);
+
+  // Ref to hold the VideoSDK leave function for programmatic disconnect
+  const leaveCallRef = useRef<(() => void) | null>(null);
 
   // Fetch queue
   const fetchQueue = useCallback(async () => {
@@ -365,6 +368,20 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
             })
             .eq("id", activeSession.id);
 
+          // Notify the expert about the L3 handoff
+          await supabase.from("notifications").insert({
+            user_id: mphilExperts[0].id,
+            type: "l3_handoff",
+            title: "🚨 L3 Critical Session Handoff",
+            message: `A BlackBox session has been escalated to you. Reason: ${escalationReason.substring(0, 200)}`,
+            metadata: {
+              session_id: activeSession.id,
+              room_id: activeSession.room_id,
+              student_id: activeSession.student_id,
+              escalation_level: level,
+            },
+          });
+
           toast.warning("Critical escalation — session transferred to M.Phil expert");
 
           // CR v1.8 §5.2: Fetch and display emergency contact on L3
@@ -395,6 +412,12 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
           .update({ status: "escalated" })
           .eq("id", activeSession.id);
         toast.warning("Critical escalation submitted — session transferred");
+      }
+
+      // Gracefully leave the VideoSDK room before clearing state
+      if (leaveCallRef.current) {
+        try { leaveCallRef.current(); } catch {}
+        leaveCallRef.current = null;
       }
 
       setActiveSession(null);
@@ -614,6 +637,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                       enableMonitoring={true}
                       autoJoin={true}
                       isTherapistView={true}
+                      onLeaveReady={(leaveFn) => { leaveCallRef.current = leaveFn; }}
                       onJoined={async () => {
                         // Write therapist join timestamp
                         await supabase.from("blackbox_sessions")

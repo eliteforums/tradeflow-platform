@@ -20,6 +20,7 @@ interface VideoCallModalProps {
   onRiskDetected?: (level: number, snippet: string) => void;
   isTherapistView?: boolean;
   onCaptureSnippetReady?: (captureFn: () => string) => void;
+  onLeaveReady?: (leaveFn: () => void) => void;
 }
 
 const VideoCallModal = ({
@@ -35,6 +36,7 @@ const VideoCallModal = ({
   onRiskDetected,
   isTherapistView = false,
   onCaptureSnippetReady,
+  onLeaveReady,
 }: VideoCallModalProps) => {
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -179,6 +181,7 @@ const VideoCallModal = ({
                 onRiskDetected={onRiskDetected}
                 isTherapistView={isTherapistView}
                 onCaptureSnippetReady={onCaptureSnippetReady}
+                onLeaveReady={onLeaveReady}
                 autoJoin={true}
               />
             </MeetingProvider>

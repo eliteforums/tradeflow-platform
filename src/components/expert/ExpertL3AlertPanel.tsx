@@ -240,7 +240,7 @@ const ExpertL3AlertPanel = () => {
         }}
         participantName={profile?.username || "Expert"}
         mode="video"
-        appointmentId={callModal.appointmentId}
+        existingRoomId={activeSession?.room_id || undefined}
         sessionId={activeSession?.id}
         sessionType="blackbox"
         enableMonitoring={true}
