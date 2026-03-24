@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft, Shield, AlertTriangle, CheckCircle, Phone, Smartphone, Fingerprint, Loader2 } from "lucide-react";
+import { ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft, Shield, AlertTriangle, CheckCircle, Phone, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
