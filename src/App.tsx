@@ -19,6 +19,7 @@ import Login from "./pages/auth/Login";
 const InstitutionCode = lazy(() => import("./pages/auth/InstitutionCode"));
 const QRScan = lazy(() => import("./pages/auth/QRScan"));
 const Register = lazy(() => import("./pages/auth/Register"));
+const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
 const Dashboard = lazy(() => import("./pages/dashboard/Dashboard"));
 const Appointments = lazy(() => import("./pages/dashboard/Appointments"));
 const PeerConnect = lazy(() => import("./pages/dashboard/PeerConnect"));
@@ -88,6 +89,7 @@ const App = () => (
               <Route path="/qr-scan" element={<QRScan />} />
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/dpdp" element={<DPDP />} />
