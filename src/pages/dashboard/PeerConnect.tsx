@@ -5,13 +5,14 @@ import { useSearchParams } from "react-router-dom";
 import {
   MessageCircle, Search, Circle, Send, X, Shield, Users,
   Loader2, AlertCircle, Flag, ChevronUp, CheckCheck, Plus, Clock,
-  CheckCircle2, XCircle, Award,
+  CheckCircle2, XCircle, Award, Phone, PhoneOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import EmojiPicker from "@/components/chat/EmojiPicker";
+import VideoCallModal from "@/components/videosdk/VideoCallModal";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
@@ -52,6 +53,7 @@ const PeerConnect = () => {
   const { user, profile, creditBalance } = useAuth();
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [callMode, setCallMode] = useState<"audio" | "video" | null>(null);
 
   const [showNewChat, setShowNewChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -61,7 +63,7 @@ const PeerConnect = () => {
     flagSession, isRequesting, isSending, isFlagging, internStatuses, lastMessages,
     hasMoreMessages, isLoadingMore, loadMoreMessages, hasOpenSession,
     pendingSessions, pendingRequest, acceptSession, declineSession,
-    isAccepting, isDeclining,
+    isAccepting, isDeclining, startCall, isStartingCall,
   } = usePeerConnect(urlSessionId);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
@@ -437,6 +439,31 @@ const PeerConnect = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
+                    {activeSession.status === "active" && (
+                      <Button
+                        variant="ghost" size="icon" className="h-8 w-8 text-primary"
+                        title="Start voice call"
+                        disabled={isStartingCall}
+                        onClick={() => {
+                          if (activeSession.room_id) {
+                            setCallMode("audio");
+                          } else {
+                            startCall(activeSessionId);
+                            setCallMode("audio");
+                          }
+                        }}
+                      >
+                        <Phone className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {activeSession.status === "active" && activeSession.room_id && !callMode && (
+                      <Button
+                        variant="outline" size="sm" className="h-8 text-xs gap-1 text-primary border-primary/30"
+                        onClick={() => setCallMode("audio")}
+                      >
+                        <Phone className="w-3 h-3" /> Join Call
+                      </Button>
+                    )}
                     {isIntern && activeSession.status === "active" && (
                       <Button
                         variant="ghost" size="icon" className="h-8 w-8 text-eternia-warning"
@@ -662,6 +689,19 @@ const PeerConnect = () => {
             )}
           </div>
         </div>
+
+        {/* Video/Audio Call Modal */}
+        {callMode && activeSessionId && (
+          <VideoCallModal
+            isOpen={!!callMode}
+            onClose={() => setCallMode(null)}
+            participantName={profile?.username || "Anonymous"}
+            mode={callMode}
+            existingRoomId={activeSession?.room_id || undefined}
+            sessionId={activeSessionId}
+            enableMonitoring={false}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
