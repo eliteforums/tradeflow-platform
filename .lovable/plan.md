@@ -1,31 +1,31 @@
 
 
-## Plan: Real APAAR/ERP ID Backend Verification
+## Plan: Fix Peer Connect Calling — 3 Bugs
 
-### Problem
-Currently, the "Verify" button on the registration form only does client-side format validation (12-digit check for APAAR, alphanumeric check for ERP). It never actually checks the ID against the institution's uploaded records in `institution_student_ids`. The backend (`activate-account`) does check, but by then the user has already filled out the entire form.
+### Issues Found
 
-### Changes
+1. **Race condition**: When clicking the phone button with no existing `room_id`, `startCall()` (async mutation) and `setCallMode("audio")` fire simultaneously. The modal opens immediately with `existingRoomId={undefined}` and creates its own room — while `startCall` also creates a separate room. Two rooms, neither properly linked.
 
-#### 1. New Edge Function: `supabase/functions/verify-student-id/index.ts`
-Accepts `{ institution_id, id_type, student_id }` and checks against `institution_student_ids` table using service role:
-- If found and unclaimed → return `{ verified: true }`
-- If found but already claimed → return `{ verified: false, reason: "already_claimed" }`
-- If not found → return `{ verified: false, reason: "not_found" }`
-No raw ID is stored; the function only reads the hash table for matching.
+2. **Null `activeSessionId`**: On desktop, `startCall(activeSessionId)` passes a potentially `null` value (type is `string | null`). TypeScript may not catch this at runtime but `startCall` mutation will fail with "Session is not active" since no session matches `null`.
 
-#### 2. Update `src/pages/auth/Register.tsx` — Replace fake verification with real backend call
-In `handleVerifyStudentId`:
-- After format validation passes, call `supabase.functions.invoke("verify-student-id")` with institution ID and the entered ID
-- Show appropriate error messages: "ID not found in institution records" or "This ID has already been claimed"
-- Only set `studentIdVerified = true` if backend returns verified
-- If institution has no uploaded IDs (empty table), show a warning but allow proceeding with unverified status
+3. **Modal opens before room exists**: The `VideoCallModal` gets `existingRoomId={activeSession?.room_id || undefined}` — but since `room_id` hasn't been saved yet (mutation is still in flight), it's always `undefined` on first call, causing the modal to create a duplicate room.
 
-#### 3. Config: `supabase/config.toml`
-Add `[functions.verify-student-id]` with `verify_jwt = false` (unauthenticated users during registration need access).
+### Fix
+
+#### 1. `src/pages/dashboard/PeerConnect.tsx` — Wait for room before opening modal
+- When no `room_id` exists: call `startCall` with an `onSuccess` callback that sets `callMode` only after the room is created and the session query is invalidated
+- When `room_id` exists: set `callMode` directly (existing behavior, works fine)
+- Guard against null `activeSessionId` with early return
+
+#### 2. `src/components/mobile/MobilePeerConnect.tsx` — Same fix
+- Same race condition fix: only open modal after `startCall` mutation succeeds
+
+#### 3. `src/hooks/usePeerConnect.ts` — Return mutateAsync for awaitable calls
+- Expose `startCallAsync: startCall.mutateAsync` so the UI can `await` it before opening the modal
+- Alternative: accept an `onSuccess` callback parameter
 
 ### Files Modified
-- `supabase/functions/verify-student-id/index.ts` — New edge function
-- `supabase/config.toml` — Register function
-- `src/pages/auth/Register.tsx` — Replace setTimeout mock with real backend call
+- `src/hooks/usePeerConnect.ts` — Expose `startCallAsync`
+- `src/pages/dashboard/PeerConnect.tsx` — Await room creation before opening modal
+- `src/components/mobile/MobilePeerConnect.tsx` — Same fix
 
