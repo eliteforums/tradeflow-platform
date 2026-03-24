@@ -63,7 +63,7 @@ const PeerConnect = () => {
     flagSession, isRequesting, isSending, isFlagging, internStatuses, lastMessages,
     hasMoreMessages, isLoadingMore, loadMoreMessages, hasOpenSession,
     pendingSessions, pendingRequest, acceptSession, declineSession,
-    isAccepting, isDeclining, startCall, isStartingCall,
+    isAccepting, isDeclining, startCall, startCallAsync, isStartingCall,
   } = usePeerConnect(urlSessionId);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
