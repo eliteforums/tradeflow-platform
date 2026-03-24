@@ -96,8 +96,9 @@ Deno.serve(async (req) => {
       })
       .eq("id", userId);
 
-    // Insert private data
+    // Insert private data with verification flags
     const isSchool = institution.institution_type === "school";
+    const hasStudentId = !!student_id && student_id.trim().length >= 3;
     await supabase.from("user_private").insert({
       user_id: userId,
       emergency_name_encrypted: emergency_name || null,
@@ -108,6 +109,8 @@ Deno.serve(async (req) => {
       device_id_encrypted: device_fingerprint || null,
       apaar_id_encrypted: !isSchool ? (student_id || null) : null,
       erp_id_encrypted: isSchool ? (student_id || null) : null,
+      apaar_verified: !isSchool && hasStudentId,
+      erp_verified: isSchool && hasStudentId,
     });
 
     // Mark temp credential as activated

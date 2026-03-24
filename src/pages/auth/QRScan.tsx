@@ -15,6 +15,15 @@ const QRScan = () => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = "qr-scanner-container";
 
+  // Guard: ensure institution code step was completed first
+  useEffect(() => {
+    const instId = sessionStorage.getItem("eternia_institution_id");
+    if (!instId) {
+      toast.error("Please enter your institution code first");
+      navigate("/institution-code");
+    }
+  }, [navigate]);
+
   const stopScanner = useCallback(async () => {
     if (scannerRef.current) {
       try {
