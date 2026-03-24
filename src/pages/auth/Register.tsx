@@ -220,7 +220,7 @@ const Register = () => {
             emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
             contact_is_self: formData.contactIsSelf,
             student_id: formData.studentId,
-            device_fingerprint: deviceFingerprint || null,
+            device_fingerprint: null,
           },
         });
 
