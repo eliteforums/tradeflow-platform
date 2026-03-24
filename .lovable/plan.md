@@ -1,43 +1,35 @@
 
 
-## Plan: Add Emergency Case Alert Window for SPOC Dashboard
+## Plan: Improve Reschedule Flow Visibility for Students & Admin
 
-### Problem
-When a therapist escalates an emergency during a BlackBox session, the SPOC only sees it via the small notification bell or by manually checking the Flags tab. There is no prominent, real-time emergency alert window that demands immediate attention.
+### Current State
+The expert reschedule logic **already works** — experts can pick a new slot, enter a reason, and a notification is sent to the student. The admin sessions tab already shows reschedule info (original time, new time, reason, expert name). However:
 
-### Approach
-Create a new `EmergencyAlertOverlay` component that listens for critical escalation notifications in real-time and displays a full-screen-style urgent alert dialog with emergency contact details, student info, and action buttons. This overlay will render inside `SPOCDashboardContent` and the admin dashboard.
+1. **Student side**: The `useAppointments` hook doesn't fetch `reschedule_reason`, `rescheduled_from`, or `rescheduled_by` fields, so students see no indication that their appointment was rescheduled
+2. **Student notification**: The notification is sent but the student's appointment card has no visual indicator of the reschedule
+3. **Admin sessions**: Already shows reschedule details — but missing a student username in the reschedule info panel, and no admin "acknowledge/review" action
 
 ### Changes
 
-#### 1. New Component: `src/components/notifications/EmergencyAlertOverlay.tsx`
-- Subscribe to realtime `INSERT` on `escalation_requests` where `status = 'critical'`
-- When a critical escalation arrives, show a modal/dialog with:
-  - Red pulsing header: "EMERGENCY CASE"
-  - Student username and Eternia ID (from `trigger_snippet`)
-  - Emergency contact name, phone, relation (from `trigger_snippet`)
-  - Escalation reason / transcript snippet
-  - Session timestamp
-  - Action buttons: "Acknowledge", "Call Emergency Contact" (tel: link), "View in Flags Tab"
-- Play an alarm-style sound (longer/louder than regular notification chime)
-- Auto-dismiss only on explicit acknowledgment (not on click-outside)
+#### 1. `src/hooks/useAppointments.ts` — Fetch reschedule fields
+- Add `reschedule_reason`, `rescheduled_from`, `rescheduled_by` to the `Appointment` interface
+- Update the select query to include these columns
 
-#### 2. `src/components/spoc/SPOCDashboardContent.tsx`
-- Import and render `EmergencyAlertOverlay` at the top of the component
-- Pass a callback to navigate to the Flags tab on "View Details"
+#### 2. `src/pages/dashboard/Appointments.tsx` — Show reschedule banner on student side
+- When an appointment has `reschedule_reason`, show an amber info banner below the appointment card with:
+  - "Rescheduled by Dr. {expert}" 
+  - Original time vs new time
+  - Reason text
 
-#### 3. `src/pages/admin/AdminDashboard.tsx`
-- Also render `EmergencyAlertOverlay` so admins see emergency alerts too
+#### 3. `src/components/mobile/MobileAppointments.tsx` — Same reschedule banner for mobile
 
-### Technical Details
-- Parse `trigger_snippet` JSON from the escalation row to extract emergency contact, student info, and transcript
-- Realtime channel filters on `escalation_requests` INSERT events with status check in handler
-- Alert sound uses Web Audio API with a more urgent pattern (alternating frequencies, longer duration) than the regular notification chime
-- Dialog uses `AlertDialog` from shadcn with `onOpenChange` prevented until acknowledged
-- Acknowledged state stored locally to prevent re-showing on component remount (tracked by escalation ID)
+#### 4. `src/pages/admin/AdminDashboard.tsx` — Add student name + review button to reschedule info
+- In the sessions tab reschedule panel, show the student's username alongside the expert name
+- Add an "Acknowledged" / "Review" toggle button so admin can mark they've seen the reschedule
 
-### Files
-- `src/components/notifications/EmergencyAlertOverlay.tsx` — New component
-- `src/components/spoc/SPOCDashboardContent.tsx` — Add overlay
-- `src/pages/admin/AdminDashboard.tsx` — Add overlay
+### Files Modified
+- `src/hooks/useAppointments.ts` — Add reschedule fields to interface and query
+- `src/pages/dashboard/Appointments.tsx` — Reschedule indicator on student appointment cards
+- `src/components/mobile/MobileAppointments.tsx` — Same for mobile
+- `src/pages/admin/AdminDashboard.tsx` — Student name in reschedule panel + review action
 
