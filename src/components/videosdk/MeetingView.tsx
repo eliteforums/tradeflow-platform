@@ -58,6 +58,7 @@ const MeetingView = ({
   onJoined,
   onJoinError,
   onCaptureSnippetReady,
+  onLeaveReady,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
