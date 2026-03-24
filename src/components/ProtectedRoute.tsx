@@ -51,24 +51,6 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Device mismatch warning for students
-  if (profile?.role === "student" && deviceMismatch) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-md text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
-            <ShieldAlert className="w-8 h-8 text-destructive" />
-          </div>
-          <h2 className="text-xl font-bold font-display">Unrecognized Device</h2>
-          <p className="text-sm text-muted-foreground">
-            This device doesn't match the one registered to your account. 
-            Please contact your institution's SPOC to reset your device binding.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Redirect students to recovery setup if not completed
   if (
     profile?.role === "student" &&
