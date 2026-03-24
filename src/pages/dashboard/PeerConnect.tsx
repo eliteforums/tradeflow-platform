@@ -5,13 +5,14 @@ import { useSearchParams } from "react-router-dom";
 import {
   MessageCircle, Search, Circle, Send, X, Shield, Users,
   Loader2, AlertCircle, Flag, ChevronUp, CheckCheck, Plus, Clock,
-  CheckCircle2, XCircle, Award,
+  CheckCircle2, XCircle, Award, Phone, PhoneOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import EmojiPicker from "@/components/chat/EmojiPicker";
+import VideoCallModal from "@/components/videosdk/VideoCallModal";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { usePeerConnect } from "@/hooks/usePeerConnect";
