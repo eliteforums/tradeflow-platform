@@ -42,6 +42,7 @@ const MobilePeerConnect = () => {
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "chat" | "newchat">("list");
+  const [callMode, setCallMode] = useState<"audio" | "video" | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { user, profile, creditBalance } = useAuth();
