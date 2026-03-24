@@ -1,63 +1,83 @@
 
 
-## Plan: Enhanced Analytics Dashboard + Mobile Admin Warning
+## Plan: Redesign Peer Connect to Match PRD v2-39 Section 4.2
 
-### 1. Mobile Admin Warning Dialog
+### PRD Requirements vs Current State
 
-**File:** `src/pages/admin/AdminDashboard.tsx`
+The PRD specifies Peer Connect as an **intern-moderated anonymous chat** with a **request → accept** flow. Current implementation skips the acceptance step entirely — sessions go straight to "active" when a student selects an intern.
 
-Before rendering `MobileAdminDashboard`, show a dismissable dialog/toast warning users that the admin panel is best viewed on a larger screen. Use a one-time dismissable alert dialog that appears when `isMobile` is true.
+| PRD Requirement | Current State | Action |
+|---|---|---|
+| Intern must **accept** request within time window | Session created as "active" immediately | Add pending → accept/decline flow |
+| Request **expires** if not accepted in time | No expiry on pending requests | Add 2-minute auto-expiry |
+| Intern receives **push notification** on request | No notification sent | Insert notification on session creation |
+| **Training badge** shown on intern card | Not shown | Add badge from `training_status` |
+| Focus areas + availability status | Already implemented | No change |
+| Interns can flag/escalate | Already implemented | No change |
+| 20 ECC per completed session | Already implemented | No change |
 
-### 2. Enhanced Analytics Hook (`src/hooks/useAnalyticsData.ts`)
+### Changes
 
-Add the following capabilities:
-- **Date range filter** — accept a `dateRange` parameter (today, 7d, 30d, 90d, custom) instead of hardcoded 30 days
-- **Realtime subscription** — subscribe to `analytics_events` table via Supabase Realtime `INSERT` events, append new events to the cached data and invalidate the query
-- **Daily trend data** — aggregate page views by day for the selected range (for a line/area chart)
-- **Bounce rate approximation** — sessions with only 1 page view / total sessions
-- **Average session duration** — approximate from timestamps per session_hash
-- **Referrer breakdown** — group by referrer domain
-- **New vs returning visitors** — track session_hash first appearance
-- **Live visitor count** — count unique session_hashes in last 5 minutes
+#### 1. Database: Add accept/decline support
+- No schema change needed — `peer_sessions` already has `status: pending/active/completed/flagged`
+- Currently we insert with `status: "active"` — change to `status: "pending"`
 
-### 3. Enhanced Analytics Dashboard (`src/components/admin/AnalyticsDashboard.tsx`)
+#### 2. `src/hooks/usePeerConnect.ts` — Core Flow Changes
 
-Complete rewrite with professional layout:
+**Request session (student side):**
+- Change insert from `status: "active"` to `status: "pending"`
+- Remove `started_at` from initial insert (set on accept)
+- Create a notification for the intern: insert into `notifications` table with type "peer_request"
 
-**Header area:**
-- Title "Site Analytics" with a green "LIVE" pulse dot
-- Date range selector (Today, 7 Days, 30 Days, 90 Days)
-- Page path filter dropdown
-- Auto-refresh indicator showing last updated time
+**Accept session (intern side) — NEW:**
+- Add `acceptSession` mutation: updates session to `status: "active"`, sets `started_at`
+- Add `declineSession` mutation: updates session to `status: "completed"`, refunds 20 ECC to student
 
-**KPI cards row (6 cards):**
-- Views (filtered period) | Unique Visitors | Bounce Rate | Avg Session Duration | Live Now | New vs Returning ratio
+**Auto-expiry:**
+- Add client-side timer: if a pending session is older than 2 minutes, mark it expired
+- Student sees "Request expired — try another intern"
 
-**Charts section:**
-- **Daily traffic trend** — bar chart showing views per day across the selected range
-- **Hourly heatmap** — improved version of current hourly chart with better labels and tooltips
-- **Top pages table** — sortable table with page path, views, unique visitors, bounce rate per page
-- **Referrer sources** — horizontal bar chart of top referrer domains
-- **Device breakdown** — donut-style visual with percentages
-- **Cookie consent** — keep existing but with percentage labels
+**Realtime subscription for session status changes:**
+- Subscribe to `postgres_changes` on `peer_sessions` for the user's sessions so accept/decline is reflected instantly
 
-**Realtime indicator:**
-- Small "Live" badge that pulses when new data arrives
-- Auto-append new analytics events without full page reload
+#### 3. `src/pages/dashboard/PeerConnect.tsx` — Desktop UI
 
-### 4. Enable Realtime on analytics_events
+**Student experience:**
+- After clicking an intern, show a "Waiting for intern to accept..." state with a countdown timer (2 min)
+- If accepted → chat opens automatically
+- If expired/declined → show message, allow selecting another intern
 
-**Database migration:** `ALTER PUBLICATION supabase_realtime ADD TABLE public.analytics_events;`
+**Intern experience:**
+- Show incoming request banner/card at top of chat list with Accept/Decline buttons
+- Pending sessions appear with a pulsing indicator and "New request" label
+- Accept opens the chat; Decline returns session to student
+
+**Training badge on intern cards:**
+- Show a small verified badge icon next to intern name if `training_status === "active"`
+
+#### 4. `src/components/mobile/MobilePeerConnect.tsx` — Mobile UI
+
+Same flow changes as desktop:
+- Student: waiting state with timer after selecting intern
+- Intern: incoming request card at top of list view with Accept/Decline
+- Training badge on intern cards
+
+#### 5. Notification on request
+
+When student creates a pending session, insert a notification row for the intern:
+```
+{ user_id: internId, title: "New Peer Connect Request", message: "A student wants to chat with you", type: "peer_request" }
+```
+This triggers the existing realtime notification bell + sound.
 
 ### Files Modified
-- `src/pages/admin/AdminDashboard.tsx` — Add mobile warning dialog
-- `src/hooks/useAnalyticsData.ts` — Date range filter, realtime subscription, new metrics
-- `src/components/admin/AnalyticsDashboard.tsx` — Full rewrite with filters, charts, live indicator
+- `src/hooks/usePeerConnect.ts` — Pending flow, accept/decline mutations, realtime session subscription, notification insert
+- `src/pages/dashboard/PeerConnect.tsx` — Waiting state, intern accept/decline UI, training badge
+- `src/components/mobile/MobilePeerConnect.tsx` — Same UI changes for mobile
 
 ### Technical Details
-- Realtime uses `supabase.channel('analytics-realtime').on('postgres_changes', ...)` to listen for new `INSERT` events on `analytics_events`
-- Daily trend computed by grouping events by `date-fns` `format(created_at, 'yyyy-MM-dd')`
-- Bounce rate = sessions with 1 page view / total unique sessions
-- Date range filter passed as state from the dashboard component to the hook
-- Mobile warning uses AlertDialog from shadcn with localStorage flag `admin_mobile_warning_dismissed`
+- 2-minute expiry is enforced client-side with `setTimeout` + server-side via the existing stale session cleanup trigger (2 hours, but we can tighten for pending to 5 min)
+- Realtime channel on `peer_sessions` filtered by user ID catches accept/decline/expire events
+- ECC refund on decline/expiry calls the existing `grant-credits` edge function or inserts a credit_transaction directly
+- No new database tables or migrations needed — uses existing `peer_sessions.status` values
 
