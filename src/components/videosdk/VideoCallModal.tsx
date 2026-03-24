@@ -33,6 +33,8 @@ const VideoCallModal = ({
   sessionType = "blackbox",
   enableMonitoring = false,
   onRiskDetected,
+  isTherapistView = false,
+  onCaptureSnippetReady,
 }: VideoCallModalProps) => {
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
