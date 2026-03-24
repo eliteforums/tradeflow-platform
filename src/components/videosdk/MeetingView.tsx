@@ -25,6 +25,7 @@ interface MeetingViewProps {
   onSilenceAutoEnd?: () => void;
   onJoined?: () => void;
   onJoinError?: (error: string) => void;
+  onCaptureSnippetReady?: (captureFn: () => string) => void;
 }
 
 const riskColors: Record<number, string> = {
