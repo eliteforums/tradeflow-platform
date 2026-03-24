@@ -14,10 +14,12 @@ interface VideoCallModalProps {
   mode?: "video" | "audio";
   appointmentId?: string;
   existingRoomId?: string;
-  sessionId?: string; // BlackBox/peer session ID for AI monitoring
+  sessionId?: string;
   sessionType?: "blackbox" | "peer";
   enableMonitoring?: boolean;
   onRiskDetected?: (level: number, snippet: string) => void;
+  isTherapistView?: boolean;
+  onCaptureSnippetReady?: (captureFn: () => string) => void;
 }
 
 const VideoCallModal = ({
@@ -31,6 +33,8 @@ const VideoCallModal = ({
   sessionType = "blackbox",
   enableMonitoring = false,
   onRiskDetected,
+  isTherapistView = false,
+  onCaptureSnippetReady,
 }: VideoCallModalProps) => {
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -173,6 +177,8 @@ const VideoCallModal = ({
                 sessionType={sessionType}
                 enableMonitoring={enableMonitoring}
                 onRiskDetected={onRiskDetected}
+                isTherapistView={isTherapistView}
+                onCaptureSnippetReady={onCaptureSnippetReady}
                 autoJoin={true}
               />
             </MeetingProvider>

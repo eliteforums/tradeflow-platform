@@ -25,6 +25,7 @@ interface MeetingViewProps {
   onSilenceAutoEnd?: () => void;
   onJoined?: () => void;
   onJoinError?: (error: string) => void;
+  onCaptureSnippetReady?: (captureFn: () => string) => void;
 }
 
 const riskColors: Record<number, string> = {
@@ -55,6 +56,7 @@ const MeetingView = ({
   onSilenceAutoEnd,
   onJoined,
   onJoinError,
+  onCaptureSnippetReady,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
@@ -159,7 +161,14 @@ const MeetingView = ({
     }, [onRiskDetected]),
   });
 
-  // Silence detection
+  // Expose captureEscalationSnippet to parent
+  useEffect(() => {
+    if (joined === "JOINED" && enableMonitoring && onCaptureSnippetReady) {
+      onCaptureSnippetReady(audioMonitor.captureEscalationSnippet);
+    }
+  }, [joined, enableMonitoring, onCaptureSnippetReady, audioMonitor.captureEscalationSnippet]);
+
+
   const handleSilenceAutoEnd = useCallback(async () => {
     if (!sessionId) return;
     try {
