@@ -1,59 +1,62 @@
 
 
-## Plan: Fix BlackBox Therapist → Expert Handoff Flow
+## Plan: Wire AI Transcript Capture & Emergency Contact to All Escalation Flows
 
-### Root Cause
+### Current State
 
-The current L3 escalation has a critical bug: when the therapist escalates and reassigns the session to an expert, the `ExpertL3AlertPanel` opens `VideoCallModal` with `appointmentId={session.id}`. The modal then queries the **`appointments` table** for a `room_id` — but this is a **blackbox session ID**, not an appointment. The query returns nothing, so the modal creates a **brand new room**. The expert ends up in a different room than the student.
-
-Additionally, the therapist doesn't gracefully exit the call — they just clear local state without leaving the VideoSDK meeting, so the student sees a phantom participant.
-
-### Current Flow (Broken)
-```text
-Therapist clicks Escalate L3
-  → Sets therapist_id = expert, status = "active", keeps room_id
-  → Therapist clears local state (but doesn't leave VideoSDK room)
-  → ExpertL3AlertPanel picks up session via realtime
-  → Expert clicks "Accept & Join"
-  → VideoCallModal queries appointments table for room_id → NOT FOUND
-  → Creates NEW room → Expert and student in DIFFERENT rooms ✗
-```
-
-### Fixed Flow
-```text
-Therapist clicks Escalate L3
-  → Sets therapist_id = expert, status = "active", keeps room_id
-  → Therapist leaves VideoSDK meeting, then clears local state
-  → ExpertL3AlertPanel picks up session via realtime
-  → Expert clicks "Accept & Join"
-  → VideoCallModal receives existingRoomId from blackbox session
-  → Expert joins SAME room as student ✓
-  → Therapist is already gone from the room ✓
-```
+| Flow | AI Transcript Capture | Emergency Contact to SPOC |
+|---|---|---|
+| **6.1 Expert → SPOC** (appointments) | Missing — just sends typed reason | Missing — no contact fetch |
+| **6.2 Intern → SPOC** (peer sessions) | Missing — just sends typed reason | Missing — no contact fetch |
+| **6.3 BlackBox Expert → SPOC** (L3 panel) | Works — uses `captureSnippetRef` | Works — `escalate-emergency` edge function |
 
 ### Changes
 
-#### 1. `src/components/expert/ExpertL3AlertPanel.tsx`
-- Pass `existingRoomId={activeSession?.room_id}` to `VideoCallModal` instead of `appointmentId={session.id}`
-- Remove `appointmentId` prop (it's not an appointment)
-- Add a notification sound/toast when a new L3 session appears with the expert assigned as `therapist_id`
+#### 1. `src/components/expert/ExpertDashboardContent.tsx` — Add transcript capture + emergency contact
 
-#### 2. `src/components/therapist/TherapistDashboardContent.tsx`
-- In `submitEscalation` for L3: before clearing `activeSession` and `token`, call the VideoSDK `leave()` method to properly disconnect from the room
-- Store a ref to a leave function that `MeetingView` can provide via callback
-- Send a notification to the assigned expert: insert into `notifications` table with type `"l3_handoff"` and metadata containing session ID, room ID, and reason
+- When expert clicks "Escalate" on an appointment and confirms:
+  - Call `escalate-emergency` edge function instead of direct `escalation_requests` insert
+  - This requires passing the appointment's student_id and session context
+  - The edge function already fetches emergency contact and creates the escalation with proper `trigger_snippet` JSON
+- Problem: `escalate-emergency` expects a `blackbox_sessions` row. For appointments, we need to either:
+  - **Option A**: Create a new edge function `escalate-appointment` that works with `appointments` table
+  - **Option B**: Extend `escalate-emergency` to accept `appointment_id` as alternative to `session_id`
+- **Going with Option B** — add `appointment_id` support to `escalate-emergency`
+- If the expert has an active video call with AI monitoring, capture the ±10s transcript snippet via `captureSnippetRef` pattern (same as L3 panel)
 
-#### 3. `src/components/videosdk/MeetingView.tsx`
-- Add optional `onLeaveReady` callback prop that passes the SDK `leave` function to the parent
-- This lets the therapist dashboard call `leave()` programmatically during escalation before clearing state
+#### 2. `src/components/intern/InternDashboardContent.tsx` — Add transcript capture + emergency contact
+
+- Same pattern: when intern clicks "Escalate" on a peer session:
+  - Call `escalate-emergency` edge function with `peer_session_id` parameter
+  - Edge function fetches student emergency contact and creates escalation with full `trigger_snippet`
+- If intern has active call with monitoring, capture ±10s transcript
+
+#### 3. `supabase/functions/escalate-emergency/index.ts` — Support all session types
+
+Currently only handles `blackbox_sessions`. Extend to accept:
+- `session_id` (blackbox) — existing
+- `appointment_id` (expert appointments) — new
+- `peer_session_id` (peer connect) — new
+
+Logic:
+- Determine `student_id` from whichever table is referenced
+- Verify caller is the therapist/expert/intern assigned to that session
+- Fetch emergency contact from `user_private` (same as current)
+- Create escalation request with full contact JSON in `trigger_snippet`
+- Notify SPOC + other experts
+
+#### 4. SPOC Dashboard — Already handles display
+
+The `SPOCDashboardContent` already parses `trigger_snippet` JSON for `type === "emergency_contact"` and renders the contact card with name, phone, relation, transcript snippet. No changes needed here since the edge function will produce the same format.
 
 ### Files Modified
-- `src/components/expert/ExpertL3AlertPanel.tsx` — Use `existingRoomId` instead of `appointmentId`
-- `src/components/therapist/TherapistDashboardContent.tsx` — Proper VideoSDK leave on escalation + notification to expert
-- `src/components/videosdk/MeetingView.tsx` — Expose leave function via callback
+- `supabase/functions/escalate-emergency/index.ts` — Support `appointment_id` and `peer_session_id`
+- `src/components/expert/ExpertDashboardContent.tsx` — Use `escalate-emergency` edge function, add `captureSnippetRef` for transcript
+- `src/components/intern/InternDashboardContent.tsx` — Use `escalate-emergency` edge function, add `captureSnippetRef` for transcript
 
 ### Technical Details
-- The `existingRoomId` prop on `VideoCallModal` already handles joining an existing room correctly (line 73-75 of the modal)
-- The therapist's `MeetingView` is rendered inside a `MeetingProvider` which provides the `useMeeting().leave` hook — we expose it via a ref/callback
-- Expert notification uses the existing `notifications` table with realtime subscription already active on the expert dashboard
+- The `escalate-emergency` edge function uses service role to bypass RLS when reading `user_private` for emergency contacts
+- For appointments: lookup `student_id` from `appointments` table, verify caller is `expert_id`
+- For peer sessions: lookup `student_id` from `peer_sessions` table, verify caller is `intern_id`
+- Transcript capture only available when a video/audio call is active with `enableMonitoring={true}`; otherwise `transcript_snippet` will be null (acceptable)
 
