@@ -659,6 +659,9 @@ const SPOCDashboardContent = () => {
             </Button>
           </div>
 
+          {/* ── Student ID Verification Management ── */}
+          <StudentIdVerificationSection institutionId={institutionId} institutionType={institution?.institution_type} />
+
           {/* Student List */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
