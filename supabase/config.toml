@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.escalate-emergency]
 verify_jwt = false
+
+[functions.verify-student-id]
+verify_jwt = false

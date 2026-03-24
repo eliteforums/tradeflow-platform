@@ -63,34 +63,59 @@ const Register = () => {
   const validateApaarFormat = (id: string): boolean => /^\d{12}$/.test(id);
   const validateErpFormat = (id: string): boolean => /^[a-zA-Z0-9]{3,50}$/.test(id);
 
-  const handleVerifyStudentId = () => {
+  const handleVerifyStudentId = async () => {
     const id = formData.studentId.trim();
     if (!id) {
       toast.error(`Please enter your ${idLabel}`);
       return;
     }
 
-    setIsVerifyingId(true);
-
-    // Format validation (no external API yet — institutional QR gate is the verification)
-    setTimeout(() => {
-      if (isSchool) {
-        if (!validateErpFormat(id)) {
-          toast.error("ERP ID must be 3-50 alphanumeric characters");
-          setIsVerifyingId(false);
-          return;
-        }
-      } else {
-        if (!validateApaarFormat(id)) {
-          toast.error("APAAR / ABC ID must be exactly 12 digits");
-          setIsVerifyingId(false);
-          return;
-        }
+    // Client-side format validation first
+    if (isSchool) {
+      if (!validateErpFormat(id)) {
+        toast.error("ERP ID must be 3-50 alphanumeric characters");
+        return;
       }
-      setStudentIdVerified(true);
-      toast.success(`${isSchool ? "ERP ID" : "APAAR ID"} verified`);
+    } else {
+      if (!validateApaarFormat(id)) {
+        toast.error("APAAR / ABC ID must be exactly 12 digits");
+        return;
+      }
+    }
+
+    setIsVerifyingId(true);
+    try {
+      const institutionId = sessionStorage.getItem("eternia_institution_id");
+      if (!institutionId) {
+        toast.error("Institution not found. Please restart the registration process.");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("verify-student-id", {
+        body: {
+          institution_id: institutionId,
+          id_type: isSchool ? "erp" : "apaar",
+          student_id: id,
+        },
+      });
+
+      if (error) throw new Error(error.message || "Verification failed");
+
+      if (data?.verified) {
+        setStudentIdVerified(true);
+        toast.success(`${isSchool ? "ERP ID" : "APAAR ID"} verified successfully`);
+      } else if (data?.reason === "no_records") {
+        // Institution hasn't uploaded IDs yet — allow proceeding with warning
+        setStudentIdVerified(true);
+        toast.warning(data.message || "Verification records not available. Proceeding without verification.");
+      } else {
+        toast.error(data?.message || "ID verification failed");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Verification failed. Please try again.");
+    } finally {
       setIsVerifyingId(false);
-    }, 800);
+    }
   };
 
   const handleStep1Submit = (e: React.FormEvent) => {
