@@ -45,8 +45,7 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/, /^\/games\//],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        skipWaiting: true,
-        clientsClaim: true,
+        // skipWaiting and clientsClaim controlled by PWAUpdatePrompt via postMessage
         navigationPreload: true,
         runtimeCaching: [
           {

@@ -422,6 +422,41 @@ const Profile = () => {
           </div>
         </div>
 
+        {/* App Updates */}
+        <div className="p-6 rounded-2xl bg-card border border-border space-y-3">
+          <h3 className="font-semibold font-display text-sm flex items-center gap-2">
+            <RefreshCw className="w-4 h-4 text-primary" />App Updates
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Version {__APP_VERSION__} • Check if a newer version is available.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 h-8 text-xs"
+            onClick={async () => {
+              try {
+                const reg = await navigator.serviceWorker?.getRegistration();
+                if (reg) {
+                  await reg.update();
+                  if (reg.waiting) {
+                    toast.success("Update available! Refresh to apply.");
+                  } else {
+                    toast.success("You're on the latest version.");
+                  }
+                } else {
+                  toast.info("No service worker registered.");
+                }
+              } catch {
+                toast.error("Could not check for updates.");
+              }
+            }}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Check for Updates
+          </Button>
+        </div>
+
         {/* Notifications */}
         <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
           <h3 className="font-semibold font-display text-sm flex items-center gap-2"><Bell className="w-4 h-4 text-primary" />Notifications</h3>
