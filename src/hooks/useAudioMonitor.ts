@@ -26,6 +26,7 @@ interface UseAudioMonitorOptions {
  */
 export function useAudioMonitor({
   sessionId,
+  sessionType = "blackbox",
   enabled = true,
   classifyIntervalMs = 15000,
   bufferWindowMs = 30000,
