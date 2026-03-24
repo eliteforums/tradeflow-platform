@@ -1,35 +1,34 @@
 
 
-## Plan: Improve Reschedule Flow Visibility for Students & Admin
+## Plan: Fix Emergency Contact Display on SPOC Dashboard
 
-### Current State
-The expert reschedule logic **already works** — experts can pick a new slot, enter a reason, and a notification is sent to the student. The admin sessions tab already shows reschedule info (original time, new time, reason, expert name). However:
+### Problem
+When an expert escalates a BlackBox session, the emergency contact info should appear on the SPOC dashboard alongside the reason. Two issues prevent this:
 
-1. **Student side**: The `useAppointments` hook doesn't fetch `reschedule_reason`, `rescheduled_from`, or `rescheduled_by` fields, so students see no indication that their appointment was rescheduled
-2. **Student notification**: The notification is sent but the student's appointment card has no visual indicator of the reschedule
-3. **Admin sessions**: Already shows reschedule details — but missing a student username in the reschedule info panel, and no admin "acknowledge/review" action
+1. **Missing foreign key on `escalation_requests.spoc_id`** — The SPOC dashboard query uses `profiles!escalation_requests_spoc_id_fkey(username)` but no FK constraint exists. This causes the query to fail silently, potentially preventing escalations from loading.
+
+2. **Edge function may still fail** — The `get-emergency-contact` function was fixed (`getClaims → getUser`) but if it returns an error response wrapped in `data` (not thrown as `error`), the client-side code in `ExpertL3AlertPanel` might miss it. Also, `supabase.functions.invoke` returns errors in `data.error` sometimes.
+
+3. **SPOC query doesn't select `trigger_snippet` fields explicitly** — Uses `*` which should include it, but the FK join failure could mask the entire response.
 
 ### Changes
 
-#### 1. `src/hooks/useAppointments.ts` — Fetch reschedule fields
-- Add `reschedule_reason`, `rescheduled_from`, `rescheduled_by` to the `Appointment` interface
-- Update the select query to include these columns
+#### 1. Database Migration — Add FK on `escalation_requests.spoc_id`
+```sql
+ALTER TABLE public.escalation_requests
+  ADD CONSTRAINT escalation_requests_spoc_id_fkey
+  FOREIGN KEY (spoc_id) REFERENCES public.profiles(id);
+```
+This fixes the Supabase PostgREST join syntax used in both `SPOCDashboardContent.tsx` and `EscalationManager.tsx`.
 
-#### 2. `src/pages/dashboard/Appointments.tsx` — Show reschedule banner on student side
-- When an appointment has `reschedule_reason`, show an amber info banner below the appointment card with:
-  - "Rescheduled by Dr. {expert}" 
-  - Original time vs new time
-  - Reason text
+#### 2. `src/components/spoc/SPOCDashboardContent.tsx` — Defensive query
+Update the escalation query to not rely on FK join as primary. Use a simpler `select("*")` query, then separately fetch the SPOC username if needed. Or keep the join but add error handling.
 
-#### 3. `src/components/mobile/MobileAppointments.tsx` — Same reschedule banner for mobile
-
-#### 4. `src/pages/admin/AdminDashboard.tsx` — Add student name + review button to reschedule info
-- In the sessions tab reschedule panel, show the student's username alongside the expert name
-- Add an "Acknowledged" / "Review" toggle button so admin can mark they've seen the reschedule
+#### 3. `src/components/expert/ExpertL3AlertPanel.tsx` — Better contact data extraction
+The `supabase.functions.invoke` response might have the contact nested differently. Add logging and ensure the contact data is properly extracted even if it comes back as `{ data: { contact: {...} } }` vs `{ contact: {...} }`.
 
 ### Files Modified
-- `src/hooks/useAppointments.ts` — Add reschedule fields to interface and query
-- `src/pages/dashboard/Appointments.tsx` — Reschedule indicator on student appointment cards
-- `src/components/mobile/MobileAppointments.tsx` — Same for mobile
-- `src/pages/admin/AdminDashboard.tsx` — Student name in reschedule panel + review action
+- Database migration — Add FK constraint on `escalation_requests.spoc_id`
+- `src/components/spoc/SPOCDashboardContent.tsx` — Defensive escalation query
+- `src/components/expert/ExpertL3AlertPanel.tsx` — Robust contact extraction + better error logging
 
