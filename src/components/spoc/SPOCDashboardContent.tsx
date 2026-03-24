@@ -1100,12 +1100,12 @@ const SPOCDashboardContent = () => {
                 desc: "Expert sessions booked",
               },
               {
-                label: "Sound Therapy",
-                value: reportData?.soundPlays || 0,
-                icon: Music,
+                label: "Mood Check-ins",
+                value: reportData?.moodEntries || 0,
+                icon: Activity,
                 iconBg: "bg-eternia-warning/10",
                 iconColor: "text-eternia-warning",
-                desc: "Total play count",
+                desc: "Student mood entries",
               },
               {
                 label: "Quest Engagement",
