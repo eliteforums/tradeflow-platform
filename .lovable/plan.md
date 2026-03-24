@@ -1,43 +1,48 @@
 
 
-## Plan: Enable AI Transcription for Peer Connect & Fix Session Type Handling
+## Plan: Fix BlackBox AI Transcription Model — Connect All Pieces
 
-### Current State
-- **Expert Connect (BlackBox)**: `enableMonitoring={true}` — audio monitor runs, classifies via `ai-transcribe`, and `captureEscalationSnippet` captures ±10s on escalation. Works correctly.
-- **Peer Connect**: `enableMonitoring={false}` — no transcription at all. When intern escalates via `flagSession`, the `trigger_snippet` is just a JSON blob with usernames/reason — no transcript data.
-- **`ai-transcribe` edge function**: Hardcoded to update `blackbox_sessions` table — doesn't support `peer_sessions`.
+### Problem
+The BlackBox AI transcription chain is broken at the expert/therapist level:
+
+1. **`ExpertL3AlertPanel` renders `<VideoCallModal>` without `enableMonitoring={true}`** — so when an expert joins an L3 session via this panel, no audio monitor runs
+2. **`captureEscalationSnippet` prop is never passed** to `ExpertL3AlertPanel` in either desktop or mobile expert dashboards — so escalation captures empty string instead of ±10s transcript
+3. **The `VideoCallModal` inside `ExpertL3AlertPanel` doesn't pass `isTherapistView`** — so silence detection and therapist controls don't appear
+4. **No risk level feedback to expert** — the AI classifies risk but the expert only sees it inside the `MeetingView` component, which for L3 sessions is rendered inside `ExpertL3AlertPanel`'s own modal
+
+### Root Cause
+The `ExpertL3AlertPanel` has its own standalone `VideoCallModal` that doesn't wire up monitoring. The `captureEscalationSnippet` can only come from `useAudioMonitor` which lives inside `MeetingView`, but the escalation button is outside `MeetingView` in the panel.
+
+### Fix Strategy
+Wire `enableMonitoring`, `isTherapistView`, and `sessionType="blackbox"` through the `ExpertL3AlertPanel`'s `VideoCallModal`, and use a ref-based approach to expose `captureEscalationSnippet` from `MeetingView` back up to the panel.
 
 ### Changes
 
-#### 1. `src/pages/dashboard/PeerConnect.tsx` — Enable monitoring for intern side
-- Set `enableMonitoring={true}` on the `VideoCallModal` when the current user is the intern (not the student)
-- Add `onRiskDetected` callback that updates session `is_flagged` if risk level >= 2
-- Pass `captureEscalationSnippet` reference so the flag dialog can capture ±10s transcript
+#### 1. `src/components/expert/ExpertL3AlertPanel.tsx`
+- Pass `enableMonitoring={true}`, `isTherapistView={true}`, `sessionType="blackbox"`, `sessionId={activeSession?.id}` to its `VideoCallModal`
+- Add a `captureSnippetRef` (React ref) that `MeetingView` populates with its `audioMonitor.captureEscalationSnippet`
+- Use this ref in `handleEmergencyEscalation` instead of the prop
+- Remove the unused `captureEscalationSnippet` prop (no parent passes it)
+- Add `onRiskDetected` callback to show a toast when AI flags risk during the session
 
-#### 2. `src/components/mobile/MobilePeerConnect.tsx` — Same changes for mobile
+#### 2. `src/components/videosdk/VideoCallModal.tsx`
+- Accept and forward `sessionType`, `enableMonitoring`, `isTherapistView`, `onCaptureSnippetReady` props to `MeetingView`
 
-#### 3. `supabase/functions/ai-transcribe/index.ts` — Support both session types
-- Accept optional `session_type` param (`"blackbox"` default, or `"peer"`)
-- When `session_type === "peer"`, update `peer_sessions` table (`is_flagged`, `escalation_note_encrypted`) instead of `blackbox_sessions`
-- Lookup `student_id` from the correct table based on session type
+#### 3. `src/components/videosdk/MeetingView.tsx`
+- Accept optional `onCaptureSnippetReady` callback prop
+- When joined and audio monitor initializes, call `onCaptureSnippetReady(audioMonitor.captureEscalationSnippet)` so the parent can capture ±10s transcript on demand
 
-#### 4. `src/hooks/usePeerConnect.ts` — Include transcript snippet in escalation
-- Update `flagSession` mutation to accept optional `transcriptSnippet` parameter
-- If provided, include it in the `trigger_snippet` JSON alongside usernames/reason
-- This connects the intern's manual escalation button with the audio monitor's ±10s capture
+#### 4. `src/components/expert/ExpertDashboardContent.tsx` + `src/components/mobile/MobileExpertDashboard.tsx`
+- Remove the bare `<ExpertL3AlertPanel />` usage (no props needed anymore since it self-manages its capture ref)
 
-#### 5. Add escalation UI to Peer Connect chat header
-- Add a "Flag" button (already exists in intern view) that triggers `captureEscalationSnippet()` before calling `flagSession`
-- Show a reason input dialog before flagging
-
-### No full conversation storage
-- Rolling buffer purges every 30s (existing behavior)
-- On escalation: capture ±10s, purge buffer (existing `captureEscalationSnippet` behavior)
-- No transcript persisted to DB except the ±10s snippet
+### Result
+- AI reads live transcript during BlackBox sessions ✓
+- Risk level badge visible to therapist/expert during call ✓
+- On escalation click: ±10s transcript captured and logged ✓
+- Event logged via `escalate-emergency` edge function ✓
 
 ### Files Modified
-- `src/pages/dashboard/PeerConnect.tsx` — Enable monitoring, wire escalation snippet
-- `src/components/mobile/MobilePeerConnect.tsx` — Same
-- `supabase/functions/ai-transcribe/index.ts` — Support `peer` session type
-- `src/hooks/usePeerConnect.ts` — Accept transcript snippet in flag mutation
+- `src/components/expert/ExpertL3AlertPanel.tsx` — Wire monitoring + ref-based snippet capture
+- `src/components/videosdk/VideoCallModal.tsx` — Forward new props
+- `src/components/videosdk/MeetingView.tsx` — Expose capture function via callback
 
