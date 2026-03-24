@@ -536,6 +536,46 @@ export function usePeerConnect(initialSessionId?: string | null) {
     [sessions]
   );
 
+  // Start a call — create room, save to session, notify other party
+  const startCall = useMutation({
+    mutationFn: async (sessionId: string) => {
+      if (!user) throw new Error("Not authenticated");
+      const session = sessions.find((s) => s.id === sessionId);
+      if (!session || session.status !== "active") throw new Error("Session is not active");
+
+      // If room already exists, return it
+      if (session.room_id) return { roomId: session.room_id };
+
+      const { token, roomId } = await createVideoSDKRoom();
+
+      // Save room_id to session
+      const { error } = await supabase
+        .from("peer_sessions")
+        .update({ room_id: roomId })
+        .eq("id", sessionId);
+      if (error) throw error;
+
+      // Notify the other party
+      const otherUserId = isIntern ? session.student_id : session.intern_id;
+      if (otherUserId) {
+        await supabase.from("notifications").insert({
+          user_id: otherUserId,
+          title: "Incoming Call",
+          message: "Your peer wants to start a voice call",
+          type: "peer_call",
+          metadata: { session_id: sessionId, room_id: roomId },
+        });
+      }
+
+      return { roomId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
+      toast.success("Call started!");
+    },
+    onError: (error) => { toast.error(error.message || "Failed to start call"); },
+  });
+
   return {
     interns,
     sessions,
