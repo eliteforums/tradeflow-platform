@@ -689,6 +689,19 @@ const PeerConnect = () => {
             )}
           </div>
         </div>
+
+        {/* Video/Audio Call Modal */}
+        {callMode && activeSessionId && (
+          <VideoCallModal
+            isOpen={!!callMode}
+            onClose={() => setCallMode(null)}
+            participantName={profile?.username || "Anonymous"}
+            mode={callMode}
+            existingRoomId={activeSession?.room_id || undefined}
+            sessionId={activeSessionId}
+            enableMonitoring={false}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
