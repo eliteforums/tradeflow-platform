@@ -47,6 +47,7 @@ const MeetingView = ({
   audioOnly = false,
   sessionId,
   enableMonitoring = false,
+  sessionType = "blackbox",
   onRiskDetected,
   autoJoin = false,
   onError,
