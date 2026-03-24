@@ -598,10 +598,12 @@ export function usePeerConnect(initialSessionId?: string | null) {
     flagSession: flagSession.mutate,
     acceptSession: acceptSession.mutate,
     declineSession: declineSession.mutate,
+    startCall: startCall.mutate,
     isRequesting: requestSession.isPending,
     isSending: sendMessage.isPending,
     isFlagging: flagSession.isPending,
     isAccepting: acceptSession.isPending,
     isDeclining: declineSession.isPending,
+    isStartingCall: startCall.isPending,
   };
 }
