@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -27,7 +26,6 @@ interface ExpertL3AlertPanelProps {
 
 const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProps) => {
   const { user, profile } = useAuth();
-  const queryClient = useQueryClient();
   const [l3Sessions, setL3Sessions] = useState<L3Session[]>([]);
   const [joining, setJoining] = useState<string | null>(null);
   const [callModal, setCallModal] = useState<{ open: boolean; appointmentId?: string }>({ open: false });
@@ -103,111 +101,18 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
     if (!user || !activeSession) return;
     setEscalating(true);
     try {
-      // 0. Capture ±10s transcript snippet (selective retention)
       const transcriptSnippet = captureEscalationSnippet ? captureEscalationSnippet() : "";
 
-      // 1. Fetch emergency contact (non-blocking — escalation proceeds even if this fails)
-      let contact: any = null;
-      try {
-        const { data: contactData, error: contactError } = await supabase.functions.invoke(
-          "get-emergency-contact",
-          { body: { student_id: activeSession.student_id, session_id: activeSession.id } }
-        );
-        if (!contactError && contactData) {
-          // Handle both { contact: {...} } and nested { data: { contact: {...} } } response shapes
-          contact = contactData?.contact || contactData?.data?.contact || null;
-          console.log("Emergency contact fetched:", contact ? "found" : "not found", contactData);
-        } else {
-          console.warn("Emergency contact fetch failed, proceeding with escalation:", contactError, contactData);
-        }
-      } catch (fetchErr) {
-        console.warn("Emergency contact fetch error, proceeding with escalation:", fetchErr);
-      }
-
-      // 1b. Fetch student profile for Eternia ID + username
-      const { data: studentProfile } = await supabase
-        .from("profiles")
-        .select("institution_id, student_id, username")
-        .eq("id", activeSession.student_id)
-        .single();
-
-      let spocId = user.id; // fallback
-      if (studentProfile?.institution_id) {
-        const { data: spocs } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("institution_id", studentProfile.institution_id)
-          .eq("role", "spoc")
-          .limit(1);
-        if (spocs && spocs.length > 0) spocId = spocs[0].id;
-      }
-
-      // 3. Create L3 escalation request with enriched trigger_snippet
-      const { error: escError } = await supabase.from("escalation_requests").insert({
-        spoc_id: spocId,
-        justification_encrypted: `L3 Emergency escalation by expert during BlackBox session. ${activeSession.escalation_reason || "Critical risk detected by AI."}`,
-        escalation_level: 3,
-        status: "critical",
-        trigger_snippet: JSON.stringify({
-          type: "emergency_contact",
-          ...contact,
-          student_eternia_id: studentProfile?.student_id || null,
-          student_username: studentProfile?.username || null,
+      const { data, error } = await supabase.functions.invoke("escalate-emergency", {
+        body: {
+          session_id: activeSession.id,
+          justification: `L3 Emergency escalation by expert during BlackBox session. ${activeSession.escalation_reason || "Critical risk detected by AI."}`,
           transcript_snippet: transcriptSnippet || null,
-          session_id: activeSession.id,
-        }),
-        trigger_timestamp: new Date().toISOString(),
-      });
-
-      if (escError) throw escError;
-
-      // Insert notification for SPOC with emergency contact details
-      await supabase.from("notifications").insert({
-        user_id: spocId,
-        type: "emergency_escalation",
-        title: "🚨 L3 Emergency — Contact Info Available",
-        message: `Critical BlackBox session (L${activeSession.flag_level}) escalated. Emergency contact: ${contact?.name || "N/A"} (${contact?.phone || "N/A"}, ${contact?.relation || "N/A"}). ${activeSession.escalation_reason || "Immediate attention required."}`,
-        metadata: {
-          session_id: activeSession.id,
-          student_id: activeSession.student_id,
-          escalated_by: user.id,
-          emergency_contact: contact || null,
-          student_eternia_id: studentProfile?.student_id || null,
-          student_username: studentProfile?.username || null,
         },
-      } as any);
-
-      // Insert notification for all experts about the emergency
-      const { data: expertProfiles } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("role", "expert")
-        .eq("is_active", true)
-        .neq("id", user.id);
-
-      if (expertProfiles && expertProfiles.length > 0) {
-        const notifRows = expertProfiles.map((e) => ({
-          user_id: e.id,
-          type: "emergency_escalation",
-          title: "🚨 Emergency Case Escalated",
-          message: `A critical BlackBox session (L${activeSession.flag_level}) has been escalated. ${activeSession.escalation_reason || "Immediate attention required."}`,
-          metadata: {
-            session_id: activeSession.id,
-            student_id: activeSession.student_id,
-            escalated_by: user.id,
-          },
-        }));
-        await supabase.from("notifications").insert(notifRows as any);
-      }
-
-      // 4. Audit log
-      await supabase.from("audit_logs").insert({
-        actor_id: user.id,
-        action_type: "l3_emergency_escalation",
-        target_table: "blackbox_sessions",
-        target_id: activeSession.id,
-        metadata: { student_id: activeSession.student_id, has_contact: !!contact },
       });
+
+      if (error) throw new Error(error.message || "Escalation failed");
+      if (data?.error) throw new Error(data.error);
 
       toast.success("Emergency contact shared with SPOC dashboard");
       setShowEscalateConfirm(false);

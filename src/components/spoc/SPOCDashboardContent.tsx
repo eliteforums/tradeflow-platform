@@ -919,10 +919,59 @@ const SPOCDashboardContent = () => {
                           </div>
                         );
                       })()}
-                      {esc.escalation_level === 3 && !esc.trigger_snippet && (
-                        <div className="mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-2">
+                      {esc.escalation_level === 3 && (!esc.trigger_snippet || (() => {
+                        try {
+                          const p = JSON.parse(esc.trigger_snippet);
+                          return p?.type === "emergency_contact" && (!p.name || p.name === "Not provided") && (!p.phone || p.phone === "Not provided");
+                        } catch { return true; }
+                      })()) && (
+                        <div className="mt-2 p-2 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-2 flex-wrap">
                           <Phone className="w-3.5 h-3.5 text-destructive shrink-0" />
-                          <p className="text-[10px] font-medium text-destructive">L3 Critical — Awaiting emergency contact from expert</p>
+                          <p className="text-[10px] font-medium text-destructive flex-1">L3 Critical — Emergency contact missing or incomplete</p>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-6 text-[10px] px-2 gap-1"
+                            onClick={async () => {
+                              try {
+                                let studentId: string | null = null;
+                                try {
+                                  const parsed = JSON.parse(esc.trigger_snippet || "{}");
+                                  studentId = parsed.session_id ? null : null;
+                                } catch {}
+                                // Re-fetch via the escalate-emergency function won't work without session
+                                // Instead use get-emergency-contact if we can find the student
+                                const snippet = esc.trigger_snippet ? JSON.parse(esc.trigger_snippet) : {};
+                                if (!snippet.session_id) {
+                                  toast.error("No session ID available to fetch contact");
+                                  return;
+                                }
+                                const { data, error } = await supabase.functions.invoke("get-emergency-contact", {
+                                  body: { student_id: snippet.student_id || snippet.student_username, session_id: snippet.session_id },
+                                });
+                                if (error || data?.error) {
+                                  toast.error(data?.error || "Failed to fetch contact");
+                                  return;
+                                }
+                                if (data?.contact) {
+                                  // Update trigger_snippet with contact data
+                                  const updated = { ...snippet, ...data.contact };
+                                  await supabase.from("escalation_requests").update({
+                                    trigger_snippet: JSON.stringify(updated),
+                                  }).eq("id", esc.id);
+                                  queryClient.invalidateQueries({ queryKey: ["spoc-escalations"] });
+                                  toast.success("Emergency contact retrieved");
+                                } else {
+                                  toast.info("No emergency contact on file for this student");
+                                }
+                              } catch (err: any) {
+                                toast.error(err.message || "Failed to fetch contact");
+                              }
+                            }}
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Fetch Contact
+                          </Button>
                         </div>
                       )}
                       {esc.resolved_at && (

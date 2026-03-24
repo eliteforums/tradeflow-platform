@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.get-emergency-contact]
 verify_jwt = false
+
+[functions.escalate-emergency]
+verify_jwt = false
