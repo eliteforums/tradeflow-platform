@@ -1,67 +1,58 @@
 
 
-## Plan: Add APAAR/ERP ID Management to Institution Panel
+## Plan: Fix Emergency Contact Visibility in Escalation Flow
 
-### Problem
-Per PRD Section 3.3, student verification requires checking APAAR/ABC IDs (universities) or ERP IDs (schools) against the institution's records. Currently:
-- No table exists to store valid institution student IDs
-- No UI on SPOC or Admin panel to upload/manage valid IDs
-- Verification during onboarding is just format-based, not checked against real data
-- SPOC has no visibility into student verification status
+### Root Cause Analysis
+
+There are multiple points of failure in the chain: Expert calls `get-emergency-contact` edge function → contact data goes into `trigger_snippet` → SPOC dashboard parses it.
+
+The most likely failures:
+1. **Edge function `SUPABASE_ANON_KEY` env var** — may not be set as `SUPABASE_ANON_KEY` (edge functions use `SUPABASE_ANON_KEY` but the secret might be named differently)
+2. **Edge function returns non-2xx** (auth fail, session not found, flag_level check) but the client silently catches and proceeds with `contact = null`
+3. **No `user_private` record** for the student (registration may not have saved emergency contact)
+4. **The expert calls `handleEmergencyEscalation` before accepting the session** — the edge function checks `session.therapist_id === callerId` but if the expert hasn't been set as therapist yet, it returns 403
+
+### Fix: Bypass edge function and fetch contact directly via service role in a new escalation edge function
+
+Instead of doing a two-step process (client calls edge function for contact, then inserts escalation), create a single `escalate-emergency` edge function that:
+- Validates the expert/therapist identity
+- Fetches the emergency contact via service role (no RLS issues)
+- Creates the escalation_request with full contact data
+- Sends notifications to SPOC + other experts
+- Returns the created escalation with contact info
+
+This eliminates all client-side failure points.
 
 ### Changes
 
-#### 1. Database Migration — Create `institution_student_ids` table
-```sql
-CREATE TABLE public.institution_student_ids (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  institution_id uuid NOT NULL REFERENCES public.institutions(id) ON DELETE CASCADE,
-  id_type text NOT NULL CHECK (id_type IN ('apaar', 'erp')),
-  student_id_hash text NOT NULL,
-  is_claimed boolean NOT NULL DEFAULT false,
-  claimed_by uuid REFERENCES public.profiles(id),
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (institution_id, id_type, student_id_hash)
-);
-```
-With RLS policies for admin (full access) and SPOC (select/insert/update for their institution).
+#### 1. New edge function: `supabase/functions/escalate-emergency/index.ts`
+- Accepts: `session_id`, `justification`, `transcript_snippet`
+- Uses service role to:
+  - Verify caller is the session therapist or has expert role
+  - Fetch student profile (username, student_id, institution_id)
+  - Fetch emergency contact from `user_private`
+  - Find SPOC for the institution
+  - Insert `escalation_requests` with full `trigger_snippet` JSON
+  - Insert notifications for SPOC + other experts
+  - Insert audit log
+- Returns: the created escalation + contact data
 
-#### 2. SPOC Dashboard — New "Student Verification" section in Onboarding tab
-**File:** `src/components/spoc/SPOCDashboardContent.tsx`
+#### 2. Update `src/components/expert/ExpertL3AlertPanel.tsx`
+- Replace the multi-step `handleEmergencyEscalation` (edge function call + manual insert + notifications) with a single call to `escalate-emergency`
+- Much simpler, more reliable
 
-Add to the Onboarding tab:
-- **Upload valid IDs**: A textarea or CSV upload where the SPOC can paste a list of valid APAAR/ERP IDs (one per line or comma-separated)
-- These get hashed and stored in `institution_student_ids`
-- **Verification status table**: Show student list with columns: Username, ID Type (APAAR/ERP), Verified (yes/no), Claimed (yes/no)
-- **Stats cards**: Total IDs uploaded, Claimed count, Unclaimed count
-- Auto-detect ID type based on `institution.institution_type` (university = APAAR, school = ERP)
-
-#### 3. Admin Panel — Institution Detail View update
-**File:** `src/components/admin/InstitutionDetailView.tsx`
-
-Add a section showing:
-- Count of uploaded valid IDs per institution
-- Verified vs unverified student ratio
-- Ability to bulk-upload IDs (same as SPOC)
-
-#### 4. Update `activate-account` edge function — Verify against institution records
-**File:** `supabase/functions/activate-account/index.ts`
-
-During account activation, when a student provides their APAAR/ERP ID:
-- Hash the ID and check it against `institution_student_ids` for that institution
-- If found and unclaimed: mark `is_claimed = true`, `claimed_by = userId`, set `apaar_verified` or `erp_verified` to `true`
-- If not found: still allow account creation but leave verification as `false` (student can verify later)
-- If already claimed: return error "This ID has already been used"
-
-#### 5. Student profile — Show verification status
-**File:** `src/pages/dashboard/Profile.tsx` (or `MobileProfile.tsx`)
-
-Show a badge indicating APAAR/ERP verification status on the student's profile page.
+#### 3. Update `src/components/spoc/SPOCDashboardContent.tsx`
+- Add a fallback: if `trigger_snippet` has `type === "emergency_contact"` but no name/phone, show a "Fetch Contact" button that calls `get-emergency-contact` directly from the SPOC side
+- This gives SPOCs a manual override if the automated flow missed the contact data
 
 ### Files Modified
-- Database migration — New `institution_student_ids` table + RLS
-- `src/components/spoc/SPOCDashboardContent.tsx` — ID upload UI + verification status view
-- `src/components/admin/InstitutionDetailView.tsx` — ID management section
-- `supabase/functions/activate-account/index.ts` — Verify student ID against institution records
-- `src/pages/dashboard/Profile.tsx` — Show verification badge
+- `supabase/functions/escalate-emergency/index.ts` — New edge function (single atomic operation)
+- `src/components/expert/ExpertL3AlertPanel.tsx` — Use new edge function
+- `src/components/spoc/SPOCDashboardContent.tsx` — Add manual fetch fallback for missing contact data
+
+### Technical Details
+- The new edge function uses `SUPABASE_SERVICE_ROLE_KEY` exclusively for DB operations (bypasses all RLS)
+- Auth verification uses the standard `getUser(token)` pattern
+- The `escalation_requests` insert uses the service role client, avoiding any RLS policy issues with the expert insert policy
+- Notifications use service role insert, ensuring they always succeed regardless of caller identity
 
