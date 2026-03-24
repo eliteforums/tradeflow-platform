@@ -1,58 +1,43 @@
 
 
-## Plan: Fix Emergency Contact Visibility in Escalation Flow
+## Plan: Fix SPOC Reports Tab — Make It Real & Institution-Scoped
 
-### Root Cause Analysis
+### Current Issues
 
-There are multiple points of failure in the chain: Expert calls `get-emergency-contact` edge function → contact data goes into `trigger_snippet` → SPOC dashboard parses it.
+The Reports tab **fetches real data** but has critical problems:
 
-The most likely failures:
-1. **Edge function `SUPABASE_ANON_KEY` env var** — may not be set as `SUPABASE_ANON_KEY` (edge functions use `SUPABASE_ANON_KEY` but the secret might be named differently)
-2. **Edge function returns non-2xx** (auth fail, session not found, flag_level check) but the client silently catches and proceeds with `contact = null`
-3. **No `user_private` record** for the student (registration may not have saved emergency contact)
-4. **The expert calls `handleEmergencyEscalation` before accepting the session** — the edge function checks `session.therapist_id === callerId` but if the expert hasn't been set as therapist yet, it returns 403
-
-### Fix: Bypass edge function and fetch contact directly via service role in a new escalation edge function
-
-Instead of doing a two-step process (client calls edge function for contact, then inserts escalation), create a single `escalate-emergency` edge function that:
-- Validates the expert/therapist identity
-- Fetches the emergency contact via service role (no RLS issues)
-- Creates the escalation_request with full contact data
-- Sends notifications to SPOC + other experts
-- Returns the created escalation with contact info
-
-This eliminates all client-side failure points.
+1. **Not institution-scoped** — All 4 report queries (`appointments`, `peer_sessions`, `sound_content`, `quest_completions`) fetch global counts, not filtered by the SPOC's institution. A SPOC at University A sees data from University B too.
+2. **Sound plays not date-filtered** — The query fetches total `play_count` from `sound_content` regardless of the date filter. Sound content doesn't track per-user plays, so this metric is misleading.
+3. **No realtime** — Data only updates on page load or manual refresh.
+4. **Export PDF button is non-functional** — Just a static button with no handler.
+5. **Flagged entries not institution-scoped** — Risk Factor Summary shows global flagged entries, not just from institution students.
 
 ### Changes
 
-#### 1. New edge function: `supabase/functions/escalate-emergency/index.ts`
-- Accepts: `session_id`, `justification`, `transcript_snippet`
-- Uses service role to:
-  - Verify caller is the session therapist or has expert role
-  - Fetch student profile (username, student_id, institution_id)
-  - Fetch emergency contact from `user_private`
-  - Find SPOC for the institution
-  - Insert `escalation_requests` with full `trigger_snippet` JSON
-  - Insert notifications for SPOC + other experts
-  - Insert audit log
-- Returns: the created escalation + contact data
+#### 1. `src/components/spoc/SPOCDashboardContent.tsx` — Fix report queries
 
-#### 2. Update `src/components/expert/ExpertL3AlertPanel.tsx`
-- Replace the multi-step `handleEmergencyEscalation` (edge function call + manual insert + notifications) with a single call to `escalate-emergency`
-- Much simpler, more reliable
+**Appointments query** — Add `.in("student_id", studentIds)` to filter by institution students only (using the already-fetched `students` array).
 
-#### 3. Update `src/components/spoc/SPOCDashboardContent.tsx`
-- Add a fallback: if `trigger_snippet` has `type === "emergency_contact"` but no name/phone, show a "Fetch Contact" button that calls `get-emergency-contact` directly from the SPOC side
-- This gives SPOCs a manual override if the automated flow missed the contact data
+**Peer sessions query** — Add `.in("student_id", studentIds)` filter.
+
+**Quest completions query** — Add `.in("user_id", studentIds)` filter.
+
+**Sound plays** — Remove or replace with a more meaningful institution metric (e.g., BlackBox session count for institution students, or mood entries count). Sound `play_count` is a global column on the track, not per-user/per-institution.
+
+**Flagged entries** — Filter by institution student IDs.
+
+#### 2. Add realtime refresh
+
+Subscribe to `appointments`, `peer_sessions`, `quest_completions` INSERT events and invalidate the report query when new rows appear. Reuse the pattern already used for escalation realtime.
+
+#### 3. Fix Export PDF button
+
+Generate a simple text/CSV download of the report data (appointments count, peer sessions, quest completions, risk summary) with the selected date range. Full PDF generation would require a library — CSV export is practical and functional.
+
+#### 4. Add auto-refresh indicator
+
+Show a small "Live" dot next to the Reports header + last updated timestamp so SPOCs know data is current.
 
 ### Files Modified
-- `supabase/functions/escalate-emergency/index.ts` — New edge function (single atomic operation)
-- `src/components/expert/ExpertL3AlertPanel.tsx` — Use new edge function
-- `src/components/spoc/SPOCDashboardContent.tsx` — Add manual fetch fallback for missing contact data
-
-### Technical Details
-- The new edge function uses `SUPABASE_SERVICE_ROLE_KEY` exclusively for DB operations (bypasses all RLS)
-- Auth verification uses the standard `getUser(token)` pattern
-- The `escalation_requests` insert uses the service role client, avoiding any RLS policy issues with the expert insert policy
-- Notifications use service role insert, ensuring they always succeed regardless of caller identity
+- `src/components/spoc/SPOCDashboardContent.tsx` — Fix all report queries to be institution-scoped, add realtime subscription, fix export button
 
