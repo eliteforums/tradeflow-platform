@@ -151,6 +151,7 @@ const MeetingView = ({
   // AI audio monitoring
   const audioMonitor = useAudioMonitor({
     sessionId: sessionId || meetingId,
+    sessionType,
     enabled: enableMonitoring && joined === "JOINED",
     classifyIntervalMs: 15000,
     onRiskDetected: useCallback((level: number, snippet: string) => {

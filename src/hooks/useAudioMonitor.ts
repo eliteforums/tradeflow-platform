@@ -83,6 +83,7 @@ export function useAudioMonitor({
           transcript,
           session_id: sessionId,
           timestamp_offset: Date.now(),
+          session_type: sessionType,
         },
       });
 

@@ -170,6 +170,7 @@ const VideoCallModal = ({
                 onMeetingLeave={handleLeave}
                 audioOnly={isAudioOnly}
                 sessionId={sessionId}
+                sessionType={sessionType}
                 enableMonitoring={enableMonitoring}
                 onRiskDetected={onRiskDetected}
                 autoJoin={true}
