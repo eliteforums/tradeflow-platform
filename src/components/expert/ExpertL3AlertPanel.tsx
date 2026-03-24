@@ -113,10 +113,12 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
           "get-emergency-contact",
           { body: { student_id: activeSession.student_id, session_id: activeSession.id } }
         );
-        if (!contactError) {
-          contact = contactData?.contact;
+        if (!contactError && contactData) {
+          // Handle both { contact: {...} } and nested { data: { contact: {...} } } response shapes
+          contact = contactData?.contact || contactData?.data?.contact || null;
+          console.log("Emergency contact fetched:", contact ? "found" : "not found", contactData);
         } else {
-          console.warn("Emergency contact fetch failed, proceeding with escalation:", contactError);
+          console.warn("Emergency contact fetch failed, proceeding with escalation:", contactError, contactData);
         }
       } catch (fetchErr) {
         console.warn("Emergency contact fetch error, proceeding with escalation:", fetchErr);
