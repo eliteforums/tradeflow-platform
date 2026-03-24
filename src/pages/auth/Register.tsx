@@ -439,7 +439,7 @@ const Register = () => {
                 </p>
               </div>
 
-              <form onSubmit={handleStep3Submit} className="space-y-4">
+              <form onSubmit={handleStep2Submit} className="space-y-4">
                 <div>
                   <label className="text-xs text-muted-foreground mb-1.5 block">Emergency Contact Name</label>
                   <Input
