@@ -207,7 +207,43 @@ const InstitutionDetailView = ({ institution, onBack, onBulkAllocate }: Institut
         ))}
       </div>
 
-      {/* SPOC + Stability Pool */}
+      {/* Student ID Verification Stats */}
+      {idStats && idStats.total > 0 && (
+        <div className="p-4 rounded-xl bg-card border border-border/50">
+          <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
+            <Shield className="w-4 h-4 text-primary" />Student ID Verification
+          </h3>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <p className="text-lg font-bold">{idStats.total}</p>
+              <p className="text-[10px] text-muted-foreground">IDs Uploaded</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-eternia-success">{idStats.claimed}</p>
+              <p className="text-[10px] text-muted-foreground">Claimed</p>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-eternia-warning">{idStats.unclaimed}</p>
+              <p className="text-[10px] text-muted-foreground">Unclaimed</p>
+            </div>
+          </div>
+          {idStats.total > 0 && (
+            <div className="mt-2">
+              <div className="w-full h-2 rounded-full bg-muted/30 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-eternia-success transition-all"
+                  style={{ width: `${(idStats.claimed / idStats.total) * 100}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {Math.round((idStats.claimed / idStats.total) * 100)}% verification rate
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* SPOC Info */}
         <div className="p-4 rounded-xl bg-card border border-border/50">
