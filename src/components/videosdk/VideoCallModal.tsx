@@ -177,6 +177,8 @@ const VideoCallModal = ({
                 sessionType={sessionType}
                 enableMonitoring={enableMonitoring}
                 onRiskDetected={onRiskDetected}
+                isTherapistView={isTherapistView}
+                onCaptureSnippetReady={onCaptureSnippetReady}
                 autoJoin={true}
               />
             </MeetingProvider>
