@@ -452,7 +452,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
   // Flag/escalate session
   const flagSession = useMutation({
-    mutationFn: async ({ sessionId, reason }: { sessionId: string; reason?: string }) => {
+    mutationFn: async ({ sessionId, reason, transcriptSnippet }: { sessionId: string; reason?: string; transcriptSnippet?: string }) => {
       if (!user) throw new Error("Not authenticated");
       const { error: flagErr } = await supabase
         .from("peer_sessions")
