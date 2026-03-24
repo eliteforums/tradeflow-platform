@@ -452,7 +452,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
   // Flag/escalate session
   const flagSession = useMutation({
-    mutationFn: async ({ sessionId, reason }: { sessionId: string; reason?: string }) => {
+    mutationFn: async ({ sessionId, reason, transcriptSnippet }: { sessionId: string; reason?: string; transcriptSnippet?: string }) => {
       if (!user) throw new Error("Not authenticated");
       const { error: flagErr } = await supabase
         .from("peer_sessions")
@@ -490,6 +490,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
               student_username: studentUsername,
               intern_username: internUsername,
               reason: (reason || "Peer Connect session flagged by intern").substring(0, 500),
+              ...(transcriptSnippet ? { transcript_snippet: transcriptSnippet.substring(0, 1000) } : {}),
             });
             await supabase.from("escalation_requests").insert({
               session_id: sessionId,

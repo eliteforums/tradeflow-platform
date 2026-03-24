@@ -16,6 +16,7 @@ interface MeetingViewProps {
   onMeetingLeave: () => void;
   audioOnly?: boolean;
   sessionId?: string;
+  sessionType?: "blackbox" | "peer";
   enableMonitoring?: boolean;
   onRiskDetected?: (level: number, snippet: string) => void;
   autoJoin?: boolean;
@@ -46,6 +47,7 @@ const MeetingView = ({
   audioOnly = false,
   sessionId,
   enableMonitoring = false,
+  sessionType = "blackbox",
   onRiskDetected,
   autoJoin = false,
   onError,
@@ -149,6 +151,7 @@ const MeetingView = ({
   // AI audio monitoring
   const audioMonitor = useAudioMonitor({
     sessionId: sessionId || meetingId,
+    sessionType,
     enabled: enableMonitoring && joined === "JOINED",
     classifyIntervalMs: 15000,
     onRiskDetected: useCallback((level: number, snippet: string) => {

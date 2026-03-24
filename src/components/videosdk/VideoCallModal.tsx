@@ -15,6 +15,7 @@ interface VideoCallModalProps {
   appointmentId?: string;
   existingRoomId?: string;
   sessionId?: string; // BlackBox/peer session ID for AI monitoring
+  sessionType?: "blackbox" | "peer";
   enableMonitoring?: boolean;
   onRiskDetected?: (level: number, snippet: string) => void;
 }
@@ -27,6 +28,7 @@ const VideoCallModal = ({
   appointmentId,
   existingRoomId,
   sessionId,
+  sessionType = "blackbox",
   enableMonitoring = false,
   onRiskDetected,
 }: VideoCallModalProps) => {
@@ -168,6 +170,7 @@ const VideoCallModal = ({
                 onMeetingLeave={handleLeave}
                 audioOnly={isAudioOnly}
                 sessionId={sessionId}
+                sessionType={sessionType}
                 enableMonitoring={enableMonitoring}
                 onRiskDetected={onRiskDetected}
                 autoJoin={true}

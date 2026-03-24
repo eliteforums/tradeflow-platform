@@ -11,6 +11,7 @@ export interface AudioMonitorState {
 
 interface UseAudioMonitorOptions {
   sessionId: string;
+  sessionType?: "blackbox" | "peer";
   enabled?: boolean;
   classifyIntervalMs?: number; // How often to send buffer to AI (default 15s)
   bufferWindowMs?: number; // Rolling buffer window (default 30s)
@@ -25,6 +26,7 @@ interface UseAudioMonitorOptions {
  */
 export function useAudioMonitor({
   sessionId,
+  sessionType = "blackbox",
   enabled = true,
   classifyIntervalMs = 15000,
   bufferWindowMs = 30000,
@@ -81,6 +83,7 @@ export function useAudioMonitor({
           transcript,
           session_id: sessionId,
           timestamp_offset: Date.now(),
+          session_type: sessionType,
         },
       });
 

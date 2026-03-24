@@ -454,7 +454,13 @@ const MobilePeerConnect = () => {
             mode={callMode}
             existingRoomId={activeSession?.room_id || undefined}
             sessionId={activeSessionId}
-            enableMonitoring={false}
+            sessionType="peer"
+            enableMonitoring={isIntern}
+            onRiskDetected={isIntern ? (level, snippet) => {
+              if (level >= 2 && activeSessionId) {
+                flagSession({ sessionId: activeSessionId, reason: `AI auto-detected risk L${level}`, transcriptSnippet: snippet });
+              }
+            } : undefined}
           />
         )}
       </DashboardLayout>
