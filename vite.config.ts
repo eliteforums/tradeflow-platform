@@ -5,6 +5,9 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(({ mode }) => ({
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version || "1.0.0"),
+  },
   server: {
     host: "::",
     port: 8080,
@@ -45,8 +48,7 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/, /^\/games\//],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        skipWaiting: true,
-        clientsClaim: true,
+        // skipWaiting and clientsClaim controlled by PWAUpdatePrompt via postMessage
         navigationPreload: true,
         runtimeCaching: [
           {
