@@ -132,6 +132,7 @@ const AdminDashboard = () => {
           rescheduleReason: apt.reschedule_reason,
           rescheduledFrom: apt.rescheduled_from,
           expertName: apt.expert?.username,
+          studentName: apt.student?.username,
         });
       });
     }
