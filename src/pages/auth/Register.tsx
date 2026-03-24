@@ -429,79 +429,8 @@ const Register = () => {
             </>
           )}
 
-          {/* ─── STEP 2: Device Binding ─── */}
+          {/* ─── STEP 2: Private Profile ─── */}
           {step === 2 && (
-            <>
-              <div className="mb-5">
-                <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">Register Your Device</h1>
-                <p className="text-sm text-muted-foreground">
-                  This device will be registered as your primary access device for security.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Smartphone className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Primary Device Binding</p>
-                      <p className="text-xs text-muted-foreground">One account, one device</p>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-muted-foreground space-y-1.5 pl-[52px]">
-                    <p>• Your account will be linked to this device</p>
-                    <p>• Only this device can access your account</p>
-                    <p>• Contact your SPOC to change devices if needed</p>
-                  </div>
-                </div>
-
-                {deviceBound ? (
-                  <div className="p-4 rounded-xl bg-eternia-success/10 border border-eternia-success/30 flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-eternia-success flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-eternia-success">Device Registered</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-                        ID: {deviceFingerprint ? `${deviceFingerprint.slice(0, 8)}...${deviceFingerprint.slice(-8)}` : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    onClick={handleDeviceBind}
-                    disabled={isBindingDevice}
-                    className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 active:scale-[0.98] transition-all"
-                  >
-                    {isBindingDevice ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Registering Device...
-                      </>
-                    ) : (
-                      <>
-                        <Fingerprint className="w-4 h-4" />
-                        Register This Device
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                <Button
-                  onClick={handleStep2Continue}
-                  disabled={!deviceBound}
-                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 shadow-lg shadow-primary/15 active:scale-[0.98] transition-all"
-                >
-                  Continue
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </>
-          )}
-
-          {/* ─── STEP 3: Private Profile ─── */}
-          {step === 3 && (
             <>
               <div className="mb-5">
                 <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">Private Profile</h1>
