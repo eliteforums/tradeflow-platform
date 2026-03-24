@@ -6,6 +6,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+async function hashStudentId(institutionId: string, idType: string, rawId: string): Promise<string> {
+  const input = `eternia:${institutionId}:${idType}:${rawId}`;
+  const encoded = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -62,20 +70,22 @@ Deno.serve(async (req) => {
       .eq("id_type", id_type);
 
     if (!totalIds || totalIds === 0) {
-      // Institution hasn't uploaded any IDs yet — allow with warning
       return new Response(
         JSON.stringify({ verified: false, reason: "no_records", message: "Institution has not uploaded verification records yet. You can proceed without verification." }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Look up the student ID
+    // Hash the student ID before lookup
+    const hashedId = await hashStudentId(institution_id, id_type, trimmedId);
+
+    // Look up the hashed student ID
     const { data: match, error: matchErr } = await supabase
       .from("institution_student_ids")
       .select("id, is_claimed")
       .eq("institution_id", institution_id)
       .eq("id_type", id_type)
-      .eq("student_id_hash", trimmedId)
+      .eq("student_id_hash", hashedId)
       .maybeSingle();
 
     if (matchErr) throw matchErr;

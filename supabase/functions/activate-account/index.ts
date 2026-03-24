@@ -96,20 +96,30 @@ Deno.serve(async (req) => {
       })
       .eq("id", userId);
 
-    // Verify student ID against institution records
+    // Verify student ID against institution records (using hashed lookup)
     const isSchool = institution.institution_type === "school";
     const idType = isSchool ? "erp" : "apaar";
     const hasStudentId = !!student_id && student_id.trim().length >= 3;
     let idVerified = false;
 
+    // SHA-256 hash function matching verify-student-id and SPOC upload
+    async function hashStudentId(instId: string, type: string, rawId: string): Promise<string> {
+      const input = `eternia:${instId}:${type}:${rawId}`;
+      const encoded = new TextEncoder().encode(input);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
     if (hasStudentId) {
-      // Check if this ID exists in institution_student_ids
+      const hashedId = await hashStudentId(cred.institution_id, idType, student_id.trim());
+
       const { data: matchedId, error: matchErr } = await supabase
         .from("institution_student_ids")
         .select("id, is_claimed")
         .eq("institution_id", cred.institution_id)
         .eq("id_type", idType)
-        .eq("student_id_hash", student_id.trim())
+        .eq("student_id_hash", hashedId)
         .maybeSingle();
 
       if (matchedId) {
@@ -123,20 +133,19 @@ Deno.serve(async (req) => {
           .eq("id", matchedId.id);
         idVerified = true;
       }
-      // If not found in institution records, allow registration but don't verify
     }
 
-    // Insert private data with verification flags
+    // Insert private data — store ONLY verification status, never raw IDs
     await supabase.from("user_private").insert({
       user_id: userId,
       emergency_name_encrypted: emergency_name || null,
       emergency_phone_encrypted: emergency_phone || null,
       emergency_relation: contact_is_self ? "Self" : (emergency_relation || null),
       contact_is_self: contact_is_self || false,
-      student_id_encrypted: student_id || null,
+      student_id_encrypted: null,
       device_id_encrypted: device_fingerprint || null,
-      apaar_id_encrypted: !isSchool ? (student_id || null) : null,
-      erp_id_encrypted: isSchool ? (student_id || null) : null,
+      apaar_id_encrypted: null,
+      erp_id_encrypted: null,
       apaar_verified: !isSchool && idVerified,
       erp_verified: isSchool && idVerified,
     });
