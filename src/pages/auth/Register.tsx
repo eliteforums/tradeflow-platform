@@ -29,7 +29,6 @@ const Register = () => {
   const [step, setStep] = useState(1);
   const [institutionType, setInstitutionType] = useState<string>("university");
   const [studentIdVerified, setStudentIdVerified] = useState(false);
-  const [studentIdVerified, setStudentIdVerified] = useState(false);
   const [isVerifyingId, setIsVerifyingId] = useState(false);
 
   const tempCredentialId = sessionStorage.getItem("eternia_temp_credential_id");
