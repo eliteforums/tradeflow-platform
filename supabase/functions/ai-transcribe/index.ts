@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +15,9 @@ const SENSITIVE_KEYWORDS = [
   "nobody cares", "better off dead", "can't go on",
   "panic attack", "anxiety attack", "breakdown",
 ];
+
+// System actor ID for AI-triggered audit logs
+const SYSTEM_ACTOR_ID = "00000000-0000-0000-0000-000000000000";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -33,7 +37,6 @@ serve(async (req) => {
     const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
     if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not configured");
 
-    // Step 1: Check for sensitive keywords
     const lowerTranscript = transcript.toLowerCase();
     const detectedKeywords = SENSITIVE_KEYWORDS.filter((kw) => lowerTranscript.includes(kw));
 
@@ -43,7 +46,7 @@ serve(async (req) => {
       });
     }
 
-    // Step 2: Classify severity using Groq
+    // Classify severity using Groq
     const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -65,10 +68,7 @@ Detected keywords: ${detectedKeywords.join(", ")}
 
 Respond with ONLY the number.`,
           },
-          {
-            role: "user",
-            content: transcript.substring(0, 2000),
-          },
+          { role: "user", content: transcript.substring(0, 2000) },
         ],
         max_tokens: 5,
         temperature: 0,
@@ -82,108 +82,99 @@ Respond with ONLY the number.`,
       flag_level = Math.min(3, Math.max(1, parseInt(raw, 10) || 1));
     }
 
-    // Step 3: Extract ±10s context around first keyword as trigger snippet
+    // Extract ±10s context around first keyword
     const firstKeyword = detectedKeywords[0];
     const keywordIndex = lowerTranscript.indexOf(firstKeyword);
     const snippetStart = Math.max(0, keywordIndex - 200);
     const snippetEnd = Math.min(transcript.length, keywordIndex + firstKeyword.length + 200);
     const trigger_snippet = transcript.substring(snippetStart, snippetEnd);
 
-    // Step 4: Update session flag level
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Update session flag level based on session type
+    const newHistoryEntry = {
+      level: flag_level,
+      keywords: detectedKeywords,
+      snippet: trigger_snippet,
+      timestamp: new Date().toISOString(),
+      auto: true,
+    };
+
     if (sType === "peer") {
-      await fetch(`${SUPABASE_URL}/rest/v1/peer_sessions?id=eq.${session_id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({
-          is_flagged: flag_level >= 2,
-          escalation_note_encrypted: `AI detected L${flag_level}: ${detectedKeywords.join(", ")} | ${trigger_snippet.substring(0, 500)}`,
-        }),
-      });
+      await adminClient.from("peer_sessions").update({
+        is_flagged: flag_level >= 2,
+        escalation_note_encrypted: `AI detected L${flag_level}: ${detectedKeywords.join(", ")} | ${trigger_snippet.substring(0, 500)}`,
+      }).eq("id", session_id);
     } else {
-      await fetch(`${SUPABASE_URL}/rest/v1/blackbox_sessions?id=eq.${session_id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({
-          flag_level,
-          escalation_reason: `AI detected: ${detectedKeywords.join(", ")}`,
-          escalation_history: [
-            {
-              level: flag_level,
-              keywords: detectedKeywords,
-              snippet: trigger_snippet,
-              timestamp: new Date().toISOString(),
-              auto: true,
-            },
-          ],
-        }),
-      });
+      // Fetch existing escalation_history and append
+      const { data: existingSession } = await adminClient
+        .from("blackbox_sessions")
+        .select("escalation_history")
+        .eq("id", session_id)
+        .single();
+
+      const existingHistory = Array.isArray(existingSession?.escalation_history)
+        ? existingSession.escalation_history
+        : [];
+
+      await adminClient.from("blackbox_sessions").update({
+        flag_level,
+        escalation_reason: `AI detected: ${detectedKeywords.join(", ")}`,
+        escalation_history: [...existingHistory, newHistoryEntry],
+      }).eq("id", session_id);
     }
 
-    // For L2+ create escalation request
+    // Audit log for L2+ AI-triggered escalations
     if (flag_level >= 2) {
-      // Fetch session to get student_id from the correct table
+      // Fetch student_id for the audit log
       const table = sType === "peer" ? "peer_sessions" : "blackbox_sessions";
-      const sessionResp = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${session_id}&select=student_id`, {
-        headers: {
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      const { data: sessionData } = await adminClient
+        .from(table)
+        .select("student_id")
+        .eq("id", session_id)
+        .single();
+
+      const studentId = sessionData?.student_id;
+
+      // Insert audit log
+      await adminClient.from("audit_logs").insert({
+        actor_id: studentId || SYSTEM_ACTOR_ID,
+        action_type: "ai_auto_escalation",
+        target_table: table,
+        target_id: session_id,
+        metadata: {
+          flag_level,
+          keywords: detectedKeywords,
+          session_type: sType,
+          auto: true,
         },
       });
-      const sessions = await sessionResp.json();
-      const studentId = sessions?.[0]?.student_id;
 
+      // Create escalation request for SPOC
       if (studentId) {
-        // Find student's institution SPOC
-        const profileResp = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${studentId}&select=institution_id`, {
-          headers: {
-            apikey: SUPABASE_SERVICE_ROLE_KEY,
-            Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-          },
-        });
-        const profiles = await profileResp.json();
-        const institutionId = profiles?.[0]?.institution_id;
+        const { data: studentProfile } = await adminClient
+          .from("profiles")
+          .select("institution_id")
+          .eq("id", studentId)
+          .single();
 
-        if (institutionId) {
-          const spocResp = await fetch(`${SUPABASE_URL}/rest/v1/profiles?institution_id=eq.${institutionId}&role=eq.spoc&limit=1&select=id`, {
-            headers: {
-              apikey: SUPABASE_SERVICE_ROLE_KEY,
-              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-          });
-          const spocs = await spocResp.json();
-          const spocId = spocs?.[0]?.id;
+        if (studentProfile?.institution_id) {
+          const { data: spocs } = await adminClient
+            .from("profiles")
+            .select("id")
+            .eq("institution_id", studentProfile.institution_id)
+            .eq("role", "spoc")
+            .limit(1);
 
-          if (spocId) {
-            await fetch(`${SUPABASE_URL}/rest/v1/escalation_requests`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                apikey: SUPABASE_SERVICE_ROLE_KEY,
-                Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-                Prefer: "return=minimal",
-              },
-              body: JSON.stringify({
-                spoc_id: spocId,
-                justification_encrypted: `AI flagged L${flag_level}: ${detectedKeywords.join(", ")}`,
-                escalation_level: flag_level,
-                trigger_snippet,
-                trigger_timestamp: new Date().toISOString(),
-                status: flag_level >= 3 ? "critical" : "pending",
-              }),
+          if (spocs && spocs.length > 0) {
+            await adminClient.from("escalation_requests").insert({
+              spoc_id: spocs[0].id,
+              justification_encrypted: `AI flagged L${flag_level}: ${detectedKeywords.join(", ")}`,
+              escalation_level: flag_level,
+              trigger_snippet,
+              trigger_timestamp: new Date().toISOString(),
+              status: flag_level >= 3 ? "critical" : "pending",
             });
           }
         }
@@ -191,12 +182,7 @@ Respond with ONLY the number.`,
     }
 
     return new Response(
-      JSON.stringify({
-        flag_level,
-        keywords: detectedKeywords,
-        trigger_snippet,
-        session_id,
-      }),
+      JSON.stringify({ flag_level, keywords: detectedKeywords, trigger_snippet, session_id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

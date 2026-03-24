@@ -503,6 +503,18 @@ export function usePeerConnect(initialSessionId?: string | null) {
           }
         }
       }
+
+      // Audit log for peer session flagging
+      await supabase.from("audit_logs").insert({
+        actor_id: user.id,
+        action_type: "peer_session_flagged",
+        target_table: "peer_sessions",
+        target_id: sessionId,
+        metadata: {
+          reason: reason || "Intern flagged session",
+          has_transcript: !!transcriptSnippet,
+        },
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
