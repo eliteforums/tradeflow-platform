@@ -71,6 +71,9 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
   // History
   const [history, setHistory] = useState<EscalationRecord[]>([]);
 
+  // Ref to hold the VideoSDK leave function for programmatic disconnect
+  const leaveCallRef = useRef<(() => void) | null>(null);
+
   // Fetch queue
   const fetchQueue = useCallback(async () => {
     const { data } = await supabase
