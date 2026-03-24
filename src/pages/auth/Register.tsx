@@ -344,19 +344,11 @@ const Register = () => {
           </div>
           <div className={`flex-1 h-1 rounded ${step >= 2 ? "bg-gradient-eternia" : "bg-muted"}`} />
 
-          {/* Step 2: Device Binding */}
+          {/* Step 2: Private Profile */}
           <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
-            step > 2 ? "bg-eternia-success text-background" : step === 2 ? "bg-gradient-eternia text-background" : "bg-muted text-muted-foreground"
+            step === 2 ? "bg-gradient-eternia text-background" : "bg-muted text-muted-foreground"
           }`}>
-            {step > 2 ? <CheckCircle className="w-4 h-4" /> : "2"}
-          </div>
-          <div className={`flex-1 h-1 rounded ${step >= 3 ? "bg-gradient-eternia" : "bg-muted"}`} />
-
-          {/* Step 3: Private Profile */}
-          <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
-            step === 3 ? "bg-gradient-eternia text-background" : "bg-muted text-muted-foreground"
-          }`}>
-            3
+            2
           </div>
         </div>
 
