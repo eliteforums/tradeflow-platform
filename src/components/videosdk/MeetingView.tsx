@@ -161,7 +161,14 @@ const MeetingView = ({
     }, [onRiskDetected]),
   });
 
-  // Silence detection
+  // Expose captureEscalationSnippet to parent
+  useEffect(() => {
+    if (joined === "JOINED" && enableMonitoring && onCaptureSnippetReady) {
+      onCaptureSnippetReady(audioMonitor.captureEscalationSnippet);
+    }
+  }, [joined, enableMonitoring, onCaptureSnippetReady, audioMonitor.captureEscalationSnippet]);
+
+
   const handleSilenceAutoEnd = useCallback(async () => {
     if (!sessionId) return;
     try {

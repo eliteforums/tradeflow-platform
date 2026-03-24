@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { AlertTriangle, Phone, PhoneCall, Loader2, Shield, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import VideoCallModal from "@/components/videosdk/VideoCallModal";
 
 interface L3Session {
@@ -20,11 +19,7 @@ interface L3Session {
   created_at: string;
 }
 
-interface ExpertL3AlertPanelProps {
-  captureEscalationSnippet?: () => string;
-}
-
-const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProps) => {
+const ExpertL3AlertPanel = () => {
   const { user, profile } = useAuth();
   const [l3Sessions, setL3Sessions] = useState<L3Session[]>([]);
   const [joining, setJoining] = useState<string | null>(null);
@@ -32,6 +27,19 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
   const [activeSession, setActiveSession] = useState<L3Session | null>(null);
   const [escalating, setEscalating] = useState(false);
   const [showEscalateConfirm, setShowEscalateConfirm] = useState(false);
+
+  // Ref to hold the captureEscalationSnippet function from MeetingView's audio monitor
+  const captureSnippetRef = useRef<(() => string) | null>(null);
+
+  const handleCaptureSnippetReady = useCallback((captureFn: () => string) => {
+    captureSnippetRef.current = captureFn;
+  }, []);
+
+  const handleRiskDetected = useCallback((level: number, snippet: string) => {
+    if (level >= 2) {
+      toast.warning(`⚠️ AI detected risk level L${level} during session`, { duration: 8000 });
+    }
+  }, []);
 
   // Fetch active L3 sessions
   useEffect(() => {
@@ -49,7 +57,6 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
 
     fetchL3();
 
-    // Realtime subscription
     const channel = supabase
       .channel("expert-l3-alerts")
       .on(
@@ -65,7 +72,6 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
               return [session, ...prev];
             });
           } else if (session) {
-            // Session ended or flag lowered — remove
             setL3Sessions((prev) => prev.filter((s) => s.id !== session.id));
           }
         }
@@ -81,7 +87,6 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
     if (!user) return;
     setJoining(session.id);
     try {
-      // Claim session as therapist (expert joins as therapist)
       const { error } = await supabase
         .from("blackbox_sessions")
         .update({ therapist_id: user.id, status: "accepted" })
@@ -101,7 +106,8 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
     if (!user || !activeSession) return;
     setEscalating(true);
     try {
-      const transcriptSnippet = captureEscalationSnippet ? captureEscalationSnippet() : "";
+      // Capture ±10s transcript from the live audio monitor
+      const transcriptSnippet = captureSnippetRef.current ? captureSnippetRef.current() : "";
 
       const { data, error } = await supabase.functions.invoke("escalate-emergency", {
         body: {
@@ -225,13 +231,22 @@ const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProp
         </DialogContent>
       </Dialog>
 
-      {/* Video Call Modal */}
+      {/* Video Call Modal — with AI monitoring enabled */}
       <VideoCallModal
         isOpen={callModal.open}
-        onClose={() => setCallModal({ open: false })}
+        onClose={() => {
+          setCallModal({ open: false });
+          captureSnippetRef.current = null;
+        }}
         participantName={profile?.username || "Expert"}
         mode="video"
         appointmentId={callModal.appointmentId}
+        sessionId={activeSession?.id}
+        sessionType="blackbox"
+        enableMonitoring={true}
+        isTherapistView={true}
+        onRiskDetected={handleRiskDetected}
+        onCaptureSnippetReady={handleCaptureSnippetReady}
       />
     </>
   );
