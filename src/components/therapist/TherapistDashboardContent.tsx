@@ -368,6 +368,20 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
             })
             .eq("id", activeSession.id);
 
+          // Notify the expert about the L3 handoff
+          await supabase.from("notifications").insert({
+            user_id: mphilExperts[0].id,
+            type: "l3_handoff",
+            title: "🚨 L3 Critical Session Handoff",
+            message: `A BlackBox session has been escalated to you. Reason: ${escalationReason.substring(0, 200)}`,
+            metadata: {
+              session_id: activeSession.id,
+              room_id: activeSession.room_id,
+              student_id: activeSession.student_id,
+              escalation_level: level,
+            },
+          });
+
           toast.warning("Critical escalation — session transferred to M.Phil expert");
 
           // CR v1.8 §5.2: Fetch and display emergency contact on L3
@@ -398,6 +412,12 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
           .update({ status: "escalated" })
           .eq("id", activeSession.id);
         toast.warning("Critical escalation submitted — session transferred");
+      }
+
+      // Gracefully leave the VideoSDK room before clearing state
+      if (leaveCallRef.current) {
+        try { leaveCallRef.current(); } catch {}
+        leaveCallRef.current = null;
       }
 
       setActiveSession(null);
