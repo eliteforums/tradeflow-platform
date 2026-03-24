@@ -439,6 +439,31 @@ const PeerConnect = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
+                    {activeSession.status === "active" && (
+                      <Button
+                        variant="ghost" size="icon" className="h-8 w-8 text-primary"
+                        title="Start voice call"
+                        disabled={isStartingCall}
+                        onClick={() => {
+                          if (activeSession.room_id) {
+                            setCallMode("audio");
+                          } else {
+                            startCall(activeSessionId);
+                            setCallMode("audio");
+                          }
+                        }}
+                      >
+                        <Phone className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {activeSession.status === "active" && activeSession.room_id && !callMode && (
+                      <Button
+                        variant="outline" size="sm" className="h-8 text-xs gap-1 text-primary border-primary/30"
+                        onClick={() => setCallMode("audio")}
+                      >
+                        <Phone className="w-3 h-3" /> Join Call
+                      </Button>
+                    )}
                     {isIntern && activeSession.status === "active" && (
                       <Button
                         variant="ghost" size="icon" className="h-8 w-8 text-eternia-warning"
