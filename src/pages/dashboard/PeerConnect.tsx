@@ -704,6 +704,7 @@ const PeerConnect = () => {
             mode={callMode}
             existingRoomId={activeSession?.room_id || undefined}
             sessionId={activeSessionId}
+            sessionType="peer"
             enableMonitoring={isIntern}
             onRiskDetected={isIntern ? (level, snippet) => {
               if (level >= 2 && activeSessionId) {
