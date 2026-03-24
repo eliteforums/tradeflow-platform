@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Clock, User, Video, Phone, CheckCircle, Coins, X, Loader2 } from "lucide-react";
+import { Calendar, Clock, User, Video, Phone, CheckCircle, Coins, X, Loader2, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -80,6 +80,21 @@ const MobileAppointments = () => {
                       <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{format(new Date(apt.slot_time), "MMM d")}</span>
                       <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{format(new Date(apt.slot_time), "h:mm a")}</span>
                     </div>
+                    {apt.reschedule_reason && (
+                      <div className="mt-2 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/15 text-xs space-y-1">
+                        <div className="flex items-center gap-1.5 text-amber-500 font-medium">
+                          <RotateCcw className="w-3 h-3" />Rescheduled by Dr. {apt.expert?.username || "Expert"}
+                        </div>
+                        {apt.rescheduled_from && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <span>{format(new Date(apt.rescheduled_from), "MMM d, h:mm a")}</span>
+                            <span>→</span>
+                            <span className="text-foreground font-medium">{format(new Date(apt.slot_time), "MMM d, h:mm a")}</span>
+                          </div>
+                        )}
+                        <p className="text-muted-foreground">{apt.reschedule_reason}</p>
+                      </div>
+                    )}
                     {activeTab === "upcoming" && (apt.status === "confirmed" || apt.status === "pending") && (
                       <div className="flex items-center gap-2 mt-2">
                         <Button variant="outline" size="sm" onClick={() => setCallModal({ open: true, mode: apt.session_type === "video" ? "video" : "audio", appointmentId: apt.id })} className="gap-1.5 h-9 text-xs px-3">

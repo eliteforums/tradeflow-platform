@@ -120,7 +120,7 @@ const AdminDashboard = () => {
 
   // Unified session feed
   const unifiedSessions = useMemo(() => {
-    const items: { id: string; type: "appointment" | "peer" | "blackbox"; description: string; date: string; status: string; flagged?: boolean; rescheduled?: boolean; rescheduleReason?: string; rescheduledFrom?: string; expertName?: string }[] = [];
+    const items: { id: string; type: "appointment" | "peer" | "blackbox"; description: string; date: string; status: string; flagged?: boolean; rescheduled?: boolean; rescheduleReason?: string; rescheduledFrom?: string; expertName?: string; studentName?: string }[] = [];
 
     if (sessionFilter === "all" || sessionFilter === "appointment") {
       appointments.forEach((apt: any) => {
@@ -132,6 +132,7 @@ const AdminDashboard = () => {
           rescheduleReason: apt.reschedule_reason,
           rescheduledFrom: apt.rescheduled_from,
           expertName: apt.expert?.username,
+          studentName: apt.student?.username,
         });
       });
     }
@@ -501,6 +502,12 @@ const AdminDashboard = () => {
                                   <div className="flex items-center gap-2">
                                     <span className="text-muted-foreground">By:</span>
                                     <span className="font-medium">{s.expertName}</span>
+                                  </div>
+                                )}
+                                {s.studentName && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">Student:</span>
+                                    <span className="font-medium">{s.studentName}</span>
                                   </div>
                                 )}
                               </div>
