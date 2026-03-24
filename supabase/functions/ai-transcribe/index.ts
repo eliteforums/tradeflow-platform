@@ -135,8 +135,9 @@ Respond with ONLY the number.`,
 
     // For L2+ create escalation request
     if (flag_level >= 2) {
-      // Fetch session to get student_id
-      const sessionResp = await fetch(`${SUPABASE_URL}/rest/v1/blackbox_sessions?id=eq.${session_id}&select=student_id`, {
+      // Fetch session to get student_id from the correct table
+      const table = sType === "peer" ? "peer_sessions" : "blackbox_sessions";
+      const sessionResp = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${session_id}&select=student_id`, {
         headers: {
           apikey: SUPABASE_SERVICE_ROLE_KEY,
           Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,

@@ -490,6 +490,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
               student_username: studentUsername,
               intern_username: internUsername,
               reason: (reason || "Peer Connect session flagged by intern").substring(0, 500),
+              ...(transcriptSnippet ? { transcript_snippet: transcriptSnippet.substring(0, 1000) } : {}),
             });
             await supabase.from("escalation_requests").insert({
               session_id: sessionId,
