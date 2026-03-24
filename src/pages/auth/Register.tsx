@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import EterniaLogo from "@/components/EterniaLogo";
-import { generateDeviceFingerprint } from "@/lib/deviceFingerprint";
+
 
 const Register = () => {
   const navigate = useNavigate();
