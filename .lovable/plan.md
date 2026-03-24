@@ -1,62 +1,56 @@
 
 
-## Plan: Wire AI Transcript Capture & Emergency Contact to All Escalation Flows
+## Plan: Add Forgot Password Flow Using Recovery Credentials
 
-### Current State
-
-| Flow | AI Transcript Capture | Emergency Contact to SPOC |
-|---|---|---|
-| **6.1 Expert → SPOC** (appointments) | Missing — just sends typed reason | Missing — no contact fetch |
-| **6.2 Intern → SPOC** (peer sessions) | Missing — just sends typed reason | Missing — no contact fetch |
-| **6.3 BlackBox Expert → SPOC** (L3 panel) | Works — uses `captureSnippetRef` | Works — `escalate-emergency` edge function |
+### Context
+Eternia uses `@eternia.local` fake emails — standard Supabase email-based password reset won't work. Users already set up recovery credentials (3 hint-answer pairs + 4-emoji pattern) via the Recovery Setup page. The "Forgot Password" flow must verify identity using these credentials, then allow a password reset.
 
 ### Changes
 
-#### 1. `src/components/expert/ExpertDashboardContent.tsx` — Add transcript capture + emergency contact
+#### 1. New Edge Function: `supabase/functions/recover-password/index.ts`
+- Accepts `{ username, fragment_pairs, emoji_pattern, new_password }`
+- Uses service role to:
+  - Look up user by `username@eternia.local` email in `auth.users`
+  - Fetch `recovery_credentials` for that user
+  - Compare submitted pairs/emojis against stored values (JSON comparison)
+  - If match: call `adminAuthClient.updateUserById(userId, { password: new_password })`
+  - If no match: return 403 "Recovery credentials do not match"
+  - If no recovery credentials set up: return 404 "No recovery credentials found for this account"
+- Rate limited: 5 attempts per username per 10 minutes
 
-- When expert clicks "Escalate" on an appointment and confirms:
-  - Call `escalate-emergency` edge function instead of direct `escalation_requests` insert
-  - This requires passing the appointment's student_id and session context
-  - The edge function already fetches emergency contact and creates the escalation with proper `trigger_snippet` JSON
-- Problem: `escalate-emergency` expects a `blackbox_sessions` row. For appointments, we need to either:
-  - **Option A**: Create a new edge function `escalate-appointment` that works with `appointments` table
-  - **Option B**: Extend `escalate-emergency` to accept `appointment_id` as alternative to `session_id`
-- **Going with Option B** — add `appointment_id` support to `escalate-emergency`
-- If the expert has an active video call with AI monitoring, capture the ±10s transcript snippet via `captureSnippetRef` pattern (same as L3 panel)
+#### 2. New Page: `src/pages/auth/ForgotPassword.tsx`
+3-step flow:
+- **Step 1**: Enter username
+- **Step 2**: Answer the 3 hint questions (fetched hints only, not answers) + select 4 emojis in order
+- **Step 3**: Set new password (with confirmation field)
 
-#### 2. `src/components/intern/InternDashboardContent.tsx` — Add transcript capture + emergency contact
+On submit, calls `recover-password` edge function. On success, redirects to `/login` with success toast.
 
-- Same pattern: when intern clicks "Escalate" on a peer session:
-  - Call `escalate-emergency` edge function with `peer_session_id` parameter
-  - Edge function fetches student emergency contact and creates escalation with full `trigger_snippet`
-- If intern has active call with monitoring, capture ±10s transcript
+#### 3. New Edge Function: `supabase/functions/get-recovery-hints/index.ts`
+- Accepts `{ username }`
+- Looks up user, fetches `recovery_credentials`, returns only the hint questions (not answers or emoji pattern)
+- Rate limited to prevent enumeration
 
-#### 3. `supabase/functions/escalate-emergency/index.ts` — Support all session types
+#### 4. `src/pages/auth/Login.tsx` — Add "Forgot Password?" link
+- Add link below the password field pointing to `/forgot-password`
 
-Currently only handles `blackbox_sessions`. Extend to accept:
-- `session_id` (blackbox) — existing
-- `appointment_id` (expert appointments) — new
-- `peer_session_id` (peer connect) — new
+#### 5. `src/App.tsx` — Add route
+- Add `<Route path="/forgot-password" element={<ForgotPassword />} />`
 
-Logic:
-- Determine `student_id` from whichever table is referenced
-- Verify caller is the therapist/expert/intern assigned to that session
-- Fetch emergency contact from `user_private` (same as current)
-- Create escalation request with full contact JSON in `trigger_snippet`
-- Notify SPOC + other experts
-
-#### 4. SPOC Dashboard — Already handles display
-
-The `SPOCDashboardContent` already parses `trigger_snippet` JSON for `type === "emergency_contact"` and renders the contact card with name, phone, relation, transcript snippet. No changes needed here since the edge function will produce the same format.
+#### 6. `supabase/config.toml` — Register new functions
+- Add `[functions.recover-password]` and `[functions.get-recovery-hints]` with `verify_jwt = false`
 
 ### Files Modified
-- `supabase/functions/escalate-emergency/index.ts` — Support `appointment_id` and `peer_session_id`
-- `src/components/expert/ExpertDashboardContent.tsx` — Use `escalate-emergency` edge function, add `captureSnippetRef` for transcript
-- `src/components/intern/InternDashboardContent.tsx` — Use `escalate-emergency` edge function, add `captureSnippetRef` for transcript
+- `supabase/functions/get-recovery-hints/index.ts` — New: return hint questions for a username
+- `supabase/functions/recover-password/index.ts` — New: verify recovery credentials + reset password
+- `src/pages/auth/ForgotPassword.tsx` — New: 3-step forgot password page
+- `src/pages/auth/Login.tsx` — Add "Forgot Password?" link
+- `src/App.tsx` — Add `/forgot-password` route
+- `supabase/config.toml` — Register edge functions
 
 ### Technical Details
-- The `escalate-emergency` edge function uses service role to bypass RLS when reading `user_private` for emergency contacts
-- For appointments: lookup `student_id` from `appointments` table, verify caller is `expert_id`
-- For peer sessions: lookup `student_id` from `peer_sessions` table, verify caller is `intern_id`
-- Transcript capture only available when a video/audio call is active with `enableMonitoring={true}`; otherwise `transcript_snippet` will be null (acceptable)
+- Recovery credentials are stored as JSON strings in `fragment_pairs_encrypted` and `emoji_pattern_encrypted` — comparison is done server-side after JSON parse
+- The `get-recovery-hints` endpoint only returns hint question labels (e.g. "Favourite colour"), never answers
+- Password update uses Supabase Admin API `updateUserById` which bypasses email verification
+- If a user never set up recovery credentials, they must contact their SPOC for manual password reset
 
