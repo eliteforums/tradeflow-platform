@@ -120,7 +120,7 @@ const AdminDashboard = () => {
 
   // Unified session feed
   const unifiedSessions = useMemo(() => {
-    const items: { id: string; type: "appointment" | "peer" | "blackbox"; description: string; date: string; status: string; flagged?: boolean; rescheduled?: boolean; rescheduleReason?: string; rescheduledFrom?: string; expertName?: string }[] = [];
+    const items: { id: string; type: "appointment" | "peer" | "blackbox"; description: string; date: string; status: string; flagged?: boolean; rescheduled?: boolean; rescheduleReason?: string; rescheduledFrom?: string; expertName?: string; studentName?: string }[] = [];
 
     if (sessionFilter === "all" || sessionFilter === "appointment") {
       appointments.forEach((apt: any) => {
