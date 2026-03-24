@@ -1029,8 +1029,17 @@ const SPOCDashboardContent = () => {
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-primary" />
               Wellbeing Reports
+              <span className="flex items-center gap-1 ml-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-eternia-success animate-pulse" />
+                <span className="text-[10px] font-normal text-muted-foreground">Live</span>
+              </span>
             </h3>
             <div className="flex items-center gap-2">
+              {reportLastUpdated && (
+                <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                  Updated {format(reportLastUpdated, "h:mm a")}
+                </span>
+              )}
               <select
                 value={reportDateFilter}
                 onChange={(e) => setReportDateFilter(e.target.value)}
@@ -1040,9 +1049,33 @@ const SPOCDashboardContent = () => {
                 <option value="30">Last 30 days</option>
                 <option value="90">Last 90 days</option>
               </select>
-              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 h-8 text-xs"
+                onClick={() => {
+                  const rows = [
+                    ["Metric", "Value", "Period"],
+                    ["Peer Connect Sessions", String(reportData?.peerSessions || 0), `Last ${reportDateFilter} days`],
+                    ["Appointments", String(reportData?.appointments || 0), `Last ${reportDateFilter} days`],
+                    ["Mood Check-ins", String(reportData?.moodEntries || 0), `Last ${reportDateFilter} days`],
+                    ["Quests Completed", String(reportData?.questCompletions || 0), `Last ${reportDateFilter} days`],
+                    ["ECC Stability Pool", String(stabilityPoolBalance), "Current"],
+                    ["Critical Flags", String(flaggedEntries.filter((f: any) => f.ai_flag_level >= 3).length), "All time"],
+                    ["Moderate Flags", String(flaggedEntries.filter((f: any) => f.ai_flag_level === 2).length), "All time"],
+                    ["Low Flags", String(flaggedEntries.filter((f: any) => f.ai_flag_level === 1).length), "All time"],
+                  ];
+                  const csv = rows.map(r => r.join(",")).join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const a = document.createElement("a");
+                  a.href = URL.createObjectURL(blob);
+                  a.download = `spoc-report-${format(new Date(), "yyyy-MM-dd")}.csv`;
+                  a.click();
+                  toast.success("Report CSV downloaded");
+                }}
+              >
                 <Download className="w-3.5 h-3.5" />
-                Export PDF
+                Export CSV
               </Button>
             </div>
           </div>
