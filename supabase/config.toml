@@ -12,9 +12,6 @@ verify_jwt = false
 [functions.validate-spoc-qr]
 verify_jwt = false
 
-[functions.reset-device]
-verify_jwt = false
-
 [functions.stability-pool-contribute]
 verify_jwt = false
 

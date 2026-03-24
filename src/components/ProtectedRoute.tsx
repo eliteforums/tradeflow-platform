@@ -1,9 +1,8 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sparkles, ShieldAlert } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useDeviceValidation } from "@/hooks/useDeviceValidation";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,8 +12,6 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, profile, isLoading } = useAuth();
   const location = useLocation();
-  const { deviceMismatch, isChecking: isCheckingDevice } = useDeviceValidation();
-
   // Check if user has completed recovery setup (only for students)
   const { data: hasRecoverySetup, isLoading: isCheckingRecovery } = useQuery({
     queryKey: ["recovery-check", user?.id],
@@ -52,24 +49,6 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
     return <Navigate to="/dashboard" replace />;
-  }
-
-  // Device mismatch warning for students
-  if (profile?.role === "student" && deviceMismatch) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="max-w-md text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mx-auto">
-            <ShieldAlert className="w-8 h-8 text-destructive" />
-          </div>
-          <h2 className="text-xl font-bold font-display">Unrecognized Device</h2>
-          <p className="text-sm text-muted-foreground">
-            This device doesn't match the one registered to your account. 
-            Please contact your institution's SPOC to reset your device binding.
-          </p>
-        </div>
-      </div>
-    );
   }
 
   // Redirect students to recovery setup if not completed

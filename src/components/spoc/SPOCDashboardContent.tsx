@@ -274,8 +274,6 @@ const SPOCDashboardContent = () => {
   // ─── Helpers ───
   const [grantAmount, setGrantAmount] = useState("10");
   const [isGranting, setIsGranting] = useState(false);
-  const [resetDeviceStudent, setResetDeviceStudent] = useState<string | null>(null);
-  const [isResettingDevice, setIsResettingDevice] = useState(false);
 
   // Query temp credential pool stats
   const { data: tempCredStats } = useQuery({
@@ -397,20 +395,6 @@ const SPOCDashboardContent = () => {
     setIsGranting(false);
   };
 
-  const handleResetDevice = async (studentId: string) => {
-    setIsResettingDevice(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("reset-device", {
-        body: { student_id: studentId },
-      });
-      if (error) throw error;
-      toast.success("Device binding reset successfully");
-      setResetDeviceStudent(null);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to reset device");
-    }
-    setIsResettingDevice(false);
-  };
 
   const activeStudents = students.filter((s) => s.is_active).length;
   const filteredStudents = students.filter((s) =>
@@ -744,16 +728,6 @@ const SPOCDashboardContent = () => {
                     >
                       {student.is_active ? "Allocated" : "Revoked"}
                     </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-[10px] text-muted-foreground hover:text-destructive shrink-0"
-                      onClick={() => handleResetDevice(student.id)}
-                      disabled={isResettingDevice}
-                      title="Reset device binding"
-                    >
-                      <Lock className="w-3 h-3" />
-                    </Button>
                   </div>
                 ))
               )}

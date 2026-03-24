@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft, Shield, AlertTriangle, CheckCircle, Phone, Smartphone, Fingerprint, Loader2 } from "lucide-react";
+import { ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft, Shield, AlertTriangle, CheckCircle, Phone, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import EterniaLogo from "@/components/EterniaLogo";
-import { generateDeviceFingerprint } from "@/lib/deviceFingerprint";
+
 
 const Register = () => {
   const navigate = useNavigate();
@@ -28,9 +28,6 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [institutionType, setInstitutionType] = useState<string>("university");
-  const [deviceFingerprint, setDeviceFingerprint] = useState("");
-  const [isBindingDevice, setIsBindingDevice] = useState(false);
-  const [deviceBound, setDeviceBound] = useState(false);
   const [studentIdVerified, setStudentIdVerified] = useState(false);
   const [isVerifyingId, setIsVerifyingId] = useState(false);
 
@@ -169,30 +166,7 @@ const Register = () => {
     setStep(2);
   };
 
-  const handleDeviceBind = async () => {
-    setIsBindingDevice(true);
-    try {
-      const fp = await generateDeviceFingerprint();
-      setDeviceFingerprint(fp);
-      setDeviceBound(true);
-      toast.success("Device registered successfully");
-    } catch {
-      toast.error("Could not register device. You can continue, but device binding may fail.");
-      setDeviceBound(true);
-    } finally {
-      setIsBindingDevice(false);
-    }
-  };
-
-  const handleStep2Continue = () => {
-    if (!deviceBound) {
-      toast.error("Please register your device first");
-      return;
-    }
-    setStep(3);
-  };
-
-  const handleStep3Submit = async (e: React.FormEvent) => {
+  const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const emergencyName = formData.emergencyName.trim();
@@ -245,7 +219,7 @@ const Register = () => {
             emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
             contact_is_self: formData.contactIsSelf,
             student_id: formData.studentId,
-            device_fingerprint: deviceFingerprint || null,
+            device_fingerprint: null,
           },
         });
 
@@ -298,11 +272,11 @@ const Register = () => {
             emergency_name_encrypted: formData.emergencyName,
             emergency_phone_encrypted: formData.emergencyContact,
             emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
-            student_id_encrypted: formData.studentId,
+            student_id_encrypted: null,
             contact_is_self: formData.contactIsSelf,
-            device_id_encrypted: deviceFingerprint || null,
-            apaar_id_encrypted: !isSchool ? formData.studentId : null,
-            erp_id_encrypted: isSchool ? formData.studentId : null,
+            device_id_encrypted: null,
+            apaar_id_encrypted: null,
+            erp_id_encrypted: null,
             apaar_verified: !isSchool && studentIdVerified ? true : false,
             erp_verified: isSchool && studentIdVerified ? true : false,
           });
@@ -331,13 +305,13 @@ const Register = () => {
   const getBackAction = () => {
     if (step === 1) return () => navigate("/qr-scan");
     if (step === 2) return () => setStep(1);
-    return () => setStep(2);
+    return () => setStep(1);
   };
 
   const getBackLabel = () => {
     if (step === 1) return "Back";
     if (step === 2) return "Back to Credentials";
-    return "Back to Device Binding";
+    return "Back to Credentials";
   };
 
   return (
@@ -370,19 +344,11 @@ const Register = () => {
           </div>
           <div className={`flex-1 h-1 rounded ${step >= 2 ? "bg-gradient-eternia" : "bg-muted"}`} />
 
-          {/* Step 2: Device Binding */}
+          {/* Step 2: Private Profile */}
           <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
-            step > 2 ? "bg-eternia-success text-background" : step === 2 ? "bg-gradient-eternia text-background" : "bg-muted text-muted-foreground"
+            step === 2 ? "bg-gradient-eternia text-background" : "bg-muted text-muted-foreground"
           }`}>
-            {step > 2 ? <CheckCircle className="w-4 h-4" /> : "2"}
-          </div>
-          <div className={`flex-1 h-1 rounded ${step >= 3 ? "bg-gradient-eternia" : "bg-muted"}`} />
-
-          {/* Step 3: Private Profile */}
-          <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
-            step === 3 ? "bg-gradient-eternia text-background" : "bg-muted text-muted-foreground"
-          }`}>
-            3
+            2
           </div>
         </div>
 
@@ -463,79 +429,8 @@ const Register = () => {
             </>
           )}
 
-          {/* ─── STEP 2: Device Binding ─── */}
+          {/* ─── STEP 2: Private Profile ─── */}
           {step === 2 && (
-            <>
-              <div className="mb-5">
-                <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">Register Your Device</h1>
-                <p className="text-sm text-muted-foreground">
-                  This device will be registered as your primary access device for security.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Smartphone className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Primary Device Binding</p>
-                      <p className="text-xs text-muted-foreground">One account, one device</p>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-muted-foreground space-y-1.5 pl-[52px]">
-                    <p>• Your account will be linked to this device</p>
-                    <p>• Only this device can access your account</p>
-                    <p>• Contact your SPOC to change devices if needed</p>
-                  </div>
-                </div>
-
-                {deviceBound ? (
-                  <div className="p-4 rounded-xl bg-eternia-success/10 border border-eternia-success/30 flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-eternia-success flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-medium text-eternia-success">Device Registered</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">
-                        ID: {deviceFingerprint ? `${deviceFingerprint.slice(0, 8)}...${deviceFingerprint.slice(-8)}` : "N/A"}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    onClick={handleDeviceBind}
-                    disabled={isBindingDevice}
-                    className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 active:scale-[0.98] transition-all"
-                  >
-                    {isBindingDevice ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Registering Device...
-                      </>
-                    ) : (
-                      <>
-                        <Fingerprint className="w-4 h-4" />
-                        Register This Device
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                <Button
-                  onClick={handleStep2Continue}
-                  disabled={!deviceBound}
-                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 shadow-lg shadow-primary/15 active:scale-[0.98] transition-all"
-                >
-                  Continue
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </>
-          )}
-
-          {/* ─── STEP 3: Private Profile ─── */}
-          {step === 3 && (
             <>
               <div className="mb-5">
                 <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">Private Profile</h1>
@@ -544,7 +439,7 @@ const Register = () => {
                 </p>
               </div>
 
-              <form onSubmit={handleStep3Submit} className="space-y-4">
+              <form onSubmit={handleStep2Submit} className="space-y-4">
                 <div>
                   <label className="text-xs text-muted-foreground mb-1.5 block">Emergency Contact Name</label>
                   <Input
