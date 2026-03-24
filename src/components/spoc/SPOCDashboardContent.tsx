@@ -395,20 +395,6 @@ const SPOCDashboardContent = () => {
     setIsGranting(false);
   };
 
-  const handleResetDevice = async (studentId: string) => {
-    setIsResettingDevice(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("reset-device", {
-        body: { student_id: studentId },
-      });
-      if (error) throw error;
-      toast.success("Device binding reset successfully");
-      setResetDeviceStudent(null);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to reset device");
-    }
-    setIsResettingDevice(false);
-  };
 
   const activeStudents = students.filter((s) => s.is_active).length;
   const filteredStudents = students.filter((s) =>
