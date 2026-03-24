@@ -26,7 +26,6 @@ interface ExpertL3AlertPanelProps {
 
 const ExpertL3AlertPanel = ({ captureEscalationSnippet }: ExpertL3AlertPanelProps) => {
   const { user, profile } = useAuth();
-  const queryClient = useQueryClient();
   const [l3Sessions, setL3Sessions] = useState<L3Session[]>([]);
   const [joining, setJoining] = useState<string | null>(null);
   const [callModal, setCallModal] = useState<{ open: boolean; appointmentId?: string }>({ open: false });
