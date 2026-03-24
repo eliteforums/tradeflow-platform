@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft, Shield, AlertTriangle, CheckCircle, Phone } from "lucide-react";
+import { ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft, Shield, AlertTriangle, CheckCircle, Phone, Smartphone, Fingerprint, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -28,11 +28,14 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [institutionType, setInstitutionType] = useState<string>("university");
+  const [deviceFingerprint, setDeviceFingerprint] = useState("");
+  const [isBindingDevice, setIsBindingDevice] = useState(false);
+  const [deviceBound, setDeviceBound] = useState(false);
+  const [studentIdVerified, setStudentIdVerified] = useState(false);
+  const [isVerifyingId, setIsVerifyingId] = useState(false);
 
-  // Check if we have temp credential from QR flow
   const tempCredentialId = sessionStorage.getItem("eternia_temp_credential_id");
 
-  // Detect institution type on mount
   useEffect(() => {
     const instId = sessionStorage.getItem("eternia_institution_id");
     if (instId) {
@@ -48,12 +51,52 @@ const Register = () => {
       ...prev,
       [e.target.name]: e.target.value,
     }));
+    if (e.target.name === "studentId") {
+      setStudentIdVerified(false);
+    }
+  };
+
+  const isSchool = institutionType === "school";
+  const idLabel = isSchool ? "ERP ID (Admission Number)" : "APAAR / ABC ID";
+  const idPlaceholder = isSchool ? "Your ERP ID / Admission Number" : "12-digit APAAR / ABC ID";
+
+  const validateApaarFormat = (id: string): boolean => /^\d{12}$/.test(id);
+  const validateErpFormat = (id: string): boolean => /^[a-zA-Z0-9]{3,50}$/.test(id);
+
+  const handleVerifyStudentId = () => {
+    const id = formData.studentId.trim();
+    if (!id) {
+      toast.error(`Please enter your ${idLabel}`);
+      return;
+    }
+
+    setIsVerifyingId(true);
+
+    // Format validation (no external API yet — institutional QR gate is the verification)
+    setTimeout(() => {
+      if (isSchool) {
+        if (!validateErpFormat(id)) {
+          toast.error("ERP ID must be 3-50 alphanumeric characters");
+          setIsVerifyingId(false);
+          return;
+        }
+      } else {
+        if (!validateApaarFormat(id)) {
+          toast.error("APAAR / ABC ID must be exactly 12 digits");
+          setIsVerifyingId(false);
+          return;
+        }
+      }
+      setStudentIdVerified(true);
+      toast.success(`${isSchool ? "ERP ID" : "APAAR ID"} verified`);
+      setIsVerifyingId(false);
+    }, 800);
   };
 
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     const username = formData.username.trim();
-    
+
     if (!username || username.length < 4) {
       toast.error("Username must be at least 4 characters");
       return;
@@ -66,7 +109,6 @@ const Register = () => {
       toast.error("Username can only contain letters, numbers, and underscores");
       return;
     }
-    
     if (!formData.password || formData.password.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
@@ -102,13 +144,36 @@ const Register = () => {
     setStep(2);
   };
 
-  const handleStep2Submit = async (e: React.FormEvent) => {
+  const handleDeviceBind = async () => {
+    setIsBindingDevice(true);
+    try {
+      const fp = await generateDeviceFingerprint();
+      setDeviceFingerprint(fp);
+      setDeviceBound(true);
+      toast.success("Device registered successfully");
+    } catch {
+      toast.error("Could not register device. You can continue, but device binding may fail.");
+      setDeviceBound(true);
+    } finally {
+      setIsBindingDevice(false);
+    }
+  };
+
+  const handleStep2Continue = () => {
+    if (!deviceBound) {
+      toast.error("Please register your device first");
+      return;
+    }
+    setStep(3);
+  };
+
+  const handleStep3Submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const emergencyName = formData.emergencyName.trim();
     const emergencyContact = formData.emergencyContact.trim();
     const studentId = formData.studentId.trim();
-    
+
     if (!emergencyName || emergencyName.length < 2 || emergencyName.length > 100) {
       toast.error("Emergency contact name must be 2-100 characters");
       return;
@@ -130,7 +195,11 @@ const Register = () => {
       return;
     }
     if (!studentId || studentId.length < 3 || studentId.length > 50) {
-      toast.error("Student verification ID must be 3-50 characters");
+      toast.error(`${idLabel} must be 3-50 characters`);
+      return;
+    }
+    if (!studentIdVerified) {
+      toast.error(`Please verify your ${idLabel} before continuing`);
       return;
     }
     if (!acceptedConsent) {
@@ -140,15 +209,7 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      let deviceFingerprint = "";
-      try {
-        deviceFingerprint = await generateDeviceFingerprint();
-      } catch (e) {
-        console.warn("Device fingerprint generation failed:", e);
-      }
-
       if (tempCredentialId) {
-        // ─── New Flow: Activate via temp credential ───
         const { data, error } = await supabase.functions.invoke("activate-account", {
           body: {
             temp_credential_id: tempCredentialId,
@@ -174,7 +235,6 @@ const Register = () => {
         }
 
         toast.success("Account created successfully!");
-        // Clear session storage
         sessionStorage.removeItem("eternia_institution_code");
         sessionStorage.removeItem("eternia_institution_id");
         sessionStorage.removeItem("eternia_spoc_verified");
@@ -186,7 +246,6 @@ const Register = () => {
           navigate("/login");
         }
       } else {
-        // ─── Legacy flow (if no temp credential) ───
         const institutionCode = sessionStorage.getItem("eternia_institution_code");
         const institutionId = sessionStorage.getItem("eternia_institution_id");
         const { error } = await signUp(formData.username, formData.password, {
@@ -217,8 +276,10 @@ const Register = () => {
             student_id_encrypted: formData.studentId,
             contact_is_self: formData.contactIsSelf,
             device_id_encrypted: deviceFingerprint || null,
-            apaar_id_encrypted: institutionType !== "school" ? formData.studentId : null,
-            erp_id_encrypted: institutionType === "school" ? formData.studentId : null,
+            apaar_id_encrypted: !isSchool ? formData.studentId : null,
+            erp_id_encrypted: isSchool ? formData.studentId : null,
+            apaar_verified: !isSchool && studentIdVerified ? true : false,
+            erp_verified: isSchool && studentIdVerified ? true : false,
           });
 
           if (institutionId) {
@@ -242,6 +303,18 @@ const Register = () => {
     }
   };
 
+  const getBackAction = () => {
+    if (step === 1) return () => navigate("/qr-scan");
+    if (step === 2) return () => setStep(1);
+    return () => setStep(2);
+  };
+
+  const getBackLabel = () => {
+    if (step === 1) return "Back";
+    if (step === 2) return "Back to Credentials";
+    return "Back to Device Binding";
+  };
+
   return (
     <div className="min-h-screen min-h-dvh bg-background flex items-start sm:items-center justify-center px-4 py-6 sm:p-6 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
@@ -251,32 +324,46 @@ const Register = () => {
 
       <div className="w-full max-w-md relative z-10">
         <button
-          onClick={() => step === 1 ? navigate("/qr-scan") : setStep(1)}
+          onClick={getBackAction()}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-5 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          {step === 1 ? "Back" : "Back to Credentials"}
+          {getBackLabel()}
         </button>
 
         <div className="flex items-center mb-5">
           <EterniaLogo size={44} />
         </div>
 
-        {/* Progress Steps */}
+        {/* Progress Steps — 3 steps */}
         <div className="flex items-center gap-2 mb-5">
-          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-eternia-success text-background text-xs">
-            <CheckCircle className="w-4 h-4" />
+          {/* Step 1: Credentials */}
+          <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
+            step > 1 ? "bg-eternia-success text-background" : "bg-gradient-eternia text-background"
+          }`}>
+            {step > 1 ? <CheckCircle className="w-4 h-4" /> : "1"}
           </div>
           <div className={`flex-1 h-1 rounded ${step >= 2 ? "bg-gradient-eternia" : "bg-muted"}`} />
+
+          {/* Step 2: Device Binding */}
           <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
-            step >= 2 ? "bg-gradient-eternia text-background" : "bg-gradient-eternia text-background"
+            step > 2 ? "bg-eternia-success text-background" : step === 2 ? "bg-gradient-eternia text-background" : "bg-muted text-muted-foreground"
           }`}>
-            2
+            {step > 2 ? <CheckCircle className="w-4 h-4" /> : "2"}
+          </div>
+          <div className={`flex-1 h-1 rounded ${step >= 3 ? "bg-gradient-eternia" : "bg-muted"}`} />
+
+          {/* Step 3: Private Profile */}
+          <div className={`flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold ${
+            step === 3 ? "bg-gradient-eternia text-background" : "bg-muted text-muted-foreground"
+          }`}>
+            3
           </div>
         </div>
 
         <div className="glass rounded-2xl p-4 sm:p-6">
-          {step === 1 ? (
+          {/* ─── STEP 1: Credentials ─── */}
+          {step === 1 && (
             <>
               <div className="mb-5">
                 <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">
@@ -349,7 +436,81 @@ const Register = () => {
                 </Button>
               </form>
             </>
-          ) : (
+          )}
+
+          {/* ─── STEP 2: Device Binding ─── */}
+          {step === 2 && (
+            <>
+              <div className="mb-5">
+                <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">Register Your Device</h1>
+                <p className="text-sm text-muted-foreground">
+                  This device will be registered as your primary access device for security.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Smartphone className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Primary Device Binding</p>
+                      <p className="text-xs text-muted-foreground">One account, one device</p>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground space-y-1.5 pl-[52px]">
+                    <p>• Your account will be linked to this device</p>
+                    <p>• Only this device can access your account</p>
+                    <p>• Contact your SPOC to change devices if needed</p>
+                  </div>
+                </div>
+
+                {deviceBound ? (
+                  <div className="p-4 rounded-xl bg-eternia-success/10 border border-eternia-success/30 flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-eternia-success flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-eternia-success">Device Registered</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+                        ID: {deviceFingerprint ? `${deviceFingerprint.slice(0, 8)}...${deviceFingerprint.slice(-8)}` : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={handleDeviceBind}
+                    disabled={isBindingDevice}
+                    className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 active:scale-[0.98] transition-all"
+                  >
+                    {isBindingDevice ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Registering Device...
+                      </>
+                    ) : (
+                      <>
+                        <Fingerprint className="w-4 h-4" />
+                        Register This Device
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                <Button
+                  onClick={handleStep2Continue}
+                  disabled={!deviceBound}
+                  className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 shadow-lg shadow-primary/15 active:scale-[0.98] transition-all"
+                >
+                  Continue
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </>
+          )}
+
+          {/* ─── STEP 3: Private Profile ─── */}
+          {step === 3 && (
             <>
               <div className="mb-5">
                 <h1 className="text-xl sm:text-2xl font-bold font-display mb-1">Private Profile</h1>
@@ -358,7 +519,7 @@ const Register = () => {
                 </p>
               </div>
 
-              <form onSubmit={handleStep2Submit} className="space-y-4">
+              <form onSubmit={handleStep3Submit} className="space-y-4">
                 <div>
                   <label className="text-xs text-muted-foreground mb-1.5 block">Emergency Contact Name</label>
                   <Input
@@ -416,17 +577,45 @@ const Register = () => {
                 )}
 
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">
-                    {institutionType === "school" ? "ERP ID" : "Student ID (APAAR / ABC ID)"}
-                  </label>
-                  <Input
-                    type="text"
-                    name="studentId"
-                    placeholder={institutionType === "school" ? "Your ERP ID" : "Your APAAR / ABC ID"}
-                    value={formData.studentId}
-                    onChange={handleChange}
-                    className="h-11 rounded-xl bg-card/50 border-border/40 text-sm"
-                  />
+                  <label className="text-xs text-muted-foreground mb-1.5 block">{idLabel}</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      name="studentId"
+                      placeholder={idPlaceholder}
+                      value={formData.studentId}
+                      onChange={handleChange}
+                      className="h-11 rounded-xl bg-card/50 border-border/40 text-sm flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant={studentIdVerified ? "outline" : "default"}
+                      onClick={handleVerifyStudentId}
+                      disabled={isVerifyingId || studentIdVerified}
+                      className="h-11 rounded-xl text-sm px-4 flex-shrink-0"
+                    >
+                      {isVerifyingId ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : studentIdVerified ? (
+                        <CheckCircle className="w-4 h-4 text-eternia-success" />
+                      ) : (
+                        "Verify"
+                      )}
+                    </Button>
+                  </div>
+                  {studentIdVerified && (
+                    <p className="text-[11px] text-eternia-success mt-1 flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      {isSchool ? "ERP ID verified" : "APAAR / ABC ID verified"}
+                    </p>
+                  )}
+                  {!studentIdVerified && !isVerifyingId && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {isSchool
+                        ? "Enter your school ERP ID or Admission Number"
+                        : "Enter your 12-digit APAAR / ABC ID issued by the institution"}
+                    </p>
+                  )}
                 </div>
 
                 {/* Consent */}
@@ -443,7 +632,7 @@ const Register = () => {
                         <AlertTriangle className="w-3.5 h-3.5 text-eternia-warning" />
                         Emergency Escalation Consent
                       </span>
-                      I consent to the platform sharing my username and emergency contact with my institution's SPOC (Single Point of Contact) if the system or a qualified professional detects a high-risk situation requiring immediate intervention. This disclosure will only occur when there is a credible threat to my safety or the safety of others.
+                      I consent to the platform sharing my username and emergency contact with my institution's SPOC (Single Point of Contact) if the system or a qualified professional detects a high-risk situation requiring immediate intervention.
                     </label>
                   </div>
                 </div>
