@@ -1,39 +1,25 @@
 
 
-## Plan: Add Call Functionality to Peer Connect
+## Plan: Fix Emergency Contact Not Reflecting on SPOC Dashboard
 
-### Approach
-Reuse the existing `VideoCallModal` component (already used by BlackBox) to add audio call capability within active Peer Connect sessions. The `peer_sessions` table already has a `room_id` column for this purpose.
+### Root Cause
+The `get-emergency-contact` edge function uses `anonClient.auth.getClaims(token)` which is **not a valid method** in supabase-js v2. This causes the function to return 401, which makes the expert's `handleEmergencyEscalation` throw an error before the escalation_request is even created. No escalation = nothing on SPOC dashboard.
 
 ### Changes
 
-#### 1. `src/pages/dashboard/PeerConnect.tsx` — Desktop
-- Import `VideoCallModal` and `Phone`/`Video` icons
-- Add state `callMode` (`null | "audio" | "video"`)
-- In the chat header (line ~439, next to flag/close buttons), add a Phone button (audio call) visible when session is `active`
-- Render `VideoCallModal` when `callMode` is set, passing `activeSession.room_id` as `existingRoomId` and `activeSession.id` as session context
-- On call start, if no `room_id` exists yet, the modal handles room creation automatically
+#### 1. Fix `supabase/functions/get-emergency-contact/index.ts`
+- Replace `getClaims(token)` with `getUser(token)` — the standard supabase-js v2 method
+- Extract `callerId` from `user.id` instead of `claims.sub`
 
-#### 2. `src/components/mobile/MobilePeerConnect.tsx` — Mobile
-- Same additions: Phone button in chat header, VideoCallModal rendering
-
-#### 3. `src/hooks/usePeerConnect.ts` — Save room_id
-- Add a `startCall` mutation that creates a VideoSDK room (via `createVideoSDKRoom`), saves the `room_id` to the `peer_sessions` row, and notifies the other party
-- Return `startCall` and room creation state from the hook
-- When the other party receives the notification + room_id update via realtime, they can join the same room
-
-#### 4. Call notification
-- When one party starts a call, insert a notification for the other party: "Incoming call on Peer Connect"
-- The realtime subscription on `peer_sessions` already picks up `room_id` changes, so the other user's UI updates automatically
-
-### Technical Details
-- `VideoCallModal` already handles: token generation, room creation (if no `existingRoomId`), joining, leaving
-- `peer_sessions.room_id` column already exists in the schema
-- Audio-only mode is default (safer for anonymous sessions); video can be an optional toggle
-- Both parties see a "Join Call" button once `room_id` is set on the session
+#### 2. Add fallback in `src/components/expert/ExpertL3AlertPanel.tsx`
+- If `get-emergency-contact` fails (e.g. no user_private record), still create the escalation_request with available info (student username, session ID) instead of throwing and aborting
+- Move the `supabase.functions.invoke("get-emergency-contact")` call inside a try-catch that allows the escalation to proceed even without contact data
 
 ### Files Modified
-- `src/hooks/usePeerConnect.ts` — Add `startCall` mutation, expose call state
-- `src/pages/dashboard/PeerConnect.tsx` — Call button in header, VideoCallModal
-- `src/components/mobile/MobilePeerConnect.tsx` — Same call UI for mobile
+- `supabase/functions/get-emergency-contact/index.ts` — Fix auth method
+- `src/components/expert/ExpertL3AlertPanel.tsx` — Make escalation resilient to contact fetch failure
+
+### Technical Details
+- `anonClient.auth.getClaims(token)` → `anonClient.auth.getUser(token)` with `data.user.id` for caller identity
+- The escalation insert should always succeed; emergency contact data is optional enrichment
 
