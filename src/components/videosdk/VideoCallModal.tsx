@@ -181,6 +181,7 @@ const VideoCallModal = ({
                 onRiskDetected={onRiskDetected}
                 isTherapistView={isTherapistView}
                 onCaptureSnippetReady={onCaptureSnippetReady}
+                onLeaveReady={onLeaveReady}
                 autoJoin={true}
               />
             </MeetingProvider>
