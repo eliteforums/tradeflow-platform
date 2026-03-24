@@ -1,43 +1,33 @@
 
 
-## Plan: Fix SPOC Reports Tab — Make It Real & Institution-Scoped
+## Plan: Enhance PWA Update Notification
 
-### Current Issues
+### Current State
+`PWAUpdatePrompt.tsx` already exists and is rendered in `App.tsx`. It detects service worker updates and shows a small banner. The vite-plugin-pwa config already has `skipWaiting: true` and `clientsClaim: true`.
 
-The Reports tab **fetches real data** but has critical problems:
-
-1. **Not institution-scoped** — All 4 report queries (`appointments`, `peer_sessions`, `sound_content`, `quest_completions`) fetch global counts, not filtered by the SPOC's institution. A SPOC at University A sees data from University B too.
-2. **Sound plays not date-filtered** — The query fetches total `play_count` from `sound_content` regardless of the date filter. Sound content doesn't track per-user plays, so this metric is misleading.
-3. **No realtime** — Data only updates on page load or manual refresh.
-4. **Export PDF button is non-functional** — Just a static button with no handler.
-5. **Flagged entries not institution-scoped** — Risk Factor Summary shows global flagged entries, not just from institution students.
+### Problem
+The `skipWaiting: true` in the Workbox config means the new service worker activates immediately — **bypassing** the prompt entirely. The `PWAUpdatePrompt` waits for a "waiting" worker, but `skipWaiting` prevents that state. So the prompt likely never shows.
 
 ### Changes
 
-#### 1. `src/components/spoc/SPOCDashboardContent.tsx` — Fix report queries
+#### 1. `vite.config.ts` — Remove `skipWaiting` and `clientsClaim` from Workbox config
+These should be controlled by the app (via `postMessage`) not automatically. This is what makes the update prompt actually work — the new SW waits until the user clicks "Update".
 
-**Appointments query** — Add `.in("student_id", studentIds)` to filter by institution students only (using the already-fetched `students` array).
+#### 2. `src/components/PWAUpdatePrompt.tsx` — Enhanced update notification
+- Replace the minimal banner with a more prominent notification card:
+  - Animated refresh icon
+  - "New version available" title with version/changelog hint
+  - Two clear action buttons: **"Update Now"** (triggers skip waiting + reload) and **"Later"** (dismiss)
+  - If dismissed, re-show after 1 hour (tracked via `localStorage` timestamp)
+  - If update is critical (detected via a version check endpoint or meta tag), show a non-dismissable overlay with "Please update to continue" and an "Uninstall & Reinstall" instruction fallback
+- Add a small persistent dot indicator on the app (e.g., in the navbar or sidebar) when an update is available but dismissed
 
-**Peer sessions query** — Add `.in("student_id", studentIds)` filter.
-
-**Quest completions query** — Add `.in("user_id", studentIds)` filter.
-
-**Sound plays** — Remove or replace with a more meaningful institution metric (e.g., BlackBox session count for institution students, or mood entries count). Sound `play_count` is a global column on the track, not per-user/per-institution.
-
-**Flagged entries** — Filter by institution student IDs.
-
-#### 2. Add realtime refresh
-
-Subscribe to `appointments`, `peer_sessions`, `quest_completions` INSERT events and invalidate the report query when new rows appear. Reuse the pattern already used for escalation realtime.
-
-#### 3. Fix Export PDF button
-
-Generate a simple text/CSV download of the report data (appointments count, peer sessions, quest completions, risk summary) with the selected date range. Full PDF generation would require a library — CSV export is practical and functional.
-
-#### 4. Add auto-refresh indicator
-
-Show a small "Live" dot next to the Reports header + last updated timestamp so SPOCs know data is current.
+#### 3. Add "Check for Updates" button in Profile/Settings page
+- `src/pages/dashboard/Profile.tsx` — Add a "Check for Updates" button that manually calls `registration.update()` and shows result
+- Show current app version (from `package.json` or a build-time env variable)
 
 ### Files Modified
-- `src/components/spoc/SPOCDashboardContent.tsx` — Fix all report queries to be institution-scoped, add realtime subscription, fix export button
+- `vite.config.ts` — Remove `skipWaiting`/`clientsClaim` from workbox config
+- `src/components/PWAUpdatePrompt.tsx` — Enhanced UI with dismiss timer, re-show logic, uninstall instructions
+- `src/pages/dashboard/Profile.tsx` — Add manual update check button
 
