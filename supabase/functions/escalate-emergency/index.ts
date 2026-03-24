@@ -36,63 +36,112 @@ Deno.serve(async (req) => {
     }
     const callerId = user.id;
 
-    const { session_id, justification, transcript_snippet } = await req.json();
-    if (!session_id) {
-      return new Response(JSON.stringify({ error: "session_id required" }), {
+    const { session_id, appointment_id, peer_session_id, justification, transcript_snippet } = await req.json();
+
+    // Must provide exactly one session reference
+    const refs = [session_id, appointment_id, peer_session_id].filter(Boolean);
+    if (refs.length !== 1) {
+      return new Response(JSON.stringify({ error: "Provide exactly one of session_id, appointment_id, or peer_session_id" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Use service role for all DB operations
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // 1. Get session
-    const { data: session, error: sessErr } = await admin
-      .from("blackbox_sessions")
-      .select("id, student_id, therapist_id, flag_level, escalation_reason, status")
-      .eq("id", session_id)
-      .single();
+    let studentId: string;
+    let sessionRef: { table: string; id: string; flagLevel?: number; escalationReason?: string | null };
 
-    if (sessErr || !session) {
-      return new Response(JSON.stringify({ error: "Session not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // ---- Resolve session type and verify caller ----
+
+    if (session_id) {
+      // BlackBox session
+      const { data: session, error: sessErr } = await admin
+        .from("blackbox_sessions")
+        .select("id, student_id, therapist_id, flag_level, escalation_reason, status")
+        .eq("id", session_id)
+        .single();
+      if (sessErr || !session) {
+        return new Response(JSON.stringify({ error: "Session not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Verify caller is therapist or expert
+      const isTherapist = session.therapist_id === callerId;
+      let isExpert = false;
+      if (!isTherapist) {
+        const { data: roleCheck } = await admin.from("user_roles").select("id").eq("user_id", callerId).eq("role", "expert").limit(1);
+        isExpert = !!(roleCheck && roleCheck.length > 0);
+      }
+      if (!isTherapist && !isExpert) {
+        return new Response(JSON.stringify({ error: "Not authorized" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      studentId = session.student_id;
+      sessionRef = { table: "blackbox_sessions", id: session.id, flagLevel: session.flag_level, escalationReason: session.escalation_reason };
+
+    } else if (appointment_id) {
+      // Expert appointment
+      const { data: appt, error: apptErr } = await admin
+        .from("appointments")
+        .select("id, student_id, expert_id, status")
+        .eq("id", appointment_id)
+        .single();
+      if (apptErr || !appt) {
+        return new Response(JSON.stringify({ error: "Appointment not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (appt.expert_id !== callerId) {
+        // Check if caller has expert role as fallback
+        const { data: roleCheck } = await admin.from("user_roles").select("id").eq("user_id", callerId).eq("role", "expert").limit(1);
+        if (!roleCheck || roleCheck.length === 0) {
+          return new Response(JSON.stringify({ error: "Not authorized" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+      studentId = appt.student_id;
+      sessionRef = { table: "appointments", id: appt.id };
+
+    } else {
+      // Peer session (intern escalation)
+      const { data: peerSess, error: peerErr } = await admin
+        .from("peer_sessions")
+        .select("id, student_id, intern_id, status, is_flagged")
+        .eq("id", peer_session_id)
+        .single();
+      if (peerErr || !peerSess) {
+        return new Response(JSON.stringify({ error: "Peer session not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (peerSess.intern_id !== callerId) {
+        // Check if caller has intern role
+        const { data: roleCheck } = await admin.from("user_roles").select("id").eq("user_id", callerId).eq("role", "intern").limit(1);
+        if (!roleCheck || roleCheck.length === 0) {
+          return new Response(JSON.stringify({ error: "Not authorized" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+      studentId = peerSess.student_id;
+      sessionRef = { table: "peer_sessions", id: peerSess.id };
     }
 
-    // 2. Verify caller is therapist or expert
-    const isTherapist = session.therapist_id === callerId;
-    let isExpert = false;
-    if (!isTherapist) {
-      const { data: roleCheck } = await admin
-        .from("user_roles")
-        .select("id")
-        .eq("user_id", callerId)
-        .eq("role", "expert")
-        .limit(1);
-      isExpert = !!(roleCheck && roleCheck.length > 0);
-    }
+    // ---- Common logic: fetch student profile + emergency contact ----
 
-    if (!isTherapist && !isExpert) {
-      return new Response(JSON.stringify({ error: "Not authorized" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 3. Fetch student profile
     const { data: studentProfile } = await admin
       .from("profiles")
       .select("institution_id, student_id, username")
-      .eq("id", session.student_id)
+      .eq("id", studentId)
       .single();
 
-    // 4. Fetch emergency contact (service role bypasses RLS)
     const { data: privateData } = await admin
       .from("user_private")
       .select("emergency_name_encrypted, emergency_phone_encrypted, emergency_relation, contact_is_self")
-      .eq("user_id", session.student_id)
+      .eq("user_id", studentId)
       .single();
 
     const contact = privateData
@@ -104,8 +153,8 @@ Deno.serve(async (req) => {
         }
       : null;
 
-    // 5. Find SPOC for institution
-    let spocId = callerId; // fallback
+    // Find SPOC for institution
+    let spocId = callerId;
     if (studentProfile?.institution_id) {
       const { data: spocs } = await admin
         .from("profiles")
@@ -116,24 +165,29 @@ Deno.serve(async (req) => {
       if (spocs && spocs.length > 0) spocId = spocs[0].id;
     }
 
-    // 6. Build trigger_snippet
+    // Build trigger_snippet
     const triggerSnippet = JSON.stringify({
       type: "emergency_contact",
       ...(contact || {}),
       student_eternia_id: studentProfile?.student_id || null,
       student_username: studentProfile?.username || null,
       transcript_snippet: transcript_snippet || null,
-      session_id: session.id,
+      session_id: sessionRef.id,
+      session_type: sessionRef.table,
     });
 
-    // 7. Insert escalation request
+    // Determine escalation level
+    const escalationLevel = session_id ? 3 : 1;
+    const escalationStatus = session_id ? "critical" : "pending";
+
+    // Insert escalation request
     const { data: escalation, error: escError } = await admin
       .from("escalation_requests")
       .insert({
         spoc_id: spocId,
-        justification_encrypted: justification || `L3 Emergency escalation during BlackBox session. ${session.escalation_reason || "Critical risk detected by AI."}`,
-        escalation_level: 3,
-        status: "critical",
+        justification_encrypted: justification || `Emergency escalation. ${sessionRef.escalationReason || "Risk detected."}`,
+        escalation_level: escalationLevel,
+        status: escalationStatus,
         trigger_snippet: triggerSnippet,
         trigger_timestamp: new Date().toISOString(),
       })
@@ -148,15 +202,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 8. Notify SPOC
+    // Notify SPOC
+    const flagLabel = sessionRef.flagLevel ? `L${sessionRef.flagLevel}` : "L1";
     await admin.from("notifications").insert({
       user_id: spocId,
       type: "emergency_escalation",
-      title: "🚨 L3 Emergency — Contact Info Available",
-      message: `Critical BlackBox session (L${session.flag_level}) escalated. Emergency contact: ${contact?.name || "N/A"} (${contact?.phone || "N/A"}, ${contact?.relation || "N/A"}). ${session.escalation_reason || "Immediate attention required."}`,
+      title: escalationLevel >= 3 ? "🚨 L3 Emergency — Contact Info Available" : "⚠️ Escalation — Student Concern",
+      message: escalationLevel >= 3
+        ? `Critical session (${flagLabel}) escalated. Emergency contact: ${contact?.name || "N/A"} (${contact?.phone || "N/A"}, ${contact?.relation || "N/A"}). ${sessionRef.escalationReason || "Immediate attention required."}`
+        : `A ${sessionRef.table === "peer_sessions" ? "peer session" : "appointment"} has been escalated. Reason: ${justification || "Concern flagged."}. Emergency contact: ${contact?.name || "N/A"} (${contact?.phone || "N/A"}).`,
       metadata: {
-        session_id: session.id,
-        student_id: session.student_id,
+        session_id: sessionRef.id,
+        session_type: sessionRef.table,
+        student_id: studentId,
         escalated_by: callerId,
         emergency_contact: contact || null,
         student_eternia_id: studentProfile?.student_id || null,
@@ -164,37 +222,39 @@ Deno.serve(async (req) => {
       },
     });
 
-    // 9. Notify other experts
-    const { data: expertProfiles } = await admin
-      .from("profiles")
-      .select("id")
-      .eq("role", "expert")
-      .eq("is_active", true)
-      .neq("id", callerId);
+    // Notify other experts (for L3 only)
+    if (escalationLevel >= 3) {
+      const { data: expertProfiles } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("role", "expert")
+        .eq("is_active", true)
+        .neq("id", callerId);
 
-    if (expertProfiles && expertProfiles.length > 0) {
-      await admin.from("notifications").insert(
-        expertProfiles.map((e) => ({
-          user_id: e.id,
-          type: "emergency_escalation",
-          title: "🚨 Emergency Case Escalated",
-          message: `A critical BlackBox session (L${session.flag_level}) has been escalated. ${session.escalation_reason || "Immediate attention required."}`,
-          metadata: {
-            session_id: session.id,
-            student_id: session.student_id,
-            escalated_by: callerId,
-          },
-        }))
-      );
+      if (expertProfiles && expertProfiles.length > 0) {
+        await admin.from("notifications").insert(
+          expertProfiles.map((e) => ({
+            user_id: e.id,
+            type: "emergency_escalation",
+            title: "🚨 Emergency Case Escalated",
+            message: `A critical session (${flagLabel}) has been escalated. ${sessionRef.escalationReason || "Immediate attention required."}`,
+            metadata: {
+              session_id: sessionRef.id,
+              student_id: studentId,
+              escalated_by: callerId,
+            },
+          }))
+        );
+      }
     }
 
-    // 10. Audit log
+    // Audit log
     await admin.from("audit_logs").insert({
       actor_id: callerId,
-      action_type: "l3_emergency_escalation",
-      target_table: "blackbox_sessions",
-      target_id: session.id,
-      metadata: { student_id: session.student_id, has_contact: !!contact },
+      action_type: escalationLevel >= 3 ? "l3_emergency_escalation" : "escalation_submitted",
+      target_table: sessionRef.table,
+      target_id: sessionRef.id,
+      metadata: { student_id: studentId, has_contact: !!contact, escalation_level: escalationLevel },
     });
 
     return new Response(

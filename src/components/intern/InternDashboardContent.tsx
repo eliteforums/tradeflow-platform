@@ -132,39 +132,21 @@ const InternDashboardContent = () => {
 
   const submitEscalation = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Not authenticated");
-      const session = mySessions.find(s => s.id === escalationDialog.sessionId);
-      let spocId = user.id;
-      if (session?.student?.institution_id) {
-        const { data: spocs } = await supabase
-          .from("profiles").select("id")
-          .eq("institution_id", session.student.institution_id)
-          .eq("role", "spoc").limit(1);
-        if (spocs && spocs.length > 0) spocId = spocs[0].id;
+      if (!user || !escalationDialog.sessionId) throw new Error("Missing data");
+      const { data, error } = await supabase.functions.invoke("escalate-emergency", {
+        body: {
+          peer_session_id: escalationDialog.sessionId,
+          justification: escalationReason,
+          transcript_snippet: null, // Will be populated when audio monitoring is active
+        },
+      });
+      if (error) throw new Error(error.message || "Escalation failed");
+      if (data?.error) throw new Error(data.error);
+      if (data?.contact) {
+        toast.info(`Emergency contact: ${data.contact.name} (${data.contact.phone})`);
       }
-      const triggerSnippet = escalationReason.length > 500
-        ? escalationReason.substring(0, 500)
-        : escalationReason;
-      const { error } = await supabase.from("escalation_requests").insert({
-        spoc_id: spocId,
-        justification_encrypted: escalationReason,
-        session_id: escalationDialog.sessionId || null,
-        entry_id: null,
-        trigger_snippet: triggerSnippet,
-        trigger_timestamp: new Date().toISOString(),
-        escalation_level: 1,
-      });
-      if (error) throw error;
-      // §14.2: Audit log
-      await supabase.from("audit_logs").insert({
-        actor_id: user.id,
-        action_type: "escalation_submitted",
-        target_table: "escalation_requests",
-        target_id: escalationDialog.sessionId || null,
-        metadata: { level: 1, reason_length: escalationReason.length },
-      });
     },
-    onSuccess: () => { toast.success("Escalation submitted"); setEscalationDialog({ open: false }); setEscalationReason(""); },
+    onSuccess: () => { toast.success("Escalation submitted with emergency contact"); setEscalationDialog({ open: false }); setEscalationReason(""); },
     onError: (e) => toast.error(e.message),
   });
 
