@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import {
   User, Shield, Bell, Lock, Building2, Calendar, Coins, CheckCircle, Settings,
   ChevronRight, Save, Loader2, Phone, UserCircle, BadgeCheck, AlertCircle,
-  Award, BookOpen, Stethoscope, Clock,
+  Award, BookOpen, Stethoscope, Clock, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
