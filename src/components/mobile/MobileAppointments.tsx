@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Clock, User, Video, Phone, CheckCircle, Coins, X, Loader2 } from "lucide-react";
+import { Calendar, Clock, User, Video, Phone, CheckCircle, Coins, X, Loader2, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
