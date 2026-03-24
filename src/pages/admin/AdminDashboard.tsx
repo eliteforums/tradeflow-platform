@@ -504,6 +504,12 @@ const AdminDashboard = () => {
                                     <span className="font-medium">{s.expertName}</span>
                                   </div>
                                 )}
+                                {s.studentName && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">Student:</span>
+                                    <span className="font-medium">{s.studentName}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}

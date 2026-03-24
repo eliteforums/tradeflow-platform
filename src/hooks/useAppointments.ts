@@ -77,7 +77,7 @@ export function useAppointments() {
       if (!user) return [];
       const { data, error } = await supabase
         .from("appointments")
-        .select("id, student_id, expert_id, slot_time, status, session_type, credits_charged, created_at, expert:profiles!appointments_expert_id_fkey(id, username, specialty, bio, total_sessions, is_active)")
+        .select("id, student_id, expert_id, slot_time, status, session_type, credits_charged, created_at, reschedule_reason, rescheduled_from, rescheduled_by, expert:profiles!appointments_expert_id_fkey(id, username, specialty, bio, total_sessions, is_active)")
         .eq("student_id", user.id)
         .order("slot_time", { ascending: false })
         .limit(50);
