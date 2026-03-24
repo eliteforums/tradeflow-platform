@@ -1,9 +1,8 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sparkles, ShieldAlert } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useDeviceValidation } from "@/hooks/useDeviceValidation";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
