@@ -637,6 +637,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                       enableMonitoring={true}
                       autoJoin={true}
                       isTherapistView={true}
+                      onLeaveReady={(leaveFn) => { leaveCallRef.current = leaveFn; }}
                       onJoined={async () => {
                         // Write therapist join timestamp
                         await supabase.from("blackbox_sessions")
