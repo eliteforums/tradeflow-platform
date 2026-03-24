@@ -28,9 +28,7 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [institutionType, setInstitutionType] = useState<string>("university");
-  const [deviceFingerprint, setDeviceFingerprint] = useState("");
-  const [isBindingDevice, setIsBindingDevice] = useState(false);
-  const [deviceBound, setDeviceBound] = useState(false);
+  const [studentIdVerified, setStudentIdVerified] = useState(false);
   const [studentIdVerified, setStudentIdVerified] = useState(false);
   const [isVerifyingId, setIsVerifyingId] = useState(false);
 
