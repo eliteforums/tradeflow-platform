@@ -103,6 +103,19 @@ Deno.serve(async (req) => {
       })
       .eq("id", session_id);
 
+    // Audit log for session refund
+    await adminClient.from("audit_logs").insert({
+      actor_id: user.id,
+      action_type: "session_refund",
+      target_table: "blackbox_sessions",
+      target_id: session_id,
+      metadata: {
+        student_id: session.student_id,
+        reason: reason || "User unresponsive",
+        refund_amount: 30,
+      },
+    });
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
