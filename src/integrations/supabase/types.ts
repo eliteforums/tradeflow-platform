@@ -552,6 +552,51 @@ export type Database = {
         }
         Relationships: []
       }
+      institution_student_ids: {
+        Row: {
+          claimed_by: string | null
+          created_at: string
+          id: string
+          id_type: string
+          institution_id: string
+          is_claimed: boolean
+          student_id_hash: string
+        }
+        Insert: {
+          claimed_by?: string | null
+          created_at?: string
+          id?: string
+          id_type: string
+          institution_id: string
+          is_claimed?: boolean
+          student_id_hash: string
+        }
+        Update: {
+          claimed_by?: string | null
+          created_at?: string
+          id?: string
+          id_type?: string
+          institution_id?: string
+          is_claimed?: boolean
+          student_id_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "institution_student_ids_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "institution_student_ids_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       institutions: {
         Row: {
           created_at: string
