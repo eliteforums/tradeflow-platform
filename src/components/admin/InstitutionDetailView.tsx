@@ -96,6 +96,21 @@ const InstitutionDetailView = ({ institution, onBack, onBulkAllocate }: Institut
     },
   });
 
+  // Student ID verification stats
+  const { data: idStats } = useQuery({
+    queryKey: ["inst-detail-ids", institution.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("institution_student_ids")
+        .select("is_claimed")
+        .eq("institution_id", institution.id);
+      if (error) throw error;
+      const total = data?.length || 0;
+      const claimed = data?.filter(d => d.is_claimed).length || 0;
+      return { total, claimed, unclaimed: total - claimed };
+    },
+  });
+
   // Escalations from this institution's SPOC
   const spoc = members.find((m) => m.role === "spoc");
   const { data: escalations = [] } = useQuery({
