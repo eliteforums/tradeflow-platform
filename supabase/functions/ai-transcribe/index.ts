@@ -21,7 +21,8 @@ serve(async (req) => {
   }
 
   try {
-    const { transcript, session_id, timestamp_offset } = await req.json();
+    const { transcript, session_id, timestamp_offset, session_type } = await req.json();
+    const sType: "blackbox" | "peer" = session_type === "peer" ? "peer" : "blackbox";
     if (!transcript || !session_id) {
       return new Response(JSON.stringify({ error: "transcript and session_id required" }), {
         status: 400,
