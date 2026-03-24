@@ -28,6 +28,7 @@ const VideoCallModal = ({
   appointmentId,
   existingRoomId,
   sessionId,
+  sessionType = "blackbox",
   enableMonitoring = false,
   onRiskDetected,
 }: VideoCallModalProps) => {
