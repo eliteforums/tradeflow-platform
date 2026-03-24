@@ -170,6 +170,13 @@ const MeetingView = ({
     }
   }, [joined, enableMonitoring, onCaptureSnippetReady, audioMonitor.captureEscalationSnippet]);
 
+  // Expose leave function to parent for programmatic disconnect
+  useEffect(() => {
+    if (onLeaveReady) {
+      onLeaveReady(leave);
+    }
+  }, [leave, onLeaveReady]);
+
 
   const handleSilenceAutoEnd = useCallback(async () => {
     if (!sessionId) return;
