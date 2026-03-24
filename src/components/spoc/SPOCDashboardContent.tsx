@@ -157,38 +157,72 @@ const SPOCDashboardContent = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user?.id, queryClient]);
 
+  const studentIds = students.map((s) => s.id);
+
   const { data: flaggedEntries = [] } = useQuery({
-    queryKey: ["spoc-flagged"],
+    queryKey: ["spoc-flagged", studentIds],
     queryFn: async () => {
+      if (studentIds.length === 0) return [];
       const { data, error } = await supabase
         .from("blackbox_entries")
         .select("id, user_id, content_type, ai_flag_level, is_private, created_at")
         .gt("ai_flag_level", 0)
+        .in("user_id", studentIds)
         .order("ai_flag_level", { ascending: false })
         .limit(50);
       if (error) throw error;
       return data;
     },
+    enabled: studentIds.length > 0,
   });
 
+  const [reportLastUpdated, setReportLastUpdated] = useState<Date | null>(null);
+
   const { data: reportData } = useQuery({
-    queryKey: ["spoc-reports", reportDateFilter],
+    queryKey: ["spoc-reports", reportDateFilter, studentIds],
     queryFn: async () => {
       const since = subDays(new Date(), parseInt(reportDateFilter)).toISOString();
-      const [appointments, peerSessions, soundPlays, questCompletions] = await Promise.all([
-        supabase.from("appointments").select("*", { count: "exact", head: true }).gte("created_at", since),
-        supabase.from("peer_sessions").select("*", { count: "exact", head: true }).gte("created_at", since),
-        supabase.from("sound_content").select("play_count"),
-        supabase.from("quest_completions").select("*", { count: "exact", head: true }).gte("completed_at", since),
+      if (studentIds.length === 0) {
+        setReportLastUpdated(new Date());
+        return { appointments: 0, peerSessions: 0, moodEntries: 0, questCompletions: 0 };
+      }
+      const [appointments, peerSessions, moodEntries, questCompletions] = await Promise.all([
+        supabase.from("appointments").select("*", { count: "exact", head: true }).in("student_id", studentIds).gte("created_at", since),
+        supabase.from("peer_sessions").select("*", { count: "exact", head: true }).in("student_id", studentIds).gte("created_at", since),
+        supabase.from("mood_entries").select("*", { count: "exact", head: true }).in("user_id", studentIds).gte("created_at", since),
+        supabase.from("quest_completions").select("*", { count: "exact", head: true }).in("user_id", studentIds).gte("completed_at", since),
       ]);
+      setReportLastUpdated(new Date());
       return {
         appointments: appointments.count || 0,
         peerSessions: peerSessions.count || 0,
-        soundPlays: soundPlays.data?.reduce((sum, s) => sum + (s.play_count || 0), 0) || 0,
+        moodEntries: moodEntries.count || 0,
         questCompletions: questCompletions.count || 0,
       };
     },
+    enabled: studentIds.length > 0,
   });
+
+  // Realtime refresh for reports
+  useEffect(() => {
+    const channel = supabase
+      .channel("spoc-reports-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "appointments" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["spoc-reports"] });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "peer_sessions" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["spoc-reports"] });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "quest_completions" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["spoc-reports"] });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "mood_entries" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["spoc-reports"] });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
 
   const { data: stabilityPoolBalance = 0 } = useQuery({
     queryKey: ["stability-pool", institutionId],
@@ -995,8 +1029,17 @@ const SPOCDashboardContent = () => {
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-primary" />
               Wellbeing Reports
+              <span className="flex items-center gap-1 ml-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-eternia-success animate-pulse" />
+                <span className="text-[10px] font-normal text-muted-foreground">Live</span>
+              </span>
             </h3>
             <div className="flex items-center gap-2">
+              {reportLastUpdated && (
+                <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                  Updated {format(reportLastUpdated, "h:mm a")}
+                </span>
+              )}
               <select
                 value={reportDateFilter}
                 onChange={(e) => setReportDateFilter(e.target.value)}
@@ -1006,9 +1049,33 @@ const SPOCDashboardContent = () => {
                 <option value="30">Last 30 days</option>
                 <option value="90">Last 90 days</option>
               </select>
-              <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 h-8 text-xs"
+                onClick={() => {
+                  const rows = [
+                    ["Metric", "Value", "Period"],
+                    ["Peer Connect Sessions", String(reportData?.peerSessions || 0), `Last ${reportDateFilter} days`],
+                    ["Appointments", String(reportData?.appointments || 0), `Last ${reportDateFilter} days`],
+                    ["Mood Check-ins", String(reportData?.moodEntries || 0), `Last ${reportDateFilter} days`],
+                    ["Quests Completed", String(reportData?.questCompletions || 0), `Last ${reportDateFilter} days`],
+                    ["ECC Stability Pool", String(stabilityPoolBalance), "Current"],
+                    ["Critical Flags", String(flaggedEntries.filter((f: any) => f.ai_flag_level >= 3).length), "All time"],
+                    ["Moderate Flags", String(flaggedEntries.filter((f: any) => f.ai_flag_level === 2).length), "All time"],
+                    ["Low Flags", String(flaggedEntries.filter((f: any) => f.ai_flag_level === 1).length), "All time"],
+                  ];
+                  const csv = rows.map(r => r.join(",")).join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const a = document.createElement("a");
+                  a.href = URL.createObjectURL(blob);
+                  a.download = `spoc-report-${format(new Date(), "yyyy-MM-dd")}.csv`;
+                  a.click();
+                  toast.success("Report CSV downloaded");
+                }}
+              >
                 <Download className="w-3.5 h-3.5" />
-                Export PDF
+                Export CSV
               </Button>
             </div>
           </div>
@@ -1033,12 +1100,12 @@ const SPOCDashboardContent = () => {
                 desc: "Expert sessions booked",
               },
               {
-                label: "Sound Therapy",
-                value: reportData?.soundPlays || 0,
-                icon: Music,
+                label: "Mood Check-ins",
+                value: reportData?.moodEntries || 0,
+                icon: Activity,
                 iconBg: "bg-eternia-warning/10",
                 iconColor: "text-eternia-warning",
-                desc: "Total play count",
+                desc: "Student mood entries",
               },
               {
                 label: "Quest Engagement",
