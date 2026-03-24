@@ -118,12 +118,13 @@ const SPOCDashboardContent = () => {
   const { data: escalations = [], isLoading: escalationsLoading } = useQuery({
     queryKey: ["spoc-escalations"],
     queryFn: async () => {
+      // Use a simple select to avoid FK join failures masking data
       const { data, error } = await supabase
         .from("escalation_requests")
-        .select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username)")
+        .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
