@@ -31,6 +31,9 @@ export interface Appointment {
   session_type: string;
   credits_charged: number;
   created_at: string;
+  reschedule_reason?: string | null;
+  rescheduled_from?: string | null;
+  rescheduled_by?: string | null;
   expert?: Expert;
 }
 
