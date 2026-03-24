@@ -217,6 +217,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
+      <EmergencyAlertOverlay onViewFlags={() => setActiveTab("escalations")} />
       {/* ─── SIDEBAR ─── */}
       <aside className={cn(
         "h-screen sticky top-0 flex flex-col border-r border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 shrink-0",

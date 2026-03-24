@@ -399,6 +399,7 @@ const SPOCDashboardContent = () => {
 
   return (
     <div className="space-y-5 pb-24">
+      <EmergencyAlertOverlay onViewFlags={() => setActiveTab("flags")} />
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
