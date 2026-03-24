@@ -15,6 +15,7 @@ interface VideoCallModalProps {
   appointmentId?: string;
   existingRoomId?: string;
   sessionId?: string; // BlackBox/peer session ID for AI monitoring
+  sessionType?: "blackbox" | "peer";
   enableMonitoring?: boolean;
   onRiskDetected?: (level: number, snippet: string) => void;
 }
