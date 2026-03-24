@@ -63,7 +63,7 @@ const PeerConnect = () => {
     flagSession, isRequesting, isSending, isFlagging, internStatuses, lastMessages,
     hasMoreMessages, isLoadingMore, loadMoreMessages, hasOpenSession,
     pendingSessions, pendingRequest, acceptSession, declineSession,
-    isAccepting, isDeclining, startCall, isStartingCall,
+    isAccepting, isDeclining, startCall, startCallAsync, isStartingCall,
   } = usePeerConnect(urlSessionId);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
@@ -444,12 +444,17 @@ const PeerConnect = () => {
                         variant="ghost" size="icon" className="h-8 w-8 text-primary"
                         title="Start voice call"
                         disabled={isStartingCall}
-                        onClick={() => {
+                        onClick={async () => {
+                          if (!activeSessionId) return;
                           if (activeSession.room_id) {
                             setCallMode("audio");
                           } else {
-                            startCall(activeSessionId);
-                            setCallMode("audio");
+                            try {
+                              await startCallAsync(activeSessionId);
+                              setCallMode("audio");
+                            } catch {
+                              // error toast handled by mutation
+                            }
                           }
                         }}
                       >

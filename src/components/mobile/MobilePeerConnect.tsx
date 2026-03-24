@@ -52,7 +52,7 @@ const MobilePeerConnect = () => {
     flagSession, isRequesting, isSending, isFlagging, internStatuses, lastMessages,
     hasMoreMessages, isLoadingMore, loadMoreMessages, hasOpenSession,
     pendingSessions, pendingRequest, acceptSession, declineSession,
-    isAccepting, isDeclining, startCall, isStartingCall,
+    isAccepting, isDeclining, startCall, startCallAsync, isStartingCall,
   } = usePeerConnect(urlSessionId);
   const isIntern = profile?.role === "intern";
 
@@ -234,9 +234,18 @@ const MobilePeerConnect = () => {
                     <Button
                       variant="ghost" size="icon" className="h-9 w-9 text-primary"
                       disabled={isStartingCall}
-                      onClick={() => {
-                        if (!activeSession.room_id) startCall(activeSessionId!);
-                        setCallMode("audio");
+                      onClick={async () => {
+                        if (!activeSessionId) return;
+                        if (activeSession.room_id) {
+                          setCallMode("audio");
+                        } else {
+                          try {
+                            await startCallAsync(activeSessionId);
+                            setCallMode("audio");
+                          } catch {
+                            // error toast handled by mutation
+                          }
+                        }
                       }}
                     >
                       <Phone className="w-4 h-4" />
