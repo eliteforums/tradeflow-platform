@@ -1,16 +1,31 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  BadgeCheck, Upload, Loader2, CheckCircle, XCircle, Users, FileText,
+  BadgeCheck, Upload, Loader2, CheckCircle, XCircle, FileText,
 } from "lucide-react";
 
 interface Props {
   institutionId: string | null | undefined;
   institutionType: string | null | undefined;
+}
+
+/** SHA-256 hash matching the edge function format */
+async function hashStudentId(institutionId: string, idType: string, rawId: string): Promise<string> {
+  const input = `eternia:${institutionId}:${idType}:${rawId}`;
+  const encoded = new TextEncoder().encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Mask a raw ID for display: show last 4 chars */
+function maskId(rawId: string): string {
+  if (rawId.length <= 4) return "••••";
+  return "•".repeat(rawId.length - 4) + rawId.slice(-4);
 }
 
 const StudentIdVerificationSection = ({ institutionId, institutionType }: Props) => {
@@ -62,7 +77,6 @@ const StudentIdVerificationSection = ({ institutionId, institutionType }: Props)
     if (!institutionId || !idsText.trim()) return;
     setIsUploading(true);
     try {
-      // Parse IDs: newline, comma, or semicolon separated
       const rawIds = idsText
         .split(/[\n,;]+/)
         .map(id => id.trim())
@@ -74,18 +88,18 @@ const StudentIdVerificationSection = ({ institutionId, institutionType }: Props)
         return;
       }
 
-      // Dedupe
       const uniqueIds = [...new Set(rawIds)];
 
-      const rows = uniqueIds.map(id => ({
-        institution_id: institutionId,
-        id_type: idType,
-        student_id_hash: id,
-      }));
+      // Hash all IDs before storing
+      const rows = await Promise.all(
+        uniqueIds.map(async (id) => ({
+          institution_id: institutionId,
+          id_type: idType,
+          student_id_hash: await hashStudentId(institutionId, idType, id),
+        }))
+      );
 
-      // Batch insert (upsert to skip duplicates)
       let inserted = 0;
-      let skipped = 0;
       for (let i = 0; i < rows.length; i += 50) {
         const batch = rows.slice(i, i + 50);
         const { error, data } = await supabase
@@ -95,7 +109,7 @@ const StudentIdVerificationSection = ({ institutionId, institutionType }: Props)
         if (error) throw error;
         inserted += (data?.length || 0);
       }
-      skipped = uniqueIds.length - inserted;
+      const skipped = uniqueIds.length - inserted;
 
       toast.success(`Uploaded ${inserted} IDs${skipped > 0 ? `, ${skipped} duplicates skipped` : ""}`);
       setIdsText("");
@@ -115,7 +129,7 @@ const StudentIdVerificationSection = ({ institutionId, institutionType }: Props)
         Student ID Verification ({idLabel})
       </h3>
       <p className="text-xs text-muted-foreground">
-        Upload valid {idLabel}s so students can be verified during onboarding.
+        Upload valid {idLabel}s so students can be verified during onboarding. IDs are hashed before storage — raw values are never persisted.
       </p>
 
       {/* Stats */}
@@ -167,14 +181,16 @@ const StudentIdVerificationSection = ({ institutionId, institutionType }: Props)
       ) : (
         <div className="max-h-[250px] overflow-y-auto rounded-lg border border-border/50 divide-y divide-border/30">
           <div className="grid grid-cols-4 gap-2 px-3 py-2 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wider sticky top-0">
-            <span>{idLabel}</span>
+            <span>Hash (masked)</span>
             <span>Status</span>
             <span>Claimed By</span>
             <span>Date</span>
           </div>
           {validIds.map((item) => (
             <div key={item.id} className="grid grid-cols-4 gap-2 px-3 py-2 items-center">
-              <span className="text-xs font-mono truncate">{item.student_id_hash}</span>
+              <span className="text-xs font-mono truncate" title="Hashed — original ID not stored">
+                {item.student_id_hash.slice(0, 8)}…{item.student_id_hash.slice(-4)}
+              </span>
               <span className="flex items-center gap-1">
                 {item.is_claimed ? (
                   <><CheckCircle className="w-3 h-3 text-eternia-success" /><span className="text-[10px] text-eternia-success">Claimed</span></>
