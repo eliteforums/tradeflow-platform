@@ -12,8 +12,6 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, profile, isLoading } = useAuth();
   const location = useLocation();
-  const { deviceMismatch, isChecking: isCheckingDevice } = useDeviceValidation();
-
   // Check if user has completed recovery setup (only for students)
   const { data: hasRecoverySetup, isLoading: isCheckingRecovery } = useQuery({
     queryKey: ["recovery-check", user?.id],
