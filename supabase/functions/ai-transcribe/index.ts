@@ -93,29 +93,45 @@ Respond with ONLY the number.`,
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Update blackbox_session flag level
-    await fetch(`${SUPABASE_URL}/rest/v1/blackbox_sessions?id=eq.${session_id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({
-        flag_level,
-        escalation_reason: `AI detected: ${detectedKeywords.join(", ")}`,
-        escalation_history: [
-          {
-            level: flag_level,
-            keywords: detectedKeywords,
-            snippet: trigger_snippet,
-            timestamp: new Date().toISOString(),
-            auto: true,
-          },
-        ],
-      }),
-    });
+    // Update session flag level based on session type
+    if (sType === "peer") {
+      await fetch(`${SUPABASE_URL}/rest/v1/peer_sessions?id=eq.${session_id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          is_flagged: flag_level >= 2,
+          escalation_note_encrypted: `AI detected L${flag_level}: ${detectedKeywords.join(", ")} | ${trigger_snippet.substring(0, 500)}`,
+        }),
+      });
+    } else {
+      await fetch(`${SUPABASE_URL}/rest/v1/blackbox_sessions?id=eq.${session_id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          flag_level,
+          escalation_reason: `AI detected: ${detectedKeywords.join(", ")}`,
+          escalation_history: [
+            {
+              level: flag_level,
+              keywords: detectedKeywords,
+              snippet: trigger_snippet,
+              timestamp: new Date().toISOString(),
+              auto: true,
+            },
+          ],
+        }),
+      });
+    }
 
     // For L2+ create escalation request
     if (flag_level >= 2) {
