@@ -167,30 +167,7 @@ const Register = () => {
     setStep(2);
   };
 
-  const handleDeviceBind = async () => {
-    setIsBindingDevice(true);
-    try {
-      const fp = await generateDeviceFingerprint();
-      setDeviceFingerprint(fp);
-      setDeviceBound(true);
-      toast.success("Device registered successfully");
-    } catch {
-      toast.error("Could not register device. You can continue, but device binding may fail.");
-      setDeviceBound(true);
-    } finally {
-      setIsBindingDevice(false);
-    }
-  };
-
-  const handleStep2Continue = () => {
-    if (!deviceBound) {
-      toast.error("Please register your device first");
-      return;
-    }
-    setStep(3);
-  };
-
-  const handleStep3Submit = async (e: React.FormEvent) => {
+  const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const emergencyName = formData.emergencyName.trim();
