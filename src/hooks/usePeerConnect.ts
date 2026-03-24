@@ -5,7 +5,6 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { spendCredits } from "./useSpendCredits";
 
-
 export interface Intern {
   id: string;
   username: string;
@@ -39,6 +38,7 @@ export interface PeerMessage {
 export type InternStatus = "online" | "busy" | "offline";
 
 const MESSAGE_PAGE_SIZE = 50;
+const PENDING_EXPIRY_MS = 2 * 60 * 1000; // 2 minutes
 
 export function usePeerConnect(initialSessionId?: string | null) {
   const { user, profile, refreshCredits } = useAuth();
@@ -49,7 +49,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const isIntern = profile?.role === "intern";
 
-  // Get available interns — exclude self, show all active interns
+  // Get available interns
   const { data: interns = [], isLoading: isLoadingInterns } = useQuery({
     queryKey: ["interns", user?.id],
     queryFn: async () => {
@@ -58,22 +58,20 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .select("id, username, specialty, is_active, training_status")
         .eq("role", "intern")
         .eq("is_active", true);
-
       if (error) throw error;
-      // Exclude self so interns don't see themselves as available
       return (data as Intern[]).filter((i) => i.id !== user?.id);
     },
     staleTime: 30_000,
   });
 
-  // Get active peer sessions for busy status derivation
+  // Get active peer sessions for busy status
   const { data: activeSessions = [] } = useQuery({
     queryKey: ["active-peer-sessions"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("peer_sessions")
         .select("intern_id")
-        .eq("status", "active");
+        .in("status", ["active", "pending"]);
       if (error) throw error;
       return data;
     },
@@ -81,7 +79,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
     staleTime: 10_000,
   });
 
-  // Derive real intern statuses
+  // Derive intern statuses
   const internStatuses = useMemo<Record<string, InternStatus>>(() => {
     const busyInternIds = new Set(activeSessions.map((s) => s.intern_id).filter(Boolean));
     const statuses: Record<string, InternStatus> = {};
@@ -91,12 +89,11 @@ export function usePeerConnect(initialSessionId?: string | null) {
     return statuses;
   }, [interns, activeSessions]);
 
-  // Get user's sessions — include student relation for intern view
+  // Get user's sessions
   const { data: sessions = [], isLoading: isLoadingSessions } = useQuery({
     queryKey: ["peer-sessions", user?.id, isIntern],
     queryFn: async () => {
       if (!user) return [];
-
       let query = supabase
         .from("peer_sessions")
         .select("id, student_id, intern_id, status, is_flagged, started_at, ended_at, created_at, room_id, escalation_note_encrypted, intern:profiles!peer_sessions_intern_id_fkey(id, username, specialty, is_active, training_status), student:profiles!peer_sessions_student_id_fkey(id, username, specialty, role)")
@@ -104,7 +101,6 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .limit(50);
 
       if (isIntern) {
-        // Only show sessions where this user is the assigned intern (not corrupted student_id rows)
         query = query.eq("intern_id", user.id);
       } else {
         query = query.eq("student_id", user.id);
@@ -113,24 +109,68 @@ export function usePeerConnect(initialSessionId?: string | null) {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Client-side: auto-expire sessions older than 2 hours
       const TWO_HOURS = 2 * 60 * 60 * 1000;
       const now = Date.now();
       return ((data || []) as unknown as PeerSession[]).map((s) => {
+        // Auto-expire active/pending sessions older than 2 hours
         if (
           (s.status === "active" || s.status === "pending") &&
           now - new Date(s.created_at).getTime() > TWO_HOURS
         ) {
           return { ...s, status: "completed" as const, _expired: true };
         }
+        // Auto-expire pending sessions older than 2 minutes
+        if (
+          s.status === "pending" &&
+          now - new Date(s.created_at).getTime() > PENDING_EXPIRY_MS
+        ) {
+          return { ...s, status: "completed" as const, _pendingExpired: true };
+        }
         return s;
       });
     },
     enabled: !!user,
-    staleTime: 10_000,
-    refetchInterval: 15_000,
+    staleTime: 5_000,
+    refetchInterval: 10_000,
   });
-  // Fetch last message per session for conversation list preview
+
+  // Realtime subscription for session status changes
+  useEffect(() => {
+    if (!user) return;
+    const filterCol = isIntern ? "intern_id" : "student_id";
+    const channel = supabase
+      .channel(`peer-session-status-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "peer_sessions",
+          filter: `${filterCol}=eq.${user.id}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
+          queryClient.invalidateQueries({ queryKey: ["active-peer-sessions"] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "peer_sessions",
+          filter: `intern_id=eq.${user.id}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user, isIntern, queryClient]);
+
+  // Last messages for conversation list
   const { data: lastMessages = {} } = useQuery({
     queryKey: ["peer-last-messages", sessions.map(s => s.id).join(",")],
     queryFn: async () => {
@@ -154,26 +194,32 @@ export function usePeerConnect(initialSessionId?: string | null) {
     staleTime: 10_000,
   });
 
-  // Get selected session — match by activeSessionId (set via click or URL)
+  // Active session selection
   const activeSession = useMemo(() => {
-    // First try the currently selected session ID
-    if (activeSessionId) {
-      return sessions.find((s) => s.id === activeSessionId) || null;
-    }
-    // Fallback: URL param
-    if (initialSessionId) {
-      return sessions.find((s) => s.id === initialSessionId) || null;
-    }
-    // Fallback: first active session
-    return sessions.find((s) => s.status === "active") || null;
+    if (activeSessionId) return sessions.find((s) => s.id === activeSessionId) || null;
+    if (initialSessionId) return sessions.find((s) => s.id === initialSessionId) || null;
+    return sessions.find((s) => s.status === "active" || s.status === "pending") || null;
   }, [sessions, activeSessionId, initialSessionId]);
 
-  // Sync activeSessionId from activeSession (only on first load)
   useEffect(() => {
-    if (activeSession && !activeSessionId) {
-      setActiveSessionId(activeSession.id);
-    }
+    if (activeSession && !activeSessionId) setActiveSessionId(activeSession.id);
   }, [activeSession, activeSessionId]);
+
+  // Pending sessions for intern (incoming requests)
+  const pendingSessions = useMemo(() => {
+    if (!isIntern) return [];
+    return sessions.filter(
+      (s) => s.status === "pending" && !(s as any)._pendingExpired && !(s as any)._expired
+    );
+  }, [sessions, isIntern]);
+
+  // Student's pending session (waiting for accept)
+  const pendingRequest = useMemo(() => {
+    if (isIntern) return null;
+    return sessions.find(
+      (s) => s.status === "pending" && !(s as any)._pendingExpired && !(s as any)._expired
+    ) || null;
+  }, [sessions, isIntern]);
 
   // Fetch messages with pagination
   const fetchMessages = useCallback(async (sessionId: string, before?: string) => {
@@ -183,20 +229,12 @@ export function usePeerConnect(initialSessionId?: string | null) {
       .eq("session_id", sessionId)
       .order("created_at", { ascending: false })
       .limit(MESSAGE_PAGE_SIZE);
-
-    if (before) {
-      query = query.lt("created_at", before);
-    }
-
+    if (before) query = query.lt("created_at", before);
     const { data, error } = await query;
-    if (error) {
-      console.error("Error fetching messages:", error);
-      return [];
-    }
+    if (error) { console.error("Error fetching messages:", error); return []; }
     return (data as PeerMessage[]).reverse();
   }, []);
 
-  // Load more messages
   const loadMoreMessages = useCallback(async () => {
     if (!activeSessionId || messages.length === 0 || isLoadingMore) return;
     setIsLoadingMore(true);
@@ -205,19 +243,12 @@ export function usePeerConnect(initialSessionId?: string | null) {
       const older = await fetchMessages(activeSessionId, oldest.created_at);
       if (older.length < MESSAGE_PAGE_SIZE) setHasMoreMessages(false);
       if (older.length > 0) setMessages((prev) => [...older, ...prev]);
-    } finally {
-      setIsLoadingMore(false);
-    }
+    } finally { setIsLoadingMore(false); }
   }, [activeSessionId, messages, isLoadingMore, fetchMessages]);
 
-  // Fetch messages for active session
+  // Fetch messages for active session + realtime
   useEffect(() => {
-    if (!activeSessionId) {
-      setMessages([]);
-      setHasMoreMessages(false);
-      return;
-    }
-
+    if (!activeSessionId) { setMessages([]); setHasMoreMessages(false); return; }
     const load = async () => {
       const msgs = await fetchMessages(activeSessionId);
       setMessages(msgs);
@@ -227,14 +258,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
     const channel = supabase
       .channel(`peer-messages-${activeSessionId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "peer_messages",
-          filter: `session_id=eq.${activeSessionId}`,
-        },
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "peer_messages", filter: `session_id=eq.${activeSessionId}` },
         (payload) => {
           const newMsg = payload.new as PeerMessage;
           setMessages((prev) => {
@@ -242,23 +266,20 @@ export function usePeerConnect(initialSessionId?: string | null) {
             return [...prev, newMsg];
           });
         }
-      )
-      .subscribe();
+      ).subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [activeSessionId, fetchMessages]);
 
-  // Request session with intern
+  // Request session — creates as PENDING, notifies intern
   const requestSession = useMutation({
     mutationFn: async (internId: string) => {
       if (!user) throw new Error("Not authenticated");
       if (isIntern) throw new Error("Interns cannot request peer sessions");
 
-      // 1. Check if student already has a FRESH active/pending session (< 2 hours old)
       const TWO_HOURS_AGO = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-      const { data: existingStudentSession } = await supabase
+      // Check existing fresh session
+      const { data: existingSession } = await supabase
         .from("peer_sessions")
         .select("*")
         .eq("student_id", user.id)
@@ -267,12 +288,9 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .limit(1)
         .maybeSingle();
 
-      if (existingStudentSession) {
-        // Reuse existing fresh session instead of creating a duplicate
-        return existingStudentSession;
-      }
+      if (existingSession) return existingSession;
 
-      // 2. Check if the target intern already has a FRESH active/pending session
+      // Check intern availability
       const { data: existingInternSession } = await supabase
         .from("peer_sessions")
         .select("id")
@@ -283,45 +301,128 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .maybeSingle();
 
       if (existingInternSession) {
-        throw new Error("This intern is currently in a session. Please try another intern or wait.");
+        throw new Error("This intern is currently busy. Please try another intern or wait.");
       }
 
-      // 3. Spend credits
+      // Spend credits
       await spendCredits(20, "Peer Connect session");
 
-      // 4. Insert new session
+      // Insert as PENDING (not active)
       const { data, error } = await supabase
         .from("peer_sessions")
-        .insert({
-          student_id: user.id,
-          intern_id: internId,
-          status: "active",
-          started_at: new Date().toISOString(),
-        })
+        .insert({ student_id: user.id, intern_id: internId, status: "pending" })
         .select()
         .single();
 
       if (error) {
-        // User-friendly message for constraint violations
-        if (error.code === "23505") {
-          throw new Error("You or this intern already have an active session.");
-        }
+        if (error.code === "23505") throw new Error("You or this intern already have an active session.");
         throw error;
       }
+
+      // Notify the intern
+      await supabase.from("notifications").insert({
+        user_id: internId,
+        title: "New Peer Connect Request",
+        message: `A student wants to chat with you`,
+        type: "peer_request",
+        metadata: { session_id: data.id },
+      });
+
       return data;
     },
     onSuccess: (session) => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
       queryClient.invalidateQueries({ queryKey: ["active-peer-sessions"] });
       setActiveSessionId(session.id);
-      toast.success("Session started!");
+      toast.success("Request sent! Waiting for intern to accept...");
     },
-    onError: (error) => {
-      toast.error(error.message);
-    },
+    onError: (error) => { toast.error(error.message); },
   });
 
-  // Send message — guard against completed sessions
+  // Accept session (intern side)
+  const acceptSession = useMutation({
+    mutationFn: async (sessionId: string) => {
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("peer_sessions")
+        .update({ status: "active", started_at: new Date().toISOString() })
+        .eq("id", sessionId)
+        .eq("intern_id", user.id);
+      if (error) throw error;
+
+      // Get session to notify student
+      const { data: session } = await supabase
+        .from("peer_sessions")
+        .select("student_id")
+        .eq("id", sessionId)
+        .single();
+
+      if (session) {
+        await supabase.from("notifications").insert({
+          user_id: session.student_id,
+          title: "Session Accepted!",
+          message: "An intern has accepted your chat request. Start chatting now!",
+          type: "peer_accepted",
+          metadata: { session_id: sessionId },
+        });
+      }
+    },
+    onSuccess: (_data, sessionId) => {
+      queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["active-peer-sessions"] });
+      setActiveSessionId(sessionId);
+      toast.success("Session accepted — you can start chatting!");
+    },
+    onError: (error) => { toast.error(error.message); },
+  });
+
+  // Decline session (intern side) — refunds student
+  const declineSession = useMutation({
+    mutationFn: async (sessionId: string) => {
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: session } = await supabase
+        .from("peer_sessions")
+        .select("student_id")
+        .eq("id", sessionId)
+        .single();
+
+      const { error } = await supabase
+        .from("peer_sessions")
+        .update({ status: "completed", ended_at: new Date().toISOString() })
+        .eq("id", sessionId)
+        .eq("intern_id", user.id);
+      if (error) throw error;
+
+      // Refund student 20 ECC
+      if (session) {
+        await supabase.from("credit_transactions").insert({
+          user_id: session.student_id,
+          delta: 20,
+          type: "grant",
+          notes: "Peer Connect session declined — refund",
+          reference_id: sessionId,
+        });
+
+        await supabase.from("notifications").insert({
+          user_id: session.student_id,
+          title: "Session Declined",
+          message: "The intern couldn't accept your request. Your 20 ECC has been refunded. Try another intern!",
+          type: "peer_declined",
+          metadata: { session_id: sessionId },
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["active-peer-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
+      toast.success("Session declined");
+    },
+    onError: (error) => { toast.error(error.message); },
+  });
+
+  // Send message
   const sendMessage = useMutation({
     mutationFn: async ({ sessionId, content }: { sessionId: string; content: string }) => {
       if (!user) throw new Error("Not authenticated");
@@ -345,44 +446,33 @@ export function usePeerConnect(initialSessionId?: string | null) {
         });
       }
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to send message");
-      console.error(error);
-    },
+    onError: (error) => { toast.error(error.message || "Failed to send message"); },
   });
 
   // Flag/escalate session
   const flagSession = useMutation({
     mutationFn: async ({ sessionId, reason }: { sessionId: string; reason?: string }) => {
       if (!user) throw new Error("Not authenticated");
-
       const { error: flagErr } = await supabase
         .from("peer_sessions")
         .update({ is_flagged: true, escalation_note_encrypted: reason || "Intern flagged session" })
         .eq("id", sessionId);
       if (flagErr) throw flagErr;
 
-      const { data: session } = await supabase
+      const { data: sessionFull } = await supabase
         .from("peer_sessions")
-        .select("student_id")
+        .select("student_id, intern_id, student:profiles!peer_sessions_student_id_fkey(username), intern:profiles!peer_sessions_intern_id_fkey(username)")
         .eq("id", sessionId)
         .single();
 
-      if (session) {
-        // Fetch student + intern usernames for escalation context
-        const { data: sessionFull } = await supabase
-          .from("peer_sessions")
-          .select("student_id, intern_id, student:profiles!peer_sessions_student_id_fkey(username), intern:profiles!peer_sessions_intern_id_fkey(username)")
-          .eq("id", sessionId)
-          .single();
+      const studentUsername = (sessionFull as any)?.student?.username || "Unknown";
+      const internUsername = (sessionFull as any)?.intern?.username || profile?.username || "Unknown";
 
-        const studentUsername = (sessionFull as any)?.student?.username || "Unknown";
-        const internUsername = (sessionFull as any)?.intern?.username || profile?.username || "Unknown";
-
+      if (sessionFull) {
         const { data: studentProfile } = await supabase
           .from("profiles")
           .select("institution_id")
-          .eq("id", session.student_id)
+          .eq("id", sessionFull.student_id)
           .single();
 
         if (studentProfile?.institution_id) {
@@ -416,10 +506,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
       toast.success("Session flagged for review");
     },
-    onError: (error) => {
-      toast.error("Failed to flag session");
-      console.error(error);
-    },
+    onError: () => { toast.error("Failed to flag session"); },
   });
 
   // End session
@@ -440,14 +527,11 @@ export function usePeerConnect(initialSessionId?: string | null) {
       setActiveSessionId(null);
       toast.success("Session ended");
     },
-    onError: (error) => {
-      toast.error(error.message);
-    },
+    onError: (error) => { toast.error(error.message); },
   });
 
-  // Whether the user has a genuinely open (non-expired) session
   const hasOpenSession = useMemo(() =>
-    sessions.some((s) => (s.status === "active" || s.status === "pending") && !(s as any)._expired),
+    sessions.some((s) => (s.status === "active" || s.status === "pending") && !(s as any)._expired && !(s as any)._pendingExpired),
     [sessions]
   );
 
@@ -462,6 +546,8 @@ export function usePeerConnect(initialSessionId?: string | null) {
     isLoadingMore,
     loadMoreMessages,
     hasOpenSession,
+    pendingSessions,
+    pendingRequest,
     isLoading: isLoadingInterns || isLoadingSessions,
     activeSessionId,
     setActiveSessionId,
@@ -469,8 +555,12 @@ export function usePeerConnect(initialSessionId?: string | null) {
     sendMessage: sendMessage.mutate,
     endSession: endSession.mutate,
     flagSession: flagSession.mutate,
+    acceptSession: acceptSession.mutate,
+    declineSession: declineSession.mutate,
     isRequesting: requestSession.isPending,
     isSending: sendMessage.isPending,
     isFlagging: flagSession.isPending,
+    isAccepting: acceptSession.isPending,
+    isDeclining: declineSession.isPending,
   };
 }
