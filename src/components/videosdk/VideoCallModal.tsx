@@ -20,6 +20,7 @@ interface VideoCallModalProps {
   onRiskDetected?: (level: number, snippet: string) => void;
   isTherapistView?: boolean;
   onCaptureSnippetReady?: (captureFn: () => string) => void;
+  onLeaveReady?: (leaveFn: () => void) => void;
 }
 
 const VideoCallModal = ({
