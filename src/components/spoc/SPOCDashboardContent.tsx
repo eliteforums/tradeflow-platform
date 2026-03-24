@@ -18,6 +18,7 @@ import {
   TrendingUp, Music, Gamepad2, Phone, RefreshCw,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import StudentIdVerificationSection from "./StudentIdVerificationSection";
 
 
 type SPOCTab = "home" | "onboarding" | "flags" | "reports" | "profile";
@@ -658,6 +659,9 @@ const SPOCDashboardContent = () => {
               Grant to All Students
             </Button>
           </div>
+
+          {/* ── Student ID Verification Management ── */}
+          <StudentIdVerificationSection institutionId={institutionId} institutionType={institution?.institution_type} />
 
           {/* Student List */}
           <div className="space-y-3">

@@ -66,7 +66,7 @@ const Profile = () => {
         setEmergencyRelation(data.emergency_relation || "");
         if (data.student_id_encrypted) {
           setStudentId("••••••••");
-          setIdVerified(true);
+          setIdVerified(!!(data.apaar_verified || data.erp_verified));
         }
       }
     };

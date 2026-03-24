@@ -96,9 +96,37 @@ Deno.serve(async (req) => {
       })
       .eq("id", userId);
 
-    // Insert private data with verification flags
+    // Verify student ID against institution records
     const isSchool = institution.institution_type === "school";
+    const idType = isSchool ? "erp" : "apaar";
     const hasStudentId = !!student_id && student_id.trim().length >= 3;
+    let idVerified = false;
+
+    if (hasStudentId) {
+      // Check if this ID exists in institution_student_ids
+      const { data: matchedId, error: matchErr } = await supabase
+        .from("institution_student_ids")
+        .select("id, is_claimed")
+        .eq("institution_id", cred.institution_id)
+        .eq("id_type", idType)
+        .eq("student_id_hash", student_id.trim())
+        .maybeSingle();
+
+      if (matchedId) {
+        if (matchedId.is_claimed) {
+          throw new Error("This student ID has already been claimed by another user.");
+        }
+        // Mark as claimed
+        await supabase
+          .from("institution_student_ids")
+          .update({ is_claimed: true, claimed_by: userId })
+          .eq("id", matchedId.id);
+        idVerified = true;
+      }
+      // If not found in institution records, allow registration but don't verify
+    }
+
+    // Insert private data with verification flags
     await supabase.from("user_private").insert({
       user_id: userId,
       emergency_name_encrypted: emergency_name || null,
@@ -109,8 +137,8 @@ Deno.serve(async (req) => {
       device_id_encrypted: device_fingerprint || null,
       apaar_id_encrypted: !isSchool ? (student_id || null) : null,
       erp_id_encrypted: isSchool ? (student_id || null) : null,
-      apaar_verified: !isSchool && hasStudentId,
-      erp_verified: isSchool && hasStudentId,
+      apaar_verified: !isSchool && idVerified,
+      erp_verified: isSchool && idVerified,
     });
 
     // Mark temp credential as activated
