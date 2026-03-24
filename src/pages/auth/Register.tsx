@@ -306,7 +306,7 @@ const Register = () => {
   const getBackAction = () => {
     if (step === 1) return () => navigate("/qr-scan");
     if (step === 2) return () => setStep(1);
-    return () => setStep(2);
+    return () => setStep(1);
   };
 
   const getBackLabel = () => {
