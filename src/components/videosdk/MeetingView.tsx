@@ -16,6 +16,7 @@ interface MeetingViewProps {
   onMeetingLeave: () => void;
   audioOnly?: boolean;
   sessionId?: string;
+  sessionType?: "blackbox" | "peer";
   enableMonitoring?: boolean;
   onRiskDetected?: (level: number, snippet: string) => void;
   autoJoin?: boolean;
