@@ -599,6 +599,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
     acceptSession: acceptSession.mutate,
     declineSession: declineSession.mutate,
     startCall: startCall.mutate,
+    startCallAsync: startCall.mutateAsync,
     isRequesting: requestSession.isPending,
     isSending: sendMessage.isPending,
     isFlagging: flagSession.isPending,

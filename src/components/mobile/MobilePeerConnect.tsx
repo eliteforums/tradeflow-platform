@@ -234,9 +234,18 @@ const MobilePeerConnect = () => {
                     <Button
                       variant="ghost" size="icon" className="h-9 w-9 text-primary"
                       disabled={isStartingCall}
-                      onClick={() => {
-                        if (!activeSession.room_id) startCall(activeSessionId!);
-                        setCallMode("audio");
+                      onClick={async () => {
+                        if (!activeSessionId) return;
+                        if (activeSession.room_id) {
+                          setCallMode("audio");
+                        } else {
+                          try {
+                            await startCallAsync(activeSessionId);
+                            setCallMode("audio");
+                          } catch {
+                            // error toast handled by mutation
+                          }
+                        }
                       }}
                     >
                       <Phone className="w-4 h-4" />
