@@ -53,6 +53,7 @@ const PeerConnect = () => {
   const { user, profile, creditBalance } = useAuth();
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [callMode, setCallMode] = useState<"audio" | "video" | null>(null);
 
   const [showNewChat, setShowNewChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
