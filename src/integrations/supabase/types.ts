@@ -1288,6 +1288,19 @@ export type Database = {
         Returns: boolean
       }
       increment_play_count: { Args: { _track_id: string }; Returns: undefined }
+      spend_credits_atomic: {
+        Args: {
+          _amount: number
+          _notes?: string
+          _reference_id?: string
+          _user_id: string
+        }
+        Returns: {
+          remaining: number
+          source: string
+          success: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "student" | "intern" | "expert" | "spoc" | "admin" | "therapist"
