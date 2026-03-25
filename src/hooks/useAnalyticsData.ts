@@ -148,15 +148,18 @@ export function useAnalyticsData(dateRange: DateRange = "30d") {
       hourlyData[hour].count++;
     });
 
-    // Daily trend
-    const dailyCounts: Record<string, number> = {};
+    // Daily trend with auth/anon split
+    const dailySplit: Record<string, { total: number; auth: number; anon: number }> = {};
     pageViews.forEach((e: any) => {
       const day = format(new Date(e.created_at), "yyyy-MM-dd");
-      dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+      if (!dailySplit[day]) dailySplit[day] = { total: 0, auth: 0, anon: 0 };
+      dailySplit[day].total++;
+      if (e.user_id) dailySplit[day].auth++;
+      else dailySplit[day].anon++;
     });
-    const dailyTrend = Object.entries(dailyCounts)
+    const dailyTrend = Object.entries(dailySplit)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, count]) => ({ date, count }));
+      .map(([date, d]) => ({ date, count: d.total, authenticated: d.auth, anonymous: d.anon }));
 
     // Device breakdown
     const deviceCounts = { mobile: 0, tablet: 0, desktop: 0 };
