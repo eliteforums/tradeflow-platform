@@ -162,7 +162,7 @@ const ExpertL3AlertPanel = () => {
                       <Button
                         size="sm"
                         className="gap-1.5 h-8 text-xs"
-                        onClick={() => setCallModal({ open: true, appointmentId: session.id })}
+                        onClick={() => setCallModal({ open: true })}
                       >
                         <Video className="w-3.5 h-3.5" />
                         Rejoin Call
