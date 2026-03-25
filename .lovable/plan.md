@@ -1,107 +1,92 @@
 
 
-## System Rules Compliance Audit — Current State
+## Comprehensive Codebase Audit — Issues Found
 
-### 1. ECC Transactions: Secure & Traceable
+### Critical Issues
 
-**Already compliant:**
-- All spend operations go through `spend-credits` edge function with JWT auth, rate limiting, and audit trail via `credit_transactions` table
-- Every transaction has `user_id`, `type`, `notes`, `reference_id`, and `created_at` timestamp — fully traceable
-- Refunds have duplicate prevention via `reference_id` check in BlackBox cancel, appointment cancel, and the `refund-blackbox-session` edge function (`refunded` boolean)
-- Purchase flow uses Razorpay server-side verification in `purchase-credits` edge function
+#### 1. `getClaims()` is not a valid Supabase JS method
+**Files**: `spend-credits/index.ts`, `purchase-credits/index.ts`, `grant-credits/index.ts`
+**Problem**: These edge functions call `supabase.auth.getClaims(token)` which does NOT exist in the Supabase JS SDK v2. This will throw a runtime error on every call.
+**Fix**: Replace with `supabase.auth.getUser(token)` pattern (like `refund-blackbox-session` and `escalate-emergency` do correctly). Extract user ID from `user.id` instead of `claims.claims.sub`.
 
-**Gap found — Race condition in `spend-credits`:**
-- Lines 52-66: the balance check (`get_credit_balance` RPC) and the insert of the negative transaction are two separate queries — not atomic. Under concurrent requests, a user could double-spend.
-- **Fix**: Create a Postgres function `spend_credits_atomic` that checks balance and inserts the transaction in a single `BEGIN...COMMIT` block using `SELECT ... FOR UPDATE` or a CTE approach. Call this function via `supabase.rpc()` instead of the current two-step approach.
+#### 2. `ai-transcribe` uses deprecated `serve()` import
+**File**: `supabase/functions/ai-transcribe/index.ts`
+**Problem**: Uses `import { serve } from "https://deno.land/std@0.168.0/http/server.ts"` — the rest of the codebase uses `Deno.serve()`. This may cause deployment issues.
+**Fix**: Replace `serve(async (req) => {` with `Deno.serve(async (req) => {`
 
-### 2. Escalation: Real-time & Reliable
+#### 3. `ai-transcribe` CORS headers incomplete
+**File**: `supabase/functions/ai-transcribe/index.ts` line 5
+**Problem**: CORS headers only include `"authorization, x-client-info, apikey, content-type"` — missing the `x-supabase-client-platform*` and `x-supabase-client-runtime*` headers that other functions include. This can cause CORS preflight failures from the Supabase JS client.
+**Fix**: Use the full CORS header set matching other functions.
 
-**Already compliant:**
-- `escalation_requests` and `notifications` tables have realtime enabled (recent migration)
-- `escalate-emergency` edge function: verifies caller role, fetches emergency contact, notifies SPOC + experts, inserts audit log with timestamp
-- `ExpertL3AlertPanel` includes `"escalated"` status in its query filter
-- `ExpertDashboardContent` has realtime listener for `l3_handoff` notifications
-- SPOC dashboard has realtime listener for `escalation_requests` INSERT events
+#### 4. `purchase-credits` also uses deprecated `serve()` import
+**File**: `supabase/functions/purchase-credits/index.ts`
+**Same fix**: Replace with `Deno.serve()`.
 
-**No gaps found.**
+#### 5. `ai-transcribe` has no authentication check
+**File**: `supabase/functions/ai-transcribe/index.ts`
+**Problem**: No JWT verification or caller identity check. Anyone with the anon key can call this function and update `blackbox_sessions` or `peer_sessions` flag levels.
+**Fix**: Add auth header validation like other functions.
 
-### 3. AI: Enhance Safety, Not Override Human Decisions
+### Medium Issues
 
-**Already compliant:**
-- `ai-transcribe` edge function: returns `suggestion` object but does NOT create `escalation_requests` (lines 199-200 explicitly note this)
-- `AISuggestionPopup` component: shows AI analysis with Dismiss/Escalate buttons — human decides
-- Audit log records `suggestion_only: true` for AI detections
-- Auto-dismiss after 30 seconds with countdown
+#### 6. Console ref warning — `EterniaLogo` + `Footer`
+**Files**: `src/components/EterniaLogo.tsx`, `src/components/landing/Footer.tsx`
+**Problem**: Console error "Function components cannot be given refs." The `Footer` component wraps `EterniaLogo` inside a `<Link>` which passes a ref, but `EterniaLogo` doesn't use `forwardRef`.
+**Fix**: Wrap `EterniaLogo` with `React.forwardRef`.
 
-**No gaps found.**
+#### 7. `ExpertL3AlertPanel` passes `appointmentId` for non-appointment sessions
+**File**: `src/components/expert/ExpertL3AlertPanel.tsx` line 97
+**Problem**: Sets `callModal({ appointmentId: session.id })` but this is a blackbox session ID, not an appointment. `VideoCallModal` will query the `appointments` table for a `room_id` and find nothing — then create a NEW room instead of joining the existing one.
+**Fix**: The panel already passes `existingRoomId={activeSession?.room_id}` on line 243, which is correct. But on line 165 (Rejoin Call), it passes `appointmentId: session.id` again, which triggers the wrong code path. Remove `appointmentId` from the callModal state entirely for this panel.
+
+#### 8. Therapist L3 escalation: double status update
+**File**: `src/components/therapist/TherapistDashboardContent.tsx` lines 282-290 and 358-370
+**Problem**: When level >= 3, the code first updates `status: "escalated"` (line 288), then immediately updates again to `status: "active"` (line 367). The first update is redundant and causes a momentary status flicker that could trigger realtime listeners incorrectly.
+**Fix**: Move the status logic into a single update by conditionally setting status only once based on whether an M.Phil expert is found.
+
+#### 9. `cleanup-deleted-accounts` edge function is now orphaned
+**File**: `supabase/functions/cleanup-deleted-accounts/index.ts`
+**Problem**: The `AccountDeletion` component was refactored to only send deletion requests (no longer sets `deletion_requested_at`). The cleanup function still reads `deletion_requested_at` but it will never find any — it's dead code.
+**Fix**: Delete the function, or leave it harmless. Not blocking.
+
+#### 10. `delete-account` edge function is also orphaned
+**File**: `supabase/functions/delete-account/index.ts`
+**Problem**: No UI calls this function anymore after the AccountDeletion refactor. Dead code.
+
+### Low Priority Issues
+
+#### 11. `spend-credits` edge function still has old manual logic alongside RPC
+**File**: `supabase/functions/spend-credits/index.ts`
+**Problem**: The function was refactored to use `spend_credits_atomic` RPC but the old manual pool logic code was removed. However, it still uses `getClaims` (Issue #1 above) which makes the entire function non-functional.
+
+#### 12. Missing `refund-blackbox-session` config in `config.toml`
+**File**: `supabase/config.toml`
+**Problem**: `refund-blackbox-session` is not listed in config.toml with `verify_jwt = false`, unlike other functions. Since Lovable deploys with `verify_jwt = false` by default this may not be a problem, but it's inconsistent.
+
+#### 13. `TherapistDashboardContent` leaveCallRef never connected
+**File**: `src/components/therapist/TherapistDashboardContent.tsx`
+**Problem**: `leaveCallRef` is defined (line 75) and used during L3 escalation (line 481-483), but the `MeetingView`/`MeetingProvider` in the therapist dashboard doesn't wire `onLeaveReady` to populate this ref. The therapist's video call is rendered inline without passing the callback. So `leaveCallRef.current` is always null — the therapist never actually leaves the VideoSDK room during escalation.
+**Fix**: Pass `onLeaveReady={(fn) => { leaveCallRef.current = fn; }}` to the MeetingView component.
+
+#### 14. Peer Connect expiry refund — client-side only
+**Files**: `src/hooks/usePeerConnect.ts` lines 115-131
+**Problem**: Pending session expiry is detected client-side only (comparing timestamps in the query result map). If the student closes the browser, no server-side process triggers the refund. The `auto_expire_stale_peer_sessions` trigger only handles 2-hour expiry, not the 2-minute pending expiry with refund.
+**Fix**: Consider a server-side cron/trigger for pending expiry refunds, or accept client-side detection as sufficient for MVP.
 
 ### Summary
 
-Only one fix needed: the `spend-credits` race condition.
+| Priority | Count | Key Items |
+|---|---|---|
+| **Critical** | 5 | `getClaims` broken auth in 3 edge functions, `ai-transcribe` no auth + deprecated import |
+| **Medium** | 5 | ExpertL3 wrong room join, therapist leave not wired, double status update, console warnings |
+| **Low** | 4 | Dead code cleanup, config inconsistency, client-only expiry refund |
 
-### Changes
-
-#### 1. Database Migration — Create atomic spend function
-```sql
-CREATE OR REPLACE FUNCTION public.spend_credits_atomic(
-  _user_id uuid,
-  _amount integer,
-  _notes text DEFAULT 'Service usage',
-  _reference_id uuid DEFAULT NULL
-)
-RETURNS TABLE(success boolean, remaining integer, source text)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  _balance integer;
-  _pool_balance integer;
-  _inst_id uuid;
-BEGIN
-  -- Lock user's transactions to prevent concurrent spend
-  PERFORM 1 FROM credit_transactions WHERE user_id = _user_id FOR UPDATE;
-  
-  SELECT COALESCE(SUM(delta), 0)::integer INTO _balance
-  FROM credit_transactions WHERE user_id = _user_id;
-  
-  IF _balance >= _amount THEN
-    INSERT INTO credit_transactions (user_id, delta, type, notes, reference_id)
-    VALUES (_user_id, -_amount, 'spend', _notes, _reference_id);
-    RETURN QUERY SELECT true, (_balance - _amount)::integer, 'balance'::text;
-    RETURN;
-  END IF;
-  
-  -- Check stability pool
-  SELECT institution_id INTO _inst_id FROM profiles WHERE id = _user_id;
-  IF _inst_id IS NOT NULL THEN
-    SELECT COALESCE(balance, 0) INTO _pool_balance
-    FROM ecc_stability_pool WHERE institution_id = _inst_id FOR UPDATE;
-    
-    IF _pool_balance >= _amount THEN
-      UPDATE ecc_stability_pool
-      SET balance = balance - _amount, total_disbursed = total_disbursed + _amount
-      WHERE institution_id = _inst_id;
-      
-      INSERT INTO credit_transactions (user_id, delta, type, notes, reference_id, institution_id)
-      VALUES (_user_id, -_amount, 'spend', _notes || ' (from stability pool)', _reference_id, _inst_id);
-      
-      RETURN QUERY SELECT true, 0, 'pool'::text;
-      RETURN;
-    END IF;
-  END IF;
-  
-  RETURN QUERY SELECT false, _balance, 'insufficient'::text;
-END;
-$$;
-```
-
-#### 2. `supabase/functions/spend-credits/index.ts` — Use atomic RPC
-- Replace the two-step balance check + insert with a single `supabase.rpc("spend_credits_atomic", { ... })` call
-- Simplify the function significantly — remove the manual pool logic (now in Postgres)
-- Also fixes the `total_disbursed` bug (line 87 currently sets it to `poolBalance` instead of incrementing)
-
-### Files Modified
-- Database migration — `spend_credits_atomic` function
-- `supabase/functions/spend-credits/index.ts` — Use atomic RPC
+### Recommended Fix Order
+1. Fix `getClaims` in `spend-credits`, `purchase-credits`, `grant-credits` (Critical — payments broken)
+2. Add auth + fix imports in `ai-transcribe` (Critical — security hole)
+3. Fix `ExpertL3AlertPanel` appointmentId/room join bug (Medium — handoff broken)
+4. Wire `leaveCallRef` in therapist dashboard (Medium — therapist ghost in call)
+5. Fix `EterniaLogo` forwardRef warning (Low — cosmetic)
+6. Clean up dead code (Low)
 
