@@ -1,9 +1,8 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const SENSITIVE_KEYWORDS = [
@@ -18,12 +17,32 @@ const SENSITIVE_KEYWORDS = [
 
 const SYSTEM_ACTOR_ID = "00000000-0000-0000-0000-000000000000";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Authenticate caller
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+    );
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser(token);
+    if (userErr || !user) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { transcript, session_id, timestamp_offset, session_type } = await req.json();
     const sType: "blackbox" | "peer" = session_type === "peer" ? "peer" : "blackbox";
     if (!transcript || !session_id) {

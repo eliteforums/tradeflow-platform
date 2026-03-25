@@ -36,9 +36,9 @@ Deno.serve(async (req) => {
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
     if (!token) throw new Error("Not authenticated");
 
-    const { data: claims, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claims?.claims?.sub) throw new Error("Not authenticated");
-    const callerId = claims.claims.sub as string;
+    const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !user) throw new Error("Not authenticated");
+    const callerId = user.id;
 
     // Verify caller is admin or spoc
     const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: callerId, _role: "admin" });

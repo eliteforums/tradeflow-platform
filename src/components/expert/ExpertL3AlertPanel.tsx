@@ -23,7 +23,7 @@ const ExpertL3AlertPanel = () => {
   const { user, profile } = useAuth();
   const [l3Sessions, setL3Sessions] = useState<L3Session[]>([]);
   const [joining, setJoining] = useState<string | null>(null);
-  const [callModal, setCallModal] = useState<{ open: boolean; appointmentId?: string }>({ open: false });
+  const [callModal, setCallModal] = useState<{ open: boolean }>({ open: false });
   const [activeSession, setActiveSession] = useState<L3Session | null>(null);
   const [escalating, setEscalating] = useState(false);
   const [showEscalateConfirm, setShowEscalateConfirm] = useState(false);
@@ -94,7 +94,7 @@ const ExpertL3AlertPanel = () => {
       if (error) throw error;
 
       setActiveSession({ ...session, therapist_id: user.id, status: "accepted" });
-      setCallModal({ open: true, appointmentId: session.id });
+      setCallModal({ open: true });
       toast.success("Session accepted — joining call");
     } catch (err: any) {
       toast.error(err.message || "Failed to join session");
@@ -162,7 +162,7 @@ const ExpertL3AlertPanel = () => {
                       <Button
                         size="sm"
                         className="gap-1.5 h-8 text-xs"
-                        onClick={() => setCallModal({ open: true, appointmentId: session.id })}
+                        onClick={() => setCallModal({ open: true })}
                       >
                         <Video className="w-3.5 h-3.5" />
                         Rejoin Call
