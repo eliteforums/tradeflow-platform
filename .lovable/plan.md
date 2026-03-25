@@ -1,33 +1,27 @@
 
 
-## Plan: Professional Card-Based Institution Manager
+## Plan: Align ECC Payment Packages (Frontend ↔ Backend)
 
-### Current State
-The SPOC/Institutions tab shows institutions as compact rows with inline badges and buttons. It's functional but looks like a flat list — not a professional dashboard.
+### Problem
+The payment gateway is already fully implemented with Razorpay (order creation, HMAC verification, server-side crediting, UPI/GPay/cards support). However, the frontend package definitions (25/60/130 credits) don't match the backend's accepted packages (50/100/250/500 credits), causing every purchase to fail with "Invalid package."
 
-### New Design
-Redesign `InstitutionManager.tsx` to display each institution as a rich, detailed card with:
-- **Card header**: Institution name + status badge + plan badge + type badge
-- **Stats row**: Student count, credit pool, creation date, Eternia code (copyable)
-- **Action buttons**: Bulk IDs, Toggle active, View details (click card)
-- **Gradient accent** on the left border based on plan type (basic=teal, premium=purple, enterprise=amber)
-- **Progress indicator** showing credit pool usage or student count relative to plan limits
+### Fix
+Sync both sides to use the same package set. Use the frontend's pricing as the source of truth since it reflects the intended user-facing tiers.
 
-### Changes
+#### 1. `supabase/functions/purchase-credits/index.ts` — Update PACKAGES map
+Replace the backend packages (lines 9-14) to match the frontend:
+```
+25 → ₹49 (4900 paise)
+60 → ₹99 (9900 paise)
+130 → ₹199 (19900 paise)
+```
 
-#### `src/components/admin/InstitutionManager.tsx` — Full card redesign
-
-Replace the current flat list rows (lines 246-284) with a responsive grid of cards (`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3`). Each card includes:
-
-1. **Top section**: Gradient left-border accent by plan. Institution name (large), type badge, active/inactive indicator dot
-2. **Middle section**: 4 mini-stat boxes — Students, Credit Pool, Eternia Code, Created date
-3. **Bottom section**: Action bar with Bulk IDs button, toggle switch, and a "View Details →" link
-4. **Hover effect**: Subtle border glow + slight scale
-
-Keep all existing functionality (create form, bulk dialog, copy code, toggle active) intact — only the card layout changes.
+#### 2. Idempotency guard — Prevent double crediting
+Add a check before inserting credit transaction: query `credit_transactions` for an existing row with the same Razorpay payment ID in the notes field. If found, return success without inserting again.
 
 ### Files Modified
-- `src/components/admin/InstitutionManager.tsx` — Redesign institution list from flat rows to professional detailed cards in a responsive grid
+- `supabase/functions/purchase-credits/index.ts` — Align package map + add idempotency check
 
-### No database or backend changes needed.
+### No database changes needed
+Everything else (order creation, signature verification, Razorpay checkout UI with UPI/GPay, failure handling) is already working correctly.
 
