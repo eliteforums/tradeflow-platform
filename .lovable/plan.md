@@ -1,62 +1,55 @@
 
 
-## Plan: Fix 3 Critical Call Issues
+## Plan: PowerBI-Style Site Analytics Dashboard
 
-### Issue 2.1: Multiple Windows During Calls (Duplicate Participant Rendering)
+### Current State
+The analytics tab has basic KPI cards, a daily traffic area chart, top pages list, hourly bar chart, traffic sources, device breakdown, and cookie consent stats. Functional but flat — no ring/donut charts, no comparative visuals, no segmented views.
 
-**Root Cause:** Two separate problems:
+### New Design
+A dense, professional PowerBI-inspired analytics dashboard with:
+- Redesigned KPI strip with delta indicators and sparkline-style context
+- Ring/donut charts for device and consent breakdowns
+- Dual-axis or stacked area chart for daily traffic with visitor segmentation
+- Horizontal bar chart for top pages (PowerBI-style)
+- Heatmap-style hourly traffic grid
+- Traffic sources with proportional donut
+- Views Today vs Week vs Total comparative cards
 
-1. **BlackBox (student side):** The BlackBox page renders its own mic/video controls (lines 163-175 in BlackBox.tsx) that are separate from the `MeetingControls` component inside the hidden `MeetingView`. The custom buttons in the bottom controls section don't call `toggleMic()` or any SDK function — they're purely decorative. Meanwhile, `MeetingView` also renders `MeetingControls` inside the hidden container. This creates visual duplication.
+### Changes
 
-2. **Expert/Peer/Appointments:** The `VideoCallModal` opens as a full-screen overlay while the underlying page may still show session UI. For Expert Connect and Peer Connect, the `VideoCallModal` is used correctly — the issue is likely that the same `join()` race condition from before (already partially fixed) is still causing duplicate participant entries.
+#### 1. `src/components/admin/AnalyticsDashboard.tsx` — Full rewrite
 
-**Fix:**
-- **MeetingView.tsx:** Add a `hideControls` prop so BlackBox can suppress the internal `MeetingControls` (the BlackBox page has its own controls)
-- **MeetingView.tsx:** Add a guard in `retryJoin` to reset `joinSucceeded.current = false` before retrying, and add `joined` to the closure check properly using a ref instead of stale closure
-- **BlackBox.tsx / MobileBlackBox.tsx:** Pass `hideControls={true}` to MeetingView, and wire the custom Mic/Video buttons to actual SDK toggle functions via a callback ref pattern
+**Row 1 — KPI Hero Strip (6 cards, same data, upgraded style):**
+- Each card gets a subtle trend arrow and mini context line (e.g., "Total Views" with "X today" subtitle)
+- Gradient accent borders on hover
+- "Live Now" card gets a pulsing ring effect
 
-### Issue 2.2: Blackbox Mic Not Working
+**Row 2 — Daily Traffic (full width):**
+- Stacked area chart with two series: authenticated vs anonymous views (computed from existing `user_id` presence in pageViews)
+- Keep the gradient fill, add grid lines and better tooltip
 
-**Root Cause:** The BlackBox page (both desktop and mobile) renders custom mic/video buttons in the "Bottom controls" section (lines 163-185 in BlackBox.tsx), but these buttons have **no onClick handlers for mic toggle**. The Mic button is purely visual — it doesn't call `toggleMic()`. The actual `MeetingControls` component with working `toggleMic()` is hidden inside the visually-hidden `MeetingView` container.
+**Row 3 — Two-column layout:**
+- Left: **Top Pages** — horizontal bar chart using recharts `BarChart` with `layout="vertical"`, showing page path on Y-axis and view count as bars. Much more PowerBI-like than the current list.
+- Right: **Hourly Traffic Heatmap** — keep bar chart but add color intensity gradient (darker bars = more traffic)
 
-**Fix:**
-- Expose `toggleMic` and `toggleWebcam` from `MeetingView` via a ref/callback pattern (similar to `onLeaveReady`)
-- Add `onToggleMicReady` and `onMicStatusChange` callbacks to `MeetingView`
-- Wire the BlackBox page's custom Mic button to actually call `toggleMic()` and track `localMicOn` state
-- Same fix for MobileBlackBox
+**Row 4 — Three-column layout:**
+- Left: **Device Breakdown** — `PieChart` with `Cell` components, donut style (innerRadius), with legend below
+- Center: **Traffic Sources** — `PieChart` donut for top referrers with color-coded legend
+- Right: **Cookie Consent** — `PieChart` donut (green/red/amber) with stacked bar below
 
-### Issue 2.3: Blackbox Escalation — No Join Button on Expert Dashboard
+**Row 5 — Visitor Segmentation (2 cards):**
+- Authenticated vs Anonymous side-by-side with proportional bar and percentage
 
-**Root Cause:** Looking at `ExpertL3AlertPanel.tsx`, the "Accept & Join Call" button exists (line 157), but `VideoCallModal` is used for the call UI. When the expert clicks "Accept & Join Call":
-1. It updates the session status to "accepted"
-2. Opens `VideoCallModal` with `existingRoomId={activeSession?.room_id}`
-3. But `activeSession?.room_id` might be `null` at escalation time if the session was escalated before a room was created
-
-The real issue: for escalated sessions, the `room_id` may be null or the `VideoCallModal` requires the expert to click "Start Call" first, but with `existingRoomId` being null, the modal shows a "Start Audio/Video Call" button instead of auto-joining.
-
-**Fix:**
-- In `ExpertL3AlertPanel.handleAcceptAndJoin`: if `session.room_id` is null, create a new room via `createVideoSDKRoom()` and update the session with the new room_id before opening the modal
-- Ensure the `VideoCallModal` auto-starts when `existingRoomId` is provided (add `autoStart` prop or call `startCall` on mount when existingRoomId is set)
+#### 2. `src/hooks/useAnalyticsData.ts` — Minor additions
+- Split daily trend into `authenticatedCount` and `anonymousCount` per day (for the stacked area chart)
+- Return `viewsToday` ratio vs previous day for delta indicator
 
 ### Files Modified
+- `src/components/admin/AnalyticsDashboard.tsx` — Full redesign with PieChart donut charts, vertical bar charts, stacked area, heatmap bars
+- `src/hooks/useAnalyticsData.ts` — Add authenticated/anonymous daily split data
 
-1. **`src/components/videosdk/MeetingView.tsx`**
-   - Add `hideControls` prop
-   - Add `onToggleMicReady` and `onMicStatusChange` callbacks
-   - Fix retry join closure issue with refs
-
-2. **`src/pages/dashboard/BlackBox.tsx`**
-   - Wire custom Mic button to actual `toggleMic` via callback
-   - Track `localMicOn` state from MeetingView
-   - Pass `hideControls={true}`
-
-3. **`src/components/mobile/MobileBlackBox.tsx`**
-   - Same mic wiring fix as desktop
-
-4. **`src/components/expert/ExpertL3AlertPanel.tsx`**
-   - Create room if `room_id` is null on accept
-   - Auto-fetch token and open modal with valid room
-
-5. **`src/components/videosdk/VideoCallModal.tsx`**
-   - Add `autoStart` prop — when true and `existingRoomId` is provided, automatically call `startCall()` on mount
+### Technical Details
+- Uses `recharts` PieChart, Cell, BarChart (vertical layout), AreaChart (stacked) — all already available
+- No new dependencies needed
+- No database changes
 
