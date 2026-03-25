@@ -25,7 +25,7 @@ export interface QuestCompletion {
 export function useQuests() {
   const { user, refreshCredits } = useAuth();
   const queryClient = useQueryClient();
-  const { remainingToday, canEarn } = useEccEarn();
+  const { remainingThisWeek, canEarn } = useEccEarn();
 
   const { data: quests = [], isLoading: isLoadingQuests, error: questsError } = useQuery({
     queryKey: ["quest-cards"],
@@ -69,7 +69,7 @@ export function useQuests() {
         throw new Error("Quest already completed today");
       }
 
-      const actualReward = Math.min(quest.xp_reward, remainingToday);
+      const actualReward = Math.min(2, remainingThisWeek);
       if (!canEarn || actualReward <= 0) {
         const { error: completionError } = await supabase.from("quest_completions").insert({
           user_id: user.id,

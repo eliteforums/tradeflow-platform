@@ -37,7 +37,7 @@ const CTASection = () => (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 mb-5">
           <Link to="/institution-code" className="w-full sm:w-auto">
             <Button size="lg" className="w-full sm:w-auto rounded-full bg-primary text-primary-foreground hover:bg-primary/90 text-sm px-7 h-12 gap-2 font-semibold shadow-lg shadow-primary/20">
-              Start Free — 100 ECC Included
+              Start Free — 80 ECC Included
               <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>

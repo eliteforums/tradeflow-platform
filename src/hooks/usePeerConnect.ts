@@ -306,7 +306,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
       }
 
       // Spend credits
-      await spendCredits(20, "Peer Connect session");
+      await spendCredits(18, "Peer Connect session");
 
       // Insert as PENDING (not active)
       const { data, error } = await supabase
@@ -395,11 +395,11 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .eq("intern_id", user.id);
       if (error) throw error;
 
-      // Refund student 20 ECC
+      // Refund student 18 ECC
       if (session) {
         await supabase.from("credit_transactions").insert({
           user_id: session.student_id,
-          delta: 20,
+          delta: 18,
           type: "grant",
           notes: "Peer Connect session declined — refund",
           reference_id: sessionId,
@@ -408,7 +408,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
         await supabase.from("notifications").insert({
           user_id: session.student_id,
           title: "Session Declined",
-          message: "The intern couldn't accept your request. Your 20 ECC has been refunded. Try another intern!",
+          message: "The intern couldn't accept your request. Your 18 ECC has been refunded. Try another intern!",
           type: "peer_declined",
           metadata: { session_id: sessionId },
         });

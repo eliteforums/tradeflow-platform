@@ -37,13 +37,13 @@ export const useBlackBoxSession = () => {
   const [callState, setCallState] = useState<CallState>("idle");
   const tokenRef = useRef<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const sessionCostRef = useRef<number>(0);
 
   // Keep refs in sync
   useEffect(() => { tokenRef.current = token; }, [token]);
   useEffect(() => {
     const prevId = sessionIdRef.current;
     sessionIdRef.current = activeSession?.id || null;
-    // Clear token when session changes
     if (prevId && prevId !== activeSession?.id) {
       setToken(null);
       tokenRef.current = null;
@@ -65,9 +65,8 @@ export const useBlackBoxSession = () => {
     if (status === "queued") { setCallState("waiting"); return; }
     if ((status === "accepted" || status === "active") && room_id) {
       if (!tokenRef.current) {
-        setCallState("ready"); // therapist ready, student can fetch token & join
+        setCallState("ready");
       }
-      // If we have token, callState is managed by MeetingView callbacks (joining/joined/failed)
       return;
     }
   }, [activeSession?.status, activeSession?.room_id, token]);
@@ -82,14 +81,12 @@ export const useBlackBoxSession = () => {
         console.log(`[BlackBox] Fetching token attempt ${attempt}/${MAX_RETRIES}`);
         const t = await getVideoSDKToken();
         setToken(t);
-        // callState will be set to "joined" by MeetingView onJoined callback
         return;
       } catch (error: any) {
         console.error(`[BlackBox] Token fetch attempt ${attempt} failed:`, error);
         if (attempt === MAX_RETRIES) {
           const msg = error.message || "Failed to connect to session";
           setCallState("failed");
-          // Persist error
           if (activeSession?.id) {
             await supabase.from("blackbox_sessions")
               .update({ last_join_error: msg } as any)
@@ -103,7 +100,6 @@ export const useBlackBoxSession = () => {
     }
   }, [activeSession?.id, activeSession?.room_id]);
 
-  // Called by MeetingView when join succeeds
   const onCallJoined = useCallback(async () => {
     setCallState("joined");
     if (activeSession?.id) {
@@ -113,7 +109,6 @@ export const useBlackBoxSession = () => {
     }
   }, [activeSession?.id]);
 
-  // Called by MeetingView when join fails
   const onCallError = useCallback(async (errorMsg: string) => {
     setCallState("failed");
     if (activeSession?.id) {
@@ -157,7 +152,6 @@ export const useBlackBoxSession = () => {
         }
         return prev;
       });
-      // Persist error for debugging
       if (activeSession?.id) {
         await supabase.from("blackbox_sessions")
           .update({ last_join_error: "Connection timed out after 30s" } as any)
@@ -220,11 +214,27 @@ export const useBlackBoxSession = () => {
         return;
       }
 
-      const spendResult = await spendCredits(30, "BlackBox Talk Now session");
-      if (!spendResult.success) {
-        toast.error("Insufficient credits for a BlackBox session");
+      // Check daily limit (3/day)
+      const { data: dailyCount } = await supabase.rpc("get_blackbox_daily_count", { _user_id: user.id });
+      if ((dailyCount || 0) >= 3) {
+        toast.error("Daily BlackBox limit reached (3 sessions/day)");
         return;
       }
+
+      // Calculate tiered cost
+      const { data: totalCount } = await supabase.rpc("get_blackbox_usage_count", { _user_id: user.id });
+      const usageCount = totalCount || 0;
+      const cost = usageCount === 0 ? 0 : usageCount < 4 ? 3 : 6;
+
+      if (cost > 0) {
+        const spendResult = await spendCredits(cost, "BlackBox Talk Now session");
+        if (!spendResult.success) {
+          toast.error(`Insufficient credits for a BlackBox session (${cost} ECC required)`);
+          return;
+        }
+      }
+
+      sessionCostRef.current = cost;
 
       const { data, error } = await supabase
         .from("blackbox_sessions")
@@ -234,12 +244,12 @@ export const useBlackBoxSession = () => {
 
       if (error) throw error;
       setActiveSession(data as unknown as BlackBoxSession);
-      toast.success("You're in the queue. A therapist will connect shortly.");
+      toast.success(cost === 0
+        ? "You're in the queue (first session free!). A therapist will connect shortly."
+        : `You're in the queue (${cost} ECC charged). A therapist will connect shortly.`
+      );
     } catch (err: any) {
-      const message = /insufficient credits/i.test(err?.message || "")
-        ? "Insufficient credits for a BlackBox session (30 ECC required)."
-        : err.message || "Failed to request session";
-      toast.error(message);
+      toast.error(err.message || "Failed to request session");
     } finally {
       setIsRequesting(false);
     }
@@ -254,24 +264,36 @@ export const useBlackBoxSession = () => {
       .update({ status: "cancelled", ended_at: new Date().toISOString() })
       .eq("id", activeSession.id);
 
-    // Refund 30 ECC if student cancels while still queued (no service consumed)
+    // Refund the actual cost if student cancels while still queued
     if (shouldRefund) {
-      // Duplicate prevention: check if refund already exists
-      const { data: existingRefund } = await supabase
+      // Look up the original spend transaction to get the actual amount
+      const { data: spendTx } = await supabase
         .from("credit_transactions")
-        .select("id")
+        .select("id, delta")
         .eq("reference_id", activeSession.id)
-        .eq("type", "grant")
+        .eq("type", "spend")
         .maybeSingle();
 
-      if (!existingRefund) {
-        await supabase.from("credit_transactions").insert({
-          user_id: user.id,
-          delta: 30,
-          type: "grant",
-          notes: "BlackBox session cancelled — refund",
-          reference_id: activeSession.id,
-        });
+      const refundAmount = spendTx ? Math.abs(spendTx.delta) : sessionCostRef.current;
+
+      if (refundAmount > 0) {
+        // Duplicate prevention
+        const { data: existingRefund } = await supabase
+          .from("credit_transactions")
+          .select("id")
+          .eq("reference_id", activeSession.id)
+          .eq("type", "grant")
+          .maybeSingle();
+
+        if (!existingRefund) {
+          await supabase.from("credit_transactions").insert({
+            user_id: user.id,
+            delta: refundAmount,
+            type: "grant",
+            notes: "BlackBox session cancelled — refund",
+            reference_id: activeSession.id,
+          });
+        }
       }
       refreshCredits();
     }
@@ -279,7 +301,10 @@ export const useBlackBoxSession = () => {
     setActiveSession(null);
     setToken(null);
     setCallState("idle");
-    toast.info(shouldRefund ? "Session cancelled — 30 ECC refunded" : "Session cancelled");
+    toast.info(shouldRefund && sessionCostRef.current > 0
+      ? `Session cancelled — ${sessionCostRef.current} ECC refunded`
+      : "Session cancelled"
+    );
   }, [activeSession, user, refreshCredits]);
 
   const endSession = useCallback(async () => {

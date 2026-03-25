@@ -9,7 +9,7 @@ const faqs = [
   },
   {
     q: "How does the ECC (Eternia Care Credits) system work?",
-    a: "Each student receives 100 ECC on signup. Credits are used for Expert Connect (50 ECC), Peer Connect (20 ECC), and BlackBox sessions (30 ECC). You earn more through daily quests, streaks, and self-help activities. If your balance hits zero, the ECC Stability Pool provides essential access.",
+    a: "Each student receives 80 ECC on signup. Credits are used for Expert Connect (45 ECC), Peer Connect (18 ECC), and BlackBox sessions (tiered: 1st free, then 3–6 ECC). You earn more through weekly quests, self-help activities (5 ECC/week cap). If your balance hits zero, the ECC Stability Pool provides essential access.",
   },
   {
     q: "What is the BlackBox feature?",
