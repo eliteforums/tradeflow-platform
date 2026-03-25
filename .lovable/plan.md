@@ -1,73 +1,104 @@
 
 
-## Plan: Update README with Comprehensive Content & License
+## ECC System Core Update — Implementation Plan
 
-### What Needs Updating
+### Overview
+Update the entire ECC economy to match the new credit flow specification. Changes span database functions, hooks, edge functions, and UI text across ~20 files.
 
-The README is outdated in several areas after recent development. Here's what changes:
+### Changes Summary
 
-### Content Updates
+| Area | Current | New |
+|---|---|---|
+| Welcome Bonus | 100 ECC | 80 ECC |
+| Earning Cap | 5 ECC/day | 5 ECC/week (20/month) |
+| Quest Card | Variable (xp_reward) | Fixed +2 ECC |
+| Wreck Buddy | +1 ECC | +2 ECC |
+| Tibetan Bowl | +1 ECC | +1 ECC (no change) |
+| Sound Therapy | +1 ECC | +1 ECC (no change) |
+| Mood Tracker | +3 ECC | Removed |
+| Gratitude | +5 ECC | Removed |
+| Journaling | +5 ECC | Removed |
+| Expert Connect | 50 ECC | 45 ECC |
+| Peer Connect | 20 ECC | 18 ECC |
+| BlackBox | Flat 30 ECC | Tiered: Free → 3 → 6 ECC |
+| BlackBox Daily Limit | None | 3 sessions/day |
+| Top-up Packages | 50/100/250/500 | 25/60/130 ECC |
 
-#### 1. Remove Device Binding References
-- Line 67: Remove "Device-bound sessions" from Key Differentiators
-- Line 193-194: Remove "Device Binding" row from Privacy & Security table
-- Line 200: Remove "JWT Rotation" device sessions reference
-- Line 309: Remove `useDeviceValidation.ts` from hooks list
-- Line 320: Remove `deviceFingerprint.ts` from lib list
-- Line 353: Remove `reset-device` from edge functions list
-- Line 391: Remove `device_sessions` table from schema
-- Lines 455-469: Remove "Device Bind" and "device fingerprint" from onboarding flow diagram
+### Database Migration
 
-#### 2. Update AI Section
-- Architecture table line 82: Change "Groq API" to "Lovable AI Gateway (Gemini/GPT models)" for ai-transcribe; keep Groq for ai-moderate
-- Line 83: Update "Real-time Audio Monitoring" to mention AI Suggestion Popup system
-- Add new subsection under AI-Powered Safety describing the interactive popup (Dismiss/Escalate), human-in-the-loop control
-- Line 117: Replace "automatic escalation triggers" with "interactive suggestion popup for human review"
+Create three new RPC functions + update the welcome bonus trigger:
 
-#### 3. Update Edge Functions List
-- Remove: `cleanup-deleted-accounts`, `delete-account`, `reset-device`
-- Add: `recover-password`, `get-recovery-hints`, `escalate-emergency`, `verify-student-id`
-- Update `ai-transcribe` description to mention risk analysis + suggestion system
-- Update `spend-credits` description to mention atomic RPC
+1. **`get_weekly_earn_total`** — sums earn transactions from Monday of the current week
+2. **`get_blackbox_usage_count`** — counts total completed/active BlackBox sessions for a user (all-time, for tiered pricing)
+3. **`get_blackbox_daily_count`** — counts today's BlackBox sessions
+4. **Update `handle_new_user`** — change welcome bonus from 100 to 80 ECC
 
-#### 4. Update Security Section
-- Line 228: Change `getClaims()` to `getUser()` for JWT validation
-- Add `spend_credits_atomic` to database functions table
-- Update account deletion to "request-only" (no self-service deletion)
+### Hook Changes
 
-#### 5. Add Forgot Password Flow
-- New subsection under Onboarding showing the recovery flow: enter username → answer hint questions + emoji pattern → set new password
+1. **`src/hooks/useEccEarn.ts`**
+   - Change `DAILY_CAP = 5` → `WEEKLY_CAP = 5`
+   - Replace `get_daily_earn_total` RPC with `get_weekly_earn_total`
+   - Rename `dailyEarned` → `weeklyEarned`, `remainingToday` → `remainingThisWeek`
+   - Update error message to "Weekly earn cap reached (5 ECC/week)"
 
-#### 6. Update APAAR/Student ID Section
-- Mention SHA-256 hashing of IDs before storage
-- Only verification status stored, never raw IDs
+2. **`src/hooks/useMoodTracker.ts`** — Remove `useEccEarn` import and `earnFromActivity` call
 
-#### 7. Update ECC Economy
-- Add refund logic documentation (BlackBox cancel, appointment cancel, peer expiry)
-- Add duplicate refund prevention
-- Add GPay/UPI mention under Razorpay
+3. **`src/hooks/useGratitude.ts`** — Remove `useEccEarn` import and `earnFromActivity` call
 
-#### 8. Update Recent Updates Section
-- Add entries for: AI Suggestion Popup, Forgot Password, APAAR hashing, device binding removal, atomic ECC spending, escalation fixes, codebase audit fixes
+4. **`src/hooks/useJournaling.ts`** — Remove `useEccEarn` import and `earnFromActivity` call
 
-#### 9. Fix License
-- Fix typo: "eliteforms.in" → "eliteforums.in"
-- Expand into a comprehensive proprietary license with explicit clauses for:
-  - Intellectual property ownership
-  - Restrictions on reverse engineering, decompilation
-  - Confidentiality obligations
-  - Termination conditions
-  - Governing law (India)
-  - DPDP Act compliance statement
-- Also create a separate `LICENSE` file with the full legal text
+5. **`src/hooks/useQuests.ts`** — Hardcode `actualReward = Math.min(2, remainingThisWeek)` instead of using `quest.xp_reward`
 
-#### 10. Update Environment Variables
-- Add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` to secrets table
+6. **`src/pages/dashboard/WreckBuddy.tsx`** — Change `amount: 1` → `amount: 2`
 
-### Files Modified
-- `README.md` — Full rewrite with all updates above
-- `LICENSE` — New comprehensive proprietary license file
+7. **`src/hooks/useBlackBoxSession.ts`**
+   - Before `requestSession`: call `get_blackbox_daily_count` and `get_blackbox_usage_count`
+   - If daily >= 3: reject with "Daily BlackBox limit reached (3/day)"
+   - Calculate cost: `totalCount === 0 ? 0 : totalCount < 4 ? 3 : 6`
+   - If cost > 0: call `spendCredits(cost, ...)`, else skip
+   - Update cancel refund to refund actual cost (not hardcoded 30)
+   - Store cost in session notes or derive from count
 
-### No Database or Code Changes
-This is documentation only.
+8. **`src/hooks/usePeerConnect.ts`** — Change all `20` → `18` in spend/refund amounts and messages
+
+9. **`src/hooks/usePurchaseCredits.ts`** — Replace PACKAGES with:
+   - 25 ECC / ₹49 (Starter)
+   - 60 ECC / ₹99 (Growth, popular)
+   - 130 ECC / ₹199 (Priority)
+
+### Edge Function Changes
+
+10. **`supabase/functions/refund-blackbox-session/index.ts`** — Look up the original spend transaction by `reference_id` to get the actual amount charged, refund that amount instead of hardcoded 30
+
+### UI Text Updates
+
+11. **`src/pages/dashboard/Appointments.tsx`** — Change `50` → `45` everywhere (display, creditCost, balance checks)
+
+12. **`src/components/mobile/MobileAppointments.tsx`** — Same: `50` → `45`
+
+13. **`src/pages/dashboard/PeerConnect.tsx`** — Change `20 ECC` → `18 ECC` in display text
+
+14. **`src/components/mobile/MobilePeerConnect.tsx`** — Change `20 ECC` → `18 ECC`
+
+15. **`src/components/mobile/MobileCredits.tsx`** — Update costs text, earning info (weekly cap), package display
+
+16. **`src/pages/dashboard/Credits.tsx`** — Same updates as MobileCredits
+
+17. **`src/components/landing/FAQSection.tsx`** — Update ECC description (80 base, 45/18/tiered pricing)
+
+18. **`src/components/landing/CTASection.tsx`** — Change "100 ECC" → "80 ECC"
+
+19. **`src/components/landing/CodePreviewSection.tsx`** — Change "100 ECC" → "80 ECC"
+
+20. **`src/pages/legal/Terms.tsx`** — Update welcome bonus, earning rules, spending costs
+
+### BlackBox UI Updates
+
+21. **`src/pages/dashboard/BlackBox.tsx`** and **`src/components/mobile/MobileBlackBox.tsx`** — Show tiered pricing info and daily limit (3/day)
+
+### Files Modified (Total: ~22)
+- 1 database migration (4 functions)
+- 9 hooks/pages with logic changes
+- 1 edge function
+- ~11 UI files with text updates
 
