@@ -75,7 +75,7 @@ const CodePreviewSection = () => (
 
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "Credits", value: "100 ECC", color: "text-eternia-warning" },
+                { label: "Credits", value: "80 ECC", color: "text-eternia-warning" },
                 { label: "Modules", value: "5 Active", color: "text-eternia-success" },
                 { label: "Encryption", value: "AES-256", color: "text-eternia-lavender" },
                 { label: "Anonymity", value: "Full ✓", color: "text-primary" },

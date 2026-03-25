@@ -136,7 +136,7 @@ const Credits = () => {
             <h3 className="font-semibold font-display text-base">How to Earn</h3>
             <div className="p-4 rounded-xl bg-muted/30 border border-border space-y-3">
               <div>
-                <h4 className="font-medium text-sm mb-1.5 flex items-center gap-2"><Award className="w-4 h-4 text-primary" />Earn (5 ECC/day max)</h4>
+                <h4 className="font-medium text-sm mb-1.5 flex items-center gap-2"><Award className="w-4 h-4 text-primary" />Earn (5 ECC/week max)</h4>
                 <ul className="space-y-1.5 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">• Complete Quest Cards</li>
                   <li className="flex items-center gap-2">• Wreck the Buddy exercise</li>
