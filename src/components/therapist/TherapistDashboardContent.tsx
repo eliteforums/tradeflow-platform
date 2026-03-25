@@ -399,19 +399,82 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
             console.error("Failed to fetch emergency contact:", e);
           }
         } else {
-          // No M.Phil available, mark as escalated
+          // No M.Phil available — keep status "active" so ExpertL3AlertPanel picks it up
+          // and notify ALL active experts
           await supabase
             .from("blackbox_sessions")
-            .update({ status: "escalated" })
+            .update({
+              flag_level: level,
+              escalation_reason: escalationReason,
+              escalation_history: updatedHistory,
+              status: "active",
+            })
             .eq("id", activeSession.id);
-          toast.warning("Critical escalation submitted — no M.Phil expert available, session escalated");
+
+          // Notify all experts
+          const { data: allExperts } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("role", "expert")
+            .eq("is_active", true)
+            .neq("id", user?.id || "");
+
+          if (allExperts && allExperts.length > 0) {
+            await supabase.from("notifications").insert(
+              allExperts.map((e: any) => ({
+                user_id: e.id,
+                type: "l3_handoff",
+                title: "🚨 L3 Critical Session — Expert Needed",
+                message: `A BlackBox session has been escalated to L3. No M.Phil expert available. Reason: ${escalationReason.substring(0, 200)}`,
+                metadata: {
+                  session_id: activeSession.id,
+                  room_id: activeSession.room_id,
+                  student_id: activeSession.student_id,
+                  escalation_level: level,
+                },
+              }))
+            );
+          }
+
+          toast.warning("Critical escalation — all experts notified");
         }
       } else {
+        // No institution found — keep active and notify all experts
         await supabase
           .from("blackbox_sessions")
-          .update({ status: "escalated" })
+          .update({
+            flag_level: level,
+            escalation_reason: escalationReason,
+            escalation_history: updatedHistory,
+            status: "active",
+          })
           .eq("id", activeSession.id);
-        toast.warning("Critical escalation submitted — session transferred");
+
+        const { data: allExperts } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("role", "expert")
+          .eq("is_active", true)
+          .neq("id", user?.id || "");
+
+        if (allExperts && allExperts.length > 0) {
+          await supabase.from("notifications").insert(
+            allExperts.map((e: any) => ({
+              user_id: e.id,
+              type: "l3_handoff",
+              title: "🚨 L3 Critical Session — Expert Needed",
+              message: `A BlackBox session has been escalated to L3. Reason: ${escalationReason.substring(0, 200)}`,
+              metadata: {
+                session_id: activeSession.id,
+                room_id: activeSession.room_id,
+                student_id: activeSession.student_id,
+                escalation_level: level,
+              },
+            }))
+          );
+        }
+
+        toast.warning("Critical escalation submitted — experts notified");
       }
 
       // Gracefully leave the VideoSDK room before clearing state

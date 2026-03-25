@@ -153,16 +153,32 @@ Deno.serve(async (req) => {
         }
       : null;
 
-    // Find SPOC for institution
+    // Find SPOC for institution — check user_roles table (authoritative source)
     let spocId = callerId;
     if (studentProfile?.institution_id) {
-      const { data: spocs } = await admin
-        .from("profiles")
-        .select("id")
-        .eq("institution_id", studentProfile.institution_id)
-        .eq("role", "spoc")
-        .limit(1);
-      if (spocs && spocs.length > 0) spocId = spocs[0].id;
+      // Join user_roles with profiles to find SPOCs in the same institution
+      const { data: spocProfiles } = await admin
+        .from("user_roles")
+        .select("user_id, profiles:user_id(id, institution_id)")
+        .eq("role", "spoc");
+
+      const institutionSpoc = (spocProfiles || []).find(
+        (sp: any) => sp.profiles?.institution_id === studentProfile.institution_id
+      );
+
+      if (institutionSpoc) {
+        spocId = institutionSpoc.user_id;
+      } else {
+        // Fallback: notify an admin instead
+        const { data: adminRoles } = await admin
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "admin")
+          .limit(1);
+        if (adminRoles && adminRoles.length > 0) {
+          spocId = adminRoles[0].user_id;
+        }
+      }
     }
 
     // Build trigger_snippet
