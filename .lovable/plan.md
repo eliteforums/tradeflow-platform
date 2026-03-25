@@ -1,62 +1,30 @@
 
 
-## Plan: ECC System Core Update — Gaps Analysis & Fixes
+## APAAR ID Verification — Current State Analysis
 
-### What Already Works
+All four requirements are **already fully implemented**. Here's the mapping:
 
-| Feature | Status |
-|---|---|
-| **2.1 Purchasing** | Razorpay integration exists (`purchase-credits` edge function + `usePurchaseCredits` hook). Supports 4 packages. |
-| **2.2 Usage** | BlackBox charges 30 ECC via `spend-credits` edge function. Expert Connect charges via `spendCredits()`. Peer Connect charges 20 ECC. |
-| **2.3 Earning** | `useEccEarn` hook with 5 ECC/day cap. Activities: quests, wreck buddy, tibetan bowl, sound therapy. |
-| **2.4 Refund (BlackBox)** | `refund-blackbox-session` edge function refunds 30 ECC, marks `refunded: true`, audit logged. Silence auto-end triggers refund. |
-| **2.4 Refund (Peer decline)** | Intern decline refunds 20 ECC to student. |
+### 3.1 User Flow — Already Done
+- `Register.tsx` line 63-116: Student enters APAAR ID, clicks "Verify", system calls `verify-student-id` edge function
 
-### Gaps Found
+### 3.2 Backend Logic — Already Done
+- `verify-student-id/index.ts`: Hashes the entered ID with SHA-256, checks against `institution_student_ids` table (the institution's uploaded database), returns `verified: true` or `verified: false` with reason
+- `activate-account/index.ts` lines 114-136: Double-checks verification during account activation, marks the ID as claimed
 
-1. **No GPay/UPI support** — Razorpay already supports GPay and UPI natively via checkout.js. No code change needed; these are configured in the Razorpay dashboard. However, `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` secrets are **missing** from the project.
+### 3.3 Storage Logic — Already Done
+- `activate-account/index.ts` lines 138-151: Stores **only** `apaar_verified: true/false` and `erp_verified: true/false`. Raw ID fields are explicitly set to `null`:
+  ```
+  student_id_encrypted: null,
+  apaar_id_encrypted: null,
+  erp_id_encrypted: null,
+  ```
+- `institution_student_ids` table stores only SHA-256 hashes, never raw IDs
+- The SPOC upload component (`StudentIdVerificationSection.tsx`) hashes IDs client-side before inserting
 
-2. **BlackBox cancel has no refund** — `cancelSession()` in `useBlackBoxSession.ts` sets status to "cancelled" but does NOT refund the 30 ECC. Student loses credits if they cancel while queued.
+### 3.4 Output — Already Done
+- Verified → student proceeds with registration
+- Not verified → denied with specific error ("not found", "already claimed", "invalid format")
 
-3. **Appointment cancel has no refund** — `cancelAppointment()` in `useAppointments.ts` sets status to "cancelled" but does NOT refund `credits_charged`. Student loses credits.
-
-4. **Peer Connect expiry has no refund** — UI text says "20 ECC will be refunded if request expires" but there is no actual refund logic when a pending session expires.
-
-5. **No duplicate refund prevention for Peer/Appointments** — BlackBox has `refunded` boolean column; Peer and Appointments do not.
-
-6. **Expert/therapist cancellation has no refund path** — If an expert cancels a confirmed appointment, no refund occurs.
-
-### Changes
-
-#### 1. `src/hooks/useBlackBoxSession.ts` — Refund on student cancel (queued only)
-- In `cancelSession`: if status is "queued" (therapist hasn't started), insert a +30 ECC `grant` transaction with note "BlackBox session cancelled — refund" and `reference_id: session.id`
-- If status is "accepted" or "active" (session started), no refund (service was consumed)
-- Invalidate credit queries + `refreshCredits()`
-
-#### 2. `src/hooks/useAppointments.ts` — Refund on appointment cancel
-- In `cancelAppointment`: fetch the appointment to get `credits_charged` and `status`
-- If `credits_charged > 0` and status is "pending" or "confirmed" (not yet completed), insert a refund transaction (+credits_charged, type "grant", note "Expert Connect cancelled — refund")
-- Invalidate credit queries + `refreshCredits()`
-
-#### 3. `src/hooks/usePeerConnect.ts` — Refund on pending session expiry
-- Add an `expireSession` mutation that checks if a pending session is past 2 minutes
-- If expired: update status to "completed", refund 20 ECC to student with `reference_id`
-- Wire this to the existing expiry detection in the UI (the countdown timer component)
-- Also add refund to `endSession` if the session never became "active" (intern never joined)
-
-#### 4. Add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` secrets
-- Use `add_secret` tool to prompt user for Razorpay credentials
-- GPay/UPI will work automatically once Razorpay is configured (it's a Razorpay dashboard setting, not a code change)
-
-#### 5. Duplicate refund prevention
-- For BlackBox: already has `refunded` column — check it before refunding in `cancelSession`
-- For Peer/Appointments: before inserting refund transaction, check if a `grant` transaction with the same `reference_id` already exists. If yes, skip refund.
-
-### Files Modified
-- `src/hooks/useBlackBoxSession.ts` — Add refund logic to `cancelSession`
-- `src/hooks/useAppointments.ts` — Add refund logic to `cancelAppointment`
-- `src/hooks/usePeerConnect.ts` — Add `expireSession` with refund + refund on early end
-
-### No Database Changes Required
-All refunds use existing `credit_transactions` table with type "grant". Duplicate prevention via `reference_id` lookup.
+### Conclusion
+No code changes needed. The APAAR ID verification system matches all specified requirements.
 
