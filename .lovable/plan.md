@@ -1,68 +1,43 @@
 
 
-## Plan: Avatar/Logo Upload for Profiles and Institutions
+## Plan: Replace Emoji Presets with DiceBear Avatar Library
 
-### Overview
-Add avatar/profile picture upload for experts, therapists, interns, and SPOCs (excluding students), plus logo upload for institutions. Users can upload an image or pick from preset avatars.
+### Problem
+The current preset avatars are plain emojis which look bad. Replace with DiceBear's professional SVG avatar library using multiple styles.
 
-### Database Changes
+### Changes
 
-**1. Create `avatars` storage bucket** (migration)
-```sql
-INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true);
-
--- RLS: authenticated users can upload to their own folder
-CREATE POLICY "Users can upload own avatar"
-ON storage.objects FOR INSERT TO authenticated
-WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY "Users can update own avatar"
-ON storage.objects FOR UPDATE TO authenticated
-USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY "Users can delete own avatar"
-ON storage.objects FOR DELETE TO authenticated
-USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY "Anyone can view avatars"
-ON storage.objects FOR SELECT TO public
-USING (bucket_id = 'avatars');
+**1. Install DiceBear packages**
+```
+npm install @dicebear/core @dicebear/collection
 ```
 
-**2. Add `logo_url` to institutions table** (migration)
-```sql
-ALTER TABLE public.institutions ADD COLUMN logo_url text;
+**2. Rewrite `src/components/profile/AvatarUpload.tsx`**
+
+Replace the emoji preset system with DiceBear-generated avatars:
+
+- **Preset tab**: Show a grid of ~12 DiceBear avatars using different seeds (e.g. `seed-1` through `seed-12`), rendered as SVG data URIs via `createAvatar(style, { seed }).toDataUri()`
+- **Style selector**: Add a dropdown/tabs to pick from 4-5 avatar styles: `lorelei`, `bottts`, `avataaars`, `funEmoji`, `notionists` — each regenerates the grid
+- **Selection**: When user picks one, store the data URI or a DiceBear identifier string (e.g. `dicebear:lorelei:seed-5`) in `avatar_url`
+- **Rendering**: Update `renderAvatar()` to handle `dicebear:` prefix — regenerate the SVG at render time from the stored style+seed (avoids storing large SVGs in DB)
+- **Student fallback**: Generate a default DiceBear avatar using the user's ID as seed (deterministic, unique per user) instead of the generic User icon
+- **Upload tab**: Keep as-is for custom image uploads
+
+**Key code pattern:**
+```typescript
+import { createAvatar } from '@dicebear/core';
+import { lorelei, bottts, avataaars, funEmoji, notionists } from '@dicebear/collection';
+
+const STYLES = { lorelei, bottts, avataaars, funEmoji, notionists };
+
+// Generate avatar
+const avatar = createAvatar(STYLES[selectedStyle], { seed });
+const dataUri = avatar.toDataUri();
 ```
-
-### Frontend Changes
-
-**3. New component: `src/components/profile/AvatarUpload.tsx`**
-- Shows current avatar (or gradient fallback icon)
-- Camera/edit overlay button
-- On click: opens a dialog with two tabs:
-  - **Upload**: file input accepting image/* (max 2MB), crops to square, uploads to `avatars/{user_id}/avatar.webp`
-  - **Preset Avatars**: grid of ~12 preset avatar illustrations (emoji-style or initials-based generated avatars)
-- On save: updates `profiles.avatar_url` and calls `refreshProfile()`
-- Only renders the upload UI for non-student roles
-
-**4. Update `src/pages/dashboard/Profile.tsx`**
-- Replace the static gradient `User` icon block (line 164) with `<AvatarUpload />` component
-- For students: keep the current static gradient icon (no upload)
-- For all other roles: show clickable avatar with edit overlay
-
-**5. Update `src/components/mobile/MobileProfile.tsx`**
-- Same avatar upload integration for mobile view
-
-**6. Update `src/components/admin/InstitutionManager.tsx`**
-- Add logo upload button on institution bar cards
-- Upload to `avatars/institutions/{institution_id}/logo.webp`
-- Display logo in the left section of each bar card (fallback: Building2 icon)
-- Admin-only upload capability
 
 ### Files Modified
-- Migration: create `avatars` bucket + add `logo_url` to institutions
-- `src/components/profile/AvatarUpload.tsx` — new component
-- `src/pages/dashboard/Profile.tsx` — integrate avatar upload for non-students
-- `src/components/mobile/MobileProfile.tsx` — same integration
-- `src/components/admin/InstitutionManager.tsx` — institution logo upload + display
+- `package.json` — add `@dicebear/core`, `@dicebear/collection`
+- `src/components/profile/AvatarUpload.tsx` — replace emoji presets with DiceBear avatar grid + style picker
+
+### No backend changes needed.
 
