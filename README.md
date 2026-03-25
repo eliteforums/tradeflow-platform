@@ -687,6 +687,57 @@ The app will work offline for cached pages and API responses.
 - Dual verification model (APAAR/ERP) for different institution types
 - Embedded self-help games (Ragdoll Bash) with relaxed CSP headers
 
+#### AI Suggestion Popup System (Human-in-the-Loop)
+- Upgraded `ai-transcribe` from silent badge updates to an interactive risk suggestion popup
+- AI analyzes audio for emotional distress signals and risk indicators (not just keyword matching)
+- Returns structured analysis: `risk_level`, `risk_indicators`, `emotional_signals`, `reasoning`
+- Floating popup overlay during live calls shows suggested risk level with context — expert/intern/therapist reviews and decides
+- **Escalate** captures ±10s audio snippet and triggers escalation flow; **Dismiss** logs the dismissal
+- AI assists decision-making but never auto-escalates — final control remains with the human
+- Switched from Groq to Lovable AI Gateway (Gemini/GPT models) for classification
+
+#### ECC Economy Overhaul
+- **Welcome bonus**: 100 → 80 ECC
+- **Earning cap**: Changed from 5 ECC/day to 5 ECC/week (20 ECC/month max)
+- **Activity rewards**: Quest Cards (+2), Wreck Buddy (+2), Tibetan Bowl (+1), Sound Therapy (+1)
+- **Earning removed** from Mood Tracker, Gratitude Journal, and Journaling (these are now free with no ECC reward)
+- **Expert Connect**: 50 → 45 ECC/session
+- **Peer Connect**: 20 → 18 ECC/session
+- **BlackBox tiered pricing**: 1st session free, sessions 2–4 cost 3 ECC, session 5+ cost 6 ECC
+- **BlackBox daily hard limit**: 3 sessions/day
+- **Purchase packages**: Starter (25 ECC/₹49), Growth (60 ECC/₹99), Priority (130 ECC/₹199)
+- **Refund system**: Dynamic refund based on actual amount charged (not hardcoded), duplicate prevention via `reference_id`
+- **Atomic spending**: `spend_credits_atomic` Postgres function prevents race conditions
+
+#### Escalation Bug Fixes
+- **Intern → SPOC**: Enabled realtime on `escalation_requests` table; fixed SPOC lookup to use `user_roles` table instead of `profiles.role`; added admin fallback when no SPOC found
+- **Therapist → Expert (L3)**: Fixed expert notification — now notifies ALL active experts when no M.Phil specialist available; added realtime listener on `notifications` table in Expert Dashboard
+- `ExpertL3AlertPanel` now includes `"escalated"` status in query filter
+
+#### Refund System Hardening
+- BlackBox cancel now refunds actual tiered cost (not flat 30 ECC)
+- Appointment cancellation refunds `credits_charged` for pending/confirmed appointments
+- Peer Connect expiry refunds 18 ECC to student when pending session times out
+- Duplicate refund prevention via `reference_id` check across all refund paths
+
+#### Codebase Audit & Critical Fixes
+- Replaced broken `getClaims()` with `getUser()` in `spend-credits`, `purchase-credits`, `grant-credits` edge functions
+- Added JWT authentication to `ai-transcribe` edge function (was previously unauthenticated)
+- Fixed deprecated `serve()` import → `Deno.serve()` in `ai-transcribe` and `purchase-credits`
+- Fixed CORS headers in `ai-transcribe` to match full header set
+- Added audit logging to `refund-blackbox-session` and `usePeerConnect.flagSession`
+- Fixed `ai-transcribe` `escalation_history` to append instead of overwrite
+
+#### Security & System Rules Compliance
+- All ECC transactions are secure (JWT-verified), traceable (`credit_transactions` with `reference_id`), and atomic (`spend_credits_atomic`)
+- All escalations are real-time (Supabase Realtime on `escalation_requests` + `notifications`) and reliable (role-verified, audit-logged)
+- AI enhances safety without overriding human decisions (suggestion popup, no auto-escalation)
+
+#### Forgot Password / Recovery Flow
+- Username-based recovery: enter username → answer hint questions + emoji pattern → set new password
+- `recover-password` and `get-recovery-hints` edge functions
+- No email required — fully anonymous recovery
+
 ---
 
 ## Screenshots
