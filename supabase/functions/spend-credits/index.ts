@@ -19,7 +19,6 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Rate limit by IP
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     if (!rateLimit(`spend:${ip}`, 20)) {
       return new Response(JSON.stringify({ error: "Too many requests" }), {
@@ -48,63 +47,29 @@ Deno.serve(async (req) => {
     const reference_id = typeof body?.reference_id === "string" && /^[0-9a-f-]{36}$/i.test(body.reference_id)
       ? body.reference_id : null;
 
-    // Get current balance atomically via DB function
-    const { data: balance } = await supabase.rpc("get_credit_balance", { _user_id: userId });
-    const currentBalance = balance || 0;
+    // Atomic spend — balance check + insert in a single transaction
+    const { data, error } = await supabase.rpc("spend_credits_atomic", {
+      _user_id: userId,
+      _amount: amount,
+      _notes: notes,
+      _reference_id: reference_id,
+    });
 
-    if (currentBalance >= amount) {
-      const { error } = await supabase.from("credit_transactions").insert({
-        user_id: userId,
-        delta: -amount,
-        type: "spend",
-        notes,
-        reference_id,
-      });
-      if (error) throw error;
-      return new Response(JSON.stringify({ success: true, source: "balance", remaining: currentBalance - amount }), {
+    if (error) throw error;
+
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result || !result.success) {
+      return new Response(JSON.stringify({ success: false, error: "Insufficient credits" }), {
+        status: 402,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check ECC Stability Pool fallback
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("institution_id")
-      .eq("id", userId)
-      .single();
-
-    if (profile?.institution_id) {
-      const { data: poolBalance } = await supabase.rpc("get_pool_balance", {
-        _institution_id: profile.institution_id,
-      });
-
-      if (poolBalance && poolBalance >= amount) {
-        await supabase
-          .from("ecc_stability_pool")
-          .update({
-            balance: poolBalance - amount,
-            total_disbursed: poolBalance,
-          })
-          .eq("institution_id", profile.institution_id);
-
-        const { error } = await supabase.from("credit_transactions").insert({
-          user_id: userId,
-          delta: -amount,
-          type: "spend",
-          notes: `${notes} (from stability pool)`,
-          reference_id,
-          institution_id: profile.institution_id,
-        });
-        if (error) throw error;
-
-        return new Response(JSON.stringify({ success: true, source: "pool", remaining: 0 }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    return new Response(JSON.stringify({ success: false, error: "Insufficient credits" }), {
-      status: 402,
+    return new Response(JSON.stringify({
+      success: true,
+      source: result.source,
+      remaining: result.remaining,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
