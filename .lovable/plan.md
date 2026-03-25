@@ -1,27 +1,25 @@
 
 
-## Plan: Switch AI Functions to Groq Llama 3.3 70B Versatile
+## Plan: Deploy & Verify AI Edge Functions
 
-### What Changes
-
-Both AI edge functions will use **Groq's Llama 3.3 70B Versatile** model (`llama-3.3-70b-versatile`, 128k context). `GROQ_API_KEY` is already configured.
+### Problem
+Both `ai-moderate` and `ai-transcribe` edge functions show zero logs, indicating they likely haven't been deployed with recent code changes. The code is correct but needs deployment.
 
 ### Changes
 
-#### 1. `supabase/functions/ai-moderate/index.ts` — Full fix
-- Replace deprecated `serve()` with `Deno.serve()`
-- Fix CORS headers (add missing Supabase client headers)
-- Change model from `openai/gpt-oss-20b` to `llama-3.3-70b-versatile`
-- Add JWT authentication (verify caller owns the entry)
-- Keep rate limiting, keep Groq API endpoint
+#### 1. Deploy both AI edge functions
+- Deploy `ai-moderate` and `ai-transcribe` via the deployment tool
+- These are the only two AI-related edge functions in the project
 
-#### 2. `supabase/functions/ai-transcribe/index.ts` — Switch from Lovable AI to Groq
-- Replace Lovable AI gateway URL with `https://api.groq.com/openai/v1/chat/completions`
-- Replace `LOVABLE_API_KEY` with `GROQ_API_KEY`
-- Change model from `google/gemini-3-flash-preview` to `llama-3.3-70b-versatile`
-- Keep all existing logic (tool calling for structured output, keyword detection, audit logging, suggestion popup response)
+#### 2. Test both functions after deployment
+- Invoke `ai-moderate` with a test payload to verify Groq connectivity and auth
+- Invoke `ai-transcribe` with a test payload to verify keyword detection + Groq classification
+- Check logs for any runtime errors (missing env vars, API failures)
 
-### Files Modified
-- `supabase/functions/ai-moderate/index.ts`
-- `supabase/functions/ai-transcribe/index.ts`
+#### 3. Fix any runtime issues found during testing
+- If `GROQ_API_KEY` isn't set or returns errors, surface the issue
+- If CORS or auth issues appear, fix and redeploy
+
+### No Code Changes Expected
+The code is already correct. This is a deployment + verification task.
 
