@@ -7,11 +7,11 @@ import { Progress } from "@/components/ui/progress";
 import { useEccEarn } from "@/hooks/useEccEarn";
 
 const WreckBuddy = () => {
-  const { dailyEarned, dailyCap, canEarn, remainingToday, earnFromActivity, isEarning } = useEccEarn();
+  const { weeklyEarned, weeklyCap, canEarn, remainingThisWeek, earnFromActivity, isEarning } = useEccEarn();
 
   const handleComplete = useCallback(() => {
     if (!canEarn) return;
-    earnFromActivity({ amount: 1, activity: "Wreck the Buddy session" });
+    earnFromActivity({ amount: 2, activity: "Wreck the Buddy session" });
   }, [canEarn, earnFromActivity]);
 
   // Listen for postMessage from the iframe game
