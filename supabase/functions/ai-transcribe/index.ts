@@ -16,7 +16,6 @@ const SENSITIVE_KEYWORDS = [
   "panic attack", "anxiety attack", "breakdown",
 ];
 
-// System actor ID for AI-triggered audit logs
 const SYSTEM_ACTOR_ID = "00000000-0000-0000-0000-000000000000";
 
 serve(async (req) => {
@@ -34,52 +33,94 @@ serve(async (req) => {
       });
     }
 
-    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not configured");
-
     const lowerTranscript = transcript.toLowerCase();
     const detectedKeywords = SENSITIVE_KEYWORDS.filter((kw) => lowerTranscript.includes(kw));
 
     if (detectedKeywords.length === 0) {
-      return new Response(JSON.stringify({ flag_level: 0, keywords: [], session_id }), {
+      return new Response(JSON.stringify({ flag_level: 0, keywords: [], session_id, suggestion: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Classify severity using Groq
-    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    // Classify severity using Lovable AI gateway with structured output via tool calling
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${GROQ_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "openai/gpt-oss-20b",
+        model: "google/gemini-3-flash-preview",
         messages: [
           {
             role: "system",
-            content: `You are a mental health crisis classifier. Given a conversation snippet from a student wellness voice call, classify the escalation level. Respond with ONLY a single digit 1-3:
-
-1 = L1 Mild: general distress, sadness, frustration, mild anxiety
-2 = L2 Moderate: persistent hopelessness, isolation talk, passive self-harm ideation  
-3 = L3 Critical: explicit self-harm intent, suicidal plan, immediate danger
-
-Detected keywords: ${detectedKeywords.join(", ")}
-
-Respond with ONLY the number.`,
+            content: `You are a mental health crisis classifier for a student wellness platform. Given a conversation snippet from a voice call, analyze risk indicators and emotional distress signals. Detected keywords: ${detectedKeywords.join(", ")}`,
           },
           { role: "user", content: transcript.substring(0, 2000) },
         ],
-        max_tokens: 5,
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "classify_risk",
+              description: "Classify the risk level and provide analysis of the conversation snippet",
+              parameters: {
+                type: "object",
+                properties: {
+                  risk_level: {
+                    type: "integer",
+                    description: "1 = L1 Mild (general distress, sadness, frustration, mild anxiety), 2 = L2 Moderate (persistent hopelessness, isolation talk, passive self-harm ideation), 3 = L3 Critical (explicit self-harm intent, suicidal plan, immediate danger)",
+                  },
+                  risk_indicators: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Specific risk indicators detected in the text beyond just keywords, e.g. 'expressing finality in plans', 'giving away possessions'",
+                  },
+                  emotional_signals: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Emotional distress signals detected, e.g. 'tone of hopelessness', 'escalating despair', 'emotional numbness'",
+                  },
+                  reasoning: {
+                    type: "string",
+                    description: "1-2 sentence explanation of why this risk level was assigned",
+                  },
+                },
+                required: ["risk_level", "risk_indicators", "emotional_signals", "reasoning"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "classify_risk" } },
         temperature: 0,
       }),
     });
 
     let flag_level = 1;
+    let risk_indicators: string[] = [];
+    let emotional_signals: string[] = [];
+    let reasoning = "Keywords detected in conversation";
+
     if (aiResponse.ok) {
       const aiData = await aiResponse.json();
-      const raw = aiData.choices?.[0]?.message?.content?.trim() || "1";
-      flag_level = Math.min(3, Math.max(1, parseInt(raw, 10) || 1));
+      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      if (toolCall?.function?.arguments) {
+        try {
+          const args = JSON.parse(toolCall.function.arguments);
+          flag_level = Math.min(3, Math.max(1, args.risk_level || 1));
+          risk_indicators = args.risk_indicators || [];
+          emotional_signals = args.emotional_signals || [];
+          reasoning = args.reasoning || reasoning;
+        } catch {
+          // Fallback to default L1
+        }
+      }
+    } else {
+      console.error("AI gateway error:", aiResponse.status, await aiResponse.text());
     }
 
     // Extract ±10s context around first keyword
@@ -97,6 +138,9 @@ Respond with ONLY the number.`,
       level: flag_level,
       keywords: detectedKeywords,
       snippet: trigger_snippet,
+      risk_indicators,
+      emotional_signals,
+      reasoning,
       timestamp: new Date().toISOString(),
       auto: true,
     };
@@ -125,9 +169,8 @@ Respond with ONLY the number.`,
       }).eq("id", session_id);
     }
 
-    // Audit log for L2+ AI-triggered escalations
+    // Audit log for L2+ AI-triggered detections (suggestion only, no auto-escalation)
     if (flag_level >= 2) {
-      // Fetch student_id for the audit log
       const table = sType === "peer" ? "peer_sessions" : "blackbox_sessions";
       const { data: sessionData } = await adminClient
         .from(table)
@@ -137,52 +180,38 @@ Respond with ONLY the number.`,
 
       const studentId = sessionData?.student_id;
 
-      // Insert audit log
       await adminClient.from("audit_logs").insert({
         actor_id: studentId || SYSTEM_ACTOR_ID,
-        action_type: "ai_auto_escalation",
+        action_type: "ai_risk_suggestion",
         target_table: table,
         target_id: session_id,
         metadata: {
           flag_level,
           keywords: detectedKeywords,
+          risk_indicators,
+          emotional_signals,
           session_type: sType,
           auto: true,
+          suggestion_only: true,
         },
       });
 
-      // Create escalation request for SPOC
-      if (studentId) {
-        const { data: studentProfile } = await adminClient
-          .from("profiles")
-          .select("institution_id")
-          .eq("id", studentId)
-          .single();
-
-        if (studentProfile?.institution_id) {
-          const { data: spocs } = await adminClient
-            .from("profiles")
-            .select("id")
-            .eq("institution_id", studentProfile.institution_id)
-            .eq("role", "spoc")
-            .limit(1);
-
-          if (spocs && spocs.length > 0) {
-            await adminClient.from("escalation_requests").insert({
-              spoc_id: spocs[0].id,
-              justification_encrypted: `AI flagged L${flag_level}: ${detectedKeywords.join(", ")}`,
-              escalation_level: flag_level,
-              trigger_snippet,
-              trigger_timestamp: new Date().toISOString(),
-              status: flag_level >= 3 ? "critical" : "pending",
-            });
-          }
-        }
-      }
+      // NOTE: No auto-escalation requests created here.
+      // The human (expert/intern/therapist) decides via the suggestion popup.
     }
 
+    // Build suggestion object for the client popup
+    const suggestion = {
+      risk_level: flag_level,
+      keywords: detectedKeywords,
+      risk_indicators,
+      emotional_signals,
+      reasoning,
+      snippet: trigger_snippet,
+    };
+
     return new Response(
-      JSON.stringify({ flag_level, keywords: detectedKeywords, trigger_snippet, session_id }),
+      JSON.stringify({ flag_level, keywords: detectedKeywords, trigger_snippet, session_id, suggestion }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
