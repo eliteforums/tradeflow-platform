@@ -41,6 +41,7 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import QuestCardManager from "@/components/admin/QuestCardManager";
 import EmergencyAlertOverlay from "@/components/notifications/EmergencyAlertOverlay";
+import OverviewDashboard from "@/components/admin/OverviewDashboard";
 
 type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics" | "tools";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
