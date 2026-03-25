@@ -285,7 +285,8 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
         flag_level: level,
         escalation_reason: escalationReason,
         escalation_history: updatedHistory,
-        status: level >= 3 ? "escalated" : "active",
+        // For L3, status will be updated again below after expert lookup; for L1-L2 keep active
+        status: "active",
       })
       .eq("id", activeSession.id);
 
