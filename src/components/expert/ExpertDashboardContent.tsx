@@ -113,8 +113,36 @@ const ExpertDashboardContent = () => {
     },
   });
 
+  // Realtime listener for L3 handoff notifications
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`expert-l3-notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const notif = payload.new as any;
+          if (notif?.type === "l3_handoff") {
+            toast.error("🚨 L3 Critical Session — Immediate Attention Required", {
+              description: notif.message?.substring(0, 150) || "A BlackBox session needs expert intervention",
+              duration: 30000,
+              action: {
+                label: "Go to Alerts",
+                onClick: () => setActiveTab("home"),
+              },
+            });
+            // Switch to home tab to show ExpertL3AlertPanel
+            setActiveTab("home");
+          }
+        }
+      )
+      .subscribe();
 
-  // Mutations
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+
   const createSlot = useMutation({
     mutationFn: async () => {
       if (!user || !slotDate) throw new Error("Select a date");
