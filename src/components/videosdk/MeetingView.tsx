@@ -292,12 +292,20 @@ const MeetingView = ({
       )}
 
       <div className="flex-1 p-4 overflow-y-auto">
-        <div className={`grid gap-4 h-full ${
-          participants.size <= 1 ? "grid-cols-1" : participants.size <= 4 ? "grid-cols-2" : "grid-cols-3"
-        }`}>
-          {[...participants.keys()].map((participantId) => (
-            <ParticipantView key={participantId} participantId={participantId} audioOnly={audioOnly} />
-          ))}
+        {(() => {
+          const participantIds = [...participants.keys()].filter(
+            (id) => !(audioOnly && localParticipant && id === localParticipant.id)
+          );
+          return (
+            <div className={`grid gap-4 h-full ${
+              participantIds.length <= 1 ? "grid-cols-1" : participantIds.length <= 4 ? "grid-cols-2" : "grid-cols-3"
+            }`}>
+              {participantIds.map((participantId) => (
+                <ParticipantView key={participantId} participantId={participantId} audioOnly={audioOnly} />
+              ))}
+            </div>
+          );
+        })()}
         </div>
       </div>
       <MeetingControls audioOnly={audioOnly} />
