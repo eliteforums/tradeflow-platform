@@ -306,7 +306,6 @@ const MeetingView = ({
             </div>
           );
         })()}
-        </div>
       </div>
       <MeetingControls audioOnly={audioOnly} />
       {isTherapistView && sessionId && (
