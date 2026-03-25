@@ -74,22 +74,36 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Refund 30 ECC to student
-    const { error: creditErr } = await adminClient
+    // Look up the original spend transaction to determine actual amount charged
+    const { data: spendTx } = await adminClient
       .from("credit_transactions")
-      .insert({
-        user_id: session.student_id,
-        delta: 30,
-        type: "grant",
-        notes: `BlackBox session refund: ${reason || "user unresponsive"}`,
-        reference_id: session.id,
-      });
+      .select("id, delta")
+      .eq("reference_id", session.id)
+      .eq("type", "spend")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (creditErr) {
-      return new Response(JSON.stringify({ error: "Failed to issue refund" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const refundAmount = spendTx ? Math.abs(spendTx.delta) : 0;
+
+    if (refundAmount > 0) {
+      // Refund actual amount to student
+      const { error: creditErr } = await adminClient
+        .from("credit_transactions")
+        .insert({
+          user_id: session.student_id,
+          delta: refundAmount,
+          type: "grant",
+          notes: `BlackBox session refund: ${reason || "user unresponsive"}`,
+          reference_id: session.id,
+        });
+
+      if (creditErr) {
+        return new Response(JSON.stringify({ error: "Failed to issue refund" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Mark session as completed + refunded
@@ -112,11 +126,11 @@ Deno.serve(async (req) => {
       metadata: {
         student_id: session.student_id,
         reason: reason || "User unresponsive",
-        refund_amount: 30,
+        refund_amount: refundAmount,
       },
     });
 
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, refund_amount: refundAmount }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
