@@ -142,7 +142,7 @@ const Appointments = () => {
                       </div>
                     )}
                     <div className="flex items-center justify-between pt-3 border-t border-border">
-                      <div><p className="text-[10px] text-muted-foreground">Cost</p><p className="font-semibold text-sm flex items-center gap-1"><Coins className="w-3.5 h-3.5 text-primary" />50 ECC</p></div>
+                      <div><p className="text-[10px] text-muted-foreground">Cost</p><p className="font-semibold text-sm flex items-center gap-1"><Coins className="w-3.5 h-3.5 text-primary" />45 ECC</p></div>
                       {expertSlots.length > 0 && <Button size="sm" className="h-8 text-xs" onClick={() => handleBookSlot(expert, expertSlots[0])}>Book Now</Button>}
                     </div>
                   </div>
