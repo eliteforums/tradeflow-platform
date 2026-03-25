@@ -523,15 +523,39 @@ export function usePeerConnect(initialSessionId?: string | null) {
     onError: () => { toast.error("Failed to flag session"); },
   });
 
-  // End session
+  // End session — refund if session never became active (pending only)
   const endSession = useMutation({
     mutationFn: async (sessionId: string) => {
       if (!user) throw new Error("Not authenticated");
+      const session = sessions.find((s) => s.id === sessionId);
+
       const { error } = await supabase
         .from("peer_sessions")
         .update({ status: "completed", ended_at: new Date().toISOString() })
         .eq("id", sessionId);
       if (error) throw error;
+
+      // Refund student if session was still pending (never became active)
+      if (session && session.status === "pending") {
+        const studentId = session.student_id;
+        // Duplicate prevention
+        const { data: existingRefund } = await supabase
+          .from("credit_transactions")
+          .select("id")
+          .eq("reference_id", sessionId)
+          .eq("type", "grant")
+          .maybeSingle();
+
+        if (!existingRefund) {
+          await supabase.from("credit_transactions").insert({
+            user_id: studentId,
+            delta: 20,
+            type: "grant",
+            notes: "Peer Connect session expired — refund",
+            reference_id: sessionId,
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
@@ -540,6 +564,48 @@ export function usePeerConnect(initialSessionId?: string | null) {
       refreshCredits();
       setActiveSessionId(null);
       toast.success("Session ended");
+    },
+    onError: (error) => { toast.error(error.message); },
+  });
+
+  // Expire a pending session that timed out — refund student
+  const expireSession = useMutation({
+    mutationFn: async (sessionId: string) => {
+      if (!user) throw new Error("Not authenticated");
+      const session = sessions.find((s) => s.id === sessionId);
+      if (!session || session.status !== "pending") return;
+
+      const { error } = await supabase
+        .from("peer_sessions")
+        .update({ status: "completed", ended_at: new Date().toISOString() })
+        .eq("id", sessionId)
+        .eq("status", "pending");
+      if (error) throw error;
+
+      // Duplicate prevention
+      const { data: existingRefund } = await supabase
+        .from("credit_transactions")
+        .select("id")
+        .eq("reference_id", sessionId)
+        .eq("type", "grant")
+        .maybeSingle();
+
+      if (!existingRefund) {
+        await supabase.from("credit_transactions").insert({
+          user_id: session.student_id,
+          delta: 20,
+          type: "grant",
+          notes: "Peer Connect request expired — refund",
+          reference_id: sessionId,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["active-peer-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
+      refreshCredits();
+      toast.info("Session expired — 20 ECC refunded");
     },
     onError: (error) => { toast.error(error.message); },
   });
