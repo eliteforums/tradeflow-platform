@@ -24,6 +24,7 @@ export interface BlackBoxSession {
   student_joined_at: string | null;
   therapist_joined_at: string | null;
   last_join_error: string | null;
+  refunded: boolean;
 }
 
 const SESSION_COLUMNS = "id, student_id, therapist_id, status, room_id, flag_level, escalation_reason, escalation_history, session_notes_encrypted, started_at, ended_at, created_at, student_joined_at, therapist_joined_at, last_join_error";
