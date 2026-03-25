@@ -37,7 +37,7 @@ const Appointments = () => {
   const handleBookSlot = (expert: any, slot: any) => setBookingDialog({ open: true, expert, slot });
   const confirmBooking = () => {
     if (!bookingDialog.expert || !bookingDialog.slot) return;
-    bookAppointment({ expertId: bookingDialog.expert.id, slotId: bookingDialog.slot.id, slotTime: bookingDialog.slot.start_time, sessionType, creditCost: 50 });
+    bookAppointment({ expertId: bookingDialog.expert.id, slotId: bookingDialog.slot.id, slotTime: bookingDialog.slot.start_time, sessionType, creditCost: 45 });
     setBookingDialog({ open: false });
   };
   const getExpertSlots = (expertId: string) => slots.filter((s) => s.expert_id === expertId);
