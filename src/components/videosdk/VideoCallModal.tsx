@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { MeetingProvider } from "@videosdk.live/react-sdk";
 import { Video, Phone, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ interface VideoCallModalProps {
   isTherapistView?: boolean;
   onCaptureSnippetReady?: (captureFn: () => string) => void;
   onLeaveReady?: (leaveFn: () => void) => void;
+  /** Automatically start the call on mount when true */
+  autoStart?: boolean;
 }
 
 const VideoCallModal = ({
@@ -37,6 +39,7 @@ const VideoCallModal = ({
   isTherapistView = false,
   onCaptureSnippetReady,
   onLeaveReady,
+  autoStart = false,
 }: VideoCallModalProps) => {
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -45,6 +48,7 @@ const VideoCallModal = ({
   const isAudioOnly = mode === "audio";
 
   const startCall = useCallback(async () => {
+    if (isLoading) return; // prevent double-invoke
     setIsLoading(true);
     try {
       if (appointmentId) {
@@ -90,7 +94,14 @@ const VideoCallModal = ({
     } finally {
       setIsLoading(false);
     }
-  }, [appointmentId, existingRoomId]);
+  }, [appointmentId, existingRoomId, isLoading]);
+
+  // Auto-start: when modal opens with autoStart=true (or existingRoomId is provided with autoStart), fire startCall
+  useEffect(() => {
+    if (isOpen && autoStart && !token && !meetingId && !isLoading) {
+      startCall();
+    }
+  }, [isOpen, autoStart]); // intentionally minimal deps to fire once on open
 
   const handleLeave = useCallback(() => {
     setMeetingId(null);
@@ -138,10 +149,10 @@ const VideoCallModal = ({
               </div>
               <div className="text-center">
                 <h3 className="text-xl font-semibold font-display mb-2">
-                  Ready to connect?
+                  {isLoading ? "Connecting..." : "Ready to connect?"}
                 </h3>
                 <p className="text-muted-foreground text-sm">
-                  Start a secure, anonymous {isAudioOnly ? "audio" : "video"} session
+                  {isLoading ? "Setting up secure session" : `Start a secure, anonymous ${isAudioOnly ? "audio" : "video"} session`}
                 </p>
               </div>
               <Button
