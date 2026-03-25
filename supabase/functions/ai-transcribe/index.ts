@@ -61,18 +61,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Classify severity using Lovable AI gateway with structured output via tool calling
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    // Classify severity using Groq Llama 3.3 70B with tool calling for structured output
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not configured");
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "llama-3.3-70b-versatile",
         messages: [
           {
             role: "system",
@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
         }
       }
     } else {
-      console.error("AI gateway error:", aiResponse.status, await aiResponse.text());
+      console.error("Groq API error:", aiResponse.status, await aiResponse.text());
     }
 
     // Extract ±10s context around first keyword
@@ -214,9 +214,6 @@ Deno.serve(async (req) => {
           suggestion_only: true,
         },
       });
-
-      // NOTE: No auto-escalation requests created here.
-      // The human (expert/intern/therapist) decides via the suggestion popup.
     }
 
     // Build suggestion object for the client popup
@@ -235,7 +232,7 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("AI transcribe error:", error);
-    return new Response(JSON.stringify({ error: error.message, flag_level: 0 }), {
+    return new Response(JSON.stringify({ error: (error as Error).message, flag_level: 0 }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
