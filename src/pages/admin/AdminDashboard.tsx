@@ -41,6 +41,7 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import QuestCardManager from "@/components/admin/QuestCardManager";
 import EmergencyAlertOverlay from "@/components/notifications/EmergencyAlertOverlay";
+import OverviewDashboard from "@/components/admin/OverviewDashboard";
 
 type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics" | "tools";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
@@ -335,84 +336,13 @@ const AdminDashboard = () => {
             <>
               {/* ─── OVERVIEW ─── */}
               {activeTab === "overview" && (
-                <div className="space-y-5">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    {[
-                      { label: "Admins", value: roleCounts.admin, icon: Crown, iconBg: "bg-destructive/10", iconColor: "text-destructive" },
-                      { label: "SPOCs", value: roleCounts.spoc, icon: Shield, iconBg: "bg-primary/10", iconColor: "text-primary" },
-                      { label: "Experts", value: roleCounts.expert, icon: Stethoscope, iconBg: "bg-emerald-500/10", iconColor: "text-emerald-500" },
-                      { label: "Interns", value: roleCounts.intern, icon: GraduationCap, iconBg: "bg-amber-500/10", iconColor: "text-amber-500" },
-                    ].map((stat) => (
-                      <div key={stat.label} className="p-4 rounded-2xl bg-card border border-border/50 hover:border-border transition-colors">
-                        <div className={`w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center mb-3`}>
-                          <stat.icon className={`w-5 h-5 ${stat.iconColor}`} />
-                        </div>
-                        <p className="text-2xl font-bold leading-none">{stat.value}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                    {[
-                      { label: "Students", value: roleCounts.student, icon: Users, iconBg: "bg-blue-500/10", iconColor: "text-blue-500" },
-                      { label: "Total Sessions", value: stats.totalSessions, icon: Activity, iconBg: "bg-primary/10", iconColor: "text-primary" },
-                      { label: "Credits Issued", value: stats.totalCreditsIssued, icon: Coins, iconBg: "bg-amber-500/10", iconColor: "text-amber-500" },
-                      { label: "Active Today", value: stats.activeToday, icon: Zap, iconBg: "bg-emerald-500/10", iconColor: "text-emerald-500" },
-                      { label: "Flagged", value: flaggedEntries.length, icon: AlertTriangle, iconBg: "bg-destructive/10", iconColor: "text-destructive" },
-                    ].map((stat) => (
-                      <div key={stat.label} className="p-4 rounded-2xl bg-card border border-border/50 hover:border-border transition-colors">
-                        <div className={`w-9 h-9 rounded-lg ${stat.iconBg} flex items-center justify-center mb-2.5`}>
-                          <stat.icon className={`w-4 h-4 ${stat.iconColor}`} />
-                        </div>
-                        <p className="text-xl font-bold leading-none">{stat.value}</p>
-                        <p className="text-[11px] text-muted-foreground mt-1">{stat.label}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Flagged alerts */}
-                  {flaggedEntries.length > 0 && (
-                    <div className="rounded-2xl bg-destructive/5 border border-destructive/20 p-5">
-                      <h3 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                        <AlertTriangle className="w-4 h-4 text-destructive" />Flagged Entries ({flaggedEntries.length})
-                      </h3>
-                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                        {flaggedEntries.slice(0, 5).map((entry: any) => (
-                          <div key={entry.id} className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/30 gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${entry.ai_flag_level >= 3 ? "bg-destructive text-destructive-foreground" : "bg-amber-500/20 text-amber-500"}`}>
-                                {entry.ai_flag_level >= 3 ? "Critical" : "Moderate"}
-                              </span>
-                              <span className="text-[10px] text-muted-foreground">{format(new Date(entry.created_at), "MMM d, h:mm a")}</span>
-                            </div>
-                            <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-2" onClick={() => setActiveTab("escalations")}><Eye className="w-3 h-3" />Review</Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Quick Actions */}
-                  <div className="rounded-2xl bg-card border border-border/50 p-5">
-                    <h3 className="font-semibold text-sm mb-4">Quick Actions</h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      {[
-                        { label: "Grant Credits", icon: Coins, tab: "roles" as TabId, iconBg: "bg-amber-500/10", iconColor: "text-amber-500" },
-                        { label: "Add Member", icon: UserPlus, tab: "roles" as TabId, iconBg: "bg-primary/10", iconColor: "text-primary" },
-                        { label: "View Sessions", icon: Calendar, tab: "sessions" as TabId, iconBg: "bg-emerald-500/10", iconColor: "text-emerald-500" },
-                        { label: "Institutions", icon: Building2, tab: "spoc" as TabId, iconBg: "bg-accent/10", iconColor: "text-accent" },
-                      ].map((a) => (
-                        <button key={a.label} className="p-4 rounded-xl bg-muted/20 border border-border/50 text-left hover:border-primary/30 hover:bg-muted/30 transition-all group" onClick={() => setActiveTab(a.tab)}>
-                          <div className={`w-9 h-9 rounded-lg ${a.iconBg} flex items-center justify-center mb-2.5 group-hover:scale-105 transition-transform`}>
-                            <a.icon className={`w-4 h-4 ${a.iconColor}`} />
-                          </div>
-                          <p className="font-medium text-sm">{a.label}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                <OverviewDashboard
+                  stats={stats}
+                  members={members}
+                  flaggedEntries={flaggedEntries}
+                  unifiedSessions={unifiedSessions}
+                  onNavigateTab={(tab) => setActiveTab(tab as TabId)}
+                />
               )}
 
               {/* ─── MEMBERS ─── */}

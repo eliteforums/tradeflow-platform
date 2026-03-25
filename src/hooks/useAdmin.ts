@@ -7,6 +7,15 @@ export interface AdminStats {
   totalSessions: number;
   totalCreditsIssued: number;
   activeToday: number;
+  blackboxCount: number;
+  pendingEscalations: number;
+  totalCreditsEarned: number;
+  totalCreditsSpent: number;
+  recentSignups: number;
+  institutionCount: number;
+  appointmentsByStatus: Record<string, number>;
+  appointmentCount: number;
+  peerCount: number;
 }
 
 export interface InstitutionMember {
@@ -36,7 +45,6 @@ export function useAdmin() {
         .select("id, username, role, is_active, is_verified, total_sessions, streak_days, created_at, institution_id, specialty")
         .order("created_at", { ascending: false });
 
-      // SPOC only sees their own institution
       if (!isSuperAdmin && profile?.institution_id) {
         query = query.eq("institution_id", profile.institution_id);
       }
@@ -48,7 +56,7 @@ export function useAdmin() {
     enabled: isAdmin,
   });
 
-  // Get stats — super admin sees cross-institution
+  // Get stats — enriched for PowerBI dashboard
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ["admin-stats", isSuperAdmin ? "all" : profile?.institution_id],
     queryFn: async () => {
@@ -63,19 +71,81 @@ export function useAdmin() {
 
       const { count: studentCount } = await studentQuery;
 
-      const { count: sessionCount } = await supabase
+      // Appointment count
+      const { count: appointmentCount } = await supabase
         .from("appointments")
         .select("*", { count: "exact", head: true });
 
+      // Peer session count
       const { count: peerCount } = await supabase
         .from("peer_sessions")
         .select("*", { count: "exact", head: true });
 
+      // Blackbox session count
+      const { count: blackboxCount } = await supabase
+        .from("blackbox_sessions")
+        .select("*", { count: "exact", head: true });
+
+      // Pending escalations
+      const { count: pendingEscalations } = await supabase
+        .from("escalation_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+
+      // Credit totals
+      const { data: creditData } = await supabase
+        .from("credit_transactions")
+        .select("delta, type");
+
+      let totalCreditsEarned = 0;
+      let totalCreditsSpent = 0;
+      if (creditData) {
+        creditData.forEach((t) => {
+          if (t.delta > 0) totalCreditsEarned += t.delta;
+          else totalCreditsSpent += Math.abs(t.delta);
+        });
+      }
+
+      // Recent signups (7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const { count: recentSignups } = await supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", sevenDaysAgo.toISOString());
+
+      // Institution count
+      const { count: institutionCount } = await supabase
+        .from("institutions")
+        .select("*", { count: "exact", head: true })
+        .eq("is_active", true);
+
+      // Appointments by status
+      const { data: apptStatusData } = await supabase
+        .from("appointments")
+        .select("status");
+
+      const appointmentsByStatus: Record<string, number> = {};
+      if (apptStatusData) {
+        apptStatusData.forEach((a) => {
+          appointmentsByStatus[a.status] = (appointmentsByStatus[a.status] || 0) + 1;
+        });
+      }
+
       return {
         totalStudents: studentCount || 0,
-        totalSessions: (sessionCount || 0) + (peerCount || 0),
-        totalCreditsIssued: (studentCount || 0) * 100,
+        totalSessions: (appointmentCount || 0) + (peerCount || 0) + (blackboxCount || 0),
+        totalCreditsIssued: totalCreditsEarned,
         activeToday: Math.floor((studentCount || 0) * 0.3),
+        blackboxCount: blackboxCount || 0,
+        pendingEscalations: pendingEscalations || 0,
+        totalCreditsEarned,
+        totalCreditsSpent,
+        recentSignups: recentSignups || 0,
+        institutionCount: institutionCount || 0,
+        appointmentsByStatus,
+        appointmentCount: appointmentCount || 0,
+        peerCount: peerCount || 0,
       };
     },
     enabled: isAdmin,
@@ -161,11 +231,17 @@ export function useAdmin() {
     enabled: isAdmin,
   });
 
+  const defaultStats: AdminStats = {
+    totalStudents: 0, totalSessions: 0, totalCreditsIssued: 0, activeToday: 0,
+    blackboxCount: 0, pendingEscalations: 0, totalCreditsEarned: 0, totalCreditsSpent: 0,
+    recentSignups: 0, institutionCount: 0, appointmentsByStatus: {}, appointmentCount: 0, peerCount: 0,
+  };
+
   return {
     isAdmin,
     isSuperAdmin,
     members,
-    stats: stats || { totalStudents: 0, totalSessions: 0, totalCreditsIssued: 0, activeToday: 0 },
+    stats: stats || defaultStats,
     appointments,
     peerSessions,
     flaggedEntries,
