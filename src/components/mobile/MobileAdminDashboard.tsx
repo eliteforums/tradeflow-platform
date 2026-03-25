@@ -19,6 +19,7 @@ import SoundManager from "@/components/admin/SoundManager";
 import EscalationManager from "@/components/admin/EscalationManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import AccountDeletion from "@/components/admin/AccountDeletion";
+import DeletionRequestsManager from "@/components/admin/DeletionRequestsManager";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 import NotificationBell from "@/components/notifications/NotificationBell";
@@ -323,6 +324,7 @@ const MobileAdminDashboard = () => {
             {/* AUDIT */}
             {activeTab === "audit" && (
               <div className="space-y-4">
+                <DeletionRequestsManager />
                 <AuditLogViewer />
                 <AccountDeletion />
               </div>
