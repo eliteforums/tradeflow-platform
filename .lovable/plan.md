@@ -1,40 +1,38 @@
 
 
-## Plan: Elevate Institution Cards UI
+## Plan: Fix AI Transcribe — Expand Keywords + Remove Hard Gate (Keep Groq)
 
-### Problem
-The current cards use small text, cramped stat boxes, and minimal visual hierarchy. The layout feels utilitarian rather than polished.
+### Root Cause
+The function has a **hard gate** at line 58: if zero keywords match, it returns `flag_level: 0` immediately — the AI model never runs. The keyword list is only ~16 entries and misses common distress words like "stress", "anxious", "overwhelmed", "lonely", "scared", "crying", etc.
 
-### Redesign
+### Changes
 
-#### `src/components/admin/InstitutionManager.tsx` — Visual overhaul
+#### `supabase/functions/ai-transcribe/index.ts`
 
-**Header section improvements:**
-- Add a subtle gradient background header strip per plan type (amber gradient for enterprise, violet for premium, teal for basic)
-- Larger institution name (text-lg font-bold), with a colored dot indicator for active/inactive status instead of text badge
-- Institution type shown as a subtle icon + label row below the name
+**A. Expand keywords to ~80+ terms** (replace lines 8-16)
 
-**Stats section improvements:**
-- Replace the 2x2 grid with a clean horizontal stats bar (3 key metrics: Students, Credits, Created) with dividers between them
-- Larger stat values with colored accents
-- Eternia Code gets its own prominent row below stats — full-width with a styled copy button and monospace font on a dark/muted strip
+Add categories:
+- **Emotional**: stress, stressed, anxious, anxiety, overwhelmed, crying, lonely, loneliness, scared, terrified, numb, empty, exhausted, burned out, burnout, miserable, suffering, tormented, frustrated, angry, furious, rage, shame, guilty, grief, mourning, heartbroken
+- **Academic/social**: failing, dropped out, bullied, bullying, ragging, harassment, humiliated, rejected, isolated, no friends, left out, excluded
+- **Substance**: drinking, drunk, alcohol, drugs, smoking, addiction, addicted
+- **Self-harm expanded**: bleed, bleeding, scars, razor, bridge, rooftop, hanging, drowning, suffocating, starving
+- **Family/relationship**: divorce, breakup, broken up, domestic violence, beaten, molested, raped, trauma, PTSD, flashbacks, abusive
+- **Existential**: no purpose, meaningless, pointless, give up, giving up, lost hope, no future, trapped, stuck, can't breathe, don't care anymore, nothing matters, why bother, what's the point
 
-**Action bar improvements:**
-- Full-width action bar with proper spacing
-- "Bulk IDs" as a primary-styled button, "Manage" as outline, toggle as a proper Switch component instead of icon-only button
-- Add a "View Details" text button if `onSelectInstitution` is provided
+**B. Remove the hard gate** (replace lines 58-62)
 
-**Overall card polish:**
-- Increase card padding and spacing (p-5 instead of p-4)
-- Add a subtle top gradient bar (4px height) colored by plan type
-- Rounded-2xl corners, stronger shadow on hover (shadow-lg)
-- Remove border-l-4 accent in favor of the top gradient bar for a cleaner look
+Instead of returning immediately when no keywords match, change logic to:
+- If keywords found → pass them as context to Groq (current behavior)
+- If no keywords found BUT transcript is >50 chars → still call Groq with a general analysis prompt (no keyword hints)
+- If transcript is ≤50 chars and no keywords → return `flag_level: 0` (too short to analyze)
 
-**Empty state:**
-- Larger illustration area, more inviting copy, prominent "Add Institution" CTA button
+This ensures the AI always gets a chance to evaluate substantial speech.
+
+**C. Keep Groq + Llama 3.3 70B** — no provider change, same tool-calling format.
 
 ### Files Modified
-- `src/components/admin/InstitutionManager.tsx` — Complete card visual redesign with gradient headers, horizontal stats, prominent code display, polished actions
+- `supabase/functions/ai-transcribe/index.ts` — Expand keyword list, remove hard gate so AI always analyzes substantial transcripts
 
-### No backend changes needed.
+### No database or frontend changes needed
+The suggestion popup and escalation flows are already wired correctly.
 
