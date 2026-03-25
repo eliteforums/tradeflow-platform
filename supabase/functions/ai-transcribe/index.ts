@@ -17,12 +17,32 @@ const SENSITIVE_KEYWORDS = [
 
 const SYSTEM_ACTOR_ID = "00000000-0000-0000-0000-000000000000";
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Authenticate caller
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+    );
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser(token);
+    if (userErr || !user) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { transcript, session_id, timestamp_offset, session_type } = await req.json();
     const sType: "blackbox" | "peer" = session_type === "peer" ? "peer" : "blackbox";
     if (!transcript || !session_id) {
