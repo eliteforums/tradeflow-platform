@@ -73,7 +73,7 @@ const MeetingView = ({
 
   const joinSucceeded = useRef(false);
 
-  const { join, leave, participants, meetingId: sdkMeetingId } = useMeeting({
+  const { join, leave, participants, localParticipant, meetingId: sdkMeetingId } = useMeeting({
     onMeetingJoined: () => {
       console.log("[MeetingView] onMeetingJoined fired");
       joinSucceeded.current = true;
@@ -131,7 +131,7 @@ const MeetingView = ({
       join();
 
       retryTimerRef.current = setTimeout(() => {
-        if (!joinSucceeded.current && joinAttempts.current < 3) attemptJoin();
+        if (!joinSucceeded.current && joined !== "JOINED" && joinAttempts.current < 3) attemptJoin();
       }, 5000);
     };
 
@@ -292,13 +292,20 @@ const MeetingView = ({
       )}
 
       <div className="flex-1 p-4 overflow-y-auto">
-        <div className={`grid gap-4 h-full ${
-          participants.size <= 1 ? "grid-cols-1" : participants.size <= 4 ? "grid-cols-2" : "grid-cols-3"
-        }`}>
-          {[...participants.keys()].map((participantId) => (
-            <ParticipantView key={participantId} participantId={participantId} audioOnly={audioOnly} />
-          ))}
-        </div>
+        {(() => {
+          const participantIds = [...participants.keys()].filter(
+            (id) => !(audioOnly && localParticipant && id === localParticipant.id)
+          );
+          return (
+            <div className={`grid gap-4 h-full ${
+              participantIds.length <= 1 ? "grid-cols-1" : participantIds.length <= 4 ? "grid-cols-2" : "grid-cols-3"
+            }`}>
+              {participantIds.map((participantId) => (
+                <ParticipantView key={participantId} participantId={participantId} audioOnly={audioOnly} />
+              ))}
+            </div>
+          );
+        })()}
       </div>
       <MeetingControls audioOnly={audioOnly} />
       {isTherapistView && sessionId && (
