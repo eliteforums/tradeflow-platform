@@ -64,7 +64,13 @@ serve(async (req) => {
     // 5. Remove role assignments
     await adminClient.from("user_roles").delete().eq("user_id", target_user_id);
 
-    // 6. Delete auth user
+    // 6. Recycle temp credential (return ID to pool)
+    await adminClient
+      .from("temp_credentials")
+      .update({ status: "unused", auth_user_id: null, activated_at: null, assigned_at: null })
+      .eq("auth_user_id", target_user_id);
+
+    // 7. Delete auth user
     const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(target_user_id);
     if (deleteAuthError) {
       console.error("Failed to delete auth user:", deleteAuthError);

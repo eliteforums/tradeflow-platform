@@ -35,6 +35,7 @@ import SoundManager from "@/components/admin/SoundManager";
 import AuditLogViewer from "@/components/admin/AuditLogViewer";
 import EscalationManager from "@/components/admin/EscalationManager";
 import AccountDeletion from "@/components/admin/AccountDeletion";
+import DeletionRequestsManager from "@/components/admin/DeletionRequestsManager";
 import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 import InstitutionDetailView from "@/components/admin/InstitutionDetailView";
 import NotificationBell from "@/components/notifications/NotificationBell";
@@ -488,6 +489,7 @@ const AdminDashboard = () => {
               {/* ─── AUDIT LOGS ─── */}
               {activeTab === "audit" && (
                 <div className="max-w-4xl space-y-4">
+                  <DeletionRequestsManager />
                   <AuditLogViewer />
                   <AccountDeletion />
                 </div>

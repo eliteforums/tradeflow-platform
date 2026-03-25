@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.recover-password]
 verify_jwt = false
+
+[functions.request-account-deletion]
+verify_jwt = false
