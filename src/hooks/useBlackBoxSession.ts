@@ -30,7 +30,7 @@ export interface BlackBoxSession {
 const SESSION_COLUMNS = "id, student_id, therapist_id, status, room_id, flag_level, escalation_reason, escalation_history, session_notes_encrypted, started_at, ended_at, created_at, student_joined_at, therapist_joined_at, last_join_error";
 
 export const useBlackBoxSession = () => {
-  const { user } = useAuth();
+  const { user, refreshCredits } = useAuth();
   const [activeSession, setActiveSession] = useState<BlackBoxSession | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
   const [token, setToken] = useState<string | null>(null);
