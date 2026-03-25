@@ -1,55 +1,61 @@
 
 
-## Plan: PowerBI-Style Site Analytics Dashboard
+## Plan: Fix Account Deletion Flow
 
-### Current State
-The analytics tab has basic KPI cards, a daily traffic area chart, top pages list, hourly bar chart, traffic sources, device breakdown, and cookie consent stats. Functional but flat — no ring/donut charts, no comparative visuals, no segmented views.
+### Problem
+The "No coordinator found" error occurs because `AccountDeletion.tsx` queries `profiles` for SPOCs matching the user's `institution_id`, but students may not see SPOC profiles (RLS restricts visibility). Even the admin query via `user_roles` may return empty if the querying user lacks SELECT on that table for admin roles. The flow also lacks: Eternia ID / institution logging, an admin review queue, and ID recycling back to `temp_credentials`.
 
-### New Design
-A dense, professional PowerBI-inspired analytics dashboard with:
-- Redesigned KPI strip with delta indicators and sparkline-style context
-- Ring/donut charts for device and consent breakdowns
-- Dual-axis or stacked area chart for daily traffic with visitor segmentation
-- Horizontal bar chart for top pages (PowerBI-style)
-- Heatmap-style hourly traffic grid
-- Traffic sources with proportional donut
-- Views Today vs Week vs Total comparative cards
+### Solution
 
-### Changes
+#### 1. `src/components/admin/AccountDeletion.tsx` — Fix request flow
+- Remove SPOC lookup entirely (remove lines 17-22)
+- Send notification **only to admins** — query admins using `profiles` table where `role = 'admin'` (students CAN see admin profiles via the "Students can view staff profiles" policy... actually no, that only covers expert/therapist/intern). 
+- Better approach: skip client-side recipient discovery. Instead, insert a single notification with a well-known admin user_id OR use an edge function that uses service role to find admins.
+- **Simplest fix**: Create a small edge function `request-account-deletion` that:
+  - Validates the calling user
+  - Finds all admin user_ids via service role
+  - Inserts notifications to all admins with metadata: `{ requesting_user_id, username, student_id, institution_id, institution_name, requested_at }`
+  - Updates `profiles.deletion_requested_at` to current timestamp
+- Update `AccountDeletion.tsx` to call this edge function instead of doing client-side queries
+- Update copy: "sent to admin" instead of "institution coordinator"
 
-#### 1. `src/components/admin/AnalyticsDashboard.tsx` — Full rewrite
+#### 2. `src/components/admin/DeletionRequestsManager.tsx` — New admin review panel
+- Query `notifications` where `type = 'deletion_request'` and `is_read = false`
+- Display a table: Username, Eternia ID (student_id), Institution, Requested At, Actions
+- "Approve" button calls `admin-delete-member` edge function with `target_user_id`
+- "Reject" button marks notification as read and optionally sends a rejection notification to the user
+- After approval, recycle the user's temp credential: update `temp_credentials` row matching `auth_user_id = target_user_id` to set `status = 'unused'`, `auth_user_id = null`, `activated_at = null`
 
-**Row 1 — KPI Hero Strip (6 cards, same data, upgraded style):**
-- Each card gets a subtle trend arrow and mini context line (e.g., "Total Views" with "X today" subtitle)
-- Gradient accent borders on hover
-- "Live Now" card gets a pulsing ring effect
+#### 3. `supabase/functions/admin-delete-member/index.ts` — Add ID recycling
+- After deleting auth user, find and recycle temp credential:
+  ```sql
+  UPDATE temp_credentials SET status = 'unused', auth_user_id = NULL, activated_at = NULL 
+  WHERE auth_user_id = target_user_id
+  ```
 
-**Row 2 — Daily Traffic (full width):**
-- Stacked area chart with two series: authenticated vs anonymous views (computed from existing `user_id` presence in pageViews)
-- Keep the gradient fill, add grid lines and better tooltip
+#### 4. `supabase/functions/request-account-deletion/index.ts` — New edge function
+- Auth: validate calling user via JWT
+- Fetch user's profile (username, student_id, institution_id)
+- Fetch institution name
+- Find all admin user_ids via `user_roles` table (service role bypasses RLS)
+- Insert notifications to each admin with full metadata
+- Set `profiles.deletion_requested_at = now()` for the user
+- Return success
 
-**Row 3 — Two-column layout:**
-- Left: **Top Pages** — horizontal bar chart using recharts `BarChart` with `layout="vertical"`, showing page path on Y-axis and view count as bars. Much more PowerBI-like than the current list.
-- Right: **Hourly Traffic Heatmap** — keep bar chart but add color intensity gradient (darker bars = more traffic)
-
-**Row 4 — Three-column layout:**
-- Left: **Device Breakdown** — `PieChart` with `Cell` components, donut style (innerRadius), with legend below
-- Center: **Traffic Sources** — `PieChart` donut for top referrers with color-coded legend
-- Right: **Cookie Consent** — `PieChart` donut (green/red/amber) with stacked bar below
-
-**Row 5 — Visitor Segmentation (2 cards):**
-- Authenticated vs Anonymous side-by-side with proportional bar and percentage
-
-#### 2. `src/hooks/useAnalyticsData.ts` — Minor additions
-- Split daily trend into `authenticatedCount` and `anonymousCount` per day (for the stacked area chart)
-- Return `viewsToday` ratio vs previous day for delta indicator
+#### 5. Admin Dashboard integration
+- Add "Deletion Requests" to the admin sidebar or embed `DeletionRequestsManager` in the existing "Tools" or "Audit" tab
+- Show a badge count of pending deletion requests
 
 ### Files Modified
-- `src/components/admin/AnalyticsDashboard.tsx` — Full redesign with PieChart donut charts, vertical bar charts, stacked area, heatmap bars
-- `src/hooks/useAnalyticsData.ts` — Add authenticated/anonymous daily split data
+1. `supabase/functions/request-account-deletion/index.ts` — New edge function
+2. `supabase/functions/admin-delete-member/index.ts` — Add temp credential recycling
+3. `src/components/admin/AccountDeletion.tsx` — Call edge function, update copy
+4. `src/components/admin/DeletionRequestsManager.tsx` — New admin review panel
+5. `src/pages/admin/AdminDashboard.tsx` — Add deletion requests panel to Tools tab
+6. `src/components/mobile/MobileAdminDashboard.tsx` — Same for mobile
 
-### Technical Details
-- Uses `recharts` PieChart, Cell, BarChart (vertical layout), AreaChart (stacked) — all already available
-- No new dependencies needed
-- No database changes
+### No database changes needed
+- `profiles.deletion_requested_at` column already exists
+- `temp_credentials.auth_user_id` and `status` columns already exist
+- Notifications table already supports the `deletion_request` type
 
