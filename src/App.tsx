@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { CookieConsent } from "@/components/CookieConsent";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { Analytics } from "@vercel/analytics/react";
 
 // Eagerly load landing + auth (first paint)
 import Landing from "./pages/Landing";
@@ -79,6 +80,7 @@ const App = () => (
         <Sonner />
         <PWAUpdatePrompt />
         <CookieConsent />
+        <Analytics />
         <BrowserRouter>
           <AnalyticsTracker />
           <Suspense fallback={<PageLoader />}>
