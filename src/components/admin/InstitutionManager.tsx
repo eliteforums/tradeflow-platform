@@ -265,107 +265,106 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="space-y-3">
           {institutions.map((inst) => {
             const style = getPlanStyle(inst.plan_type);
             return (
               <div
                 key={inst.id}
-                className={`group relative rounded-2xl bg-card border border-border/50 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-border overflow-hidden ${!inst.is_active ? "opacity-60" : ""} ${onSelectInstitution ? "cursor-pointer" : ""}`}
+                className={`group relative rounded-xl bg-card border border-border/50 shadow-sm transition-all duration-300 hover:shadow-md hover:border-border overflow-hidden ${!inst.is_active ? "opacity-50" : ""} ${onSelectInstitution ? "cursor-pointer" : ""}`}
                 onClick={() => onSelectInstitution?.(inst)}
               >
-                {/* Top gradient bar */}
-                <div className={`h-1 w-full bg-gradient-to-r ${style.gradient}`} />
+                {/* Left gradient accent */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-gradient-to-b ${style.gradient}`} />
 
-                {/* Header */}
-                <div className="p-5 pb-4">
-                  <div className="flex items-start justify-between gap-3 mb-1">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${inst.is_active ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-muted-foreground/40"}`} />
-                        <h3 className="text-lg font-bold truncate text-foreground leading-tight">{inst.name}</h3>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <Building2 className="w-3 h-3 text-muted-foreground/60" />
-                        <span className="text-xs text-muted-foreground capitalize">{inst.institution_type}</span>
+                <div className="pl-5 pr-5 py-4 md:py-5 md:pl-6 md:pr-6">
+                  {/* Row 1: Name + Plan + Stats */}
+                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+                    {/* Left: Name & Type */}
+                    <div className="flex items-center gap-3 md:min-w-[220px] shrink-0">
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${inst.is_active ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-muted-foreground/40"}`} />
+                      <div>
+                        <h3 className="text-base font-bold text-foreground leading-tight">{inst.name}</h3>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <Building2 className="w-3 h-3 text-muted-foreground/60" />
+                          <span className="text-xs text-muted-foreground capitalize">{inst.institution_type}</span>
+                        </div>
                       </div>
                     </div>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border shrink-0 ${style.badge}`}>
+
+                    {/* Plan Badge */}
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border shrink-0 w-fit ${style.badge}`}>
                       {inst.plan_type}
                     </span>
-                  </div>
-                </div>
 
-                {/* Horizontal Stats */}
-                <div className="mx-5 mb-4 rounded-xl bg-muted/30 border border-border/30 overflow-hidden">
-                  <div className="grid grid-cols-3 divide-x divide-border/30">
-                    <div className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
-                        <Users className="w-3.5 h-3.5" />
+                    {/* Stats inline */}
+                    <div className="flex items-center gap-5 md:gap-6 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-sm font-semibold text-foreground">{studentCounts[inst.id] || 0}</span>
+                        <span className="text-xs text-muted-foreground">Students</span>
                       </div>
-                      <p className="text-xl font-bold text-foreground">{studentCounts[inst.id] || 0}</p>
-                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Students</p>
-                    </div>
-                    <div className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
-                        <Coins className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-1.5">
+                        <Coins className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-sm font-semibold text-foreground">{inst.credits_pool.toLocaleString()}</span>
+                        <span className="text-xs text-muted-foreground">Credits</span>
                       </div>
-                      <p className="text-xl font-bold text-foreground">{inst.credits_pool.toLocaleString()}</p>
-                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Credits</p>
-                    </div>
-                    <div className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
-                        <Calendar className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(inst.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}
+                        </span>
                       </div>
-                      <p className="text-sm font-bold text-foreground">{new Date(inst.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}</p>
-                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Created</p>
                     </div>
-                  </div>
-                </div>
 
-                {/* Eternia Code Strip */}
-                <div className="mx-5 mb-4 p-3 rounded-xl bg-muted/50 border border-border/30 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Eternia Code</p>
-                    <code className="text-sm font-mono font-bold tracking-widest text-foreground">{inst.eternia_code_hash}</code>
-                  </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 shrink-0 hover:bg-primary/10"
-                    onClick={(e) => { e.stopPropagation(); copyCode(inst.eternia_code_hash, inst.id); }}
-                  >
-                    {copiedId === inst.id ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
-                  </Button>
-                </div>
+                    {/* Spacer to push right section */}
+                    <div className="flex-1" />
 
-                {/* Actions */}
-                <div className="px-5 pb-5 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      className="h-8 text-xs gap-1.5 px-3"
-                      onClick={(e) => { e.stopPropagation(); openBulkDialog(inst); }}
-                    >
-                      <UserPlus className="w-3.5 h-3.5" />Bulk IDs
-                    </Button>
-                    {onSelectInstitution && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-xs gap-1.5 px-3"
-                        onClick={(e) => { e.stopPropagation(); onSelectInstitution(inst); }}
-                      >
-                        <Eye className="w-3.5 h-3.5" />Details
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <span className="text-[10px] text-muted-foreground font-medium">{inst.is_active ? "Active" : "Inactive"}</span>
-                    <Switch
-                      checked={inst.is_active}
-                      onCheckedChange={() => toggleMutation.mutate({ id: inst.id, is_active: inst.is_active })}
-                    />
+                    {/* Right: Code + Actions */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                      {/* Eternia Code */}
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/30">
+                        <code className="text-xs font-mono font-bold tracking-wider text-foreground">{inst.eternia_code_hash}</code>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 shrink-0 hover:bg-primary/10"
+                          onClick={(e) => { e.stopPropagation(); copyCode(inst.eternia_code_hash, inst.id); }}
+                        >
+                          {copiedId === inst.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
+                        </Button>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          className="h-8 text-xs gap-1.5 px-3"
+                          onClick={(e) => { e.stopPropagation(); openBulkDialog(inst); }}
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />Bulk IDs
+                        </Button>
+                        {onSelectInstitution && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs gap-1.5 px-3"
+                            onClick={(e) => { e.stopPropagation(); onSelectInstitution(inst); }}
+                          >
+                            <Eye className="w-3.5 h-3.5" />Details
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Toggle */}
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <span className="text-[10px] text-muted-foreground font-medium">{inst.is_active ? "Active" : "Inactive"}</span>
+                        <Switch
+                          checked={inst.is_active}
+                          onCheckedChange={() => toggleMutation.mutate({ id: inst.id, is_active: inst.is_active })}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
