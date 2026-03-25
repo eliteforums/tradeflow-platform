@@ -104,6 +104,8 @@ To make professional mental health support accessible to every college student i
 | **Journaling** | Free-form journal entries with mood tagging | Free |
 | **Care Credits (ECC)** | Internal economy with 5 ECC/day earn cap via quests, journaling, and self-help engagement | — |
 | **Recovery Setup** | Fragment word pairs + emoji pattern based account recovery (no email/phone needed) | — |
+| **Avatar Customization** | Multi-library avatar picker (DiceBear, Boring Avatars, Avvvatars, Nice Avatar) + image crop/zoom upload | Free |
+| **Admin Password Reset** | Request admin-mediated password reset when self-recovery fails; check status by request ID | — |
 
 ### AI-Powered Safety
 
@@ -180,7 +182,7 @@ Full platform control via grouped sidebar navigation:
 | **Activity** | Unified session feed (appointments, peer sessions, blackbox entries) |
 | **Institutions** | SPOC tools, institution detail views, credit pool management |
 | **Content** | Database-driven training modules (CRUD + quiz editor), sound management |
-| **Safety** | Escalation manager, audit logs, account deletion tools |
+| **Safety** | Escalation manager, audit logs, account deletion tools, password reset request manager |
 
 ---
 
@@ -391,6 +393,7 @@ supabase/
 | `device_sessions` | JWT rotation & multi-device management per user | ✅ |
 | `analytics_events` | Page view tracking (event type, path, session hash, user agent) | ✅ |
 | `rate_limits` | Database-level rate limiting with auto-cleanup | ✅ |
+| `password_reset_requests` | Admin-mediated password reset queue (username, reason, status, temp password) | ✅ |
 | `gratitude_entries` | Daily three-item gratitude journal entries | ✅ |
 | `journal_entries` | Free-form journal entries with mood tagging | ✅ |
 | `mood_entries` | Daily mood score logging with optional notes | ✅ |
@@ -444,6 +447,7 @@ All edge functions are deployed as serverless Deno functions on Lovable Cloud.
 | `validate-spoc-qr` | Verify SPOC QR code during student onboarding | ❌ |
 | `verify-temp-credentials` | Verify temporary credentials during Temp ID login | ❌ |
 | `videosdk-token` | Generate JWT tokens for VideoSDK.live WebRTC sessions | ❌ |
+| `approve-password-reset` | Admin: Approve/reject password reset requests with temp password generation | ✅ |
 
 ---
 
@@ -734,9 +738,23 @@ The app will work offline for cached pages and API responses.
 - AI enhances safety without overriding human decisions (suggestion popup, no auto-escalation)
 
 #### Forgot Password / Recovery Flow
-- Username-based recovery: enter username → answer hint questions + emoji pattern → set new password
+- **Self Recovery**: Username-based recovery — enter username → answer hint questions + emoji pattern → set new password
 - `recover-password` and `get-recovery-hints` edge functions
 - No email required — fully anonymous recovery
+- **Admin-Mediated Reset**: Students can submit a reset request with username + reason; admin reviews, approves/rejects from the Password Resets tab
+- `approve-password-reset` edge function generates secure temp password via `auth.admin.updateUserById()`
+- Students check request status by ID to retrieve temp password after approval
+- `password_reset_requests` table with RLS (anon submit + admin manage)
+
+#### Multi-Library Avatar System
+- **4 avatar libraries** integrated into a unified picker with category selector:
+  - **DiceBear** (5 styles: Lorelei, Robots, Avataaars, Fun Emoji, Notionists)
+  - **Boring Avatars** (6 variants: Beam, Marble, Pixel, Sunset, Ring, Bauhaus)
+  - **Avvvatars** (2 styles: Character, Shape)
+  - **React Nice Avatar** (cartoon face generator with deterministic seed config)
+- **Image crop & zoom editor** via `react-avatar-editor` — circular crop overlay with zoom slider before upload
+- **ResolvedAvatar component** — shared renderer that parses prefix strings (`dicebear:`, `boring:`, `avvvatars:`, `niceavatar:`) and renders the correct library component
+- Storage convention: `{library}:{style}:{seed}` in `avatar_url` column — no external API calls needed
 
 ---
 
@@ -763,6 +781,7 @@ Eternia is built on the shoulders of exceptional open-source projects:
 | **Forms** | [React Hook Form](https://react-hook-form.com), [Zod](https://zod.dev) |
 | **Video** | [VideoSDK.live](https://www.videosdk.live/) |
 | **QR Codes** | [qrcode.react](https://github.com/zpao/qrcode.react) |
+| **Avatars** | [DiceBear](https://dicebear.com), [Boring Avatars](https://boringavatars.com), [Avvvatars](https://avvvatars.com), [React Nice Avatar](https://github.com/dapi-labs/react-nice-avatar), [React Avatar Editor](https://www.npmjs.com/package/react-avatar-editor) |
 | **PWA** | [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) (Workbox) |
 | **Backend** | [Supabase](https://supabase.com) (via Lovable Cloud) |
 | **AI** | [Groq](https://groq.com) |
