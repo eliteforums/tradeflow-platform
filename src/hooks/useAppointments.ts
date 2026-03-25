@@ -134,16 +134,49 @@ export function useAppointments() {
   const cancelAppointment = useMutation({
     mutationFn: async (appointmentId: string) => {
       if (!user) throw new Error("Not authenticated");
+
+      // Fetch appointment to check credits and status
+      const { data: appt, error: fetchErr } = await supabase
+        .from("appointments")
+        .select("id, credits_charged, status")
+        .eq("id", appointmentId)
+        .eq("student_id", user.id)
+        .single();
+      if (fetchErr) throw fetchErr;
+
       const { error } = await supabase
         .from("appointments")
         .update({ status: "cancelled" })
         .eq("id", appointmentId)
         .eq("student_id", user.id);
       if (error) throw error;
+
+      // Refund if credits were charged and session not yet completed
+      if (appt.credits_charged > 0 && (appt.status === "pending" || appt.status === "confirmed")) {
+        // Duplicate prevention
+        const { data: existingRefund } = await supabase
+          .from("credit_transactions")
+          .select("id")
+          .eq("reference_id", appointmentId)
+          .eq("type", "grant")
+          .maybeSingle();
+
+        if (!existingRefund) {
+          await supabase.from("credit_transactions").insert({
+            user_id: user.id,
+            delta: appt.credits_charged,
+            type: "grant",
+            notes: "Expert Connect cancelled — refund",
+            reference_id: appointmentId,
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast.success("Appointment cancelled");
+      queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
+      refreshCredits();
+      toast.success("Appointment cancelled — credits refunded");
     },
     onError: (error) => {
       toast.error(error.message);

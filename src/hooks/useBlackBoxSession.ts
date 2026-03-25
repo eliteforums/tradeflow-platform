@@ -24,12 +24,13 @@ export interface BlackBoxSession {
   student_joined_at: string | null;
   therapist_joined_at: string | null;
   last_join_error: string | null;
+  refunded: boolean;
 }
 
 const SESSION_COLUMNS = "id, student_id, therapist_id, status, room_id, flag_level, escalation_reason, escalation_history, session_notes_encrypted, started_at, ended_at, created_at, student_joined_at, therapist_joined_at, last_join_error";
 
 export const useBlackBoxSession = () => {
-  const { user } = useAuth();
+  const { user, refreshCredits } = useAuth();
   const [activeSession, setActiveSession] = useState<BlackBoxSession | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -245,16 +246,41 @@ export const useBlackBoxSession = () => {
   }, [user]);
 
   const cancelSession = useCallback(async () => {
-    if (!activeSession) return;
+    if (!activeSession || !user) return;
+    const shouldRefund = activeSession.status === "queued" && !activeSession.refunded;
+
     await supabase
       .from("blackbox_sessions")
       .update({ status: "cancelled", ended_at: new Date().toISOString() })
       .eq("id", activeSession.id);
+
+    // Refund 30 ECC if student cancels while still queued (no service consumed)
+    if (shouldRefund) {
+      // Duplicate prevention: check if refund already exists
+      const { data: existingRefund } = await supabase
+        .from("credit_transactions")
+        .select("id")
+        .eq("reference_id", activeSession.id)
+        .eq("type", "grant")
+        .maybeSingle();
+
+      if (!existingRefund) {
+        await supabase.from("credit_transactions").insert({
+          user_id: user.id,
+          delta: 30,
+          type: "grant",
+          notes: "BlackBox session cancelled — refund",
+          reference_id: activeSession.id,
+        });
+      }
+      refreshCredits();
+    }
+
     setActiveSession(null);
     setToken(null);
     setCallState("idle");
-    toast.info("Session cancelled");
-  }, [activeSession]);
+    toast.info(shouldRefund ? "Session cancelled — 30 ECC refunded" : "Session cancelled");
+  }, [activeSession, user, refreshCredits]);
 
   const endSession = useCallback(async () => {
     if (!activeSession) return;
