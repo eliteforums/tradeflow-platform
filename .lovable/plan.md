@@ -1,72 +1,86 @@
 
 
-## Plan: Fix Intern Escalation → SPOC & BlackBox Therapist → Expert Notification
+## Plan: AI Suggestion Popup System for Risk Detection
 
-### Bug 4.1: Intern Escalation — Emergency Contact Not Reaching SPOC
+### What Changes
 
-**Root Cause**: The `escalate-emergency` edge function works correctly — it fetches emergency contact, creates `escalation_requests` with `trigger_snippet` JSON containing `type: "emergency_contact"`, and notifies the SPOC. The SPOC dashboard has a realtime listener on `escalation_requests` INSERT events and parses `trigger_snippet` for the contact card.
+Currently, the AI transcription silently updates a risk badge in the `MeetingView` header. The user requirement is to show an **interactive popup/dialog** when AI detects risk, presenting the suggested level and letting the expert/intern/therapist decide whether to escalate. AI assists but does not auto-escalate.
 
-However, the SPOC realtime listener filters by `newEsc.spoc_id === user?.id`. The edge function looks up the SPOC by querying profiles with `role = "spoc"` — but the `profiles.role` column stores the `app_role` enum which uses the `user_roles` table pattern. The SPOC lookup in `escalate-emergency` line 157 does `eq("role", "spoc")` on the `profiles` table, which should work since profiles have the role column.
+### Current Flow (Silent)
+```text
+AI detects keywords → classifies L1-L3 → updates badge silently
+Expert/Intern/Therapist must notice badge change manually
+```
 
-**Actual bug**: The edge function falls back to `spocId = callerId` (line 153) if no SPOC is found. If the intern's institution has no SPOC profile, the escalation's `spoc_id` is set to the intern's own ID — so the SPOC never sees it.
-
-Also, `escalation_requests` table doesn't have `realtime` enabled in the publication, which would prevent the realtime listener from firing.
-
-**Fix**:
-- Enable realtime on `escalation_requests` table via migration: `ALTER PUBLICATION supabase_realtime ADD TABLE public.escalation_requests;`
-- In `escalate-emergency/index.ts`: also check `user_roles` table for SPOC role (since roles are in `user_roles`, not just `profiles.role`)
-- Add a fallback: if no SPOC found, also notify admins
-
-### Bug 4.2: BlackBox Therapist Escalation — Expert Not Notified
-
-**Root Cause**: The therapist's `submitEscalation` (TherapistDashboardContent line 339-415) for L3:
-1. Searches for an M.Phil expert via `profiles` table with `ilike("specialty", "%M.Phil%")`
-2. If found: reassigns `therapist_id`, inserts notification with type `l3_handoff`
-3. If NOT found: just sets `status: "escalated"` — no notification at all
-
-The `ExpertL3AlertPanel` listens for `blackbox_sessions` with `flag_level >= 3` via realtime — BUT the therapist sets `status: "escalated"` which is NOT in the panel's filter `["active", "accepted", "queued"]` (line 53). So when no M.Phil expert is found, the session disappears from the expert view.
-
-Even when an M.Phil expert IS found, the notification is inserted but there's no notification listener on the expert dashboard that would alert them to check. The `ExpertL3AlertPanel` only watches `blackbox_sessions` table changes — it will pick up the session IF `status` remains `"active"` AND `flag_level >= 3`, which the therapist does set correctly in the success case.
-
-**Actual bugs**:
-1. When M.Phil expert found: `therapist_id` is changed but `flag_level` is set in the same update — the realtime listener should catch this. However, the `l3_handoff` notification is not listened for anywhere on the expert dashboard.
-2. When no M.Phil expert found: status becomes `"escalated"` which is filtered OUT of the L3 panel query. No expert sees it.
-3. The `notifications` table may not have realtime enabled either.
-
-**Fix**:
-- Enable realtime on `notifications` table via migration
-- In `ExpertL3AlertPanel`: also include `"escalated"` status in the query filter so experts can see sessions that need attention even if no specific expert was assigned
-- Add a notification listener to `ExpertDashboardContent` that shows a prominent alert for `l3_handoff` type notifications
-- In `TherapistDashboardContent`: when no M.Phil expert is found, notify ALL active experts (not just skip notification)
+### New Flow (Popup Suggestion)
+```text
+AI detects keywords → classifies L1-L3 → returns analysis with reasoning
+→ Popup appears over the call UI showing:
+  - Suggested risk level (L1/L2/L3)
+  - Detected keywords + emotional signals
+  - Transcript snippet context
+  - Two buttons: [Dismiss] [Escalate Now]
+→ User reviews and decides
+→ If Escalate: captures ±10s snippet, triggers escalation flow
+→ If Dismiss: logs dismissal, closes popup
+```
 
 ### Changes
 
-#### 1. Database Migration — Enable realtime
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE public.escalation_requests;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
-```
+#### 1. `supabase/functions/ai-transcribe/index.ts` — Enhanced AI analysis
 
-#### 2. `supabase/functions/escalate-emergency/index.ts` — Fix SPOC lookup
-- Query `user_roles` table for users with `spoc` role in the student's institution, instead of relying on `profiles.role`
-- If no SPOC found, notify all admins as fallback
+- Upgrade the AI prompt from returning just a number to returning structured JSON with:
+  - `risk_level` (1-3)
+  - `risk_indicators` (array of detected emotional distress signals beyond just keywords)
+  - `reasoning` (1-2 sentence explanation of why this level was suggested)
+  - `emotional_signals` (e.g., "tone of hopelessness", "escalating distress pattern")
+- Use Lovable AI gateway instead of Groq for the classification call (LOVABLE_API_KEY is already available, and this avoids dependency on external GROQ_API_KEY)
+- Use tool calling for structured output extraction
+- Return the full analysis in the response so the client can display it in the popup
+- **Remove auto-escalation**: AI no longer creates `escalation_requests` directly — it only suggests. The human triggers escalation via the popup.
 
-#### 3. `src/components/expert/ExpertL3AlertPanel.tsx` — Include "escalated" status
-- Change query filter from `["active", "accepted", "queued"]` to `["active", "accepted", "queued", "escalated"]`
-- Same change in the realtime callback condition
+#### 2. New component: `src/components/blackbox/AISuggestionPopup.tsx`
 
-#### 4. `src/components/therapist/TherapistDashboardContent.tsx` — Notify all experts when no M.Phil found
-- When no M.Phil expert is available for L3: keep status as `"active"` (not `"escalated"`) so it appears in expert panels
-- Notify ALL active experts via `notifications` table insert
+A dialog/overlay that appears when AI detects risk >= 1:
+- Shows risk level badge (color-coded L1/L2/L3)
+- Lists detected keywords and emotional signals
+- Shows the AI's reasoning text
+- Shows a brief transcript context snippet
+- **Dismiss** button — closes popup, logs that suggestion was reviewed but not acted on
+- **Escalate** button — calls `captureEscalationSnippet()`, then triggers the appropriate escalation flow
+- Auto-dismiss after 30 seconds if no action (with countdown indicator)
+- Does not block the call — positioned as a floating overlay
 
-#### 5. `src/components/expert/ExpertDashboardContent.tsx` — Add notification listener for L3 handoffs
-- Subscribe to `notifications` table realtime for the current user
-- When a `l3_handoff` notification arrives, show a prominent toast with session details and auto-switch to the home tab where `ExpertL3AlertPanel` is rendered
+#### 3. `src/hooks/useAudioMonitor.ts` — Return full AI analysis
+
+- Update `AudioMonitorState` to include `lastSuggestion` object with `risk_level`, `keywords`, `reasoning`, `emotional_signals`, `snippet`
+- Update `classifyBuffer` to store the full AI response (not just flag_level)
+- Add `dismissSuggestion()` method to clear the current suggestion
+- Add `onSuggestion` callback option for parents to react to new suggestions
+
+#### 4. `src/components/videosdk/MeetingView.tsx` — Wire popup
+
+- Render `<AISuggestionPopup>` when `audioMonitor.lastSuggestion` is present
+- Pass `captureEscalationSnippet` and session context to the popup
+- On escalate: call the existing escalation flow (edge function) with the captured snippet
+- On dismiss: call `audioMonitor.dismissSuggestion()`
+
+#### 5. Update `ai-transcribe` — Remove auto-escalation side effects
+
+- The function should still update `flag_level` on the session for record-keeping
+- But should NOT create `escalation_requests` — that happens only when the human clicks Escalate in the popup
+- Still append to `escalation_history` for audit trail
+- Still insert audit log for L2+ detections
+
+### Constraints Enforced
+- AI **suggests only** — no auto-escalation requests created
+- Final control remains with expert/intern/therapist (they click Escalate or Dismiss)
+- ±10s snippet captured only when human triggers escalation
+- No full recording stored
 
 ### Files Modified
-- Database migration — Enable realtime on `escalation_requests` and `notifications`
-- `supabase/functions/escalate-emergency/index.ts` — Fix SPOC lookup via `user_roles`
-- `src/components/expert/ExpertL3AlertPanel.tsx` — Include `"escalated"` in status filter
-- `src/components/therapist/TherapistDashboardContent.tsx` — Notify all experts on L3 when no M.Phil available
-- `src/components/expert/ExpertDashboardContent.tsx` — Add realtime notification listener for `l3_handoff`
+- `supabase/functions/ai-transcribe/index.ts` — Enhanced prompt, structured output, remove auto-escalation
+- `src/hooks/useAudioMonitor.ts` — Store full suggestion, add dismiss method
+- `src/components/blackbox/AISuggestionPopup.tsx` — New popup component
+- `src/components/videosdk/MeetingView.tsx` — Render popup, wire escalation
 
