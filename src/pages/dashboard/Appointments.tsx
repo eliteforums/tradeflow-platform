@@ -174,7 +174,7 @@ const Appointments = () => {
           )}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setBookingDialog({ open: false })} size="sm">Cancel</Button>
-            <Button onClick={confirmBooking} disabled={isBooking || balance < 50} size="sm" className="gap-1.5">{isBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Confirm</Button>
+            <Button onClick={confirmBooking} disabled={isBooking || balance < 45} size="sm" className="gap-1.5">{isBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Confirm</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

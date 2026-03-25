@@ -408,7 +408,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
         await supabase.from("notifications").insert({
           user_id: session.student_id,
           title: "Session Declined",
-          message: "The intern couldn't accept your request. Your 20 ECC has been refunded. Try another intern!",
+          message: "The intern couldn't accept your request. Your 18 ECC has been refunded. Try another intern!",
           type: "peer_declined",
           metadata: { session_id: sessionId },
         });
