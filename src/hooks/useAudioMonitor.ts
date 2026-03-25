@@ -1,29 +1,33 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface AISuggestion {
+  risk_level: number;
+  keywords: string[];
+  risk_indicators: string[];
+  emotional_signals: string[];
+  reasoning: string;
+  snippet: string;
+}
+
 export interface AudioMonitorState {
   isListening: boolean;
   currentTranscript: string;
   riskLevel: number;
   lastTriggerSnippet: string | null;
   isProcessing: boolean;
+  lastSuggestion: AISuggestion | null;
 }
 
 interface UseAudioMonitorOptions {
   sessionId: string;
   sessionType?: "blackbox" | "peer";
   enabled?: boolean;
-  classifyIntervalMs?: number; // How often to send buffer to AI (default 15s)
-  bufferWindowMs?: number; // Rolling buffer window (default 30s)
+  classifyIntervalMs?: number;
+  bufferWindowMs?: number;
   onRiskDetected?: (level: number, snippet: string) => void;
 }
 
-/**
- * Live audio monitoring hook using Web Speech API.
- * Captures speech-to-text in real-time, maintains a rolling buffer,
- * and periodically classifies content via the ai-transcribe edge function.
- * Stores only ±10s around trigger events (PRD 19.1 selective retention).
- */
 export function useAudioMonitor({
   sessionId,
   sessionType = "blackbox",
@@ -38,9 +42,9 @@ export function useAudioMonitor({
     riskLevel: 0,
     lastTriggerSnippet: null,
     isProcessing: false,
+    lastSuggestion: null,
   });
 
-  // Rolling buffer of timestamped transcript chunks
   const bufferRef = useRef<{ text: string; timestamp: number }[]>([]);
   const recognitionRef = useRef<any>(null);
   const classifyTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -50,7 +54,6 @@ export function useAudioMonitor({
     enabledRef.current = enabled;
   }, [enabled]);
 
-  // Get transcript text within a time window
   const getBufferText = useCallback((fromMs?: number, toMs?: number) => {
     const now = Date.now();
     const from = fromMs || now - bufferWindowMs;
@@ -62,13 +65,11 @@ export function useAudioMonitor({
       .trim();
   }, [bufferWindowMs]);
 
-  // Trim buffer to window size
   const trimBuffer = useCallback(() => {
     const cutoff = Date.now() - bufferWindowMs;
     bufferRef.current = bufferRef.current.filter((chunk) => chunk.timestamp >= cutoff);
   }, [bufferWindowMs]);
 
-  // Send buffer to AI for classification
   const classifyBuffer = useCallback(async () => {
     if (!enabledRef.current) return;
 
@@ -93,12 +94,14 @@ export function useAudioMonitor({
       }
 
       const flagLevel = data?.flag_level || 0;
+      const suggestion: AISuggestion | null = data?.suggestion || null;
 
       setState((prev) => ({
         ...prev,
         riskLevel: Math.max(prev.riskLevel, flagLevel),
         isProcessing: false,
         lastTriggerSnippet: flagLevel > 0 ? data?.trigger_snippet || null : prev.lastTriggerSnippet,
+        lastSuggestion: suggestion && suggestion.risk_level > 0 ? suggestion : prev.lastSuggestion,
       }));
 
       if (flagLevel > 0 && onRiskDetected) {
@@ -110,9 +113,7 @@ export function useAudioMonitor({
     }
   }, [sessionId, getBufferText, onRiskDetected]);
 
-  // Start speech recognition
   const startListening = useCallback(() => {
-    // Check browser support
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       console.warn("[AudioMonitor] Web Speech API not supported in this browser");
@@ -122,7 +123,7 @@ export function useAudioMonitor({
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = "en-IN"; // Default to Indian English for Eternia
+    recognition.lang = "en-IN";
 
     recognition.onresult = (event: any) => {
       let finalTranscript = "";
@@ -153,29 +154,19 @@ export function useAudioMonitor({
 
     recognition.onerror = (event: any) => {
       console.error("[AudioMonitor] Speech recognition error:", event.error);
-      // Auto-restart on non-fatal errors
       if (event.error === "no-speech" || event.error === "aborted") {
         if (enabledRef.current) {
           setTimeout(() => {
-            try {
-              recognition.start();
-            } catch {
-              // Already started
-            }
+            try { recognition.start(); } catch {}
           }, 1000);
         }
       }
     };
 
     recognition.onend = () => {
-      // Auto-restart if still enabled
       if (enabledRef.current) {
         setTimeout(() => {
-          try {
-            recognition.start();
-          } catch {
-            // Already started
-          }
+          try { recognition.start(); } catch {}
         }, 500);
       } else {
         setState((prev) => ({ ...prev, isListening: false }));
@@ -191,24 +182,17 @@ export function useAudioMonitor({
     }
   }, [trimBuffer]);
 
-  // Stop speech recognition
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {
-        // Already stopped
-      }
+      try { recognitionRef.current.stop(); } catch {}
       recognitionRef.current = null;
     }
     setState((prev) => ({ ...prev, isListening: false }));
   }, []);
 
-  // Start/stop based on enabled prop
   useEffect(() => {
     if (enabled) {
       startListening();
-      // Set up periodic classification
       classifyTimerRef.current = setInterval(classifyBuffer, classifyIntervalMs);
     } else {
       stopListening();
@@ -227,30 +211,29 @@ export function useAudioMonitor({
     };
   }, [enabled, startListening, stopListening, classifyBuffer, classifyIntervalMs]);
 
-  // Manual trigger for immediate classification
   const classifyNow = useCallback(() => {
     classifyBuffer();
   }, [classifyBuffer]);
 
-  // Reset risk level
   const resetRisk = useCallback(() => {
-    setState((prev) => ({ ...prev, riskLevel: 0, lastTriggerSnippet: null }));
+    setState((prev) => ({ ...prev, riskLevel: 0, lastTriggerSnippet: null, lastSuggestion: null }));
   }, []);
 
-  // ±10s selective retention: capture transcript around escalation trigger, then purge buffer
+  const dismissSuggestion = useCallback(() => {
+    setState((prev) => ({ ...prev, lastSuggestion: null }));
+  }, []);
+
   const captureEscalationSnippet = useCallback((windowMs: number = 10000): string => {
     const now = Date.now();
     const from = now - windowMs;
-    const to = now + windowMs; // future entries within window (if any delayed results arrive)
+    const to = now + windowMs;
     const snippet = bufferRef.current
       .filter((chunk) => chunk.timestamp >= from && chunk.timestamp <= to)
       .map((chunk) => chunk.text)
       .join(" ")
       .trim();
 
-    // Purge entire buffer — selective retention: only the snippet survives
     bufferRef.current = [];
-
     return snippet;
   }, []);
 
@@ -260,6 +243,7 @@ export function useAudioMonitor({
     stopListening,
     classifyNow,
     resetRisk,
+    dismissSuggestion,
     captureEscalationSnippet,
   };
 }

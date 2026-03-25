@@ -8,6 +8,7 @@ import MeetingControls from "./MeetingControls";
 import { useAudioMonitor } from "@/hooks/useAudioMonitor";
 import { useSilenceDetection } from "@/hooks/useSilenceDetection";
 import TherapistSessionControls from "@/components/blackbox/TherapistSessionControls";
+import AISuggestionPopup from "@/components/blackbox/AISuggestionPopup";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,6 +28,7 @@ interface MeetingViewProps {
   onJoinError?: (error: string) => void;
   onCaptureSnippetReady?: (captureFn: () => string) => void;
   onLeaveReady?: (leaveFn: () => void) => void;
+  onEscalateFromSuggestion?: (snippet: string, riskLevel: number) => void;
 }
 
 const riskColors: Record<number, string> = {
@@ -59,6 +61,7 @@ const MeetingView = ({
   onJoinError,
   onCaptureSnippetReady,
   onLeaveReady,
+  onEscalateFromSuggestion,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
@@ -104,7 +107,7 @@ const MeetingView = ({
     },
   });
 
-  // Auto-join — use meetingId prop, not sdkMeetingId which may be undefined on mount
+  // Auto-join
   useEffect(() => {
     if (!autoJoin || hasAutoJoined.current) return;
     if (!meetingId) return;
@@ -132,7 +135,6 @@ const MeetingView = ({
       }, 5000);
     };
 
-    // Small delay to let MeetingProvider SDK initialize
     const initDelay = setTimeout(() => attemptJoin(), 300);
     return () => {
       clearTimeout(initDelay);
@@ -170,13 +172,12 @@ const MeetingView = ({
     }
   }, [joined, enableMonitoring, onCaptureSnippetReady, audioMonitor.captureEscalationSnippet]);
 
-  // Expose leave function to parent for programmatic disconnect
+  // Expose leave function to parent
   useEffect(() => {
     if (onLeaveReady) {
       onLeaveReady(leave);
     }
   }, [leave, onLeaveReady]);
-
 
   const handleSilenceAutoEnd = useCallback(async () => {
     if (!sessionId) return;
@@ -199,6 +200,19 @@ const MeetingView = ({
     onWarning: () => toast.warning("Student has been silent for 2+ minutes"),
     onAutoEnd: handleSilenceAutoEnd,
   });
+
+  // Handle escalation from AI suggestion popup
+  const handleEscalateFromSuggestion = useCallback(() => {
+    const snippet = audioMonitor.captureEscalationSnippet();
+    const riskLevel = audioMonitor.lastSuggestion?.risk_level || audioMonitor.riskLevel;
+    audioMonitor.dismissSuggestion();
+    
+    if (onEscalateFromSuggestion) {
+      onEscalateFromSuggestion(snippet, riskLevel);
+    } else {
+      toast.info("Escalation triggered — use the escalation panel to proceed.");
+    }
+  }, [audioMonitor, onEscalateFromSuggestion]);
 
   const joinMeeting = () => {
     setJoined("JOINING");
@@ -258,7 +272,7 @@ const MeetingView = ({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
       {enableMonitoring && (
         <div className="px-4 py-2 border-b border-border flex items-center justify-between bg-card/50">
           <div className="flex items-center gap-2">
@@ -293,6 +307,15 @@ const MeetingView = ({
           silenceDurationSec={silenceDetection.silenceDurationSec}
           onSessionEnded={onMeetingLeave}
           captureEscalationSnippet={audioMonitor.captureEscalationSnippet}
+        />
+      )}
+
+      {/* AI Suggestion Popup */}
+      {enableMonitoring && audioMonitor.lastSuggestion && (
+        <AISuggestionPopup
+          suggestion={audioMonitor.lastSuggestion}
+          onDismiss={audioMonitor.dismissSuggestion}
+          onEscalate={handleEscalateFromSuggestion}
         />
       )}
     </div>
