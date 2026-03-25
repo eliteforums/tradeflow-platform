@@ -7,10 +7,9 @@ const corsHeaders = {
 };
 
 const PACKAGES: Record<number, { credits: number; amount: number }> = {
-  50: { credits: 50, amount: 9900 },
-  100: { credits: 100, amount: 17900 },
-  250: { credits: 250, amount: 39900 },
-  500: { credits: 500, amount: 69900 },
+  25: { credits: 25, amount: 4900 },
+  60: { credits: 60, amount: 9900 },
+  130: { credits: 130, amount: 19900 },
 };
 
 // Rate limiter
@@ -173,13 +172,31 @@ Deno.serve(async (req) => {
 
       const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+      // Idempotency: check if this payment was already credited
+      const paymentTag = `Razorpay: ${razorpay_payment_id.slice(0, 30)}`;
+      const { data: existing } = await serviceClient
+        .from("credit_transactions")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("type", "purchase")
+        .ilike("notes", `%${paymentTag}%`)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        // Already credited — return success without double-crediting
+        return new Response(
+          JSON.stringify({ success: true, credits: creditAmount, already_credited: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const { error: insertError } = await serviceClient
         .from("credit_transactions")
         .insert({
           user_id: userId,
           delta: creditAmount,
           type: "purchase",
-          notes: `Purchased ${creditAmount} ECC (Razorpay: ${razorpay_payment_id.slice(0, 30)})`,
+          notes: `Purchased ${creditAmount} ECC (${paymentTag})`,
           reference_id: null,
         });
 
