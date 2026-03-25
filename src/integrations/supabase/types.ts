@@ -605,6 +605,7 @@ export type Database = {
           id: string
           institution_type: string
           is_active: boolean
+          logo_url: string | null
           name: string
           plan_type: string
           updated_at: string
@@ -616,6 +617,7 @@ export type Database = {
           id?: string
           institution_type?: string
           is_active?: boolean
+          logo_url?: string | null
           name: string
           plan_type?: string
           updated_at?: string
@@ -627,6 +629,7 @@ export type Database = {
           id?: string
           institution_type?: string
           is_active?: boolean
+          logo_url?: string | null
           name?: string
           plan_type?: string
           updated_at?: string

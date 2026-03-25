@@ -22,6 +22,7 @@ import { useCredits } from "@/hooks/useCredits";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import AccountDeletion from "@/components/admin/AccountDeletion";
+import AvatarUpload from "@/components/profile/AvatarUpload";
 
 const Profile = () => {
   const isMobile = useIsMobile();
@@ -161,9 +162,7 @@ const Profile = () => {
         {/* Profile Card */}
         <div className="p-6 rounded-2xl bg-card border border-border">
           <div className="flex items-start gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-eternia flex items-center justify-center shrink-0">
-              <User className="w-10 h-10 text-background" />
-            </div>
+            <AvatarUpload size="lg" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                 <h2 className="text-xl font-bold font-display truncate">{profile?.username || "User"}</h2>

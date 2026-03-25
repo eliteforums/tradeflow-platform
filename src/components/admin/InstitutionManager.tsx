@@ -15,6 +15,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import AvatarUpload from "@/components/profile/AvatarUpload";
 
 function generateEterniaCode(name: string): string {
   const prefix = name.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 4);
@@ -32,6 +33,7 @@ interface Institution {
   plan_type: string;
   institution_type: string;
   created_at: string;
+  logo_url?: string | null;
 }
 
 interface InstitutionManagerProps {
@@ -83,7 +85,7 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("institutions")
-        .select("id, name, eternia_code_hash, plan_type, credits_pool, is_active, institution_type, created_at")
+        .select("id, name, eternia_code_hash, plan_type, credits_pool, is_active, institution_type, created_at, logo_url")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Institution[];
@@ -282,7 +284,16 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
                   <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
                     {/* Left: Name & Type */}
                     <div className="flex items-center gap-3 md:min-w-[220px] shrink-0">
-                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${inst.is_active ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-muted-foreground/40"}`} />
+                      <AvatarUpload
+                        size="sm"
+                        institutionId={inst.id}
+                        institutionLogoUrl={inst.logo_url}
+                        onLogoUpdated={(url) => {
+                          queryClient.setQueryData(["admin-institutions"], (old: Institution[] | undefined) =>
+                            old?.map((i) => i.id === inst.id ? { ...i, logo_url: url } : i)
+                          );
+                        }}
+                      />
                       <div>
                         <h3 className="text-base font-bold text-foreground leading-tight">{inst.name}</h3>
                         <div className="flex items-center gap-1.5 mt-0.5">
