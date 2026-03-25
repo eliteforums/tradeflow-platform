@@ -44,7 +44,7 @@ const CodePreviewSection = () => (
               {"  "}<span className="text-eternia-teal">const</span>{" user = "}<span className="text-eternia-teal">await</span>{"\n"}
               {"    createProfile({"}{"\n"}
               {"      username: genAlias(),"}{"\n"}
-              {"      credits: "}<span className="text-eternia-warning">100</span>{","}{"\n"}
+              {"      credits: "}<span className="text-eternia-warning">80</span>{","}{"\n"}
               {"    });"}{"\n"}
               {"  "}<span className="text-eternia-teal">return</span>{" { user, jwt };"}{"\n"}
               {"};"}
