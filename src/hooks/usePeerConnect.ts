@@ -306,7 +306,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
       }
 
       // Spend credits
-      await spendCredits(20, "Peer Connect session");
+      await spendCredits(18, "Peer Connect session");
 
       // Insert as PENDING (not active)
       const { data, error } = await supabase
