@@ -1,57 +1,39 @@
 
 
-## Plan: Add Boring Avatars, Avvvatars, Nice Avatar & Avatar Editor
+## Plan: Update Sitemap, OG Tags & Add IndexNow
 
-### Overview
-Expand the avatar picker with 3 new avatar libraries alongside existing DiceBear, plus add image cropping to the upload tab. Since some libraries render React components (not data URIs), introduce a shared `<ResolvedAvatar>` component for rendering.
+### What's Already in Place
+- `public/sitemap.xml` — has 6 URLs but missing `/forgot-password`
+- `index.html` — full OG, Twitter Card, JSON-LD, canonical, robots meta
+- `public/robots.txt` — proper crawl rules
+- `public/og-image.png` — exists
 
-### Packages to Install
-- `boring-avatars` — 6 SVG variants (beam, marble, pixel, sunset, ring, bauhaus)
-- `avvvatars-react` — clean initial-based avatars (character & shape styles)
-- `react-nice-avatar` — cartoon face avatars with `genConfig(seed)`
-- `react-avatar-editor` — crop/rotate/zoom for uploaded photos
+### Changes
 
-### Storage Convention
-Each library stores a prefix string in `avatar_url`:
-- `dicebear:style:seed` (existing)
-- `boring:variant:seed` (new)
-- `avvvatars:style:seed` (new)
-- `niceavatar:seed` (new)
-- Regular URLs for uploaded images (existing)
+**1. Update `public/sitemap.xml`**
+- Add missing public route: `/forgot-password`
+- Add `<lastmod>` dates (today's date) to all entries for freshness signals
 
-### Frontend Changes
+**2. Enhance OG tags in `index.html`**
+- Add `og:updated_time` meta tag
+- Add `article:published_time` and `article:modified_time` for richer social previews
+- Add WhatsApp-specific `og:image:type` tag (image/png)
+- Add LinkedIn-specific `og:image:secure_url` tag
 
-**1. New `src/components/profile/ResolvedAvatar.tsx`**
-A shared React component that replaces `<img>` for avatar display everywhere:
-- Parses `avatar_url` prefix and renders the correct library component
-- `boring:` → `<BoringAvatar variant={v} name={seed} size={size} />`
-- `avvvatars:` → `<Avvvatars value={seed} style={style} size={size} />`
-- `niceavatar:` → `<NiceAvatar {...genConfig(seed)} style={{width, height}} />`
-- `dicebear:` → `<img src={getDiceBearUri(style, seed)} />`
-- Regular URL → `<img src={url} />`
-- Fallback → gradient icon
+**3. Add IndexNow support**
+- Create `public/<key>.txt` with an IndexNow API key (a generated UUID)
+- Create `supabase/functions/indexnow-submit/index.ts` — an edge function that POSTs the sitemap URLs to the IndexNow API (Bing/Yandex) for instant indexing
+- Add a manual trigger button in the admin panel OR document curl usage
+- Alternatively, keep it simple: just add the `public/<key>.txt` verification file and document the curl command in README
 
-**2. Rewrite `src/components/profile/AvatarUpload.tsx`**
-- **Picker tabs restructure**: Change the style dropdown into a top-level category selector with sub-options:
-  - **DiceBear** (existing 5 styles) — grid of 12 seeds
-  - **Boring Avatars** (6 variants: beam, marble, pixel, sunset, ring, bauhaus) — grid of 12 name-seeds
-  - **Avvvatars** (2 styles: character, shape) — grid of 12 seeds
-  - **Nice Avatar** (cartoon faces) — grid of 12 random seeds
-- **Upload tab**: Wrap file selection with `react-avatar-editor` for crop/zoom before uploading — shows circular crop overlay, zoom slider, then "Save" button uploads the cropped canvas blob
-- Keep `resolveAvatarUrl` for backward compat but add the new prefixes
-- Use `<ResolvedAvatar>` internally for preview rendering
-
-**3. Update avatar display across the app**
-Replace `<img src={resolveAvatarUrl(...)} />` with `<ResolvedAvatar url={avatarUrl} />` in:
-- `AvatarUpload.tsx` (internal preview)
-- `Profile.tsx` and `MobileProfile.tsx` (already use AvatarUpload component)
-- Any other places that manually call `resolveAvatarUrl` to render
+**4. Update `public/robots.txt`**
+- Already comprehensive; no changes needed
 
 ### Files Modified
-- `package.json` — add 4 packages
-- `src/components/profile/ResolvedAvatar.tsx` — new shared renderer
-- `src/components/profile/AvatarUpload.tsx` — expand picker + add crop editor
-- Minor updates to any file importing `resolveAvatarUrl` for `<img>` rendering
+- `public/sitemap.xml` — add `/forgot-password`, add `<lastmod>` to all entries
+- `index.html` — add 3-4 additional OG meta tags
+- `public/{uuid}.txt` — new IndexNow key file
+- `README.md` — document IndexNow usage
 
-### No backend changes needed.
+### No backend/database changes needed.
 
