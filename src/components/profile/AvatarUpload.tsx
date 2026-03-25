@@ -12,11 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { createAvatar } from "@dicebear/core";
-import * as lorelei from "@dicebear/collection/lib/lorelei/index.js";
-import * as bottts from "@dicebear/collection/lib/bottts/index.js";
-import * as avataaars from "@dicebear/collection/lib/avataaars/index.js";
-import * as funEmoji from "@dicebear/collection/lib/fun-emoji/index.js";
-import * as notionists from "@dicebear/collection/lib/notionists/index.js";
+import { lorelei, bottts, avataaars, funEmoji, notionists } from "@dicebear/collection";
 
 const STYLES: Record<string, any> = {
   lorelei,
