@@ -23,7 +23,7 @@ function rateLimit(key: string, max = 10, windowMs = 60000): boolean {
   return e.count <= max;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
