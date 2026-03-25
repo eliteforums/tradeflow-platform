@@ -1,38 +1,40 @@
 
 
-## Plan: Fix AI Transcribe — Expand Keywords + Remove Hard Gate (Keep Groq)
+## Plan: Redesign Institution Cards to Full-Width Bar Layout
 
-### Root Cause
-The function has a **hard gate** at line 58: if zero keywords match, it returns `flag_level: 0` immediately — the AI model never runs. The keyword list is only ~16 entries and misses common distress words like "stress", "anxious", "overwhelmed", "lonely", "scared", "crying", etc.
+### Problem
+The current 3-column grid of small cards looks cramped — institution names get truncated, stats are squeezed, and the overall layout feels cluttered. The user wants large, full-width "bar-style" cards that are clean and easy to scan.
 
-### Changes
+### Redesign Approach
 
-#### `supabase/functions/ai-transcribe/index.ts`
+#### `src/components/admin/InstitutionManager.tsx` — Switch to stacked bar cards
 
-**A. Expand keywords to ~80+ terms** (replace lines 8-16)
+**Layout change:**
+- Replace `grid-cols-1 md:grid-cols-2 xl:grid-cols-3` with a single-column stack (`space-y-4`)
+- Each card becomes a full-width horizontal bar
 
-Add categories:
-- **Emotional**: stress, stressed, anxious, anxiety, overwhelmed, crying, lonely, loneliness, scared, terrified, numb, empty, exhausted, burned out, burnout, miserable, suffering, tormented, frustrated, angry, furious, rage, shame, guilty, grief, mourning, heartbroken
-- **Academic/social**: failing, dropped out, bullied, bullying, ragging, harassment, humiliated, rejected, isolated, no friends, left out, excluded
-- **Substance**: drinking, drunk, alcohol, drugs, smoking, addiction, addicted
-- **Self-harm expanded**: bleed, bleeding, scars, razor, bridge, rooftop, hanging, drowning, suffocating, starving
-- **Family/relationship**: divorce, breakup, broken up, domestic violence, beaten, molested, raped, trauma, PTSD, flashbacks, abusive
-- **Existential**: no purpose, meaningless, pointless, give up, giving up, lost hope, no future, trapped, stuck, can't breathe, don't care anymore, nothing matters, why bother, what's the point
+**Card structure (single horizontal row per institution):**
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [gradient left bar]                                                     │
+│  ● Institution Name        PREMIUM     53 Students  5,000 Credits      │
+│    University                          Code: ELIT2026P70  [Copy]       │
+│                                        [Bulk IDs] [Details] [Toggle]   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
-**B. Remove the hard gate** (replace lines 58-62)
-
-Instead of returning immediately when no keywords match, change logic to:
-- If keywords found → pass them as context to Groq (current behavior)
-- If no keywords found BUT transcript is >50 chars → still call Groq with a general analysis prompt (no keyword hints)
-- If transcript is ≤50 chars and no keywords → return `flag_level: 0` (too short to analyze)
-
-This ensures the AI always gets a chance to evaluate substantial speech.
-
-**C. Keep Groq + Llama 3.3 70B** — no provider change, same tool-calling format.
+**Specific changes:**
+- 4px left gradient bar (colored by plan type) instead of top bar
+- Left section: active dot + full institution name (no truncation) + type below
+- Center section: plan badge + horizontal stats (Students, Credits, Created) inline with proper spacing
+- Right section: Eternia code with copy button + action buttons (Bulk IDs, Details, Toggle)
+- All content in one or two rows — no nested stat boxes or separate code strips
+- Generous padding (`p-5 px-6`), `rounded-xl`, subtle hover effect
+- Full institution name visible — no truncation since cards are full-width
+- Responsive: on mobile, stack the sections vertically within each bar card
 
 ### Files Modified
-- `supabase/functions/ai-transcribe/index.ts` — Expand keyword list, remove hard gate so AI always analyzes substantial transcripts
+- `src/components/admin/InstitutionManager.tsx` — Replace grid layout with full-width bar cards
 
-### No database or frontend changes needed
-The suggestion popup and escalation flows are already wired correctly.
+### No backend changes needed.
 
