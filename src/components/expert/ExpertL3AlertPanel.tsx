@@ -94,7 +94,7 @@ const ExpertL3AlertPanel = () => {
       if (error) throw error;
 
       setActiveSession({ ...session, therapist_id: user.id, status: "accepted" });
-      setCallModal({ open: true, appointmentId: session.id });
+      setCallModal({ open: true });
       toast.success("Session accepted — joining call");
     } catch (err: any) {
       toast.error(err.message || "Failed to join session");
