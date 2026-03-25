@@ -82,7 +82,7 @@ const AvatarUpload = ({ size = "lg", institutionId, institutionLogoUrl, onLogoUp
   const [category, setCategory] = useState<AvatarCategory>("dicebear");
   const [subStyle, setSubStyle] = useState("lorelei");
   const fileRef = useRef<HTMLInputElement>(null);
-  const editorRef = useRef<AvatarEditor | null>(null);
+  const editorRef = useRef<typeof AvatarEditor | null>(null);
   const [editFile, setEditFile] = useState<File | null>(null);
   const [zoom, setZoom] = useState(1.2);
 
