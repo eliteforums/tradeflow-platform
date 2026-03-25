@@ -12,7 +12,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Users, Calendar, MessageCircle, AlertTriangle, TrendingUp, Coins,
+  Users, Calendar, MessageCircle, AlertTriangle, TrendingUp, Coins, Key,
   Shield, Activity, Eye, CheckCircle, Clock, BarChart3, Search, Loader2,
   UserPlus, Settings, Music, Building2, FileText, QrCode, Crown, UserCheck,
   Stethoscope, GraduationCap, Phone, Zap, Filter, BookOpen, LogOut, ArrowLeft, Gamepad2,
@@ -43,8 +43,9 @@ import AnalyticsDashboard from "@/components/admin/AnalyticsDashboard";
 import QuestCardManager from "@/components/admin/QuestCardManager";
 import EmergencyAlertOverlay from "@/components/notifications/EmergencyAlertOverlay";
 import OverviewDashboard from "@/components/admin/OverviewDashboard";
+import PasswordResetManager from "@/components/admin/PasswordResetManager";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics" | "tools";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics" | "tools" | "password-resets";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -88,6 +89,7 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
     label: "Safety",
     items: [
       { id: "escalations", label: "Escalations", icon: AlertTriangle },
+      { id: "password-resets", label: "Password Resets", icon: Key },
       { id: "audit", label: "Audit Logs", icon: FileText },
     ],
   },
@@ -503,6 +505,9 @@ const AdminDashboard = () => {
 
               {/* ─── TOOLS (Quest Cards) ─── */}
               {activeTab === "tools" && <div className="max-w-4xl"><QuestCardManager /></div>}
+
+              {/* ─── PASSWORD RESETS ─── */}
+              {activeTab === "password-resets" && <div className="max-w-3xl"><PasswordResetManager /></div>}
             </>
           )}
         </div>

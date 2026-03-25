@@ -753,6 +753,45 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_requests: {
+        Row: {
+          admin_id: string | null
+          admin_note: string | null
+          created_at: string
+          id: string
+          reason: string | null
+          resolved_at: string | null
+          status: string
+          temp_password: string | null
+          user_id: string | null
+          username: string
+        }
+        Insert: {
+          admin_id?: string | null
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+          temp_password?: string | null
+          user_id?: string | null
+          username: string
+        }
+        Update: {
+          admin_id?: string | null
+          admin_note?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+          temp_password?: string | null
+          user_id?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
       peer_messages: {
         Row: {
           content_encrypted: string

@@ -1,6 +1,6 @@
 import { useState, useMemo, lazy, Suspense } from "react";
 import {
-  Users, Calendar, MessageCircle, AlertTriangle, Coins,
+  Users, Calendar, MessageCircle, AlertTriangle, Coins, Key,
   Shield, Activity, BarChart3, Search, Loader2,
   UserPlus, Settings, Building2, Crown, Stethoscope,
   GraduationCap, Zap, Eye, CheckCircle, Music, FileText, BookOpen, Copy, Check, Gamepad2,
@@ -25,8 +25,9 @@ import TrainingModuleManager from "@/components/admin/TrainingModuleManager";
 import NotificationBell from "@/components/notifications/NotificationBell";
 const AnalyticsDashboard = lazy(() => import("@/components/admin/AnalyticsDashboard"));
 import QuestCardManager from "@/components/admin/QuestCardManager";
+import PasswordResetManager from "@/components/admin/PasswordResetManager";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail" | "analytics" | "tools";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "escalations" | "audit" | "training" | "institution-detail" | "analytics" | "tools" | "password-resets";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -108,6 +109,7 @@ const MobileAdminDashboard = () => {
     { id: "training", label: "Training", icon: BookOpen },
     { id: "sounds", label: "Sounds", icon: Music },
     { id: "tools", label: "Quest Cards", icon: Gamepad2 },
+    { id: "password-resets", label: "Resets", icon: Key },
     { id: "escalations", label: "Escalations", icon: AlertTriangle },
     { id: "audit", label: "Audit", icon: FileText },
   ];
@@ -345,6 +347,11 @@ const MobileAdminDashboard = () => {
             {/* TOOLS (Quest Cards) */}
             {activeTab === "tools" && (
               <div><QuestCardManager /></div>
+            )}
+
+            {/* PASSWORD RESETS */}
+            {activeTab === "password-resets" && (
+              <div><PasswordResetManager /></div>
             )}
 
             {/* INSTITUTION DETAIL */}
