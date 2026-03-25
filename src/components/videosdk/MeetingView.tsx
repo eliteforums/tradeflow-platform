@@ -73,7 +73,7 @@ const MeetingView = ({
 
   const joinSucceeded = useRef(false);
 
-  const { join, leave, participants, meetingId: sdkMeetingId } = useMeeting({
+  const { join, leave, participants, localParticipant, meetingId: sdkMeetingId } = useMeeting({
     onMeetingJoined: () => {
       console.log("[MeetingView] onMeetingJoined fired");
       joinSucceeded.current = true;
