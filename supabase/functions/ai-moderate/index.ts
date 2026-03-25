@@ -1,8 +1,8 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 // Rate limiter
@@ -15,7 +15,7 @@ function rateLimit(key: string, max = 30, windowMs = 60000): boolean {
   return e.count <= max;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -25,6 +25,26 @@ serve(async (req) => {
     if (!rateLimit(`ai-mod:${ip}`, 30)) {
       return new Response(JSON.stringify({ error: "Too many requests" }), {
         status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Authenticate caller
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+    );
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const { data: { user }, error: userErr } = await supabaseAuth.auth.getUser(token);
+    if (userErr || !user) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -39,6 +59,23 @@ serve(async (req) => {
       });
     }
 
+    // Verify caller owns the entry
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const { data: entry } = await adminClient
+      .from("blackbox_entries")
+      .select("user_id")
+      .eq("id", entry_id)
+      .single();
+
+    if (!entry || entry.user_id !== user.id) {
+      return new Response(JSON.stringify({ error: "Entry not found or unauthorized" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
     if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not configured");
 
@@ -49,7 +86,7 @@ serve(async (req) => {
         Authorization: `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "openai/gpt-oss-20b",
+        model: "llama-3.3-70b-versatile",
         messages: [
           {
             role: "system",
@@ -83,19 +120,10 @@ Respond with ONLY the number. No explanation.`,
     const rawLevel = aiData.choices?.[0]?.message?.content?.trim() || "0";
     const flag_level = Math.min(3, Math.max(0, parseInt(rawLevel, 10) || 0));
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    await fetch(`${SUPABASE_URL}/rest/v1/blackbox_entries?id=eq.${entry_id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({ ai_flag_level: flag_level }),
-    });
+    await adminClient
+      .from("blackbox_entries")
+      .update({ ai_flag_level: flag_level })
+      .eq("id", entry_id);
 
     return new Response(JSON.stringify({ flag_level, entry_id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
