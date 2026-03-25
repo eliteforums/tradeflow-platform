@@ -15,6 +15,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import AvatarUpload from "@/components/profile/AvatarUpload";
 
 function generateEterniaCode(name: string): string {
   const prefix = name.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 4);
