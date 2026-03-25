@@ -78,8 +78,8 @@ const MobileCredits = () => {
             <div><p className="text-background/70 text-xs">Spent</p><p className="font-semibold text-sm">-{spent}</p></div>
             <div>
               <p className="text-background/70 text-xs">Cap</p>
-              <p className="font-semibold text-sm">{dailyEarned}/5</p>
-              <Progress value={(dailyEarned / 5) * 100} className="h-1 mt-1 bg-background/20" />
+              <p className="font-semibold text-sm">{weeklyEarned}/5</p>
+              <Progress value={(weeklyEarned / 5) * 100} className="h-1 mt-1 bg-background/20" />
             </div>
           </div>
         </div>

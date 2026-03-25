@@ -75,8 +75,8 @@ const Credits = () => {
             <div><p className="text-background/70 text-sm">Spent</p><p className="font-semibold text-lg">-{spentThisMonth}</p></div>
             <div>
               <p className="text-background/70 text-sm">Daily Cap</p>
-              <p className="font-semibold text-lg">{dailyEarned}/5</p>
-              <Progress value={(dailyEarned / 5) * 100} className="h-1.5 mt-1 bg-background/20" />
+              <p className="font-semibold text-lg">{weeklyEarned}/5</p>
+              <Progress value={(weeklyEarned / 5) * 100} className="h-1.5 mt-1 bg-background/20" />
             </div>
           </div>
         </div>
