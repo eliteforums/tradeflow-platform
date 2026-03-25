@@ -49,7 +49,7 @@ const WreckBuddy = () => {
             className="gap-2"
           >
             {isEarning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Award className="w-4 h-4" />}
-            {canEarn ? `Claim 1 ECC (${remainingToday} left today)` : "Daily cap reached"}
+            {canEarn ? `Claim 2 ECC (${remainingThisWeek} left this week)` : "Weekly cap reached"}
           </Button>
         </div>
       </div>

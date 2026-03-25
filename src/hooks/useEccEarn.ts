@@ -3,17 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-const DAILY_CAP = 5;
+const WEEKLY_CAP = 5;
 
 export function useEccEarn() {
   const { user, refreshCredits } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: dailyEarned = 0 } = useQuery({
-    queryKey: ["daily-earn", user?.id],
+  const { data: weeklyEarned = 0 } = useQuery({
+    queryKey: ["weekly-earn", user?.id],
     queryFn: async () => {
       if (!user) return 0;
-      const { data, error } = await supabase.rpc("get_daily_earn_total", {
+      const { data, error } = await supabase.rpc("get_weekly_earn_total", {
         _user_id: user.id,
       });
       if (error) throw error;
@@ -24,16 +24,16 @@ export function useEccEarn() {
     refetchInterval: 60000,
   });
 
-  const canEarn = dailyEarned < DAILY_CAP;
-  const remainingToday = Math.max(0, DAILY_CAP - dailyEarned);
+  const canEarn = weeklyEarned < WEEKLY_CAP;
+  const remainingThisWeek = Math.max(0, WEEKLY_CAP - weeklyEarned);
 
   const earnFromActivity = useMutation({
     mutationFn: async ({ amount, activity }: { amount: number; activity: string }) => {
       if (!user) throw new Error("Not authenticated");
       
-      const actualAmount = Math.min(amount, remainingToday);
+      const actualAmount = Math.min(amount, remainingThisWeek);
       if (actualAmount <= 0) {
-        throw new Error("Daily earn cap reached (5 ECC/day)");
+        throw new Error("Weekly earn cap reached (5 ECC/week)");
       }
 
       const { error } = await supabase.from("credit_transactions").insert({
@@ -47,7 +47,7 @@ export function useEccEarn() {
       return actualAmount;
     },
     onSuccess: (earned) => {
-      queryClient.invalidateQueries({ queryKey: ["daily-earn"] });
+      queryClient.invalidateQueries({ queryKey: ["weekly-earn"] });
       queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
       refreshCredits();
       toast.success(`+${earned} ECC earned!`);
@@ -58,11 +58,15 @@ export function useEccEarn() {
   });
 
   return {
-    dailyEarned,
-    dailyCap: DAILY_CAP,
+    weeklyEarned,
+    weeklyCap: WEEKLY_CAP,
     canEarn,
-    remainingToday,
+    remainingThisWeek,
     earnFromActivity: earnFromActivity.mutate,
     isEarning: earnFromActivity.isPending,
+    // Legacy aliases for backward compatibility
+    dailyEarned: weeklyEarned,
+    dailyCap: WEEKLY_CAP,
+    remainingToday: remainingThisWeek,
   };
 }

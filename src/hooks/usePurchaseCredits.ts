@@ -11,10 +11,9 @@ declare global {
 }
 
 const PACKAGES = [
-  { credits: 50, price: "₹99", priceNum: 9900, popular: false },
-  { credits: 100, price: "₹179", priceNum: 17900, popular: true },
-  { credits: 250, price: "₹399", priceNum: 39900, popular: false },
-  { credits: 500, price: "₹699", priceNum: 69900, popular: false },
+  { credits: 25, price: "₹49", priceNum: 4900, popular: false, label: "Starter" },
+  { credits: 60, price: "₹99", priceNum: 9900, popular: true, label: "Growth" },
+  { credits: 130, price: "₹199", priceNum: 19900, popular: false, label: "Priority" },
 ];
 
 export function usePurchaseCredits() {

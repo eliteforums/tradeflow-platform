@@ -2,12 +2,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useEccEarn } from "@/hooks/useEccEarn";
 
 export function useMoodTracker() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { earnFromActivity, canEarn } = useEccEarn();
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["mood-entries", user?.id],
@@ -42,9 +40,6 @@ export function useMoodTracker() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mood-entries"] });
-      if (!todayEntry && canEarn) {
-        earnFromActivity({ amount: 3, activity: "Mood Tracker: daily check-in" });
-      }
       toast.success("Mood logged 🎭");
     },
     onError: (e) => toast.error(e.message),

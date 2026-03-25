@@ -2,12 +2,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useEccEarn } from "@/hooks/useEccEarn";
 
 export function useGratitude() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { earnFromActivity, canEarn } = useEccEarn();
 
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["gratitude-entries", user?.id],
@@ -42,9 +40,6 @@ export function useGratitude() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gratitude-entries"] });
-      if (!todayEntry && canEarn) {
-        earnFromActivity({ amount: 5, activity: "Gratitude: daily practice" });
-      }
       toast.success("Gratitude saved 🙏");
     },
     onError: (e) => toast.error(e.message),
