@@ -20,11 +20,11 @@ const Credits = () => {
   const { user, profile } = useAuth();
   const { purchaseCredits, isPurchasing, purchasingCredits, PACKAGES } = usePurchaseCredits();
 
-  const { data: dailyEarned = 0 } = useQuery({
-    queryKey: ["daily-earn-total", user?.id],
+  const { data: weeklyEarned = 0 } = useQuery({
+    queryKey: ["weekly-earn-total", user?.id],
     queryFn: async () => {
       if (!user) return 0;
-      const { data, error } = await supabase.rpc("get_daily_earn_total", { _user_id: user.id });
+      const { data, error } = await supabase.rpc("get_weekly_earn_total", { _user_id: user.id });
       if (error) throw error;
       return data || 0;
     },
