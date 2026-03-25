@@ -1,97 +1,57 @@
 
 
-## Plan: Admin-Approved Password Reset (Additive — Keep Existing Flow)
+## Plan: Add Boring Avatars, Avvvatars, Nice Avatar & Avatar Editor
 
 ### Overview
-Keep the existing self-service recovery (hint questions + emoji pattern) on the Forgot Password page. Add a second option: "Request Admin Reset" for users who don't have recovery credentials set up or can't remember them. Admin gets a dedicated tab to manage these requests.
+Expand the avatar picker with 3 new avatar libraries alongside existing DiceBear, plus add image cropping to the upload tab. Since some libraries render React components (not data URIs), introduce a shared `<ResolvedAvatar>` component for rendering.
 
-### Database Changes
+### Packages to Install
+- `boring-avatars` — 6 SVG variants (beam, marble, pixel, sunset, ring, bauhaus)
+- `avvvatars-react` — clean initial-based avatars (character & shape styles)
+- `react-nice-avatar` — cartoon face avatars with `genConfig(seed)`
+- `react-avatar-editor` — crop/rotate/zoom for uploaded photos
 
-**1. New `password_reset_requests` table** (migration)
-```sql
-CREATE TABLE public.password_reset_requests (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid,
-  username text NOT NULL,
-  reason text DEFAULT '',
-  status text NOT NULL DEFAULT 'pending',
-  admin_id uuid,
-  admin_note text,
-  temp_password text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  resolved_at timestamptz
-);
-
-ALTER TABLE public.password_reset_requests ENABLE ROW LEVEL SECURITY;
-
--- Anon can submit (user is locked out) and check status
-CREATE POLICY "Anon can submit reset requests"
-  ON public.password_reset_requests FOR INSERT TO anon
-  WITH CHECK (true);
-
-CREATE POLICY "Anon can check request status"
-  ON public.password_reset_requests FOR SELECT TO anon
-  USING (true);
-
--- Authenticated users can also submit and view own
-CREATE POLICY "Users can submit reset requests"
-  ON public.password_reset_requests FOR INSERT TO authenticated
-  WITH CHECK (true);
-
-CREATE POLICY "Users can view own requests"
-  ON public.password_reset_requests FOR SELECT TO authenticated
-  USING (auth.uid() = user_id);
-
--- Admins full access
-CREATE POLICY "Admins can manage reset requests"
-  ON public.password_reset_requests FOR ALL TO authenticated
-  USING (has_role(auth.uid(), 'admin'::app_role))
-  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
-```
-
-### Edge Function
-
-**2. `supabase/functions/approve-password-reset/index.ts`**
-- Validates caller is admin (via service role + admin check)
-- Accepts `{ request_id, action: 'approve' | 'reject', admin_note? }`
-- On approve: generates random 12-char temp password, calls `supabase.auth.admin.updateUserById()`, updates request row with `status='approved'`, `temp_password`, `resolved_at`
-- On reject: updates status to `rejected` with admin_note
-- Returns temp password to admin on approval
+### Storage Convention
+Each library stores a prefix string in `avatar_url`:
+- `dicebear:style:seed` (existing)
+- `boring:variant:seed` (new)
+- `avvvatars:style:seed` (new)
+- `niceavatar:seed` (new)
+- Regular URLs for uploaded images (existing)
 
 ### Frontend Changes
 
-**3. Update `src/pages/auth/ForgotPassword.tsx`**
-- Keep the entire existing 3-step self-service flow intact
-- Add a toggle/tab at the top: **"Self Recovery"** | **"Request Admin Reset"**
-- **Self Recovery tab**: current flow unchanged
-- **Request Admin Reset tab**:
-  - Username input + Reason textarea
-  - Submit button → inserts into `password_reset_requests` via anon Supabase client
-  - After submission: shows confirmation with request ID
-  - "Check Status" section: enter request ID → queries the table → if approved, shows temp password; if pending, shows "waiting"; if rejected, shows admin note
+**1. New `src/components/profile/ResolvedAvatar.tsx`**
+A shared React component that replaces `<img>` for avatar display everywhere:
+- Parses `avatar_url` prefix and renders the correct library component
+- `boring:` → `<BoringAvatar variant={v} name={seed} size={size} />`
+- `avvvatars:` → `<Avvvatars value={seed} style={style} size={size} />`
+- `niceavatar:` → `<NiceAvatar {...genConfig(seed)} style={{width, height}} />`
+- `dicebear:` → `<img src={getDiceBearUri(style, seed)} />`
+- Regular URL → `<img src={url} />`
+- Fallback → gradient icon
 
-**4. New `src/components/admin/PasswordResetManager.tsx`**
-- Lists all `password_reset_requests` ordered by `created_at DESC`
-- Filter chips: All / Pending / Approved / Rejected
-- Each card shows: username, reason, time ago, status badge
-- Pending requests have **Approve** and **Reject** buttons
-- Approve → calls `approve-password-reset` edge function → shows temp password in a copy-able dialog
-- Reject → prompts for optional admin note → updates via edge function
-- Badge count for pending requests shown on sidebar item
+**2. Rewrite `src/components/profile/AvatarUpload.tsx`**
+- **Picker tabs restructure**: Change the style dropdown into a top-level category selector with sub-options:
+  - **DiceBear** (existing 5 styles) — grid of 12 seeds
+  - **Boring Avatars** (6 variants: beam, marble, pixel, sunset, ring, bauhaus) — grid of 12 name-seeds
+  - **Avvvatars** (2 styles: character, shape) — grid of 12 seeds
+  - **Nice Avatar** (cartoon faces) — grid of 12 random seeds
+- **Upload tab**: Wrap file selection with `react-avatar-editor` for crop/zoom before uploading — shows circular crop overlay, zoom slider, then "Save" button uploads the cropped canvas blob
+- Keep `resolveAvatarUrl` for backward compat but add the new prefixes
+- Use `<ResolvedAvatar>` internally for preview rendering
 
-**5. Update `src/pages/admin/AdminDashboard.tsx`**
-- Add `"password-resets"` to `TabId` union type
-- Add sidebar item under "Safety" group: `{ id: "password-resets", label: "Password Resets", icon: Key }`
-- Render `<PasswordResetManager />` when active
-
-**6. Update `src/components/mobile/MobileAdminDashboard.tsx`**
-- Same: add `"password-resets"` to `TabId`, add tab button, render `<PasswordResetManager />`
+**3. Update avatar display across the app**
+Replace `<img src={resolveAvatarUrl(...)} />` with `<ResolvedAvatar url={avatarUrl} />` in:
+- `AvatarUpload.tsx` (internal preview)
+- `Profile.tsx` and `MobileProfile.tsx` (already use AvatarUpload component)
+- Any other places that manually call `resolveAvatarUrl` to render
 
 ### Files Modified
-- Migration: create `password_reset_requests` table with RLS
-- `supabase/functions/approve-password-reset/index.ts` — new
-- `src/pages/auth/ForgotPassword.tsx` — add admin-reset tab alongside existing flow
-- `src/components/admin/PasswordResetManager.tsx` — new
-- `src/pages/admin/AdminDashboard.tsx` — add tab
-- `src/components/mobile/MobileAdminDashboard.tsx` — add tab
+- `package.json` — add 4 packages
+- `src/components/profile/ResolvedAvatar.tsx` — new shared renderer
+- `src/components/profile/AvatarUpload.tsx` — expand picker + add crop editor
+- Minor updates to any file importing `resolveAvatarUrl` for `<img>` rendering
+
+### No backend changes needed.
 
