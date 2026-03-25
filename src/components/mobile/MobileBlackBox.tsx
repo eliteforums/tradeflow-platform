@@ -1,4 +1,5 @@
-import { Phone, X, Mic, Video, Loader2, RefreshCw } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Phone, X, Mic, MicOff, Video, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -15,6 +16,18 @@ const MobileBlackBox = () => {
     fetchToken, onCallJoined, onCallError,
   } = useBlackBoxSession();
   const { profile } = useAuth();
+
+  // Mic toggle wired from MeetingView SDK
+  const [toggleMicFn, setToggleMicFn] = useState<(() => void) | null>(null);
+  const [micOn, setMicOn] = useState(true);
+
+  const handleToggleMicReady = useCallback((fn: () => void) => {
+    setToggleMicFn(() => fn);
+  }, []);
+
+  const handleMicStatusChange = useCallback((on: boolean) => {
+    setMicOn(on);
+  }, []);
 
   const isQueued = callState === "waiting";
   const isReady = callState === "ready";
@@ -145,6 +158,9 @@ const MobileBlackBox = () => {
                 autoJoin={true}
                 onJoined={onCallJoined}
                 onJoinError={onCallError}
+                hideControls={true}
+                onToggleMicReady={handleToggleMicReady}
+                onMicStatusChange={handleMicStatusChange}
               />
             </MeetingProvider>
           </div>
@@ -157,8 +173,17 @@ const MobileBlackBox = () => {
               <Button variant="outline" size="icon" className="rounded-full w-12 h-12 bg-muted/30 border-border">
                 <Video className="w-5 h-5 text-muted-foreground" />
               </Button>
-              <Button variant="outline" size="icon" className="rounded-full w-14 h-14 bg-accent/20 border-accent/30">
-                <Mic className="w-6 h-6 text-accent" />
+              <Button
+                variant="outline"
+                size="icon"
+                className={`rounded-full w-14 h-14 ${micOn ? "bg-accent/20 border-accent/30" : "bg-destructive/20 border-destructive/30"}`}
+                onClick={() => toggleMicFn?.()}
+              >
+                {micOn ? (
+                  <Mic className="w-6 h-6 text-accent" />
+                ) : (
+                  <MicOff className="w-6 h-6 text-destructive" />
+                )}
               </Button>
               <Button variant="destructive" size="icon" className="rounded-full w-12 h-12" onClick={endSession}>
                 <X className="w-5 h-5" />

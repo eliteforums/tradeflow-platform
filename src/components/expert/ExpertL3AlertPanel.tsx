@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import VideoCallModal from "@/components/videosdk/VideoCallModal";
+import { createVideoSDKRoom } from "@/lib/videosdk";
 
 interface L3Session {
   id: string;
@@ -87,13 +88,20 @@ const ExpertL3AlertPanel = () => {
     if (!user) return;
     setJoining(session.id);
     try {
+      // If no room exists yet, create one
+      let roomId = session.room_id;
+      if (!roomId) {
+        const result = await createVideoSDKRoom();
+        roomId = result.roomId;
+      }
+
       const { error } = await supabase
         .from("blackbox_sessions")
-        .update({ therapist_id: user.id, status: "accepted" })
+        .update({ therapist_id: user.id, status: "accepted", room_id: roomId })
         .eq("id", session.id);
       if (error) throw error;
 
-      setActiveSession({ ...session, therapist_id: user.id, status: "accepted" });
+      setActiveSession({ ...session, therapist_id: user.id, status: "accepted", room_id: roomId });
       setCallModal({ open: true });
       toast.success("Session accepted — joining call");
     } catch (err: any) {
@@ -231,7 +239,7 @@ const ExpertL3AlertPanel = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Video Call Modal — with AI monitoring enabled */}
+      {/* Video Call Modal — with AI monitoring enabled, auto-start when room is ready */}
       <VideoCallModal
         isOpen={callModal.open}
         onClose={() => {
@@ -247,6 +255,7 @@ const ExpertL3AlertPanel = () => {
         isTherapistView={true}
         onRiskDetected={handleRiskDetected}
         onCaptureSnippetReady={handleCaptureSnippetReady}
+        autoStart={true}
       />
     </>
   );

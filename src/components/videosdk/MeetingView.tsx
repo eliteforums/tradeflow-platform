@@ -29,6 +29,12 @@ interface MeetingViewProps {
   onCaptureSnippetReady?: (captureFn: () => string) => void;
   onLeaveReady?: (leaveFn: () => void) => void;
   onEscalateFromSuggestion?: (snippet: string, riskLevel: number) => void;
+  /** Hide internal MeetingControls — parent renders its own controls */
+  hideControls?: boolean;
+  /** Callback exposing toggleMic so parent can wire custom buttons */
+  onToggleMicReady?: (toggleFn: () => void) => void;
+  /** Callback fired whenever localMicOn changes */
+  onMicStatusChange?: (micOn: boolean) => void;
 }
 
 const riskColors: Record<number, string> = {
@@ -62,21 +68,25 @@ const MeetingView = ({
   onCaptureSnippetReady,
   onLeaveReady,
   onEscalateFromSuggestion,
+  hideControls = false,
+  onToggleMicReady,
+  onMicStatusChange,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
+  const joinedRef = useRef<string | null>(null); // mirror for closure-safe checks
   const [timedOut, setTimedOut] = useState(false);
   const [sdkError, setSdkError] = useState<string | null>(null);
   const hasAutoJoined = useRef(false);
   const joinAttempts = useRef(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const joinSucceeded = useRef(false);
 
-  const { join, leave, participants, localParticipant, meetingId: sdkMeetingId } = useMeeting({
+  const { join, leave, participants, localParticipant, toggleMic, localMicOn } = useMeeting({
     onMeetingJoined: () => {
       console.log("[MeetingView] onMeetingJoined fired");
       joinSucceeded.current = true;
+      joinedRef.current = "JOINED";
       setJoined("JOINED");
       setTimedOut(false);
       setSdkError(null);
@@ -95,6 +105,7 @@ const MeetingView = ({
         ? `VideoSDK error ${error.code || ""}: ${error.message || "Unknown"}`
         : "Video service connection failed";
       setSdkError(msg);
+      joinedRef.current = null;
       setJoined(null);
       setTimedOut(true);
       onError?.(msg);
@@ -107,31 +118,50 @@ const MeetingView = ({
     },
   });
 
-  // Auto-join
+  // Expose toggleMic to parent
+  useEffect(() => {
+    if (onToggleMicReady && toggleMic) {
+      onToggleMicReady(() => toggleMic());
+    }
+  }, [toggleMic, onToggleMicReady]);
+
+  // Notify parent of mic status changes
+  useEffect(() => {
+    if (onMicStatusChange !== undefined && localMicOn !== undefined) {
+      onMicStatusChange?.(localMicOn);
+    }
+  }, [localMicOn, onMicStatusChange]);
+
+  // Auto-join with ref-based guard to prevent duplicate joins
   useEffect(() => {
     if (!autoJoin || hasAutoJoined.current) return;
     if (!meetingId) return;
 
     hasAutoJoined.current = true;
     joinAttempts.current = 0;
+    joinSucceeded.current = false;
 
     const attemptJoin = () => {
-      if (joinSucceeded.current) return;
+      if (joinSucceeded.current || joinedRef.current === "JOINED") return;
       if (joinAttempts.current >= 3) {
         const msg = "Failed to join after 3 attempts";
         setSdkError(msg);
         setTimedOut(true);
+        joinedRef.current = null;
         setJoined(null);
         onJoinError?.(msg);
         return;
       }
       joinAttempts.current += 1;
       console.log(`[MeetingView] Join attempt ${joinAttempts.current}, meetingId: ${meetingId}`);
+      joinedRef.current = "JOINING";
       setJoined("JOINING");
       join();
 
       retryTimerRef.current = setTimeout(() => {
-        if (!joinSucceeded.current && joined !== "JOINED" && joinAttempts.current < 3) attemptJoin();
+        if (!joinSucceeded.current && joinedRef.current !== "JOINED" && joinAttempts.current < 3) {
+          attemptJoin();
+        }
       }, 5000);
     };
 
@@ -215,19 +245,23 @@ const MeetingView = ({
   }, [audioMonitor, onEscalateFromSuggestion]);
 
   const joinMeeting = () => {
+    joinedRef.current = "JOINING";
     setJoined("JOINING");
     setTimedOut(false);
     setSdkError(null);
     hasAutoJoined.current = true;
+    joinSucceeded.current = false;
     join();
   };
 
   const retryJoin = () => {
     setTimedOut(false);
     setSdkError(null);
+    joinedRef.current = "JOINING";
     setJoined("JOINING");
     hasAutoJoined.current = false;
     joinAttempts.current = 0;
+    joinSucceeded.current = false;
     join();
   };
 
@@ -307,7 +341,7 @@ const MeetingView = ({
           );
         })()}
       </div>
-      <MeetingControls audioOnly={audioOnly} />
+      {!hideControls && <MeetingControls audioOnly={audioOnly} />}
       {isTherapistView && sessionId && (
         <TherapistSessionControls
           sessionId={sessionId}
