@@ -23,7 +23,7 @@ const ExpertL3AlertPanel = () => {
   const { user, profile } = useAuth();
   const [l3Sessions, setL3Sessions] = useState<L3Session[]>([]);
   const [joining, setJoining] = useState<string | null>(null);
-  const [callModal, setCallModal] = useState<{ open: boolean; appointmentId?: string }>({ open: false });
+  const [callModal, setCallModal] = useState<{ open: boolean }>({ open: false });
   const [activeSession, setActiveSession] = useState<L3Session | null>(null);
   const [escalating, setEscalating] = useState(false);
   const [showEscalateConfirm, setShowEscalateConfirm] = useState(false);

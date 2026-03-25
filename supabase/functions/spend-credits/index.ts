@@ -34,10 +34,10 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Not authenticated");
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claims?.claims?.sub) throw new Error("Not authenticated");
-    const userId = claims.claims.sub as string;
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !user) throw new Error("Not authenticated");
+    const userId = user.id;
 
     const body = await req.json();
     const amount = parseInt(body?.amount);
