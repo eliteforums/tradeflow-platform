@@ -1,30 +1,55 @@
 
 
-## Plan: Fix Admin Username Showing "deleted_"
+## Plan: PowerBI-Style Admin Overview Dashboard
 
-### Problem
-The admin account's `username` in the `profiles` table has been overwritten to `deleted_5d12890a`, likely because the `admin-delete-member` edge function was accidentally triggered on the admin's own account (or the profile was soft-deleted during testing). The code correctly displays whatever username is in the database — the data itself is wrong.
+### Current State
+The overview tab shows basic stat cards (role counts, sessions, credits), a flagged entries list, and quick action buttons. No charts, no trend data, no visual breakdowns.
 
-### Fix
+### New Design
+A comprehensive dashboard with KPI cards featuring trend indicators, multiple chart types (area, bar, donut/ring), role distribution visuals, session breakdown charts, recent activity feed, and system health indicators — all in a dense PowerBI-inspired grid layout.
 
-#### 1. Database Migration — Restore admin username
-Run an update to fix the admin profile's username back to a proper value. We'll identify the admin by checking `user_roles` for the `admin` role and update the corresponding profile:
+### Data Enhancements
 
-```sql
-UPDATE public.profiles
-SET username = 'Admin',
-    is_active = true
-WHERE id IN (
-  SELECT user_id FROM public.user_roles WHERE role = 'admin'
-)
-AND username LIKE 'deleted_%';
-```
+#### 1. `src/hooks/useAdmin.ts` — Add richer stats queries
+- Add **blackbox session count** to stats
+- Add **escalation count** (pending escalations)
+- Add **credit transaction totals** (actual sum from `credit_transactions`)
+- Add **session status breakdown** (pending/completed/cancelled counts for appointments)
+- Add **recent signups** (profiles created in last 7 days)
+- Add **institution count**
+- Compute **session type distribution** from existing data (appointments vs peer vs blackbox counts separately)
+- Return new fields: `blackboxCount`, `pendingEscalations`, `totalCreditsSpent`, `totalCreditsEarned`, `recentSignups`, `appointmentsByStatus`, `institutionCount`
 
-This restores the username to "Admin" and re-activates the account for any admin whose profile was accidentally soft-deleted.
+#### 2. `src/pages/admin/AdminDashboard.tsx` — Replace overview tab content
+Replace the current overview section (lines 337-416) with a new comprehensive dashboard layout:
 
-#### 2. Prevent future self-deletion (already guarded)
-The `admin-delete-member` edge function already has a check `if (target_user_id === user.id) throw new Error("Cannot delete your own account")` — so this shouldn't recur. No code change needed here.
+**Row 1 — Hero KPI Cards (5 columns):**
+- Total Members (with role breakdown mini-bar beneath)
+- Total Sessions (combined count)
+- Credits Economy (earned vs spent)
+- Active Today
+- Pending Escalations (with alert pulse if > 0)
+
+**Row 2 — Charts Row (2 columns):**
+- **Role Distribution** — Horizontal stacked bar or donut ring showing admin/spoc/expert/intern/student proportions with legend
+- **Session Type Breakdown** — Ring/donut chart showing appointments vs peer vs blackbox split
+
+**Row 3 — Activity & Health (3 columns):**
+- **Session Status** — Stacked bar showing pending/confirmed/completed/cancelled appointment statuses
+- **Credit Flow** — Two large numbers (Total Earned vs Total Spent) with a simple visual indicator
+- **System Health** — Grid of mini indicators: institutions active, flagged entries, pending escalations, recent signups (7d)
+
+**Row 4 — Flagged Entries + Recent Activity (2 columns):**
+- Left: Flagged entries panel (existing, cleaned up)
+- Right: Recent sessions feed (last 10 from unified sessions) with type badges and timestamps
+
+**Row 5 — Quick Actions** (existing, kept but restyled)
+
+Uses `recharts` (already installed) for PieChart/Cell, BarChart, and the existing area chart components.
 
 ### Files Modified
-- 1 database migration (UPDATE profiles for admin accounts with deleted_ usernames)
+- `src/hooks/useAdmin.ts` — Add richer stat queries
+- `src/pages/admin/AdminDashboard.tsx` — Replace overview tab with PowerBI-style dashboard using recharts charts
+
+### No database changes needed — all data comes from existing tables.
 
