@@ -1,86 +1,107 @@
 
 
-## Plan: AI Suggestion Popup System for Risk Detection
+## System Rules Compliance Audit — Current State
 
-### What Changes
+### 1. ECC Transactions: Secure & Traceable
 
-Currently, the AI transcription silently updates a risk badge in the `MeetingView` header. The user requirement is to show an **interactive popup/dialog** when AI detects risk, presenting the suggested level and letting the expert/intern/therapist decide whether to escalate. AI assists but does not auto-escalate.
+**Already compliant:**
+- All spend operations go through `spend-credits` edge function with JWT auth, rate limiting, and audit trail via `credit_transactions` table
+- Every transaction has `user_id`, `type`, `notes`, `reference_id`, and `created_at` timestamp — fully traceable
+- Refunds have duplicate prevention via `reference_id` check in BlackBox cancel, appointment cancel, and the `refund-blackbox-session` edge function (`refunded` boolean)
+- Purchase flow uses Razorpay server-side verification in `purchase-credits` edge function
 
-### Current Flow (Silent)
-```text
-AI detects keywords → classifies L1-L3 → updates badge silently
-Expert/Intern/Therapist must notice badge change manually
-```
+**Gap found — Race condition in `spend-credits`:**
+- Lines 52-66: the balance check (`get_credit_balance` RPC) and the insert of the negative transaction are two separate queries — not atomic. Under concurrent requests, a user could double-spend.
+- **Fix**: Create a Postgres function `spend_credits_atomic` that checks balance and inserts the transaction in a single `BEGIN...COMMIT` block using `SELECT ... FOR UPDATE` or a CTE approach. Call this function via `supabase.rpc()` instead of the current two-step approach.
 
-### New Flow (Popup Suggestion)
-```text
-AI detects keywords → classifies L1-L3 → returns analysis with reasoning
-→ Popup appears over the call UI showing:
-  - Suggested risk level (L1/L2/L3)
-  - Detected keywords + emotional signals
-  - Transcript snippet context
-  - Two buttons: [Dismiss] [Escalate Now]
-→ User reviews and decides
-→ If Escalate: captures ±10s snippet, triggers escalation flow
-→ If Dismiss: logs dismissal, closes popup
-```
+### 2. Escalation: Real-time & Reliable
+
+**Already compliant:**
+- `escalation_requests` and `notifications` tables have realtime enabled (recent migration)
+- `escalate-emergency` edge function: verifies caller role, fetches emergency contact, notifies SPOC + experts, inserts audit log with timestamp
+- `ExpertL3AlertPanel` includes `"escalated"` status in its query filter
+- `ExpertDashboardContent` has realtime listener for `l3_handoff` notifications
+- SPOC dashboard has realtime listener for `escalation_requests` INSERT events
+
+**No gaps found.**
+
+### 3. AI: Enhance Safety, Not Override Human Decisions
+
+**Already compliant:**
+- `ai-transcribe` edge function: returns `suggestion` object but does NOT create `escalation_requests` (lines 199-200 explicitly note this)
+- `AISuggestionPopup` component: shows AI analysis with Dismiss/Escalate buttons — human decides
+- Audit log records `suggestion_only: true` for AI detections
+- Auto-dismiss after 30 seconds with countdown
+
+**No gaps found.**
+
+### Summary
+
+Only one fix needed: the `spend-credits` race condition.
 
 ### Changes
 
-#### 1. `supabase/functions/ai-transcribe/index.ts` — Enhanced AI analysis
+#### 1. Database Migration — Create atomic spend function
+```sql
+CREATE OR REPLACE FUNCTION public.spend_credits_atomic(
+  _user_id uuid,
+  _amount integer,
+  _notes text DEFAULT 'Service usage',
+  _reference_id uuid DEFAULT NULL
+)
+RETURNS TABLE(success boolean, remaining integer, source text)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  _balance integer;
+  _pool_balance integer;
+  _inst_id uuid;
+BEGIN
+  -- Lock user's transactions to prevent concurrent spend
+  PERFORM 1 FROM credit_transactions WHERE user_id = _user_id FOR UPDATE;
+  
+  SELECT COALESCE(SUM(delta), 0)::integer INTO _balance
+  FROM credit_transactions WHERE user_id = _user_id;
+  
+  IF _balance >= _amount THEN
+    INSERT INTO credit_transactions (user_id, delta, type, notes, reference_id)
+    VALUES (_user_id, -_amount, 'spend', _notes, _reference_id);
+    RETURN QUERY SELECT true, (_balance - _amount)::integer, 'balance'::text;
+    RETURN;
+  END IF;
+  
+  -- Check stability pool
+  SELECT institution_id INTO _inst_id FROM profiles WHERE id = _user_id;
+  IF _inst_id IS NOT NULL THEN
+    SELECT COALESCE(balance, 0) INTO _pool_balance
+    FROM ecc_stability_pool WHERE institution_id = _inst_id FOR UPDATE;
+    
+    IF _pool_balance >= _amount THEN
+      UPDATE ecc_stability_pool
+      SET balance = balance - _amount, total_disbursed = total_disbursed + _amount
+      WHERE institution_id = _inst_id;
+      
+      INSERT INTO credit_transactions (user_id, delta, type, notes, reference_id, institution_id)
+      VALUES (_user_id, -_amount, 'spend', _notes || ' (from stability pool)', _reference_id, _inst_id);
+      
+      RETURN QUERY SELECT true, 0, 'pool'::text;
+      RETURN;
+    END IF;
+  END IF;
+  
+  RETURN QUERY SELECT false, _balance, 'insufficient'::text;
+END;
+$$;
+```
 
-- Upgrade the AI prompt from returning just a number to returning structured JSON with:
-  - `risk_level` (1-3)
-  - `risk_indicators` (array of detected emotional distress signals beyond just keywords)
-  - `reasoning` (1-2 sentence explanation of why this level was suggested)
-  - `emotional_signals` (e.g., "tone of hopelessness", "escalating distress pattern")
-- Use Lovable AI gateway instead of Groq for the classification call (LOVABLE_API_KEY is already available, and this avoids dependency on external GROQ_API_KEY)
-- Use tool calling for structured output extraction
-- Return the full analysis in the response so the client can display it in the popup
-- **Remove auto-escalation**: AI no longer creates `escalation_requests` directly — it only suggests. The human triggers escalation via the popup.
-
-#### 2. New component: `src/components/blackbox/AISuggestionPopup.tsx`
-
-A dialog/overlay that appears when AI detects risk >= 1:
-- Shows risk level badge (color-coded L1/L2/L3)
-- Lists detected keywords and emotional signals
-- Shows the AI's reasoning text
-- Shows a brief transcript context snippet
-- **Dismiss** button — closes popup, logs that suggestion was reviewed but not acted on
-- **Escalate** button — calls `captureEscalationSnippet()`, then triggers the appropriate escalation flow
-- Auto-dismiss after 30 seconds if no action (with countdown indicator)
-- Does not block the call — positioned as a floating overlay
-
-#### 3. `src/hooks/useAudioMonitor.ts` — Return full AI analysis
-
-- Update `AudioMonitorState` to include `lastSuggestion` object with `risk_level`, `keywords`, `reasoning`, `emotional_signals`, `snippet`
-- Update `classifyBuffer` to store the full AI response (not just flag_level)
-- Add `dismissSuggestion()` method to clear the current suggestion
-- Add `onSuggestion` callback option for parents to react to new suggestions
-
-#### 4. `src/components/videosdk/MeetingView.tsx` — Wire popup
-
-- Render `<AISuggestionPopup>` when `audioMonitor.lastSuggestion` is present
-- Pass `captureEscalationSnippet` and session context to the popup
-- On escalate: call the existing escalation flow (edge function) with the captured snippet
-- On dismiss: call `audioMonitor.dismissSuggestion()`
-
-#### 5. Update `ai-transcribe` — Remove auto-escalation side effects
-
-- The function should still update `flag_level` on the session for record-keeping
-- But should NOT create `escalation_requests` — that happens only when the human clicks Escalate in the popup
-- Still append to `escalation_history` for audit trail
-- Still insert audit log for L2+ detections
-
-### Constraints Enforced
-- AI **suggests only** — no auto-escalation requests created
-- Final control remains with expert/intern/therapist (they click Escalate or Dismiss)
-- ±10s snippet captured only when human triggers escalation
-- No full recording stored
+#### 2. `supabase/functions/spend-credits/index.ts` — Use atomic RPC
+- Replace the two-step balance check + insert with a single `supabase.rpc("spend_credits_atomic", { ... })` call
+- Simplify the function significantly — remove the manual pool logic (now in Postgres)
+- Also fixes the `total_disbursed` bug (line 87 currently sets it to `poolBalance` instead of incrementing)
 
 ### Files Modified
-- `supabase/functions/ai-transcribe/index.ts` — Enhanced prompt, structured output, remove auto-escalation
-- `src/hooks/useAudioMonitor.ts` — Store full suggestion, add dismiss method
-- `src/components/blackbox/AISuggestionPopup.tsx` — New popup component
-- `src/components/videosdk/MeetingView.tsx` — Render popup, wire escalation
+- Database migration — `spend_credits_atomic` function
+- `supabase/functions/spend-credits/index.ts` — Use atomic RPC
 
