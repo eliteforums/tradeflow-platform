@@ -674,6 +674,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
     requestSession: requestSession.mutate,
     sendMessage: sendMessage.mutate,
     endSession: endSession.mutate,
+    expireSession: expireSession.mutate,
     flagSession: flagSession.mutate,
     acceptSession: acceptSession.mutate,
     declineSession: declineSession.mutate,
