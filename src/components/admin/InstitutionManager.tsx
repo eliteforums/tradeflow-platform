@@ -3,17 +3,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   Building2, Plus, Copy, Check, Loader2, Coins,
-  ToggleLeft, ToggleRight, Users, Download, UserPlus,
+  Users, Download, UserPlus, Calendar, Eye,
 } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -47,6 +44,24 @@ interface BulkMember {
   password: string;
 }
 
+const PLAN_STYLES: Record<string, { gradient: string; badge: string; dot: string }> = {
+  enterprise: {
+    gradient: "from-amber-500/80 via-amber-400/60 to-amber-500/30",
+    badge: "bg-amber-500/15 text-amber-400 border-amber-500/25",
+    dot: "bg-amber-400",
+  },
+  premium: {
+    gradient: "from-violet-500/80 via-violet-400/60 to-violet-500/30",
+    badge: "bg-violet-500/15 text-violet-400 border-violet-500/25",
+    dot: "bg-violet-400",
+  },
+  basic: {
+    gradient: "from-primary/80 via-primary/60 to-primary/30",
+    badge: "bg-primary/15 text-primary border-primary/25",
+    dot: "bg-primary",
+  },
+};
+
 const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {}) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -56,7 +71,6 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
   const [newCredits, setNewCredits] = useState("5000");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Bulk allocation state
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [bulkInstitution, setBulkInstitution] = useState<Institution | null>(null);
   const [bulkCount, setBulkCount] = useState("50");
@@ -76,7 +90,6 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
     },
   });
 
-  // Student counts per institution
   const { data: studentCounts = {} } = useQuery({
     queryKey: ["admin-inst-student-counts"],
     queryFn: async () => {
@@ -87,9 +100,7 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
       if (error) throw error;
       const counts: Record<string, number> = {};
       (data || []).forEach((p: any) => {
-        if (p.institution_id) {
-          counts[p.institution_id] = (counts[p.institution_id] || 0) + 1;
-        }
+        if (p.institution_id) counts[p.institution_id] = (counts[p.institution_id] || 0) + 1;
       });
       return counts;
     },
@@ -120,10 +131,7 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase
-        .from("institutions")
-        .update({ is_active: !is_active })
-        .eq("id", id);
+      const { error } = await supabase.from("institutions").update({ is_active: !is_active }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -187,155 +195,178 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
     URL.revokeObjectURL(url);
   };
 
+  const getPlanStyle = (plan: string) => PLAN_STYLES[plan] || PLAN_STYLES.basic;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-primary" />
-          Institutions / Schools ({institutions.length})
-        </h2>
-        <Button onClick={() => setShowForm(!showForm)} className="gap-1.5 h-8 text-xs" size="sm">
-          <Plus className="w-3.5 h-3.5" />Add
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2.5 text-foreground">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Building2 className="w-5 h-5 text-primary" />
+            </div>
+            Institutions
+            <span className="ml-1 text-sm font-normal text-muted-foreground">({institutions.length})</span>
+          </h2>
+        </div>
+        <Button onClick={() => setShowForm(!showForm)} className="gap-2 h-9 text-sm" size="sm">
+          <Plus className="w-4 h-4" />Add Institution
         </Button>
       </div>
 
+      {/* Create Form */}
       {showForm && (
-        <div className="p-3 rounded-xl bg-card border border-primary/20 space-y-3">
-          <p className="font-medium text-sm">New Institution</p>
-          <Input placeholder="Institution Name" value={newName} onChange={(e) => setNewName(e.target.value)} className="h-9" />
-          <div className="grid grid-cols-3 gap-2">
+        <div className="p-5 rounded-2xl bg-card border border-primary/20 space-y-4 shadow-sm">
+          <p className="font-semibold text-base text-foreground">New Institution</p>
+          <Input placeholder="Institution Name" value={newName} onChange={(e) => setNewName(e.target.value)} className="h-10" />
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Type</label>
-              <select value={newType} onChange={(e) => setNewType(e.target.value)} className="w-full h-9 rounded-md border border-border bg-background px-2 text-xs">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Type</label>
+              <select value={newType} onChange={(e) => setNewType(e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm">
                 <option value="university">University</option>
                 <option value="school">School</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Plan</label>
-              <select value={newPlan} onChange={(e) => setNewPlan(e.target.value)} className="w-full h-9 rounded-md border border-border bg-background px-2 text-xs">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Plan</label>
+              <select value={newPlan} onChange={(e) => setNewPlan(e.target.value)} className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm">
                 <option value="basic">Basic</option>
                 <option value="premium">Premium</option>
                 <option value="enterprise">Enterprise</option>
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-medium text-muted-foreground mb-1 block">Credits</label>
-              <Input type="number" value={newCredits} onChange={(e) => setNewCredits(e.target.value)} className="h-9" />
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Credits</label>
+              <Input type="number" value={newCredits} onChange={(e) => setNewCredits(e.target.value)} className="h-10" />
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => createMutation.mutate()} disabled={!newName.trim() || createMutation.isPending} className="gap-1.5 h-8 text-xs" size="sm">
-              {createMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}Create
+          <div className="flex gap-3 pt-1">
+            <Button onClick={() => createMutation.mutate()} disabled={!newName.trim() || createMutation.isPending} className="gap-2 h-9" size="sm">
+              {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}Create
             </Button>
-            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button variant="ghost" size="sm" className="h-9" onClick={() => setShowForm(false)}>Cancel</Button>
           </div>
         </div>
       )}
 
+      {/* Cards */}
       {isLoading ? (
-        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>
       ) : institutions.length === 0 ? (
-        <div className="text-center py-10 text-muted-foreground bg-card rounded-xl border border-border/50">
-          <Building2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-          <p className="text-sm font-medium">No institutions yet</p>
-          <p className="text-xs">Create one to generate an Eternia code.</p>
+        <div className="text-center py-16 bg-card rounded-2xl border border-border/50 shadow-sm">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
+            <Building2 className="w-8 h-8 text-muted-foreground/50" />
+          </div>
+          <p className="text-base font-semibold text-foreground mb-1">No institutions yet</p>
+          <p className="text-sm text-muted-foreground mb-5">Create your first institution to start generating Eternia codes.</p>
+          <Button onClick={() => setShowForm(true)} className="gap-2">
+            <Plus className="w-4 h-4" />Add Your First Institution
+          </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {institutions.map((inst) => {
-            const planAccent = inst.plan_type === "enterprise"
-              ? "border-l-amber-500 shadow-amber-500/5"
-              : inst.plan_type === "premium"
-              ? "border-l-violet-500 shadow-violet-500/5"
-              : "border-l-primary shadow-primary/5";
-
+            const style = getPlanStyle(inst.plan_type);
             return (
               <div
                 key={inst.id}
-                className={`relative rounded-xl bg-card border border-border/50 border-l-4 ${planAccent} shadow-sm transition-all duration-200 hover:shadow-md hover:scale-[1.01] ${!inst.is_active ? "opacity-60" : ""} ${onSelectInstitution ? "cursor-pointer" : ""}`}
+                className={`group relative rounded-2xl bg-card border border-border/50 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-border overflow-hidden ${!inst.is_active ? "opacity-60" : ""} ${onSelectInstitution ? "cursor-pointer" : ""}`}
                 onClick={() => onSelectInstitution?.(inst)}
               >
+                {/* Top gradient bar */}
+                <div className={`h-1 w-full bg-gradient-to-r ${style.gradient}`} />
+
                 {/* Header */}
-                <div className="p-4 pb-3">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-base truncate text-foreground">{inst.name}</h3>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wider">{inst.institution_type}</p>
+                <div className="p-5 pb-4">
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${inst.is_active ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-muted-foreground/40"}`} />
+                        <h3 className="text-lg font-bold truncate text-foreground leading-tight">{inst.name}</h3>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Building2 className="w-3 h-3 text-muted-foreground/60" />
+                        <span className="text-xs text-muted-foreground capitalize">{inst.institution_type}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${inst.is_active ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20" : "bg-muted text-muted-foreground border border-border"}`}>
-                        {inst.is_active ? "Active" : "Inactive"}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide border ${
-                        inst.plan_type === "enterprise" ? "bg-amber-500/15 text-amber-400 border-amber-500/20"
-                        : inst.plan_type === "premium" ? "bg-violet-500/15 text-violet-400 border-violet-500/20"
-                        : "bg-primary/15 text-primary border-primary/20"
-                      }`}>
-                        {inst.plan_type}
-                      </span>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border shrink-0 ${style.badge}`}>
+                      {inst.plan_type}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Horizontal Stats */}
+                <div className="mx-5 mb-4 rounded-xl bg-muted/30 border border-border/30 overflow-hidden">
+                  <div className="grid grid-cols-3 divide-x divide-border/30">
+                    <div className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                        <Users className="w-3.5 h-3.5" />
+                      </div>
+                      <p className="text-xl font-bold text-foreground">{studentCounts[inst.id] || 0}</p>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Students</p>
+                    </div>
+                    <div className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                        <Coins className="w-3.5 h-3.5" />
+                      </div>
+                      <p className="text-xl font-bold text-foreground">{inst.credits_pool.toLocaleString()}</p>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Credits</p>
+                    </div>
+                    <div className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                      </div>
+                      <p className="text-sm font-bold text-foreground">{new Date(inst.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" })}</p>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Created</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="px-4 pb-3 grid grid-cols-2 gap-2">
-                  <div className="rounded-lg bg-muted/40 border border-border/30 p-2.5">
-                    <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                      <Users className="w-3 h-3" />
-                      <span className="text-[10px] font-medium uppercase tracking-wider">Students</span>
-                    </div>
-                    <p className="text-lg font-bold text-foreground">{studentCounts[inst.id] || 0}</p>
+                {/* Eternia Code Strip */}
+                <div className="mx-5 mb-4 p-3 rounded-xl bg-muted/50 border border-border/30 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Eternia Code</p>
+                    <code className="text-sm font-mono font-bold tracking-widest text-foreground">{inst.eternia_code_hash}</code>
                   </div>
-                  <div className="rounded-lg bg-muted/40 border border-border/30 p-2.5">
-                    <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                      <Coins className="w-3 h-3" />
-                      <span className="text-[10px] font-medium uppercase tracking-wider">Credits</span>
-                    </div>
-                    <p className="text-lg font-bold text-foreground">{inst.credits_pool.toLocaleString()}</p>
-                  </div>
-                  <div className="rounded-lg bg-muted/40 border border-border/30 p-2.5">
-                    <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                      <Copy className="w-3 h-3" />
-                      <span className="text-[10px] font-medium uppercase tracking-wider">Eternia Code</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <code className="text-xs font-mono font-bold tracking-wider text-foreground">{inst.eternia_code_hash}</code>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); copyCode(inst.eternia_code_hash, inst.id); }}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {copiedId === inst.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="rounded-lg bg-muted/40 border border-border/30 p-2.5">
-                    <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                      <Building2 className="w-3 h-3" />
-                      <span className="text-[10px] font-medium uppercase tracking-wider">Created</span>
-                    </div>
-                    <p className="text-xs font-semibold text-foreground">{new Date(inst.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="px-4 pb-4 pt-1 flex items-center justify-between gap-2 border-t border-border/30">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs gap-1.5 px-3"
-                    onClick={(e) => { e.stopPropagation(); openBulkDialog(inst); }}
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />Bulk IDs
-                  </Button>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8"
-                    onClick={(e) => { e.stopPropagation(); toggleMutation.mutate({ id: inst.id, is_active: inst.is_active }); }}
+                    className="h-8 w-8 shrink-0 hover:bg-primary/10"
+                    onClick={(e) => { e.stopPropagation(); copyCode(inst.eternia_code_hash, inst.id); }}
                   >
-                    {inst.is_active ? <ToggleRight className="w-5 h-5 text-emerald-400" /> : <ToggleLeft className="w-5 h-5 text-muted-foreground" />}
+                    {copiedId === inst.id ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
                   </Button>
+                </div>
+
+                {/* Actions */}
+                <div className="px-5 pb-5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs gap-1.5 px-3"
+                      onClick={(e) => { e.stopPropagation(); openBulkDialog(inst); }}
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />Bulk IDs
+                    </Button>
+                    {onSelectInstitution && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs gap-1.5 px-3"
+                        onClick={(e) => { e.stopPropagation(); onSelectInstitution(inst); }}
+                      >
+                        <Eye className="w-3.5 h-3.5" />Details
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-[10px] text-muted-foreground font-medium">{inst.is_active ? "Active" : "Inactive"}</span>
+                    <Switch
+                      checked={inst.is_active}
+                      onCheckedChange={() => toggleMutation.mutate({ id: inst.id, is_active: inst.is_active })}
+                    />
+                  </div>
                 </div>
               </div>
             );
@@ -343,7 +374,7 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
         </div>
       )}
 
-      {/* Bulk ID Allocation Dialog */}
+      {/* Bulk ID Dialog */}
       <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -356,17 +387,16 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
           {!bulkResults ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Generate student/member IDs in bulk with consistent Eternia codes. Each ID gets an auto-generated username and password.
+                Generate student/member IDs in bulk. Each ID gets an auto-generated username and password.
               </p>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Number of IDs *</label>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Number of IDs *</label>
                   <Input type="number" value={bulkCount} onChange={(e) => setBulkCount(e.target.value)} className="h-9" min={1} max={500} />
                   <p className="text-[10px] text-muted-foreground mt-0.5">Max 500 per batch</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Role</label>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Role</label>
                   <Select value={bulkRole} onValueChange={setBulkRole}>
                     <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -376,23 +406,19 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
                   </Select>
                 </div>
               </div>
-
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Username Prefix</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Username Prefix</label>
                 <Input value={bulkPrefix} onChange={(e) => setBulkPrefix(e.target.value)} className="h-9" placeholder="e.g. demo" />
                 <p className="text-[10px] text-muted-foreground mt-0.5">
                   Preview: <code className="bg-muted px-1 rounded">{bulkPrefix || "inst"}_0001@eternia.local</code>
                 </p>
               </div>
-
               <div className="p-3 rounded-lg bg-muted/30 border border-border">
                 <p className="text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">Eternia Code:</span>{" "}
                   <code className="bg-muted px-1 rounded font-mono">{bulkInstitution?.eternia_code_hash}</code>
-                  {" "}— all IDs will be linked to this institution automatically.
                 </p>
               </div>
-
               <DialogFooter>
                 <Button variant="outline" onClick={() => setBulkDialogOpen(false)}>Cancel</Button>
                 <Button
@@ -411,11 +437,8 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
           ) : (
             <div className="space-y-4">
               <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                <p className="text-sm font-medium text-emerald-500">
-                  ✓ {bulkResults.length} IDs created successfully
-                </p>
+                <p className="text-sm font-medium text-emerald-500">✓ {bulkResults.length} IDs created successfully</p>
               </div>
-
               <div className="max-h-60 overflow-y-auto rounded-lg border border-border">
                 <table className="w-full text-xs">
                   <thead className="bg-muted/50 sticky top-0">
@@ -436,7 +459,6 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
                   </tbody>
                 </table>
               </div>
-
               <DialogFooter>
                 <Button variant="outline" onClick={downloadCSV} className="gap-1.5">
                   <Download className="w-4 h-4" />Download CSV
