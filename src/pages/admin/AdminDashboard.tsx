@@ -399,8 +399,8 @@ const AdminDashboard = () => {
 
               {/* ─── SPOC ─── */}
               {activeTab === "spoc" && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                  <div className="lg:col-span-2">
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+                  <div className="min-w-0">
                     <InstitutionManager onSelectInstitution={(inst) => {
                       setSelectedInstitution(inst);
                       setActiveTab("institution-detail");
