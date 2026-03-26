@@ -56,7 +56,8 @@ export const useBlackBoxSession = () => {
     if (!activeSession) { setCallState("idle"); return; }
     const { status, room_id } = activeSession;
 
-    if (["completed", "cancelled", "escalated"].includes(status)) {
+    // "escalated" is NOT terminal — student stays connected during L3 handoff (PRD §18)
+    if (["completed", "cancelled"].includes(status)) {
       setCallState("idle");
       setToken(null);
       tokenRef.current = null;
