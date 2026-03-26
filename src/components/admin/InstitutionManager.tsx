@@ -279,11 +279,11 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
                 {/* Left gradient accent */}
                 <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl bg-gradient-to-b ${style.gradient}`} />
 
-                <div className="pl-5 pr-5 py-4 md:py-5 md:pl-6 md:pr-6">
+                <div className="pl-5 pr-5 py-4 md:py-5 md:pl-6 md:pr-6 space-y-3">
                   {/* Row 1: Name + Plan + Stats */}
-                  <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
-                    {/* Left: Name & Type */}
-                    <div className="flex items-center gap-3 md:min-w-[220px] shrink-0">
+                  <div className="flex flex-wrap items-center gap-3 md:gap-4">
+                    {/* Logo + Name */}
+                    <div className="flex items-center gap-3 shrink-0">
                       <AvatarUpload
                         size="sm"
                         institutionId={inst.id}
@@ -308,8 +308,8 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
                       {inst.plan_type}
                     </span>
 
-                    {/* Stats inline */}
-                    <div className="flex items-center gap-5 md:gap-6 flex-wrap">
+                    {/* Stats */}
+                    <div className="flex items-center gap-4 flex-wrap">
                       <div className="flex items-center gap-1.5">
                         <Users className="w-3.5 h-3.5 text-muted-foreground" />
                         <span className="text-sm font-semibold text-foreground">{studentCounts[inst.id] || 0}</span>
@@ -327,54 +327,53 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
                         </span>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Spacer to push right section */}
-                    <div className="flex-1" />
+                  {/* Row 2: Code + Actions + Toggle */}
+                  <div className="flex flex-wrap items-center gap-3 pt-1 border-t border-border/30">
+                    {/* Eternia Code */}
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/30">
+                      <code className="text-xs font-mono font-bold tracking-wider text-foreground">{inst.eternia_code_hash}</code>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 shrink-0 hover:bg-primary/10"
+                        onClick={(e) => { e.stopPropagation(); copyCode(inst.eternia_code_hash, inst.id); }}
+                      >
+                        {copiedId === inst.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
+                      </Button>
+                    </div>
 
-                    {/* Right: Code + Actions */}
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                      {/* Eternia Code */}
-                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border/30">
-                        <code className="text-xs font-mono font-bold tracking-wider text-foreground">{inst.eternia_code_hash}</code>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 shrink-0 hover:bg-primary/10"
-                          onClick={(e) => { e.stopPropagation(); copyCode(inst.eternia_code_hash, inst.id); }}
-                        >
-                          {copiedId === inst.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
-                        </Button>
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex items-center gap-2">
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        className="h-8 text-xs gap-1.5 px-3"
+                        onClick={(e) => { e.stopPropagation(); openBulkDialog(inst); }}
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />Bulk IDs
+                      </Button>
+                      {onSelectInstitution && (
                         <Button
                           size="sm"
+                          variant="outline"
                           className="h-8 text-xs gap-1.5 px-3"
-                          onClick={(e) => { e.stopPropagation(); openBulkDialog(inst); }}
+                          onClick={(e) => { e.stopPropagation(); onSelectInstitution(inst); }}
                         >
-                          <UserPlus className="w-3.5 h-3.5" />Bulk IDs
+                          <Eye className="w-3.5 h-3.5" />Details
                         </Button>
-                        {onSelectInstitution && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 text-xs gap-1.5 px-3"
-                            onClick={(e) => { e.stopPropagation(); onSelectInstitution(inst); }}
-                          >
-                            <Eye className="w-3.5 h-3.5" />Details
-                          </Button>
-                        )}
-                      </div>
+                      )}
+                    </div>
 
-                      {/* Toggle */}
-                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                        <span className="text-[10px] text-muted-foreground font-medium">{inst.is_active ? "Active" : "Inactive"}</span>
-                        <Switch
-                          checked={inst.is_active}
-                          onCheckedChange={() => toggleMutation.mutate({ id: inst.id, is_active: inst.is_active })}
-                        />
-                      </div>
+                    <div className="flex-1" />
+
+                    {/* Toggle */}
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-[10px] text-muted-foreground font-medium">{inst.is_active ? "Active" : "Inactive"}</span>
+                      <Switch
+                        checked={inst.is_active}
+                        onCheckedChange={() => toggleMutation.mutate({ id: inst.id, is_active: inst.is_active })}
+                      />
                     </div>
                   </div>
                 </div>
