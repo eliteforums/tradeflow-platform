@@ -49,17 +49,22 @@ export function useAudioMonitor({
   const recognitionRef = useRef<any>(null);
   const classifyTimerRef = useRef<NodeJS.Timeout | null>(null);
   const enabledRef = useRef(enabled);
+  const classifyInFlightRef = useRef(false);
 
-  useEffect(() => {
-    enabledRef.current = enabled;
-  }, [enabled]);
+  // Keep refs in sync for latest values used in callbacks
+  const sessionIdRef = useRef(sessionId);
+  const sessionTypeRef = useRef(sessionType);
+  const onRiskDetectedRef = useRef(onRiskDetected);
 
-  const getBufferText = useCallback((fromMs?: number, toMs?: number) => {
-    const now = Date.now();
-    const from = fromMs || now - bufferWindowMs;
-    const to = toMs || now;
+  useEffect(() => { enabledRef.current = enabled; }, [enabled]);
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+  useEffect(() => { sessionTypeRef.current = sessionType; }, [sessionType]);
+  useEffect(() => { onRiskDetectedRef.current = onRiskDetected; }, [onRiskDetected]);
+
+  const getBufferText = useCallback(() => {
+    const cutoff = Date.now() - bufferWindowMs;
     return bufferRef.current
-      .filter((chunk) => chunk.timestamp >= from && chunk.timestamp <= to)
+      .filter((chunk) => chunk.timestamp >= cutoff)
       .map((chunk) => chunk.text)
       .join(" ")
       .trim();
@@ -72,19 +77,22 @@ export function useAudioMonitor({
 
   const classifyBuffer = useCallback(async () => {
     if (!enabledRef.current) return;
+    // In-flight guard: skip if a classify call is already running
+    if (classifyInFlightRef.current) return;
 
     const transcript = getBufferText();
     if (!transcript || transcript.length < 10) return;
 
+    classifyInFlightRef.current = true;
     setState((prev) => ({ ...prev, isProcessing: true }));
 
     try {
       const { data, error } = await supabase.functions.invoke("ai-transcribe", {
         body: {
           transcript,
-          session_id: sessionId,
+          session_id: sessionIdRef.current,
           timestamp_offset: Date.now(),
-          session_type: sessionType,
+          session_type: sessionTypeRef.current,
         },
       });
 
@@ -99,19 +107,21 @@ export function useAudioMonitor({
       setState((prev) => ({
         ...prev,
         riskLevel: Math.max(prev.riskLevel, flagLevel),
-        isProcessing: false,
         lastTriggerSnippet: flagLevel > 0 ? data?.trigger_snippet || null : prev.lastTriggerSnippet,
         lastSuggestion: suggestion && suggestion.risk_level > 0 ? suggestion : prev.lastSuggestion,
       }));
 
-      if (flagLevel > 0 && onRiskDetected) {
-        onRiskDetected(flagLevel, data?.trigger_snippet || transcript.slice(-200));
+      if (flagLevel > 0 && onRiskDetectedRef.current) {
+        onRiskDetectedRef.current(flagLevel, data?.trigger_snippet || transcript.slice(-200));
       }
     } catch (err) {
       console.error("[AudioMonitor] Classification failed:", err);
+    } finally {
+      // Always reset processing state and in-flight guard
       setState((prev) => ({ ...prev, isProcessing: false }));
+      classifyInFlightRef.current = false;
     }
-  }, [sessionId, getBufferText, onRiskDetected]);
+  }, [getBufferText]);
 
   const startListening = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -226,14 +236,14 @@ export function useAudioMonitor({
   const captureEscalationSnippet = useCallback((windowMs: number = 10000): string => {
     const now = Date.now();
     const from = now - windowMs;
-    const to = now + windowMs;
     const snippet = bufferRef.current
-      .filter((chunk) => chunk.timestamp >= from && chunk.timestamp <= to)
+      .filter((chunk) => chunk.timestamp >= from)
       .map((chunk) => chunk.text)
       .join(" ")
       .trim();
 
-    bufferRef.current = [];
+    // Don't clear the entire buffer — only the captured window
+    // This preserves ongoing monitoring capability
     return snippet;
   }, []);
 

@@ -51,6 +51,7 @@ const ExpertL3AlertPanel = () => {
         .select("id, student_id, therapist_id, flag_level, escalation_reason, room_id, status, created_at")
         .gte("flag_level", 3)
         .in("status", ["active", "accepted", "queued", "escalated"])
+        .neq("status", "completed")
         .order("created_at", { ascending: false });
       if (data) setL3Sessions(data);
     };
@@ -94,12 +95,13 @@ const ExpertL3AlertPanel = () => {
         roomId = result.roomId;
       }
 
-      // Claim: only update if not already claimed by another expert
+      // Claim L3 session: expert can take over even if another therapist is assigned (PRD §18 live replacement)
+      // The room_id is preserved so student stays connected in the same room
       const { data: claimed, error } = await supabase
         .from("blackbox_sessions")
         .update({ therapist_id: user.id, status: "accepted", room_id: roomId })
         .eq("id", session.id)
-        .or("therapist_id.is.null,therapist_id.eq." + user.id)
+        .gte("flag_level", 3)
         .select("id, student_id, therapist_id, flag_level, escalation_reason, room_id, status, created_at")
         .maybeSingle();
 
