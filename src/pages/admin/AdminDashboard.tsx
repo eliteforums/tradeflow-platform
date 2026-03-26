@@ -44,6 +44,7 @@ import QuestCardManager from "@/components/admin/QuestCardManager";
 import EmergencyAlertOverlay from "@/components/notifications/EmergencyAlertOverlay";
 import OverviewDashboard from "@/components/admin/OverviewDashboard";
 import PasswordResetManager from "@/components/admin/PasswordResetManager";
+import SessionsLogViewer from "@/components/admin/SessionsLogViewer";
 
 type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics" | "tools" | "password-resets";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
