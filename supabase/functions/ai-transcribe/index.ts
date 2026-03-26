@@ -237,6 +237,7 @@ Deno.serve(async (req) => {
 
       await adminClient.from("blackbox_sessions").update({
         flag_level,
+        ...(flag_level >= 3 ? { status: "escalated" } : {}),
         escalation_reason: `AI detected: ${detectedKeywords.length > 0 ? detectedKeywords.join(", ") : "contextual risk signals"}`,
         escalation_history: [...existingHistory, newHistoryEntry],
       }).eq("id", session_id);
