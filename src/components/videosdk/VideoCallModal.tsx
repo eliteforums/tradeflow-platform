@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { MeetingProvider } from "@videosdk.live/react-sdk";
 import { Video, Phone, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ interface VideoCallModalProps {
   isTherapistView?: boolean;
   onCaptureSnippetReady?: (captureFn: () => string) => void;
   onLeaveReady?: (leaveFn: () => void) => void;
-  /** Automatically start the call on mount when true */
   autoStart?: boolean;
 }
 
@@ -44,11 +43,13 @@ const VideoCallModal = ({
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const startInFlightRef = useRef(false); // prevent double startCall
 
   const isAudioOnly = mode === "audio";
 
   const startCall = useCallback(async () => {
-    if (isLoading) return; // prevent double-invoke
+    if (startInFlightRef.current || isLoading) return;
+    startInFlightRef.current = true;
     setIsLoading(true);
     try {
       if (appointmentId) {
@@ -66,13 +67,33 @@ const VideoCallModal = ({
         }
 
         const { token: t, roomId } = await createVideoSDKRoom();
-        await supabase
+        // Idempotent: only set room_id if still null
+        const { data: updated } = await supabase
           .from("appointments")
           .update({ room_id: roomId } as any)
-          .eq("id", appointmentId);
+          .eq("id", appointmentId)
+          .is("room_id", null)
+          .select("room_id")
+          .maybeSingle();
+
+        // If another call already set room_id, use theirs
+        const finalRoomId = updated?.room_id || roomId;
+        if (!updated) {
+          // Re-read canonical room_id
+          const { data: reread } = await supabase
+            .from("appointments")
+            .select("room_id")
+            .eq("id", appointmentId)
+            .single();
+          if (reread?.room_id) {
+            setToken(t);
+            setMeetingId(reread.room_id);
+            return;
+          }
+        }
 
         setToken(t);
-        setMeetingId(roomId);
+        setMeetingId(finalRoomId);
         return;
       }
 
@@ -93,19 +114,21 @@ const VideoCallModal = ({
       });
     } finally {
       setIsLoading(false);
+      startInFlightRef.current = false;
     }
   }, [appointmentId, existingRoomId, isLoading]);
 
-  // Auto-start: when modal opens with autoStart=true (or existingRoomId is provided with autoStart), fire startCall
+  // Auto-start: fire once on open
   useEffect(() => {
-    if (isOpen && autoStart && !token && !meetingId && !isLoading) {
+    if (isOpen && autoStart && !token && !meetingId && !isLoading && !startInFlightRef.current) {
       startCall();
     }
-  }, [isOpen, autoStart]); // intentionally minimal deps to fire once on open
+  }, [isOpen, autoStart]); // intentionally minimal deps
 
   const handleLeave = useCallback(() => {
     setMeetingId(null);
     setToken(null);
+    startInFlightRef.current = false;
     onClose();
   }, [onClose]);
 

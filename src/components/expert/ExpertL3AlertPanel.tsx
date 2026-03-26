@@ -29,7 +29,6 @@ const ExpertL3AlertPanel = () => {
   const [escalating, setEscalating] = useState(false);
   const [showEscalateConfirm, setShowEscalateConfirm] = useState(false);
 
-  // Ref to hold the captureEscalationSnippet function from MeetingView's audio monitor
   const captureSnippetRef = useRef<(() => string) | null>(null);
 
   const handleCaptureSnippetReady = useCallback((captureFn: () => string) => {
@@ -95,13 +94,23 @@ const ExpertL3AlertPanel = () => {
         roomId = result.roomId;
       }
 
-      const { error } = await supabase
+      // Claim: only update if not already claimed by another expert
+      const { data: claimed, error } = await supabase
         .from("blackbox_sessions")
         .update({ therapist_id: user.id, status: "accepted", room_id: roomId })
-        .eq("id", session.id);
-      if (error) throw error;
+        .eq("id", session.id)
+        .or("therapist_id.is.null,therapist_id.eq." + user.id)
+        .select("id, student_id, therapist_id, flag_level, escalation_reason, room_id, status, created_at")
+        .maybeSingle();
 
-      setActiveSession({ ...session, therapist_id: user.id, status: "accepted", room_id: roomId });
+      if (error) throw error;
+      if (!claimed) {
+        toast.error("Session was already claimed by another expert");
+        setJoining(null);
+        return;
+      }
+
+      setActiveSession(claimed as L3Session);
       setCallModal({ open: true });
       toast.success("Session accepted — joining call");
     } catch (err: any) {
@@ -114,7 +123,6 @@ const ExpertL3AlertPanel = () => {
     if (!user || !activeSession) return;
     setEscalating(true);
     try {
-      // Capture ±10s transcript from the live audio monitor
       const transcriptSnippet = captureSnippetRef.current ? captureSnippetRef.current() : "";
 
       const { data, error } = await supabase.functions.invoke("escalate-emergency", {
@@ -142,70 +150,77 @@ const ExpertL3AlertPanel = () => {
     <>
       {/* Emergency Alert Banner */}
       <div className="space-y-3">
-        {l3Sessions.map((session) => (
-          <div
-            key={session.id}
-            className="p-4 rounded-xl border-2 border-destructive/50 bg-destructive/10 animate-pulse-slow"
-          >
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-destructive/20 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-destructive" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-bold text-sm text-destructive">🚨 L3 Critical — Emergency Session</p>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-destructive text-destructive-foreground">
-                    L{session.flag_level}
-                  </span>
+        {l3Sessions.map((session) => {
+          const isClaimedByMe = activeSession?.id === session.id;
+          const isClaimedByOther = session.therapist_id && session.therapist_id !== user?.id;
+          
+          return (
+            <div
+              key={session.id}
+              className="p-4 rounded-xl border-2 border-destructive/50 bg-destructive/10 animate-pulse-slow"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-destructive/20 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
                 </div>
-                <p className="text-xs text-muted-foreground mb-1">
-                  {session.escalation_reason || "High-risk content detected by AI safety system"}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  {format(new Date(session.created_at), "MMM d · h:mm a")} · Room: {session.room_id || "—"}
-                </p>
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  {activeSession?.id === session.id ? (
-                    <>
-                      <Button
-                        size="sm"
-                        className="gap-1.5 h-8 text-xs"
-                        onClick={() => setCallModal({ open: true })}
-                      >
-                        <Video className="w-3.5 h-3.5" />
-                        Rejoin Call
-                      </Button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-bold text-sm text-destructive">🚨 L3 Critical — Emergency Session</p>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-destructive text-destructive-foreground">
+                      L{session.flag_level}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-1">
+                    {session.escalation_reason || "High-risk content detected by AI safety system"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {format(new Date(session.created_at), "MMM d · h:mm a")} · Room: {session.room_id || "—"}
+                  </p>
+                  <div className="flex items-center gap-2 mt-3 flex-wrap">
+                    {isClaimedByMe ? (
+                      <>
+                        <Button
+                          size="sm"
+                          className="gap-1.5 h-8 text-xs"
+                          onClick={() => setCallModal({ open: true })}
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          Rejoin Call
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="gap-1.5 h-8 text-xs"
+                          onClick={() => setShowEscalateConfirm(true)}
+                        >
+                          <PhoneCall className="w-3.5 h-3.5" />
+                          Escalate — Share Emergency Contact
+                        </Button>
+                      </>
+                    ) : isClaimedByOther ? (
+                      <span className="text-xs text-muted-foreground italic">Claimed by another expert</span>
+                    ) : (
                       <Button
                         size="sm"
                         variant="destructive"
                         className="gap-1.5 h-8 text-xs"
-                        onClick={() => setShowEscalateConfirm(true)}
+                        onClick={() => handleAcceptAndJoin(session)}
+                        disabled={joining === session.id}
                       >
-                        <PhoneCall className="w-3.5 h-3.5" />
-                        Escalate — Share Emergency Contact
+                        {joining === session.id ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Shield className="w-3.5 h-3.5" />
+                        )}
+                        Claim & Join Call
                       </Button>
-                    </>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="gap-1.5 h-8 text-xs"
-                      onClick={() => handleAcceptAndJoin(session)}
-                      disabled={joining === session.id}
-                    >
-                      {joining === session.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Shield className="w-3.5 h-3.5" />
-                      )}
-                      Accept & Join Call
-                    </Button>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Emergency Escalation Confirmation Dialog */}

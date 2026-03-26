@@ -625,14 +625,28 @@ export function usePeerConnect(initialSessionId?: string | null) {
       // If room already exists, return it
       if (session.room_id) return { roomId: session.room_id };
 
-      const { token, roomId } = await createVideoSDKRoom();
+      const { roomId } = await createVideoSDKRoom();
 
-      // Save room_id to session
-      const { error } = await supabase
+      // Idempotent: only set room_id if still null
+      const { data: updated } = await supabase
         .from("peer_sessions")
         .update({ room_id: roomId })
-        .eq("id", sessionId);
-      if (error) throw error;
+        .eq("id", sessionId)
+        .is("room_id", null)
+        .select("room_id")
+        .maybeSingle();
+
+      // If another call already set room_id, use theirs
+      if (!updated) {
+        const { data: reread } = await supabase
+          .from("peer_sessions")
+          .select("room_id")
+          .eq("id", sessionId)
+          .single();
+        if (reread?.room_id) return { roomId: reread.room_id };
+      }
+
+      const finalRoomId = updated?.room_id || roomId;
 
       // Notify the other party
       const otherUserId = isIntern ? session.student_id : session.intern_id;
@@ -642,11 +656,11 @@ export function usePeerConnect(initialSessionId?: string | null) {
           title: "Incoming Call",
           message: "Your peer wants to start a voice call",
           type: "peer_call",
-          metadata: { session_id: sessionId, room_id: roomId },
+          metadata: { session_id: sessionId, room_id: finalRoomId },
         });
       }
 
-      return { roomId };
+      return { roomId: finalRoomId };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });

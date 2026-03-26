@@ -162,7 +162,7 @@ const BlackBox = () => {
                   onMeetingLeave={endSession}
                   audioOnly={true}
                   sessionId={activeSession.id}
-                  enableMonitoring={true}
+                  enableMonitoring={false}
                   autoJoin={true}
                   onJoined={onCallJoined}
                   onJoinError={onCallError}

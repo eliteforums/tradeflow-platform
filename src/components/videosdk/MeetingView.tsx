@@ -29,11 +29,8 @@ interface MeetingViewProps {
   onCaptureSnippetReady?: (captureFn: () => string) => void;
   onLeaveReady?: (leaveFn: () => void) => void;
   onEscalateFromSuggestion?: (snippet: string, riskLevel: number) => void;
-  /** Hide internal MeetingControls — parent renders its own controls */
   hideControls?: boolean;
-  /** Callback exposing toggleMic so parent can wire custom buttons */
   onToggleMicReady?: (toggleFn: () => void) => void;
-  /** Callback fired whenever localMicOn changes */
   onMicStatusChange?: (micOn: boolean) => void;
 }
 
@@ -73,102 +70,112 @@ const MeetingView = ({
   onMicStatusChange,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
-  const joinedRef = useRef<string | null>(null); // mirror for closure-safe checks
+  const joinedRef = useRef<string | null>(null);
   const [timedOut, setTimedOut] = useState(false);
   const [sdkError, setSdkError] = useState<string | null>(null);
   const hasAutoJoined = useRef(false);
-  const joinAttempts = useRef(0);
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const joinInFlightRef = useRef(false); // single in-flight join lock
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const joinSucceeded = useRef(false);
+  const unmountedRef = useRef(false);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   const { join, leave, participants, localParticipant, toggleMic, localMicOn } = useMeeting({
     onMeetingJoined: () => {
+      if (unmountedRef.current) return;
       console.log("[MeetingView] onMeetingJoined fired");
       joinSucceeded.current = true;
+      joinInFlightRef.current = false;
       joinedRef.current = "JOINED";
       setJoined("JOINED");
       setTimedOut(false);
       setSdkError(null);
-      joinAttempts.current = 0;
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       onJoined?.();
     },
     onMeetingLeft: () => {
       console.log("[MeetingView] onMeetingLeft fired");
+      joinInFlightRef.current = false;
       onMeetingLeave();
     },
     onError: (error: any) => {
+      if (unmountedRef.current) return;
       console.error("[MeetingView] SDK onError:", error);
       const msg = error?.message || error?.code
         ? `VideoSDK error ${error.code || ""}: ${error.message || "Unknown"}`
         : "Video service connection failed";
       setSdkError(msg);
       joinedRef.current = null;
+      joinInFlightRef.current = false;
       setJoined(null);
       setTimedOut(true);
       onError?.(msg);
       onJoinError?.(msg);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     },
     onMeetingStateChanged: (data: any) => {
       console.log("[MeetingView] Meeting state changed:", data?.state || data);
     },
   });
 
-  // Expose toggleMic to parent
+  // Expose toggleMic to parent only after joined
   useEffect(() => {
-    if (onToggleMicReady && toggleMic) {
+    if (onToggleMicReady && toggleMic && joined === "JOINED") {
       onToggleMicReady(() => toggleMic());
     }
-  }, [toggleMic, onToggleMicReady]);
+  }, [toggleMic, onToggleMicReady, joined]);
 
   // Notify parent of mic status changes
   useEffect(() => {
-    if (onMicStatusChange !== undefined && localMicOn !== undefined) {
+    if (onMicStatusChange !== undefined && localMicOn !== undefined && joined === "JOINED") {
       onMicStatusChange?.(localMicOn);
     }
-  }, [localMicOn, onMicStatusChange]);
+  }, [localMicOn, onMicStatusChange, joined]);
 
-  // Auto-join with ref-based guard to prevent duplicate joins
+  // Auto-join with single-attempt lock — no recursive retries
   useEffect(() => {
     if (!autoJoin || hasAutoJoined.current) return;
     if (!meetingId) return;
 
     hasAutoJoined.current = true;
-    joinAttempts.current = 0;
     joinSucceeded.current = false;
 
-    const attemptJoin = () => {
-      if (joinSucceeded.current || joinedRef.current === "JOINED") return;
-      if (joinAttempts.current >= 3) {
-        const msg = "Failed to join after 3 attempts";
-        setSdkError(msg);
-        setTimedOut(true);
-        joinedRef.current = null;
-        setJoined(null);
-        onJoinError?.(msg);
-        return;
-      }
-      joinAttempts.current += 1;
-      console.log(`[MeetingView] Join attempt ${joinAttempts.current}, meetingId: ${meetingId}`);
+    const doJoin = () => {
+      if (unmountedRef.current || joinSucceeded.current || joinedRef.current === "JOINED" || joinInFlightRef.current) return;
+      joinInFlightRef.current = true;
+      console.log(`[MeetingView] Auto-join attempt, meetingId: ${meetingId}`);
       joinedRef.current = "JOINING";
       setJoined("JOINING");
       join();
-
-      retryTimerRef.current = setTimeout(() => {
-        if (!joinSucceeded.current && joinedRef.current !== "JOINED" && joinAttempts.current < 3) {
-          attemptJoin();
-        }
-      }, 5000);
     };
 
-    const initDelay = setTimeout(() => attemptJoin(), 300);
+    // Request microphone permission before joining
+    if (navigator.mediaDevices?.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          if (!unmountedRef.current) {
+            setTimeout(doJoin, 300);
+          }
+        })
+        .catch((err) => {
+          console.error("[MeetingView] Mic permission denied:", err);
+          toast.error("Microphone access denied. Please allow microphone permission and try again.");
+          onJoinError?.("Microphone permission denied");
+        });
+    } else {
+      setTimeout(doJoin, 300);
+    }
+
     return () => {
-      clearTimeout(initDelay);
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [autoJoin, meetingId, join, onJoinError]);
 
@@ -176,7 +183,9 @@ const MeetingView = ({
   useEffect(() => {
     if (joined === "JOINING") {
       timeoutRef.current = setTimeout(() => {
+        if (unmountedRef.current) return;
         console.warn("[MeetingView] Join timed out after 20s");
+        joinInFlightRef.current = false;
         setTimedOut(true);
         onJoinError?.("Connection timed out");
       }, 20000);
@@ -245,6 +254,8 @@ const MeetingView = ({
   }, [audioMonitor, onEscalateFromSuggestion]);
 
   const joinMeeting = () => {
+    if (joinInFlightRef.current) return;
+    joinInFlightRef.current = true;
     joinedRef.current = "JOINING";
     setJoined("JOINING");
     setTimedOut(false);
@@ -255,12 +266,13 @@ const MeetingView = ({
   };
 
   const retryJoin = () => {
+    if (joinInFlightRef.current) return;
     setTimedOut(false);
     setSdkError(null);
+    joinInFlightRef.current = true;
     joinedRef.current = "JOINING";
     setJoined("JOINING");
-    hasAutoJoined.current = false;
-    joinAttempts.current = 0;
+    hasAutoJoined.current = true;
     joinSucceeded.current = false;
     join();
   };
