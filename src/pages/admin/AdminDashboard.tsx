@@ -388,69 +388,12 @@ const AdminDashboard = () => {
 
               {/* ─── SESSIONS ─── */}
               {activeTab === "sessions" && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {sessionFilterButtons.map((sf) => (
-                      <button key={sf.id} onClick={() => setSessionFilter(sf.id)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${sessionFilter === sf.id ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:bg-muted"}`}>
-                        {sf.label}
-                      </button>
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-auto">{unifiedSessions.length} sessions</span>
-                  </div>
-                  {unifiedSessions.length === 0 ? (
-                    <div className="text-center py-10 text-muted-foreground bg-card rounded-xl border border-border/50"><Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No sessions found</p></div>
-                  ) : (
-                    <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                      {unifiedSessions.map((s) => (
-                        <div key={s.id} className={`rounded-xl border ${s.flagged ? "bg-destructive/5 border-destructive/20" : s.rescheduled ? "bg-amber-500/5 border-amber-500/20" : "bg-card border-border/50"}`}>
-                          <div className="p-3 flex items-center justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium">{s.description}</p>
-                              <p className="text-[10px] text-muted-foreground mt-0.5">{format(new Date(s.date), "MMM d, yyyy · h:mm a")}</p>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              {s.rescheduled && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-500 font-medium">⟳ Rescheduled</span>
-                              )}
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] capitalize ${getSessionTypeBadge(s.type)}`}>{s.type}</span>
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] ${s.flagged ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"}`}>
-                                {s.flagged ? "⚠ Flagged" : s.status}
-                              </span>
-                            </div>
-                          </div>
-                          {s.rescheduled && (
-                            <div className="px-3 pb-3 pt-0">
-                              <div className="p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/10 text-xs space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-muted-foreground">Original:</span>
-                                  <span className="font-medium">{s.rescheduledFrom ? format(new Date(s.rescheduledFrom), "MMM d, h:mm a") : "—"}</span>
-                                  <span className="text-muted-foreground">→</span>
-                                  <span className="font-medium">{format(new Date(s.date), "MMM d, h:mm a")}</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                  <span className="text-muted-foreground shrink-0">Reason:</span>
-                                  <span>{s.rescheduleReason}</span>
-                                </div>
-                                {s.expertName && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground">By:</span>
-                                    <span className="font-medium">{s.expertName}</span>
-                                  </div>
-                                )}
-                                {s.studentName && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground">Student:</span>
-                                    <span className="font-medium">{s.studentName}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <div className="max-w-5xl">
+                  <SessionsLogViewer
+                    appointments={appointments}
+                    peerSessions={peerSessions}
+                    blackboxSessions={blackboxSessions}
+                  />
                 </div>
               )}
 
