@@ -51,6 +51,7 @@ const ExpertL3AlertPanel = () => {
         .select("id, student_id, therapist_id, flag_level, escalation_reason, room_id, status, created_at")
         .gte("flag_level", 3)
         .in("status", ["active", "accepted", "queued", "escalated"])
+        .neq("status", "completed")
         .order("created_at", { ascending: false });
       if (data) setL3Sessions(data);
     };
