@@ -305,8 +305,9 @@ export function usePeerConnect(initialSessionId?: string | null) {
         throw new Error("This intern is currently busy. Please try another intern or wait.");
       }
 
-      // Spend credits
-      await spendCredits(18, "Peer Connect session");
+      // ECC deducted on accept (not request) — but check balance upfront
+      const { data: balance } = await supabase.rpc("get_credit_balance", { _user_id: user.id });
+      if ((balance || 0) < 18) throw new Error("Insufficient credits (18 ECC required)");
 
       // Insert as PENDING (not active)
       const { data, error } = await supabase
@@ -344,6 +345,24 @@ export function usePeerConnect(initialSessionId?: string | null) {
   const acceptSession = useMutation({
     mutationFn: async (sessionId: string) => {
       if (!user) throw new Error("Not authenticated");
+
+      // Get session to find student and deduct credits
+      const { data: session } = await supabase
+        .from("peer_sessions")
+        .select("student_id")
+        .eq("id", sessionId)
+        .single();
+
+      if (!session) throw new Error("Session not found");
+
+      // Deduct 18 ECC from student on session accept (join event)
+      try {
+        await spendCredits(18, "Peer Connect session", sessionId);
+      } catch (err: any) {
+        // If student has insufficient credits, still accept but warn
+        console.error("[PeerConnect] Credit deduction on accept failed:", err);
+      }
+
       const { error } = await supabase
         .from("peer_sessions")
         .update({ status: "active", started_at: new Date().toISOString() })
@@ -351,22 +370,13 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .eq("intern_id", user.id);
       if (error) throw error;
 
-      // Get session to notify student
-      const { data: session } = await supabase
-        .from("peer_sessions")
-        .select("student_id")
-        .eq("id", sessionId)
-        .single();
-
-      if (session) {
-        await supabase.from("notifications").insert({
-          user_id: session.student_id,
-          title: "Session Accepted!",
-          message: "An intern has accepted your chat request. Start chatting now!",
-          type: "peer_accepted",
-          metadata: { session_id: sessionId },
-        });
-      }
+      await supabase.from("notifications").insert({
+        user_id: session.student_id,
+        title: "Session Accepted!",
+        message: "An intern has accepted your chat request. Start chatting now!",
+        type: "peer_accepted",
+        metadata: { session_id: sessionId },
+      });
     },
     onSuccess: (_data, sessionId) => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
@@ -395,20 +405,12 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .eq("intern_id", user.id);
       if (error) throw error;
 
-      // Refund student 18 ECC
+      // No refund needed — ECC wasn't deducted at pending stage
       if (session) {
-        await supabase.from("credit_transactions").insert({
-          user_id: session.student_id,
-          delta: 18,
-          type: "grant",
-          notes: "Peer Connect session declined — refund",
-          reference_id: sessionId,
-        });
-
         await supabase.from("notifications").insert({
           user_id: session.student_id,
           title: "Session Declined",
-          message: "The intern couldn't accept your request. Your 18 ECC has been refunded. Try another intern!",
+          message: "The intern couldn't accept your request. No credits were charged. Try another intern!",
           type: "peer_declined",
           metadata: { session_id: sessionId },
         });
@@ -535,27 +537,8 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .eq("id", sessionId);
       if (error) throw error;
 
-      // Refund student if session was still pending (never became active)
-      if (session && session.status === "pending") {
-        const studentId = session.student_id;
-        // Duplicate prevention
-        const { data: existingRefund } = await supabase
-          .from("credit_transactions")
-          .select("id")
-          .eq("reference_id", sessionId)
-          .eq("type", "grant")
-          .maybeSingle();
-
-        if (!existingRefund) {
-          await supabase.from("credit_transactions").insert({
-            user_id: studentId,
-            delta: 20,
-            type: "grant",
-            notes: "Peer Connect session expired — refund",
-            reference_id: sessionId,
-          });
-        }
-      }
+      // No refund needed — ECC wasn't deducted at pending stage
+      // If session was active, ECC already spent — no refund
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
@@ -582,30 +565,12 @@ export function usePeerConnect(initialSessionId?: string | null) {
         .eq("status", "pending");
       if (error) throw error;
 
-      // Duplicate prevention
-      const { data: existingRefund } = await supabase
-        .from("credit_transactions")
-        .select("id")
-        .eq("reference_id", sessionId)
-        .eq("type", "grant")
-        .maybeSingle();
-
-      if (!existingRefund) {
-        await supabase.from("credit_transactions").insert({
-          user_id: session.student_id,
-          delta: 20,
-          type: "grant",
-          notes: "Peer Connect request expired — refund",
-          reference_id: sessionId,
-        });
-      }
+      // No refund needed — ECC wasn't deducted at pending stage
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
       queryClient.invalidateQueries({ queryKey: ["active-peer-sessions"] });
-      queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
-      refreshCredits();
-      toast.info("Session expired — 20 ECC refunded");
+      toast.info("Session request expired");
     },
     onError: (error) => { toast.error(error.message); },
   });

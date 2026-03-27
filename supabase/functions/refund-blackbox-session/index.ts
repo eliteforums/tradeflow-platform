@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     // Fetch session and verify therapist ownership
     const { data: session, error: fetchErr } = await adminClient
       .from("blackbox_sessions")
-      .select("id, student_id, therapist_id, status, refunded")
+      .select("id, student_id, therapist_id, status, refunded, student_joined_at")
       .eq("id", session_id)
       .single();
 
@@ -69,6 +69,14 @@ Deno.serve(async (req) => {
 
     if (session.refunded) {
       return new Response(JSON.stringify({ error: "Already refunded" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Only refund if student never joined
+    if (session.student_joined_at) {
+      return new Response(JSON.stringify({ error: "Student already joined — no refund eligible" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

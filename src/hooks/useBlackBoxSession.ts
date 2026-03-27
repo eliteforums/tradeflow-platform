@@ -104,11 +104,27 @@ export const useBlackBoxSession = () => {
   const onCallJoined = useCallback(async () => {
     setCallState("joined");
     if (activeSession?.id) {
+      // Deduct ECC on actual join (not on request)
+      const cost = sessionCostRef.current;
+      if (cost > 0) {
+        try {
+          const spendResult = await spendCredits(cost, "BlackBox Talk Now session", activeSession.id);
+          if (!spendResult.success) {
+            toast.error(`Insufficient credits (${cost} ECC required)`);
+            // Still allow join but warn — session is already in progress
+          } else {
+            refreshCredits();
+          }
+        } catch (err: any) {
+          console.error("[BlackBox] Credit deduction on join failed:", err);
+          toast.error("Credit deduction failed — session continues");
+        }
+      }
       await supabase.from("blackbox_sessions")
         .update({ student_joined_at: new Date().toISOString(), last_join_error: null } as any)
         .eq("id", activeSession.id);
     }
-  }, [activeSession?.id]);
+  }, [activeSession?.id, refreshCredits]);
 
   const onCallError = useCallback(async (errorMsg: string) => {
     setCallState("failed");
@@ -227,9 +243,11 @@ export const useBlackBoxSession = () => {
       const usageCount = totalCount || 0;
       const cost = usageCount === 0 ? 0 : usageCount < 4 ? 3 : 6;
 
+      // ECC is deducted on join (onCallJoined), not here
+      // But check balance upfront to prevent queueing if insufficient
       if (cost > 0) {
-        const spendResult = await spendCredits(cost, "BlackBox Talk Now session");
-        if (!spendResult.success) {
+        const { data: balance } = await supabase.rpc("get_credit_balance", { _user_id: user.id });
+        if ((balance || 0) < cost) {
           toast.error(`Insufficient credits for a BlackBox session (${cost} ECC required)`);
           return;
         }
@@ -247,7 +265,7 @@ export const useBlackBoxSession = () => {
       setActiveSession(data as unknown as BlackBoxSession);
       toast.success(cost === 0
         ? "You're in the queue (first session free!). A therapist will connect shortly."
-        : `You're in the queue (${cost} ECC charged). A therapist will connect shortly.`
+        : `You're in the queue (${cost} ECC will be charged on join). A therapist will connect shortly.`
       );
     } catch (err: any) {
       toast.error(err.message || "Failed to request session");
@@ -258,16 +276,16 @@ export const useBlackBoxSession = () => {
 
   const cancelSession = useCallback(async () => {
     if (!activeSession || !user) return;
-    const shouldRefund = activeSession.status === "queued" && !activeSession.refunded;
+    // Only refund if student never joined (student_joined_at is null)
+    const neverJoined = !activeSession.student_joined_at;
 
     await supabase
       .from("blackbox_sessions")
       .update({ status: "cancelled", ended_at: new Date().toISOString() })
       .eq("id", activeSession.id);
 
-    // Refund the actual cost if student cancels while still queued
-    if (shouldRefund) {
-      // Look up the original spend transaction to get the actual amount
+    if (neverJoined) {
+      // Look up any spend transaction to refund
       const { data: spendTx } = await supabase
         .from("credit_transactions")
         .select("id, delta")
@@ -275,10 +293,9 @@ export const useBlackBoxSession = () => {
         .eq("type", "spend")
         .maybeSingle();
 
-      const refundAmount = spendTx ? Math.abs(spendTx.delta) : sessionCostRef.current;
+      const refundAmount = spendTx ? Math.abs(spendTx.delta) : 0;
 
       if (refundAmount > 0) {
-        // Duplicate prevention
         const { data: existingRefund } = await supabase
           .from("credit_transactions")
           .select("id")
@@ -302,10 +319,7 @@ export const useBlackBoxSession = () => {
     setActiveSession(null);
     setToken(null);
     setCallState("idle");
-    toast.info(shouldRefund && sessionCostRef.current > 0
-      ? `Session cancelled — ${sessionCostRef.current} ECC refunded`
-      : "Session cancelled"
-    );
+    toast.info(neverJoined ? "Session cancelled" : "Session cancelled — no refund (already joined)");
   }, [activeSession, user, refreshCredits]);
 
   const endSession = useCallback(async () => {

@@ -97,8 +97,11 @@ export function useAppointments() {
     }) => {
       if (!user) throw new Error("Not authenticated");
 
-      const result = await spendCredits(creditCost, "Expert Connect booking");
-      if (!result.success) throw new Error("Insufficient credits");
+      // ECC deducted on join, not on booking — but check balance upfront
+      if (creditCost > 0) {
+        const { data: balance } = await supabase.rpc("get_credit_balance", { _user_id: user.id });
+        if ((balance || 0) < creditCost) throw new Error("Insufficient credits");
+      }
 
       const { data: appointment, error: appointmentError } = await supabase
         .from("appointments")
@@ -122,9 +125,7 @@ export function useAppointments() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
       queryClient.invalidateQueries({ queryKey: ["expert-slots"] });
-      queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
-      refreshCredits();
-      toast.success("Appointment booked successfully!");
+      toast.success("Appointment booked! ECC will be charged when the session starts.");
     },
     onError: (error) => {
       toast.error(error.message);
@@ -151,24 +152,33 @@ export function useAppointments() {
         .eq("student_id", user.id);
       if (error) throw error;
 
-      // Refund if credits were charged and session not yet completed
+      // Refund only if ECC was actually deducted (check for spend transaction)
       if (appt.credits_charged > 0 && (appt.status === "pending" || appt.status === "confirmed")) {
-        // Duplicate prevention
-        const { data: existingRefund } = await supabase
+        const { data: spendTx } = await supabase
           .from("credit_transactions")
-          .select("id")
+          .select("id, delta")
           .eq("reference_id", appointmentId)
-          .eq("type", "grant")
+          .eq("type", "spend")
           .maybeSingle();
 
-        if (!existingRefund) {
-          await supabase.from("credit_transactions").insert({
-            user_id: user.id,
-            delta: appt.credits_charged,
-            type: "grant",
-            notes: "Expert Connect cancelled — refund",
-            reference_id: appointmentId,
-          });
+        if (spendTx) {
+          const refundAmount = Math.abs(spendTx.delta);
+          const { data: existingRefund } = await supabase
+            .from("credit_transactions")
+            .select("id")
+            .eq("reference_id", appointmentId)
+            .eq("type", "grant")
+            .maybeSingle();
+
+          if (!existingRefund) {
+            await supabase.from("credit_transactions").insert({
+              user_id: user.id,
+              delta: refundAmount,
+              type: "grant",
+              notes: "Expert Connect cancelled — refund",
+              reference_id: appointmentId,
+            });
+          }
         }
       }
     },
@@ -190,11 +200,43 @@ export function useAppointments() {
     (a) => a.status === "completed" || new Date(a.slot_time) <= new Date()
   );
 
+  // Deduct credits when student joins the appointment video call
+  const deductOnJoin = useMutation({
+    mutationFn: async ({ appointmentId, creditCost }: { appointmentId: string; creditCost: number }) => {
+      if (!user) throw new Error("Not authenticated");
+      if (creditCost <= 0) return;
+
+      // Check if already deducted
+      const { data: existingSpend } = await supabase
+        .from("credit_transactions")
+        .select("id")
+        .eq("reference_id", appointmentId)
+        .eq("type", "spend")
+        .maybeSingle();
+
+      if (existingSpend) return; // Already deducted
+
+      const result = await spendCredits(creditCost, "Expert Connect session", appointmentId);
+      if (!result.success) {
+        toast.error("Insufficient credits for this session");
+        throw new Error("Insufficient credits");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["credit-transactions"] });
+      refreshCredits();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   return {
     experts, slots, appointments, upcomingAppointments, pastAppointments,
     isLoading: isLoadingExperts || isLoadingSlots || isLoadingAppointments,
     bookAppointment: bookAppointment.mutate,
     cancelAppointment: cancelAppointment.mutate,
+    deductOnJoin: deductOnJoin.mutate,
     isBooking: bookAppointment.isPending,
   };
 }
