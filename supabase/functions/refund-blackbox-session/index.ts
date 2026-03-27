@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     // Fetch session and verify therapist ownership
     const { data: session, error: fetchErr } = await adminClient
       .from("blackbox_sessions")
-      .select("id, student_id, therapist_id, status, refunded")
+      .select("id, student_id, therapist_id, status, refunded, student_joined_at")
       .eq("id", session_id)
       .single();
 
