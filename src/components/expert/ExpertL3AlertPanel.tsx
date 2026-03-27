@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import VideoCallModal from "@/components/videosdk/VideoCallModal";
-import { createVideoSDKRoom } from "@/lib/videosdk";
+
 
 interface L3Session {
   id: string;
@@ -88,18 +88,28 @@ const ExpertL3AlertPanel = () => {
     if (!user) return;
     setJoining(session.id);
     try {
-      // If no room exists yet, create one
-      let roomId = session.room_id;
+      // Join existing room — do NOT create a new one or overwrite therapist_id
+      const roomId = session.room_id;
       if (!roomId) {
-        const result = await createVideoSDKRoom();
-        roomId = result.roomId;
+        toast.error("No room available for this session");
+        setJoining(null);
+        return;
       }
 
-      // Claim L3 session: expert can take over even if another therapist is assigned (PRD §18 live replacement)
-      // The room_id is preserved so student stays connected in the same room
+      // Record expert join in escalation_history (not therapist_id)
+      const currentHistory = (session as any).escalation_history || [];
+      const expertJoinEntry = {
+        type: "expert_joined",
+        expert_id: user.id,
+        timestamp: new Date().toISOString(),
+      };
+
       const { data: claimed, error } = await supabase
         .from("blackbox_sessions")
-        .update({ therapist_id: user.id, status: "accepted", room_id: roomId })
+        .update({
+          status: "active",
+          escalation_history: [...currentHistory, expertJoinEntry],
+        })
         .eq("id", session.id)
         .gte("flag_level", 3)
         .select("id, student_id, therapist_id, flag_level, escalation_reason, room_id, status, created_at")
@@ -112,9 +122,20 @@ const ExpertL3AlertPanel = () => {
         return;
       }
 
+      // Notify the therapist that expert has joined
+      if (session.therapist_id) {
+        await supabase.from("notifications").insert({
+          user_id: session.therapist_id,
+          type: "expert_joined",
+          title: "Expert has joined your session",
+          message: "An expert has joined the escalated session. You may stay or leave.",
+          metadata: { session_id: session.id, expert_id: user.id },
+        });
+      }
+
       setActiveSession(claimed as L3Session);
       setCallModal({ open: true });
-      toast.success("Session accepted — joining call");
+      toast.success("Joining session alongside therapist");
     } catch (err: any) {
       toast.error(err.message || "Failed to join session");
     }
