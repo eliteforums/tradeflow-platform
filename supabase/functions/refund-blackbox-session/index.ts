@@ -74,6 +74,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Only refund if student never joined
+    if (session.student_joined_at) {
+      return new Response(JSON.stringify({ error: "Student already joined — no refund eligible" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Look up the original spend transaction to determine actual amount charged
     const { data: spendTx } = await adminClient
       .from("credit_transactions")
