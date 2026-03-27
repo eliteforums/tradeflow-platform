@@ -378,6 +378,7 @@ Your recommendation should be a single actionable sentence the therapist/expert/
       risk_indicators,
       emotional_signals,
       reasoning,
+      recommendation,
       snippet: trigger_snippet,
     };
 
