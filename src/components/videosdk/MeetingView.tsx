@@ -198,7 +198,7 @@ const MeetingView = ({
     sessionId: sessionId || meetingId,
     sessionType,
     enabled: enableMonitoring && joined === "JOINED",
-    classifyIntervalMs: 15000,
+    classifyIntervalMs: 10000,
     onRiskDetected: useCallback((level: number, snippet: string) => {
       onRiskDetected?.(level, snippet);
     }, [onRiskDetected]),

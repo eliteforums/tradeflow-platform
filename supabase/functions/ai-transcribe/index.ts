@@ -87,21 +87,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const keywordContext = hasKeywords
       ? `Detected distress keywords in transcript: ${detectedKeywords.join(", ")}. Use these as additional context but perform your own independent analysis.`
       : `No specific keywords were matched, but the transcript is substantial. Perform a thorough independent risk analysis looking for any signs of emotional distress, risk indicators, or concerning patterns.`;
 
-    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${GROQ_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
         }
       }
     } else {
-      console.error("Groq API error:", aiResponse.status, await aiResponse.text());
+      console.error("AI Gateway error:", aiResponse.status, await aiResponse.text());
     }
 
     if (flag_level === 0) {

@@ -12,21 +12,24 @@ interface AISuggestionPopupProps {
   autoDismissSeconds?: number;
 }
 
-const riskConfig: Record<number, { label: string; color: string; border: string }> = {
+const riskConfig: Record<number, { label: string; color: string; border: string; recommendation: string }> = {
   1: {
     label: "L1 — Mild Risk",
     color: "bg-yellow-500/20 text-yellow-400",
     border: "border-yellow-500/40",
+    recommendation: "Monitor closely — no immediate action required",
   },
   2: {
     label: "L2 — Moderate Risk",
     color: "bg-orange-500/20 text-orange-400",
     border: "border-orange-500/40",
+    recommendation: "Consider escalation — review the conversation",
   },
   3: {
     label: "L3 — Critical Risk",
     color: "bg-destructive/20 text-destructive",
     border: "border-destructive/40",
+    recommendation: "Immediate intervention recommended — escalate now",
   },
 };
 
@@ -89,6 +92,11 @@ const AISuggestionPopup = ({
           <AlertTriangle className="w-3 h-3 mr-1" />
           {config.label}
         </Badge>
+
+        {/* Recommendation */}
+        <p className={`text-xs font-medium leading-relaxed ${suggestion.risk_level >= 3 ? 'text-destructive' : suggestion.risk_level >= 2 ? 'text-orange-400' : 'text-yellow-400'}`}>
+          ⚡ {config.recommendation}
+        </p>
 
         {/* Reasoning */}
         <p className="text-xs text-muted-foreground leading-relaxed">
