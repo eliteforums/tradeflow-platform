@@ -1,48 +1,36 @@
 
 
-## Fix: Authority Password Reset — Admin Direct Reset for Staff Roles
+## Fix: APAAR ID Verification — Updated Logic (Verified vs Pending)
 
-### Current State
-- **PasswordResetManager** already handles request-based flow (users submit → admin approves/rejects → temp password generated)
-- **approve-password-reset** edge function already resets passwords via `supabase.auth.admin.updateUserById`
-- Missing: Admin-initiated direct reset (admin picks a user by username/ID and resets without a prior request)
-- No role filtering — PRD specifies this applies to Expert, Intern, Therapist
+### Current State vs Required
+
+**Current**: `activate-account` sets `is_verified: true` unconditionally (line 95), regardless of whether the APAAR/ERP ID was found. The `apaar_verified`/`erp_verified` flags in `user_private` track ID match status but don't influence the profile's `is_verified` flag.
+
+**Required**: `is_verified` should reflect actual APAAR/ERP verification result:
+- ID found → `is_verified = true` (Verified)
+- ID not found → `is_verified = false` (Pending Verification)
 
 ### Changes
 
-**1. `src/components/admin/PasswordResetManager.tsx`**
-- Add a "Direct Reset" section at the top with:
-  - Username input field
-  - "Reset Password" button
-  - Calls a new edge function action `direct_reset`
-- Filter the requests list to show the user's role badge (Expert/Intern/Therapist) alongside username
-- Shows the temp password dialog on success (reuse existing dialog)
+**1. `supabase/functions/activate-account/index.ts`**
+- Line 95: Change `is_verified: true` → `is_verified: idVerified`
+- Problem: `idVerified` is computed after the profile update (line 103-136). Move the profile `is_verified` update to AFTER the student ID verification block.
+- Specifically: Remove `is_verified: true` from the initial profile update (line 90-97). Add a second profile update after line 136 that sets `is_verified: idVerified`.
+- If no student ID was provided AND institution has no uploaded IDs (no records to check against), set `is_verified: true` (can't verify, so default pass — matches current `no_records` behavior in verify-student-id).
 
-**2. `supabase/functions/approve-password-reset/index.ts`**
-- Add a new action: `direct_reset` alongside existing `approve`/`reject`
-- When `action === "direct_reset"`:
-  - Accept `username` (instead of `request_id`)
-  - Verify admin caller (existing logic)
-  - Look up user by `username@eternia.local`
-  - Check user has role `expert`, `intern`, or `therapist` via `user_roles` table
-  - If not staff role, return error "Can only reset passwords for Expert, Intern, or Therapist accounts"
-  - Generate temp password (existing logic)
-  - Reset via `auth.admin.updateUserById`
-  - Return `{ success: true, temp_password }`
-  - Optionally auto-create a `password_reset_requests` row for audit trail
+**2. `supabase/functions/verify-student-id/index.ts`**
+- No changes needed — already returns correct `verified: true/false` responses.
 
-### Flow
-```text
-Admin Dashboard → Password Resets tab
-  → "Direct Reset" section
-  → Admin enters username (e.g. "dr_sharma")
-  → Clicks "Reset Password"
-  → Edge function verifies admin + user is Expert/Intern/Therapist
-  → Generates temp password, resets auth
-  → Shows temp password dialog to admin
-  → Admin shares credentials securely with the user
-```
+**3. UI — Profile pages already handle both states**
+- `src/pages/dashboard/Profile.tsx` and `src/components/mobile/MobileProfile.tsx` already show "Verified" vs "Verification Pending" based on `profile.is_verified`. No UI changes needed.
+
+**4. Data handling compliance**
+- Raw APAAR ID is already NOT stored (lines 145-148 set all ID fields to `null`)
+- Only verification tokens (`apaar_verified`, `erp_verified`) and `is_verified` flag are persisted — already compliant
 
 ### No database changes needed
-Existing `password_reset_requests` table can store audit records for direct resets.
+Existing `is_verified` boolean on `profiles` and `apaar_verified`/`erp_verified` on `user_private` already support this.
+
+### Files
+- `supabase/functions/activate-account/index.ts`
 
