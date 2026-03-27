@@ -134,6 +134,24 @@ Deno.serve(async (req) => {
       }
     }
 
+    // If no student ID provided, check if institution has any uploaded IDs
+    if (!hasStudentId) {
+      const { count } = await supabase
+        .from("institution_student_ids")
+        .select("id", { count: "exact", head: true })
+        .eq("institution_id", cred.institution_id);
+      // No records to check against → default pass
+      if (!count || count === 0) {
+        idVerified = true;
+      }
+    }
+
+    // Update profile verification status based on ID check result
+    await supabase
+      .from("profiles")
+      .update({ is_verified: idVerified })
+      .eq("id", userId);
+
     // Insert private data — store ONLY verification status, never raw IDs
     await supabase.from("user_private").insert({
       user_id: userId,
