@@ -95,7 +95,7 @@ const AISuggestionPopup = ({
 
         {/* Recommendation */}
         <p className={`text-xs font-medium leading-relaxed ${suggestion.risk_level >= 3 ? 'text-destructive' : suggestion.risk_level >= 2 ? 'text-orange-400' : 'text-yellow-400'}`}>
-          ⚡ {config.recommendation}
+          ⚡ {suggestion.recommendation || config.recommendation}
         </p>
 
         {/* Reasoning */}
