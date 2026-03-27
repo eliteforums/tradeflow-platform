@@ -7,6 +7,7 @@ export interface AISuggestion {
   risk_indicators: string[];
   emotional_signals: string[];
   reasoning: string;
+  recommendation: string;
   snippet: string;
 }
 

@@ -87,25 +87,32 @@ Deno.serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY not configured");
 
     const keywordContext = hasKeywords
       ? `Detected distress keywords in transcript: ${detectedKeywords.join(", ")}. Use these as additional context but perform your own independent analysis.`
       : `No specific keywords were matched, but the transcript is substantial. Perform a thorough independent risk analysis looking for any signs of emotional distress, risk indicators, or concerning patterns.`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "llama-3.3-70b-versatile",
         messages: [
           {
             role: "system",
-            content: `You are a mental health crisis classifier for a student wellness platform. Given a conversation snippet from a voice call, analyze risk indicators and emotional distress signals. Look beyond just keywords — analyze tone, context, intent, and severity of statements. ${keywordContext}`,
+            content: `You are a mental health crisis classifier for a student wellness platform. Given a conversation snippet from a voice call, analyze risk indicators and emotional distress signals. Look beyond just keywords — analyze tone, context, intent, and severity of statements.
+
+When providing a recommendation, tailor it to the specific situation:
+- L1 (Mild): Suggest active listening techniques, gentle probing questions, or de-escalation phrases the staff can use right now.
+- L2 (Moderate): Recommend involving peer support, suggesting a follow-up session, or gently introducing coping strategies.
+- L3 (Critical): Advise immediate intervention — contact emergency services, notify SPOC, stay on the line, use safety planning protocols.
+
+Your recommendation should be a single actionable sentence the therapist/expert/intern can act on immediately. ${keywordContext}`,
           },
           { role: "user", content: transcript.substring(0, 2000) },
         ],
@@ -136,8 +143,12 @@ Deno.serve(async (req) => {
                     type: "string",
                     description: "1-2 sentence explanation of why this risk level was assigned",
                   },
+                  recommendation: {
+                    type: "string",
+                    description: "One actionable recommendation for the therapist/expert/intern to act on immediately based on the current situation",
+                  },
                 },
-                required: ["risk_level", "risk_indicators", "emotional_signals", "reasoning"],
+                required: ["risk_level", "risk_indicators", "emotional_signals", "reasoning", "recommendation"],
                 additionalProperties: false,
               },
             },
