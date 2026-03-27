@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import VideoCallModal from "@/components/videosdk/VideoCallModal";
-import { createVideoSDKRoom } from "@/lib/videosdk";
+
 
 interface L3Session {
   id: string;
