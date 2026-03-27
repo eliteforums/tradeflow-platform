@@ -86,13 +86,12 @@ Deno.serve(async (req) => {
 
     const userId = authData.user.id;
 
-    // Update profile with institution_id, proper username, and mark as verified
+    // Update profile with institution_id and proper username
     await supabase
       .from("profiles")
       .update({
         username: cleanUsername,
         institution_id: cred.institution_id,
-        is_verified: true,
       })
       .eq("id", userId);
 
