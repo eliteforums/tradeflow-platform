@@ -52,11 +52,80 @@ Deno.serve(async (req) => {
     });
     if (!isAdmin) return errorResponse("Admin access required", 403);
 
-    const { request_id, action, admin_note } = await req.json();
+    const body = await req.json();
+    const { action } = body;
+
+    // Generate random temp password helper
+    const generateTempPassword = () => {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+      let pwd = "";
+      for (let i = 0; i < 12; i++) {
+        pwd += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return pwd;
+    };
+
+    // ─── DIRECT RESET (Admin-initiated for staff roles) ───
+    if (action === "direct_reset") {
+      const username = sanitizeString(body.username, 100)?.trim()?.toLowerCase();
+      if (!username) return errorResponse("Username is required");
+
+      const email = `${username}@eternia.local`;
+
+      // Find user in auth
+      const { data: users, error: listErr } = await supabaseAdmin.auth.admin.listUsers();
+      if (listErr) return errorResponse("Server error", 500);
+
+      const user = users.users.find((u: any) => u.email === email);
+      if (!user) return errorResponse("User not found", 404);
+
+      // Check user has staff role (expert, intern, or therapist)
+      const { data: staffRoles, error: rolesErr } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .in("role", ["expert", "intern", "therapist"]);
+
+      if (rolesErr) return errorResponse("Server error", 500);
+      if (!staffRoles || staffRoles.length === 0) {
+        return errorResponse("Can only reset passwords for Expert, Intern, or Therapist accounts");
+      }
+
+      const tempPassword = generateTempPassword();
+
+      const { error: updateUserErr } = await supabaseAdmin.auth.admin.updateUserById(
+        user.id,
+        { password: tempPassword }
+      );
+      if (updateUserErr) {
+        return errorResponse("Failed to reset password: " + updateUserErr.message, 500);
+      }
+
+      // Create audit trail record
+      await supabaseAdmin.from("password_reset_requests").insert({
+        username,
+        status: "approved",
+        admin_id: adminUserId,
+        admin_note: "Direct reset by admin",
+        temp_password: tempPassword,
+        user_id: user.id,
+        resolved_at: new Date().toISOString(),
+      });
+
+      return jsonResponse({
+        success: true,
+        message: "Password reset successfully",
+        temp_password: tempPassword,
+        role: staffRoles[0].role,
+      });
+    }
+
+    // ─── APPROVE / REJECT (existing request-based flow) ───
+    const { request_id, admin_note } = body;
 
     if (!isValidUUID(request_id)) return errorResponse("Invalid request ID");
     if (action !== "approve" && action !== "reject") {
-      return errorResponse("Action must be 'approve' or 'reject'");
+      return errorResponse("Action must be 'approve', 'reject', or 'direct_reset'");
     }
 
     // Fetch the request
@@ -88,7 +157,6 @@ Deno.serve(async (req) => {
     }
 
     // action === "approve"
-    // Look up the user by username
     const email = `${resetReq.username.toLowerCase()}@eternia.local`;
     const { data: users, error: listErr } = await supabaseAdmin.auth.admin.listUsers();
     if (listErr) return errorResponse("Server error", 500);
@@ -96,14 +164,8 @@ Deno.serve(async (req) => {
     const user = users.users.find((u: any) => u.email === email);
     if (!user) return errorResponse("User not found in auth system", 404);
 
-    // Generate random temp password
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
-    let tempPassword = "";
-    for (let i = 0; i < 12; i++) {
-      tempPassword += chars[Math.floor(Math.random() * chars.length)];
-    }
+    const tempPassword = generateTempPassword();
 
-    // Reset the password
     const { error: updateUserErr } = await supabaseAdmin.auth.admin.updateUserById(
       user.id,
       { password: tempPassword }
@@ -112,7 +174,6 @@ Deno.serve(async (req) => {
       return errorResponse("Failed to reset password: " + updateUserErr.message, 500);
     }
 
-    // Update the request
     const { error: updateReqErr } = await supabaseAdmin
       .from("password_reset_requests")
       .update({
