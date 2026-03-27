@@ -74,6 +74,9 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
   // Ref to hold the VideoSDK leave function for programmatic disconnect
   const leaveCallRef = useRef<(() => void) | null>(null);
 
+  // Stay/Leave dialog when expert joins an escalated session
+  const [expertJoinedDialog, setExpertJoinedDialog] = useState(false);
+
   // Fetch queue
   const fetchQueue = useCallback(async () => {
     const { data } = await supabase
@@ -114,51 +117,36 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
     return () => { supabase.removeChannel(channel); };
   }, [fetchQueue]);
 
-  // Real-time session assignment listener (for L3 host-swap)
+  // Realtime listener: detect when an expert joins our active escalated session
   useEffect(() => {
-    if (!user) return;
+    if (!user || !activeSession) return;
     const channel = supabase
-      .channel("session-assignment")
+      .channel("therapist-expert-join")
       .on(
         "postgres_changes",
         {
           event: "UPDATE",
           schema: "public",
           table: "blackbox_sessions",
-          filter: `therapist_id=eq.${user.id}`,
+          filter: `id=eq.${activeSession.id}`,
         },
-        async (payload) => {
+        (payload) => {
           const updated = payload.new as any;
-          // If we're being assigned an active session we didn't create
-          if (
-            (updated.status === "active") &&
-            updated.room_id &&
-            !activeSession
-          ) {
-            toast.info("You've been assigned an escalated session!", {
-              description: "A student needs immediate support.",
-              action: {
-                label: "Accept",
-                onClick: async () => {
-                  try {
-                    const t = await getVideoSDKToken();
-                    setToken(t);
-                    setActiveSession(updated);
-                    setActiveTab("session");
-                  } catch (err: any) {
-                    toast.error(err.message || "Failed to join session");
-                  }
-                },
-              },
-              duration: 30000,
-            });
+          // Detect expert joining via escalation_history growing
+          const prevHistory = activeSession.escalation_history || [];
+          const newHistory = updated.escalation_history || [];
+          if (newHistory.length > prevHistory.length) {
+            const lastEntry = newHistory[newHistory.length - 1];
+            if (lastEntry?.type === "expert_joined") {
+              setExpertJoinedDialog(true);
+            }
           }
         }
       )
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchQueue]);
+  }, [user, activeSession]);
 
   // Check for existing active session
   useEffect(() => {
@@ -338,155 +326,45 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
     }
 
     if (level >= 3) {
-      // L3 Host-Swap: Find M.Phil expert to take over
-      const { data: studentProfile } = await supabase
+      // L3: Set status to 'escalated', keep therapist connected, notify ALL experts
+      await supabase
+        .from("blackbox_sessions")
+        .update({
+          flag_level: level,
+          escalation_reason: escalationReason,
+          escalation_history: updatedHistory,
+          status: "escalated",
+        })
+        .eq("id", activeSession.id);
+
+      // Notify all active experts
+      const { data: allExperts } = await supabase
         .from("profiles")
-        .select("institution_id")
-        .eq("id", activeSession.student_id)
-        .single();
+        .select("id")
+        .eq("role", "expert")
+        .eq("is_active", true)
+        .neq("id", user?.id || "");
 
-      if (studentProfile?.institution_id) {
-        // Find available M.Phil expert (specialty contains 'M.Phil')
-        const { data: mphilExperts } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("role", "expert")
-          .eq("is_active", true)
-          .ilike("specialty", "%M.Phil%")
-          .neq("id", user?.id || "")
-          .limit(1);
-
-        if (mphilExperts && mphilExperts.length > 0) {
-          // Reassign session to M.Phil expert (keep room_id so student stays connected)
-          await supabase
-            .from("blackbox_sessions")
-            .update({
-              therapist_id: mphilExperts[0].id,
-              flag_level: level,
-              escalation_reason: escalationReason,
-              escalation_history: updatedHistory,
-              status: "active", // Keep active for the new therapist
-            })
-            .eq("id", activeSession.id);
-
-          // Notify the expert about the L3 handoff
-          await supabase.from("notifications").insert({
-            user_id: mphilExperts[0].id,
+      if (allExperts && allExperts.length > 0) {
+        await supabase.from("notifications").insert(
+          allExperts.map((e: any) => ({
+            user_id: e.id,
             type: "l3_handoff",
-            title: "🚨 L3 Critical Session Handoff",
-            message: `A BlackBox session has been escalated to you. Reason: ${escalationReason.substring(0, 200)}`,
+            title: "🚨 L3 Critical Session — Join Required",
+            message: `A BlackBox session has been escalated to L3. Reason: ${escalationReason.substring(0, 200)}`,
             metadata: {
               session_id: activeSession.id,
               room_id: activeSession.room_id,
               student_id: activeSession.student_id,
               escalation_level: level,
             },
-          });
-
-          toast.warning("Critical escalation — session transferred to M.Phil expert");
-
-          // CR v1.8 §5.2: Fetch and display emergency contact on L3
-          try {
-            const { data: emergencyData } = await supabase.functions.invoke("get-emergency-contact", {
-              body: { student_id: activeSession.student_id, session_id: activeSession.id },
-            });
-            if (emergencyData?.contact?.phone && emergencyData.contact.phone !== "Not provided") {
-              toast.warning("🚨 Emergency Contact", {
-                description: `${emergencyData.contact.name} (${emergencyData.contact.relation}): ${emergencyData.contact.phone}`,
-                duration: 60000,
-              });
-            }
-          } catch (e) {
-            console.error("Failed to fetch emergency contact:", e);
-          }
-        } else {
-          // No M.Phil available — keep status "active" so ExpertL3AlertPanel picks it up
-          // and notify ALL active experts
-          await supabase
-            .from("blackbox_sessions")
-            .update({
-              flag_level: level,
-              escalation_reason: escalationReason,
-              escalation_history: updatedHistory,
-              status: "active",
-            })
-            .eq("id", activeSession.id);
-
-          // Notify all experts
-          const { data: allExperts } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("role", "expert")
-            .eq("is_active", true)
-            .neq("id", user?.id || "");
-
-          if (allExperts && allExperts.length > 0) {
-            await supabase.from("notifications").insert(
-              allExperts.map((e: any) => ({
-                user_id: e.id,
-                type: "l3_handoff",
-                title: "🚨 L3 Critical Session — Expert Needed",
-                message: `A BlackBox session has been escalated to L3. No M.Phil expert available. Reason: ${escalationReason.substring(0, 200)}`,
-                metadata: {
-                  session_id: activeSession.id,
-                  room_id: activeSession.room_id,
-                  student_id: activeSession.student_id,
-                  escalation_level: level,
-                },
-              }))
-            );
-          }
-
-          toast.warning("Critical escalation — all experts notified");
-        }
-      } else {
-        // No institution found — keep active and notify all experts
-        await supabase
-          .from("blackbox_sessions")
-          .update({
-            flag_level: level,
-            escalation_reason: escalationReason,
-            escalation_history: updatedHistory,
-            status: "active",
-          })
-          .eq("id", activeSession.id);
-
-        const { data: allExperts } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("role", "expert")
-          .eq("is_active", true)
-          .neq("id", user?.id || "");
-
-        if (allExperts && allExperts.length > 0) {
-          await supabase.from("notifications").insert(
-            allExperts.map((e: any) => ({
-              user_id: e.id,
-              type: "l3_handoff",
-              title: "🚨 L3 Critical Session — Expert Needed",
-              message: `A BlackBox session has been escalated to L3. Reason: ${escalationReason.substring(0, 200)}`,
-              metadata: {
-                session_id: activeSession.id,
-                room_id: activeSession.room_id,
-                student_id: activeSession.student_id,
-                escalation_level: level,
-              },
-            }))
-          );
-        }
-
-        toast.warning("Critical escalation submitted — experts notified");
+          }))
+        );
       }
 
-      // Gracefully leave the VideoSDK room before clearing state
-      if (leaveCallRef.current) {
-        try { leaveCallRef.current(); } catch {}
-        leaveCallRef.current = null;
-      }
-
-      setActiveSession(null);
-      setToken(null);
-      setActiveTab("queue");
+      // Therapist stays in session — do NOT leave
+      setActiveSession({ ...activeSession, flag_level: level, escalation_history: updatedHistory, status: "escalated" });
+      toast.warning("Experts have been notified — they will join your session");
     } else {
       setActiveSession({ ...activeSession, flag_level: level, escalation_history: updatedHistory });
       toast.info(`Escalation level ${level} recorded`);
@@ -703,7 +581,6 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                       isTherapistView={true}
                       onLeaveReady={(leaveFn) => { leaveCallRef.current = leaveFn; }}
                       onJoined={async () => {
-                        // Write therapist join timestamp
                         await supabase.from("blackbox_sessions")
                           .update({ therapist_joined_at: new Date().toISOString() } as any)
                           .eq("id", activeSession.id);
@@ -714,6 +591,11 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                             description: "Review and consider escalating.",
                           });
                         }
+                      }}
+                      onEscalateFromSuggestion={(snippet, riskLevel) => {
+                        setEscalationLevel(String(riskLevel));
+                        setEscalationReason(snippet || "AI-detected risk during session");
+                        setEscalationOpen(true);
                       }}
                     />
                   </MeetingProvider>
@@ -828,6 +710,43 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
         </div>
       )}
 
+      {/* Stay / Leave Dialog — shown when expert joins escalated session */}
+      <Dialog open={expertJoinedDialog} onOpenChange={setExpertJoinedDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              Expert Has Joined Your Session
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            An expert has joined this session to assist. You may stay to provide support or leave the session — the expert will take over.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExpertJoinedDialog(false)}>
+              Stay in Session
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setExpertJoinedDialog(false);
+                if (leaveCallRef.current) {
+                  try { leaveCallRef.current(); } catch {}
+                  leaveCallRef.current = null;
+                }
+                setActiveSession(null);
+                setToken(null);
+                setActiveTab("queue");
+                toast.info("You have left the session — expert is now leading");
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              Leave Session
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Escalation Dialog */}
       <Dialog open={escalationOpen} onOpenChange={setEscalationOpen}>
         <DialogContent>
@@ -861,7 +780,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
             {escalationLevel === "3" && (
               <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-sm text-destructive">
                 <AlertTriangle className="w-4 h-4 inline mr-1" />
-                This will end your session and transfer the student to an M.Phil expert.
+                This will notify all experts to join your session. You will stay connected.
               </div>
             )}
           </div>
