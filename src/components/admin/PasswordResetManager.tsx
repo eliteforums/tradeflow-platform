@@ -7,7 +7,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Key, Loader2, CheckCircle, XCircle, Clock, Copy, Check, Search, RefreshCw, Shield,
+  Key, Loader2, CheckCircle, XCircle, Clock, Copy, Check, Search, RefreshCw, Shield, UserCog,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -36,6 +36,10 @@ const PasswordResetManager = () => {
   const [tempPasswordDialog, setTempPasswordDialog] = useState<{ username: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Direct reset state
+  const [directUsername, setDirectUsername] = useState("");
+  const [directLoading, setDirectLoading] = useState(false);
+
   const fetchRequests = async () => {
     setIsLoading(true);
     const query = supabase
@@ -59,6 +63,31 @@ const PasswordResetManager = () => {
   useEffect(() => {
     fetchRequests();
   }, [filter]);
+
+  const handleDirectReset = async () => {
+    const username = directUsername.trim().toLowerCase();
+    if (!username) {
+      toast.error("Please enter a username");
+      return;
+    }
+    setDirectLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("approve-password-reset", {
+        body: { action: "direct_reset", username },
+      });
+      if (error) throw new Error(data?.error || "Failed to reset password");
+      if (data?.error) throw new Error(data.error);
+
+      setTempPasswordDialog({ username, password: data.temp_password });
+      toast.success(`Password reset for ${username} (${data.role})`);
+      setDirectUsername("");
+      fetchRequests();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to reset password");
+    } finally {
+      setDirectLoading(false);
+    }
+  };
 
   const handleApprove = async (id: string, username: string) => {
     setActionLoading(id);
@@ -155,6 +184,36 @@ const PasswordResetManager = () => {
         <Button variant="outline" size="sm" onClick={fetchRequests} disabled={isLoading} className="gap-1.5">
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} /> Refresh
         </Button>
+      </div>
+
+      {/* Direct Reset Section */}
+      <div className="p-4 rounded-xl border border-primary/20 bg-primary/5">
+        <div className="flex items-center gap-2 mb-3">
+          <UserCog className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold">Direct Password Reset</h3>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Expert · Intern · Therapist</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Enter staff username..."
+            value={directUsername}
+            onChange={(e) => setDirectUsername(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !directLoading && handleDirectReset()}
+            className="h-9 bg-card text-sm flex-1"
+          />
+          <Button
+            size="sm"
+            onClick={handleDirectReset}
+            disabled={directLoading || !directUsername.trim()}
+            className="gap-1.5 h-9"
+          >
+            {directLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Key className="w-3.5 h-3.5" />}
+            Reset Password
+          </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-2">
+          Directly reset password for Expert, Intern, or Therapist accounts. A temporary password will be generated.
+        </p>
       </div>
 
       {/* Filters */}
