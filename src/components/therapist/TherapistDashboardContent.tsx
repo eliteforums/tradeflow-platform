@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { createVideoSDKRoom } from "@/lib/videosdk";
+import { createVideoSDKRoom, getVideoSDKToken } from "@/lib/videosdk";
 import { MeetingProvider } from "@videosdk.live/react-sdk";
 import MeetingView from "@/components/videosdk/MeetingView";
 import { toast } from "sonner";
