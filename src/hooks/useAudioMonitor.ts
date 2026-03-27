@@ -32,8 +32,8 @@ export function useAudioMonitor({
   sessionId,
   sessionType = "blackbox",
   enabled = true,
-  classifyIntervalMs = 15000,
-  bufferWindowMs = 30000,
+  classifyIntervalMs = 10000,
+  bufferWindowMs = 10000,
   onRiskDetected,
 }: UseAudioMonitorOptions) {
   const [state, setState] = useState<AudioMonitorState>({
