@@ -163,6 +163,7 @@ Your recommendation should be a single actionable sentence the therapist/expert/
     let risk_indicators: string[] = [];
     let emotional_signals: string[] = [];
     let reasoning = hasKeywords ? "Keywords detected in conversation" : "General analysis performed";
+    let recommendation = "";
 
     if (aiResponse.ok) {
       const aiData = await aiResponse.json();
@@ -174,6 +175,7 @@ Your recommendation should be a single actionable sentence the therapist/expert/
           risk_indicators = args.risk_indicators || [];
           emotional_signals = args.emotional_signals || [];
           reasoning = args.reasoning || reasoning;
+          recommendation = args.recommendation || "";
         } catch {
           // Fallback to default
         }
