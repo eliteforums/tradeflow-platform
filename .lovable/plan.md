@@ -1,40 +1,41 @@
 
 
-## Escalation Flow Improvements — Plan
+## Fix: Delete Institution — Two FK Constraint Failures
 
-### 3.1 Expert Escalation Button After Session Completion
+### Root Cause (from edge function logs)
 
-**Problem**: Escalation button only shows for active/pending appointments (line 367: `apt.status !== "completed"`). No post-session escalation option.
+Two foreign key violations are blocking deletion:
 
-**Fix in `src/components/expert/ExpertDashboardContent.tsx`**:
-- Add an "Escalate" button for completed appointments (within the completed appointment cards on the Home tab and Sessions tab)
-- The button opens the same escalation dialog already wired up
+1. **`audit_logs.actor_id` → `profiles`**: Deleting the auth user cascades to delete the profile, but `audit_logs` references `actor_id` — fails with FK constraint error.
+2. **`profiles.institution_id` → `institutions`**: The soft-delete updates the profile but does NOT null out `institution_id`, so when the institution row is deleted, the FK constraint on remaining profiles blocks it.
 
-### 3.2 SPOC Dashboard — Structured Escalation View
+### Fix 1: Database Migration
 
-**Problem**: Escalation cards on SPOC dashboard show justification text but lack structured session details (student ID, session info, escalated-by info). The `trigger_snippet` JSON already contains `student_eternia_id`, `student_username`, `session_id`, `session_type` — but only the emergency contact fields are rendered.
+Add `ON DELETE SET NULL` to `audit_logs.actor_id` FK so deleting a profile doesn't fail due to audit log references. This preserves audit history (actor_id becomes null for deleted users).
 
-**Fix in `src/components/spoc/SPOCDashboardContent.tsx`**:
-- Parse `trigger_snippet` JSON for ALL escalations (not just emergency_contact type)
-- Display structured fields: Student ID, Student Username, Session Type, Session ID, Escalated-by timestamp
-- Show session info prominently above the justification text
-- For non-emergency escalations (intern/expert), still show available session metadata
+Also add `ON DELETE SET NULL` to `profiles.institution_id` FK for the same reason — or handle it in code.
 
-### 3.3 BlackBox L3 — Fix "Claimed by another expert" Bug
+```sql
+-- Drop and recreate audit_logs.actor_id FK with SET NULL
+ALTER TABLE public.audit_logs
+  DROP CONSTRAINT IF EXISTS audit_logs_actor_id_fkey;
 
-**Problem**: In `ExpertL3AlertPanel.tsx` line 178, `isClaimedByOther` checks `session.therapist_id !== user?.id`. But `therapist_id` is the **original therapist** who started the session — NOT an expert who claimed it. So every L3 session with a therapist shows "Claimed by another expert" and hides the Join button.
+ALTER TABLE public.audit_logs
+  ADD CONSTRAINT audit_logs_actor_id_fkey
+  FOREIGN KEY (actor_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
 
-**Fix in `src/components/expert/ExpertL3AlertPanel.tsx`**:
-- Change `isClaimedByOther` logic: instead of checking `therapist_id`, check `escalation_history` array for an `expert_joined` entry by a DIFFERENT expert
-- If no expert has joined yet → show "Join Call" button
-- If current expert joined → show "Rejoin Call" + "Escalate" buttons
-- If a different expert joined → show "Claimed by another expert"
-- Fetch `escalation_history` in the query (already available via the session object)
+-- Make actor_id nullable
+ALTER TABLE public.audit_logs ALTER COLUMN actor_id DROP NOT NULL;
+```
 
-### Files to Edit
-1. **`src/components/expert/ExpertDashboardContent.tsx`** — Add post-session escalation button for completed appointments
-2. **`src/components/expert/ExpertL3AlertPanel.tsx`** — Fix claimed-by logic using `escalation_history` instead of `therapist_id`
-3. **`src/components/spoc/SPOCDashboardContent.tsx`** — Enhance escalation cards with structured session details
+### Fix 2: Edge Function Update (`admin-delete-institution/index.ts`)
 
-### No database or edge function changes needed
+Two changes in the per-user loop:
+
+1. **Null out `institution_id`** on the profile during soft-delete (add `institution_id: null` to the update)
+2. **Don't throw on auth user deletion failure** — the FK issue with audit_logs causes `deleteUser` to fail. After the migration, this should work, but keep it as a soft error for resilience.
+
+### Files
+- **Database migration**: Drop/recreate `audit_logs_actor_id_fkey` with `ON DELETE SET NULL`, make `actor_id` nullable
+- **`supabase/functions/admin-delete-institution/index.ts`**: Add `institution_id: null` to the profile soft-delete update
 
