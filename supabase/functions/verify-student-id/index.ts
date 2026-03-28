@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { institution_id, id_type, student_id } = await req.json();
+    const { institution_id, id_type, student_id, claim_for_user_id } = await req.json();
 
     if (!institution_id || !id_type || !student_id) {
       throw new Error("Missing required fields");
@@ -104,8 +104,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // If claim_for_user_id is provided, atomically claim the ID
+    if (claim_for_user_id) {
+      const { error: claimErr } = await supabase
+        .from("institution_student_ids")
+        .update({ is_claimed: true, claimed_by: claim_for_user_id })
+        .eq("id", match.id)
+        .eq("is_claimed", false); // optimistic lock
+      if (claimErr) {
+        return new Response(
+          JSON.stringify({ verified: false, reason: "claim_failed", message: "Failed to claim ID. It may have been claimed by another user." }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     return new Response(
-      JSON.stringify({ verified: true }),
+      JSON.stringify({ verified: true, claimed: !!claim_for_user_id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
