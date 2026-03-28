@@ -64,9 +64,5 @@ export function useEccEarn() {
     remainingThisWeek,
     earnFromActivity: earnFromActivity.mutate,
     isEarning: earnFromActivity.isPending,
-    // Legacy aliases for backward compatibility
-    dailyEarned: weeklyEarned,
-    dailyCap: WEEKLY_CAP,
-    remainingToday: remainingThisWeek,
   };
 }
