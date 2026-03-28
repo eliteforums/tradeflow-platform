@@ -1,118 +1,71 @@
 
+## Platform Audit — Issues Found
 
-## Status Report: Phase 6 Issues
+After reviewing all modules across the platform, here are the issues discovered:
 
-### 1. ID Deletion Issue (2.1) — ✅ FIXED
+### Issues Found
 
-The `admin-delete-member` edge function correctly:
-- **Revokes all active sessions** via `signOut(target_user_id, "global")` (line 60)
-- **Deletes the auth user** via `deleteUser(target_user_id)` (line 65) — this prevents login immediately
-- **Recycles student temp credentials** back to the pool with a fresh password (lines 88-107)
-- **Permanently deletes staff credentials** (SPOC, Expert, Intern, Therapist) (lines 108-113)
-- **Soft-deletes the profile** (is_active=false, PII wiped) and removes role assignments
+**1. Peer Connect: Credit Check Mismatch (Bug)**
+- `PeerConnect.tsx` line 140 checks `creditBalance < 20` to enable session start
+- But `usePeerConnect.ts` line 350 checks for `18 ECC` and deducts 18 on accept
+- This means students with 18-19 credits are blocked from starting sessions when they should be able to
+- **Fix**: Change the check in `PeerConnect.tsx` from `< 20` to `< 18`
 
-**Verdict**: Fully implemented as specified.
+**2. MobileBlackBox: Non-Lazy Import of VideoSDK (Build Issue)**
+- `MobileBlackBox.tsx` line 6-7 imports `MeetingProvider` and `MeetingView` eagerly (not lazy)
+- `BlackBox.tsx` (desktop) correctly uses `lazy(() => import(...))` for both
+- This means the full VideoSDK bundle is loaded on every mobile page visit even before a call is needed
+- **Fix**: Use `lazy()` + `Suspense` for `MeetingProvider` and `MeetingView` in MobileBlackBox, matching the desktop pattern
 
----
+**3. Dashboard: Conditional Navigate Before Hooks (React Rules Violation)**
+- `Dashboard.tsx` lines 33-37: `Navigate` components are returned before the `useIsMobile()` hook on line 39 is guaranteed to run
+- React rules require hooks to run in the same order every render — early returns before hooks violate this
+- Currently works because `useIsMobile()` is called before the returns, but the structure is fragile
+- **Fix**: Move the mobile check above the role redirects, or restructure to ensure consistent hook execution
 
-### 2. Escalation Button Placement (3.1) — ✅ FIXED
+**4. SPOC Dashboard: Missing `session_id` in Escalation Insert (Functional Gap)**
+- `escalate-emergency` edge function line 210-221: when creating the escalation request, it doesn't populate `session_id` field
+- The insert uses `trigger_snippet` JSON which contains the session_id, but the dedicated `session_id` column on `escalation_requests` is left null
+- This means queries filtering by `session_id` won't find these escalations
+- **Fix**: Add `session_id: sessionRef.id` to the escalation insert
 
-- **During call**: `VideoCallModal.tsx` accepts `onEscalate` prop (line 26) and renders an escalate button during active calls
-- **After call**: `ExpertDashboardContent.tsx` shows escalate button on completed appointment cards (line 228)
-- **Mobile**: `MobileExpertDashboard.tsx` also shows escalate on completed appointments (line 228)
+**5. Profile: `user_private` Upsert Missing `onConflict` in Emergency Save (Desktop)**
+- `Profile.tsx` line 156-163: `upsert` for emergency contact uses `{ onConflict: "user_id" }` — correct
+- But the student ID verification upsert on line 114-120 also correctly uses `onConflict: "user_id"`
+- Both are fine. No issue here upon closer inspection.
 
-**Verdict**: Available both during and after sessions.
+**6. Therapist Dashboard: `MeetingProvider` and `MeetingView` Eagerly Imported (Performance)**
+- `TherapistDashboardContent.tsx` lines 9-10 eagerly import `MeetingProvider` and `MeetingView`
+- These heavy VideoSDK components should be lazy-loaded since they're only needed during active calls
+- **Fix**: Use `lazy()` imports like the desktop BlackBox component
 
----
+**7. Auth Context: Race Condition in `onAuthStateChange` vs `getSession` (Edge Case)**
+- `AuthContext.tsx` lines 85-113: Both `onAuthStateChange` and `getSession` can fire, potentially loading user data twice
+- The `fetchingRef` guard partially prevents this, but `setIsLoading(false)` could fire from `getSession` before `onAuthStateChange` finishes loading data
+- This could cause a brief flash where `isLoading=false` but `profile=null`
+- **Impact**: Low — the `setTimeout(100)` in `onAuthStateChange` usually resolves this, but it's a timing fragility
 
-### 3. SPOC Dashboard Escalation Display (3.2) — ✅ FIXED
-
-The SPOC dashboard `flags` tab (lines 849-968) now parses `trigger_snippet` as JSON and displays a **structured escalation view** including:
-- Student Eternia ID
-- Username
-- Session Type & Session ID
-- Escalated By (role)
-- ±10s Transcript Snippet
-- Emergency Contact (name, phone, relation, is_self flag)
-- Escalation level badge (L1/L2/L3)
-- Justification text
-
-**Verdict**: Full structured view, not just username.
-
----
-
-### 4. Call Transcription Storage (Section 2) — ✅ FIXED
-
-- `captureSnippetRef` in `ExpertDashboardContent.tsx` captures ±10s transcript on escalate click (line 220)
-- Snippet is sent via `escalate-emergency` edge function
-- Stored in `escalation_requests.trigger_snippet` as JSON with: student_id, session_id, role, timestamp, transcript
-- Visible on both Admin and SPOC dashboards with parsed display
-
-**Verdict**: Fully implemented.
-
----
-
-### 5. BlackBox Escalation Call UI (Section 2) — ✅ FIXED
-
-- **Desktop** (`BlackBox.tsx` line 179): Controls use `sticky bottom-0 z-10` with proper spacing (`py-6`, `gap-4`)
-- **Mobile** (`MobileBlackBox.tsx` line 170): Controls use `fixed bottom-20 z-20` positioned above mobile nav bar
-- Buttons are properly sized (w-14/h-14 desktop, w-12/h-12 mobile), rounded-full, with clear Mic/Video/Hangup layout
-
-**Verdict**: Controls visible and properly aligned.
-
----
-
-### 6. Peer Connect Call Indication (Section 3) — ✅ FIXED
-
-- `usePeerConnect.ts` has a realtime subscription listening for `peer_call` notifications (via `incomingCallSessionId` state, line 51)
-- On notification, it auto-switches to the incoming session (lines 197-201)
-- Both `PeerConnect.tsx` (line 118) and `MobilePeerConnect.tsx` (line 97) have `useEffect` hooks that focus the incoming call session
-- Fallback detection via `fallbackIncomingSessionId` scans polled sessions for active `room_id`
-- System chat message "📞 Call initiated..." is inserted on call start
-
-**Verdict**: Both sides get indication.
-
----
-
-### 7. AI Transcribe Model (Section 5) — ✅ FIXED
-
-- `ai-transcribe` edge function uses Lovable AI (`google/gemini-2.5-flash`) with tool calling for structured output (lines 97-150)
-- Performs **keyword analysis** (80+ terms, line 9-38) AND **AI-driven risk classification**
-- Returns: `risk_level` (0-3), `risk_indicators[]`, `emotional_signals[]`, `reasoning`, `recommendation`
-- `AISuggestionPopup.tsx` shows popup to Expert/Intern/Therapist with L1/L2/L3 badges, reasoning, and "Escalate Now" button
-- **Human-in-the-loop**: AI assists, staff clicks Escalate to trigger flow
-- On escalate: transcript snippet (±10s) is captured and saved
-
-**Verdict**: Fully implemented with keyword analysis, risk detection, suggestion popup, and manual escalation.
-
----
-
-### 8. APAAR ID Verification (Section 6) — ✅ FIXED
-
-- `verify-student-id` edge function (line 21) accepts `institution_id`, `id_type`, `student_id`, and optional `claim_for_user_id`
-- Hashes the ID using SHA-256 salt format `eternia:{institution_id}:{id_type}:{raw_id}` (line 9-14)
-- Checks against `institution_student_ids` table
-- If verified: atomically claims the ID, sets `is_verified=true` on profile, stores only boolean flags (`apaar_verified`/`erp_verified`), **never stores raw ID**
-- If not found: returns "not_found", user stays pending
-- If no records uploaded: pass-through verification
-- Profile pages (`Profile.tsx` and `MobileProfile.tsx`) call this edge function instead of storing raw IDs locally
-
-**Verdict**: Fully implemented with proper data handling rules.
-
----
+**8. AI Moderate: In-Memory Rate Limiter Resets on Cold Start (Known Limitation)**
+- `ai-moderate/index.ts` lines 9-16: Rate limiter uses an in-memory `Map`
+- Edge functions cold-start frequently, resetting the rate limiter each time
+- **Impact**: Low — the DB-level `check_rate_limit` function exists but isn't used here
 
 ### Summary
 
-| Issue | Status |
-|-------|--------|
-| 2.1 ID Deletion (auth + credential handling) | ✅ Fixed |
-| 3.1 Expert Escalation Button (during + after call) | ✅ Fixed |
-| 3.2 SPOC Escalation Display (structured view) | ✅ Fixed |
-| Call Transcription Storage (±10s on escalate) | ✅ Fixed |
-| BlackBox Call UI (controls visibility) | ✅ Fixed |
-| Peer Connect Call Indication | ✅ Fixed |
-| AI Transcribe (risk analysis + suggestion popup) | ✅ Fixed |
-| APAAR ID Verification (backend verification) | ✅ Fixed |
+| # | Issue | Severity | Module |
+|---|-------|----------|--------|
+| 1 | Credit check mismatch (20 vs 18) | **Medium** | Peer Connect |
+| 2 | Non-lazy VideoSDK import | **Low** | Mobile BlackBox |
+| 3 | Conditional Navigate before hooks | **Low** | Dashboard |
+| 4 | Missing `session_id` in escalation insert | **Medium** | Escalation |
+| 5 | Eager VideoSDK import | **Low** | Therapist Dashboard |
+| 6 | Auth race condition | **Low** | Auth Context |
+| 7 | In-memory rate limiter | **Low** | AI Moderate |
 
-**All Phase 6 issues are implemented.** No remaining code changes needed.
+### Recommended Fix Priority
+1. Fix credit check mismatch (20 → 18) — immediate
+2. Add `session_id` to escalation insert — immediate  
+3. Lazy-load VideoSDK in MobileBlackBox and TherapistDashboard — next iteration
+4. Other low-severity items — backlog
 
+All Phase 6 features (ID deletion, escalation flow, SPOC display, transcription storage, call UI, peer connect indication, AI transcribe, APAAR verification) are correctly implemented. The issues above are pre-existing or minor gaps.
