@@ -142,7 +142,7 @@ const Appointments = () => {
                       </div>
                     )}
                     <div className="flex items-center justify-between pt-3 border-t border-border">
-                      <div><p className="text-[10px] text-muted-foreground">Cost</p><p className="font-semibold text-sm flex items-center gap-1"><Coins className="w-3.5 h-3.5 text-primary" />45 ECC</p></div>
+                      <div><p className="text-[10px] text-muted-foreground">Cost</p><p className="font-semibold text-sm flex items-center gap-1"><Coins className="w-3.5 h-3.5 text-primary" /><div><p className="text-[10px] text-muted-foreground">Cost</p><p className="font-semibold text-sm flex items-center gap-1"><Coins className="w-3.5 h-3.5 text-primary" />50 ECC</p></div></p></div>
                       {expertSlots.length > 0 && <Button size="sm" className="h-8 text-xs" onClick={() => handleBookSlot(expert, expertSlots[0])}>Book Now</Button>}
                     </div>
                   </div>
@@ -174,7 +174,7 @@ const Appointments = () => {
           )}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setBookingDialog({ open: false })} size="sm">Cancel</Button>
-            <Button onClick={confirmBooking} disabled={isBooking || balance < 45} size="sm" className="gap-1.5">{isBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Confirm</Button>
+            <Button onClick={confirmBooking} disabled={isBooking || <Button onClick={confirmBooking} disabled={isBooking || balance < 50} size="sm" className="gap-1.5">{isBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Confirm</Button>} size="sm" className="gap-1.5">{isBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Confirm</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
