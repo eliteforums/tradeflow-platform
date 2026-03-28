@@ -1,45 +1,44 @@
 
 
-## Fix: BlackBox Call Controls Visibility & Layout
+## Fix: Peer Connect — Call Indication on Both Sides
 
 ### Problem
 
-During an active BlackBox call (student side), the call control buttons (Mute, Video, Hangup) can be misaligned, overlapping, or partially hidden because:
+When a call is initiated in Peer Connect, the receiving side has no visible indication. The `startCall` mutation sends a notification (`type: "peer_call"`) to the other party, but:
 
-1. **Desktop (`BlackBox.tsx`)**: The outer container uses `min-h-[calc(100vh-6rem)]` with `-mt-6`, and the controls section at the bottom (`pb-8 pt-6`) competes with the flex-1 content area. The MeetingProvider wrapper uses `position: absolute` which can cause the controls to sit behind other elements depending on stacking context.
-
-2. **Mobile (`MobileBlackBox.tsx`)**: Controls are inside `pb-24` padding zone meant to avoid the bottom nav, but the flex layout (`justify-between`) can cause the controls to be pushed off-screen or overlap with the NovaOrb when the viewport is short.
-
-3. **Both**: The controls div is not pinned — it flows with content, so on smaller viewports or during state transitions, it can shift unpredictably.
+1. The **realtime subscription** only listens for `UPDATE` and `INSERT` on `peer_sessions`, not on `notifications`
+2. Even when `room_id` is set on the session (detected via the 10s polling refetch), neither desktop nor mobile shows an **incoming call banner** — the "Join Call" button only appears in the chat header, which is easy to miss
+3. No **system chat message** is injected into the conversation to indicate a call was started
 
 ### Fix
 
-**Pin the bottom controls bar** in both desktop and mobile so it stays fixed at the bottom of the viewport, always visible and properly spaced above any bottom navigation.
+Two complementary indicators:
 
-#### File: `src/pages/dashboard/BlackBox.tsx`
-- Change the bottom controls container from a flowing `div` to a **sticky/fixed bottom bar** with proper z-index
-- Add a background blur/card treatment so controls don't overlap content
-- Ensure the MeetingProvider hidden wrapper doesn't interfere with stacking (add `z-index: -1`)
+**A. In-chat system message** — When a call is started, automatically send a peer message like `📞 Voice call started` into the chat. This is visible to both sides immediately via the existing realtime message subscription.
 
-#### File: `src/components/mobile/MobileBlackBox.tsx`
-- Same fix: pin controls to bottom with `fixed` or `sticky` positioning
-- Account for mobile bottom nav height (~5rem) with proper `bottom` offset
-- Add backdrop blur background for visual clarity
+**B. Incoming call banner** — When `activeSession.room_id` becomes set and `callMode` is null (meaning the other party started the call), show a prominent incoming call banner with "Join" / "Dismiss" buttons. Detect this by comparing `room_id` presence when the session data refreshes.
 
-### Specific Changes
+### Implementation
 
-**Desktop (`BlackBox.tsx`, lines 178-217)**:
-- Replace `<div className="pb-8 pt-6 flex items-center justify-center gap-4">` with a sticky bottom bar: `<div className="sticky bottom-0 z-10 py-6 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm">`
-- On the hidden MeetingProvider wrapper (line 140-145), add `zIndex: -1` to prevent stacking interference
+#### File: `src/hooks/usePeerConnect.ts`
+- In the `startCall` mutation's `mutationFn`, after successfully setting `room_id`, insert a system message into `peer_messages`:
+  ```
+  { session_id: sessionId, sender_id: user.id, content_encrypted: "📞 Voice call started" }
+  ```
+- This message arrives via the existing realtime channel on both sides
 
-**Mobile (`MobileBlackBox.tsx`, lines 169-203)**:
-- Replace `<div className="pt-4 flex items-center justify-center gap-4">` with a fixed bottom bar: `<div className="fixed bottom-20 left-0 right-0 z-20 py-4 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm">`
-- This positions controls above the mobile bottom nav (bottom-20 = 5rem)
+#### File: `src/pages/dashboard/PeerConnect.tsx` (Desktop)
+- Add an incoming call banner: when `activeSession.status === "active"` and `activeSession.room_id` exists and `callMode` is null, show a dismissible banner above the messages area with pulsing phone icon + "Incoming Call — Join" button
+- Track a `dismissedCallRoomId` state to allow dismissing the banner for a specific room
+
+#### File: `src/components/mobile/MobilePeerConnect.tsx` (Mobile)
+- Same incoming call banner logic, adapted for mobile layout
 
 ### Files to Edit
 
 | File | Change |
 |------|--------|
-| `src/pages/dashboard/BlackBox.tsx` | Sticky bottom controls bar, z-index fix on hidden wrapper |
-| `src/components/mobile/MobileBlackBox.tsx` | Fixed bottom controls bar above mobile nav |
+| `src/hooks/usePeerConnect.ts` | Insert system chat message on call start |
+| `src/pages/dashboard/PeerConnect.tsx` | Add incoming call banner for receiving side |
+| `src/components/mobile/MobilePeerConnect.tsx` | Add incoming call banner for receiving side (mobile) |
 
