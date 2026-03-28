@@ -30,9 +30,9 @@ const ExpertL3AlertPanel = () => {
   const [escalating, setEscalating] = useState(false);
   const [showEscalateConfirm, setShowEscalateConfirm] = useState(false);
 
-  const captureSnippetRef = useRef<(() => string) | null>(null);
+  const captureSnippetRef = useRef<(() => Promise<string>) | null>(null);
 
-  const handleCaptureSnippetReady = useCallback((captureFn: () => string) => {
+  const handleCaptureSnippetReady = useCallback((captureFn: () => Promise<string>) => {
     captureSnippetRef.current = captureFn;
   }, []);
 
@@ -158,7 +158,11 @@ const ExpertL3AlertPanel = () => {
     if (!user || !activeSession) return;
     setEscalating(true);
     try {
-      const transcriptSnippet = captureSnippetRef.current ? captureSnippetRef.current() : "";
+      let transcriptSnippet = "";
+      if (captureSnippetRef.current) {
+        toast.info("Capturing transcript (±10s)...");
+        transcriptSnippet = await captureSnippetRef.current();
+      }
 
       const { data, error } = await supabase.functions.invoke("escalate-emergency", {
         body: {
