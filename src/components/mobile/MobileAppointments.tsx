@@ -27,7 +27,7 @@ const MobileAppointments = () => {
   const handleBookSlot = (expert: any, slot: any) => setBookingDialog({ open: true, expert, slot });
   const confirmBooking = () => {
     if (!bookingDialog.expert || !bookingDialog.slot) return;
-    bookAppointment({ expertId: bookingDialog.expert.id, slotId: bookingDialog.slot.id, slotTime: bookingDialog.slot.start_time, sessionType, bookAppointment({ expertId: bookingDialog.expert.id, slotId: bookingDialog.slot.id, slotTime: bookingDialog.slot.start_time, sessionType, creditCost: 50 }); });
+    bookAppointment({ expertId: bookingDialog.expert.id, slotId: bookingDialog.slot.id, slotTime: bookingDialog.slot.start_time, sessionType, creditCost: 50 });
     setBookingDialog({ open: false });
   };
   const getExpertSlots = (expertId: string) => slots.filter((s) => s.expert_id === expertId);
@@ -185,7 +185,7 @@ const MobileAppointments = () => {
           )}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setBookingDialog({ open: false })} className="h-10 text-sm">Cancel</Button>
-            <Button onClick={confirmBooking} disabled={isBooking || <Button onClick={confirmBooking} disabled={isBooking || balance < 50} className="h-10 text-sm gap-1.5">} className="h-10 text-sm gap-1.5">
+            <Button onClick={confirmBooking} disabled={isBooking || balance < 50} className="h-10 text-sm gap-1.5">
               {isBooking ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}Confirm
             </Button>
           </DialogFooter>
