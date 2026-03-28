@@ -23,7 +23,7 @@ const EscalationManager = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("escalation_requests")
-        .select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username), session:peer_sessions!escalation_requests_session_id_fkey(student_id, intern_id, student:profiles!peer_sessions_student_id_fkey(username), intern:profiles!peer_sessions_intern_id_fkey(username))")
+        .select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
