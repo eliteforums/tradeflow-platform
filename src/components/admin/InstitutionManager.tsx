@@ -15,6 +15,11 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import AvatarUpload from "@/components/profile/AvatarUpload";
 
 function generateEterniaCode(name: string): string {
@@ -140,6 +145,24 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
       queryClient.invalidateQueries({ queryKey: ["admin-institutions"] });
       toast.success("Institution updated");
     },
+  });
+
+  const deleteInstitutionMutation = useMutation({
+    mutationFn: async (institutionId: string) => {
+      const { data, error } = await supabase.functions.invoke("admin-delete-institution", {
+        body: { institution_id: institutionId },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Institution deleted. ${data.users_deleted} users removed${data.errors > 0 ? ` (${data.errors} errors)` : ""}.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-institutions"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-inst-student-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-members"] });
+    },
+    onError: (err: any) => toast.error(`Failed to delete institution: ${err.message}`),
   });
 
   const bulkMutation = useMutation({
