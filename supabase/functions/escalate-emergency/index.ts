@@ -181,6 +181,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Look up escalator's role
+    const { data: callerRoles } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerId);
+    const escalatedByRole = callerRoles && callerRoles.length > 0
+      ? callerRoles.map((r: any) => r.role).join(", ")
+      : "unknown";
+
     // Build trigger_snippet
     const triggerSnippet = JSON.stringify({
       type: "emergency_contact",
@@ -188,6 +197,7 @@ Deno.serve(async (req) => {
       student_eternia_id: studentProfile?.student_id || null,
       student_username: studentProfile?.username || null,
       transcript_snippet: transcript_snippet || null,
+      escalated_by_role: escalatedByRole,
       session_id: sessionRef.id,
       session_type: sessionRef.table,
     });
