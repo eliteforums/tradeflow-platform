@@ -15,6 +15,7 @@ interface L3Session {
   therapist_id: string | null;
   flag_level: number;
   escalation_reason: string | null;
+  escalation_history: any[] | null;
   room_id: string | null;
   status: string;
   created_at: string;
@@ -48,7 +49,7 @@ const ExpertL3AlertPanel = () => {
     const fetchL3 = async () => {
       const { data } = await supabase
         .from("blackbox_sessions")
-        .select("id, student_id, therapist_id, flag_level, escalation_reason, room_id, status, created_at")
+        .select("id, student_id, therapist_id, flag_level, escalation_reason, escalation_history, room_id, status, created_at")
         .gte("flag_level", 3)
         .in("status", ["active", "accepted", "queued", "escalated"])
         .neq("status", "completed")
@@ -112,7 +113,7 @@ const ExpertL3AlertPanel = () => {
         })
         .eq("id", session.id)
         .gte("flag_level", 3)
-        .select("id, student_id, therapist_id, flag_level, escalation_reason, room_id, status, created_at")
+        .select("id, student_id, therapist_id, flag_level, escalation_reason, escalation_history, room_id, status, created_at")
         .maybeSingle();
 
       if (error) throw error;
@@ -175,7 +176,13 @@ const ExpertL3AlertPanel = () => {
       <div className="space-y-3">
         {l3Sessions.map((session) => {
           const isClaimedByMe = activeSession?.id === session.id;
-          const isClaimedByOther = session.therapist_id && session.therapist_id !== user?.id;
+          // Check escalation_history for expert_joined entries instead of therapist_id
+          const history = Array.isArray(session.escalation_history) ? session.escalation_history : [];
+          const expertJoinEntry = (history as any[]).find(
+            (entry: any) => entry?.type === "expert_joined"
+          );
+          const isClaimedByOther = expertJoinEntry && expertJoinEntry.expert_id !== user?.id;
+          const isClaimedByCurrentUser = expertJoinEntry && expertJoinEntry.expert_id === user?.id;
           
           return (
             <div
@@ -200,7 +207,7 @@ const ExpertL3AlertPanel = () => {
                     {format(new Date(session.created_at), "MMM d · h:mm a")} · Room: {session.room_id || "—"}
                   </p>
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
-                    {isClaimedByMe ? (
+                    {isClaimedByMe || isClaimedByCurrentUser ? (
                       <>
                         <Button
                           size="sm"
