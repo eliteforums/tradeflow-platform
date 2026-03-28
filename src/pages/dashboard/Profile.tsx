@@ -213,7 +213,7 @@ const Profile = () => {
           {isStudent && (profile as any)?.student_id && (
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-xs text-muted-foreground">Student ID</p>
-              <p className="text-sm font-mono font-medium text-primary">{(profile as any).student_id}</p>
+              <p className="text-sm font-mono font-medium text-primary">••••{String((profile as any).student_id).slice(-4)}</p>
             </div>
           )}
         </div>

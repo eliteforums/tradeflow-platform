@@ -62,7 +62,9 @@ const SoundTherapy = () => {
     setCurrentTrack(index); setIsPlaying(true); setProgress([0]);
   }, [filteredTracks]);
   const handleSeek = useCallback((val: number[]) => { if (audioRef.current?.duration) audioRef.current.currentTime = (val[0] / 100) * audioRef.current.duration; }, []);
-  const handleNext = useCallback(() => { setCurrentTrack((prev) => prev + 1 < filteredTracks.length ? (setProgress([0]), prev + 1) : prev); }, [filteredTracks.length]);
+  const filteredTracksRef = useRef(filteredTracks);
+  filteredTracksRef.current = filteredTracks;
+  const handleNext = useCallback(() => { setCurrentTrack((prev) => prev + 1 < filteredTracksRef.current.length ? (setProgress([0]), prev + 1) : prev); }, []);
   const handlePrev = useCallback(() => { setCurrentTrack((prev) => prev > 0 ? (setProgress([0]), prev - 1) : prev); }, []);
   const toggleMute = useCallback(() => setIsMuted((prev) => !prev), []);
 
