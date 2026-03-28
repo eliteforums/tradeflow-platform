@@ -39,9 +39,6 @@ const MoodTracker = () => {
             <h1 className="text-2xl font-bold font-display">Mood Tracker</h1>
             <p className="text-sm text-muted-foreground">Track your emotional patterns</p>
           </div>
-          {!todayEntry && (
-            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">+3 ECC</span>
-          )}
         </div>
 
         {todayEntry ? (

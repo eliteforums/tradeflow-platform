@@ -32,9 +32,6 @@ const Gratitude = () => {
             <h1 className="text-2xl font-bold font-display">Gratitude</h1>
             <p className="text-sm text-muted-foreground">Daily gratitude practice</p>
           </div>
-          {!todayEntry && (
-            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-medium">+5 ECC</span>
-          )}
         </div>
 
         {todayEntry ? (
