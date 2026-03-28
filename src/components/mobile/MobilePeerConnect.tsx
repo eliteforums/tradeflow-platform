@@ -54,6 +54,7 @@ const MobilePeerConnect = () => {
     hasMoreMessages, isLoadingMore, loadMoreMessages, hasOpenSession,
     pendingSessions, pendingRequest, acceptSession, declineSession,
     isAccepting, isDeclining, startCall, startCallAsync, isStartingCall,
+    incomingCallSessionId, clearIncomingCall,
   } = usePeerConnect(urlSessionId);
   const isIntern = profile?.role === "intern";
 
@@ -77,6 +78,10 @@ const MobilePeerConnect = () => {
     });
   }, [sessions, lastMessages]);
 
+  const fallbackIncomingSessionId = useMemo(() => {
+    return sessions.find((s) => s.status === "active" && !!s.room_id)?.id || null;
+  }, [sessions]);
+
   const filteredSessions = useMemo(() => {
     if (!debouncedSearch) return sortedSessions;
     const q = debouncedSearch.toLowerCase();
@@ -88,6 +93,18 @@ const MobilePeerConnect = () => {
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
   useEffect(() => { if (activeSession && !activeSessionId) { setActiveSessionId(activeSession.id); setMobileView("chat"); } }, [activeSession, activeSessionId, setActiveSessionId]);
+  useEffect(() => {
+    if (incomingCallSessionId) {
+      setActiveSessionId(incomingCallSessionId);
+      setMobileView("chat");
+    }
+  }, [incomingCallSessionId, setActiveSessionId]);
+  useEffect(() => {
+    if (!callMode && !incomingCallSessionId && fallbackIncomingSessionId && fallbackIncomingSessionId !== activeSessionId) {
+      setActiveSessionId(fallbackIncomingSessionId);
+      setMobileView("chat");
+    }
+  }, [callMode, incomingCallSessionId, fallbackIncomingSessionId, activeSessionId, setActiveSessionId]);
 
   const handleSendMessage = useCallback(() => {
     if (!message.trim() || !activeSessionId) return;
@@ -238,10 +255,12 @@ const MobilePeerConnect = () => {
                       onClick={async () => {
                         if (!activeSessionId) return;
                         if (activeSession.room_id) {
+                          clearIncomingCall();
                           setCallMode("audio");
                         } else {
                           try {
                             await startCallAsync(activeSessionId);
+                            clearIncomingCall();
                             setCallMode("audio");
                           } catch {
                             // error toast handled by mutation
@@ -337,10 +356,25 @@ const MobilePeerConnect = () => {
                     <p className="text-sm font-semibold">Incoming Call</p>
                     <p className="text-[11px] text-muted-foreground">Tap Join to connect</p>
                   </div>
-                  <Button size="sm" className="shrink-0 h-8 text-xs" onClick={() => setCallMode("audio")}>
+                  <Button
+                    size="sm"
+                    className="shrink-0 h-8 text-xs"
+                    onClick={() => {
+                      clearIncomingCall();
+                      setCallMode("audio");
+                    }}
+                  >
                     Join
                   </Button>
-                  <Button size="sm" variant="ghost" className="shrink-0 h-7 w-7 p-0" onClick={() => setDismissedCallRoomId(activeSession.room_id)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="shrink-0 h-7 w-7 p-0"
+                    onClick={() => {
+                      clearIncomingCall();
+                      setDismissedCallRoomId(activeSession.room_id);
+                    }}
+                  >
                     <X className="w-3.5 h-3.5" />
                   </Button>
                 </div>

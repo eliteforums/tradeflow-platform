@@ -48,6 +48,7 @@ export function usePeerConnect(initialSessionId?: string | null) {
   const [messages, setMessages] = useState<PeerMessage[]>([]);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [incomingCallSessionId, setIncomingCallSessionId] = useState<string | null>(null);
   const isIntern = profile?.role === "intern";
 
   // Get available interns
@@ -170,6 +171,45 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
     return () => { supabase.removeChannel(channel); };
   }, [user, isIntern, queryClient]);
+
+  // Realtime subscription for incoming call notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`peer-call-notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const notification = payload.new as {
+            type?: string;
+            metadata?: { session_id?: string } | null;
+          };
+
+          if (notification?.type !== "peer_call") return;
+
+          const sessionId = notification.metadata?.session_id;
+          if (!sessionId) return;
+
+          setIncomingCallSessionId(sessionId);
+          setActiveSessionId((prev) => (prev === sessionId ? prev : sessionId));
+          queryClient.invalidateQueries({ queryKey: ["peer-sessions"] });
+          queryClient.invalidateQueries({ queryKey: ["active-peer-sessions"] });
+          toast.info("Incoming call — join to connect");
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   // Last messages for conversation list
   const { data: lastMessages = {} } = useQuery({
@@ -641,6 +681,10 @@ export function usePeerConnect(initialSessionId?: string | null) {
     onError: (error) => { toast.error(error.message || "Failed to start call"); },
   });
 
+  const clearIncomingCall = useCallback(() => {
+    setIncomingCallSessionId(null);
+  }, []);
+
   return {
     interns,
     sessions,
@@ -654,6 +698,8 @@ export function usePeerConnect(initialSessionId?: string | null) {
     hasOpenSession,
     pendingSessions,
     pendingRequest,
+    incomingCallSessionId,
+    clearIncomingCall,
     isLoading: isLoadingInterns || isLoadingSessions,
     activeSessionId,
     setActiveSessionId,

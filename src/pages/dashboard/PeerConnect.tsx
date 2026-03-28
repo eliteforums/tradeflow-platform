@@ -65,6 +65,7 @@ const PeerConnect = () => {
     hasMoreMessages, isLoadingMore, loadMoreMessages, hasOpenSession,
     pendingSessions, pendingRequest, acceptSession, declineSession,
     isAccepting, isDeclining, startCall, startCallAsync, isStartingCall,
+    incomingCallSessionId, clearIncomingCall,
   } = usePeerConnect(urlSessionId);
 
   const debouncedSearch = useDebouncedValue(searchTerm, 300);
@@ -96,6 +97,10 @@ const PeerConnect = () => {
     });
   }, [sessions, lastMessages]);
 
+  const fallbackIncomingSessionId = useMemo(() => {
+    return sessions.find((s) => s.status === "active" && !!s.room_id)?.id || null;
+  }, [sessions]);
+
   const filteredSessions = useMemo(() => {
     if (!debouncedSearch) return sortedSessions;
     const q = debouncedSearch.toLowerCase();
@@ -108,6 +113,18 @@ const PeerConnect = () => {
   }, [sortedSessions, debouncedSearch, isIntern]);
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
+
+  useEffect(() => {
+    if (incomingCallSessionId && incomingCallSessionId !== activeSessionId) {
+      setActiveSessionId(incomingCallSessionId);
+    }
+  }, [incomingCallSessionId, activeSessionId, setActiveSessionId]);
+
+  useEffect(() => {
+    if (!callMode && !incomingCallSessionId && fallbackIncomingSessionId && fallbackIncomingSessionId !== activeSessionId) {
+      setActiveSessionId(fallbackIncomingSessionId);
+    }
+  }, [callMode, incomingCallSessionId, fallbackIncomingSessionId, activeSessionId, setActiveSessionId]);
 
   const handleSendMessage = useCallback(() => {
     if (!message.trim() || !activeSessionId) return;
@@ -465,7 +482,10 @@ const PeerConnect = () => {
                     {activeSession.status === "active" && activeSession.room_id && !callMode && (
                       <Button
                         variant="outline" size="sm" className="h-8 text-xs gap-1 text-primary border-primary/30"
-                        onClick={() => setCallMode("audio")}
+                        onClick={() => {
+                          clearIncomingCall();
+                          setCallMode("audio");
+                        }}
                       >
                         <Phone className="w-3 h-3" /> Join Call
                       </Button>
@@ -562,10 +582,25 @@ const PeerConnect = () => {
                       <p className="text-sm font-semibold">Incoming Call</p>
                       <p className="text-xs text-muted-foreground">Voice call in progress — tap Join to connect</p>
                     </div>
-                    <Button size="sm" className="shrink-0" onClick={() => setCallMode("audio")}>
+                    <Button
+                      size="sm"
+                      className="shrink-0"
+                      onClick={() => {
+                        clearIncomingCall();
+                        setCallMode("audio");
+                      }}
+                    >
                       Join
                     </Button>
-                    <Button size="sm" variant="ghost" className="shrink-0 h-8 w-8 p-0" onClick={() => setDismissedCallRoomId(activeSession.room_id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="shrink-0 h-8 w-8 p-0"
+                      onClick={() => {
+                        clearIncomingCall();
+                        setDismissedCallRoomId(activeSession.room_id);
+                      }}
+                    >
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
