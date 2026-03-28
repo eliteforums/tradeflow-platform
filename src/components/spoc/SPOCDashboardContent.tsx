@@ -865,9 +865,12 @@ const SPOCDashboardContent = () => {
                           {format(new Date(esc.created_at), "MMM d, h:mm a")}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg line-clamp-3">
-                        {esc.justification_encrypted}
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold text-destructive">⚠️ Reason for Escalation</p>
+                        <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg line-clamp-3">
+                          {esc.justification_encrypted}
+                        </p>
+                      </div>
                       {esc.trigger_snippet && (() => {
                         let parsed: any = null;
                         try { parsed = JSON.parse(esc.trigger_snippet); } catch {}
