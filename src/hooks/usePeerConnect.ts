@@ -613,6 +613,13 @@ export function usePeerConnect(initialSessionId?: string | null) {
 
       const finalRoomId = updated?.room_id || roomId;
 
+      // Insert system chat message so both sides see the call indication
+      await supabase.from("peer_messages").insert({
+        session_id: sessionId,
+        sender_id: user.id,
+        content_encrypted: "📞 Voice call started",
+      });
+
       // Notify the other party
       const otherUserId = isIntern ? session.student_id : session.intern_id;
       if (otherUserId) {

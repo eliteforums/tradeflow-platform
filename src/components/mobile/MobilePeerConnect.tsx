@@ -43,6 +43,7 @@ const MobilePeerConnect = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "chat" | "newchat">("list");
   const [callMode, setCallMode] = useState<"audio" | "video" | null>(null);
+  const [dismissedCallRoomId, setDismissedCallRoomId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { user, profile, creditBalance } = useAuth();
@@ -323,6 +324,25 @@ const MobilePeerConnect = () => {
                       <Plus className="w-4 h-4 mr-1" /> Try Another Intern
                     </Button>
                   )}
+                </div>
+              )}
+
+              {/* Incoming call banner */}
+              {activeSession.status === "active" && activeSession.room_id && !callMode && activeSession.room_id !== dismissedCallRoomId && (
+                <div className="mx-3 mt-2 flex items-center gap-2 p-2.5 rounded-xl bg-primary/10 border border-primary/20 animate-pulse">
+                  <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                    <Phone className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold">Incoming Call</p>
+                    <p className="text-[11px] text-muted-foreground">Tap Join to connect</p>
+                  </div>
+                  <Button size="sm" className="shrink-0 h-8 text-xs" onClick={() => setCallMode("audio")}>
+                    Join
+                  </Button>
+                  <Button size="sm" variant="ghost" className="shrink-0 h-7 w-7 p-0" onClick={() => setDismissedCallRoomId(activeSession.room_id)}>
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
               )}
 
