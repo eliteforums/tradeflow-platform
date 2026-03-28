@@ -909,7 +909,21 @@ const SPOCDashboardContent = () => {
                                       <p className="font-mono text-[10px] truncate">{parsed.session_id}</p>
                                     </div>
                                   )}
+                                  {parsed.escalated_by_role && (
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Escalated By</p>
+                                      <p className="font-semibold capitalize">{parsed.escalated_by_role}</p>
+                                    </div>
+                                  )}
                                 </div>
+                              </div>
+                            )}
+
+                            {/* Transcript snippet (shown for all escalation types) */}
+                            {parsed?.transcript_snippet && (
+                              <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+                                <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript Snippet</p>
+                                <p className="text-[11px] text-foreground italic">"{parsed.transcript_snippet}"</p>
                               </div>
                             )}
                             
