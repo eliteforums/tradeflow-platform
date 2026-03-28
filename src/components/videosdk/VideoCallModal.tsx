@@ -19,7 +19,7 @@ interface VideoCallModalProps {
   enableMonitoring?: boolean;
   onRiskDetected?: (level: number, snippet: string) => void;
   isTherapistView?: boolean;
-  onCaptureSnippetReady?: (captureFn: () => string) => void;
+  onCaptureSnippetReady?: (captureFn: () => Promise<string>) => void;
   onLeaveReady?: (leaveFn: () => void) => void;
   autoStart?: boolean;
   onCallJoined?: () => void;

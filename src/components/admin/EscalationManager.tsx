@@ -227,6 +227,11 @@ const EscalationManager = () => {
                     <div className="flex items-center gap-2">
                       <Phone className="w-4 h-4 text-destructive shrink-0" />
                       <p className="text-xs font-bold text-destructive">🚨 Emergency Contact</p>
+                      {parsed.escalated_by_role && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/20 text-primary capitalize">
+                          {parsed.escalated_by_role}
+                        </span>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       {parsed.student_eternia_id && (
@@ -263,7 +268,7 @@ const EscalationManager = () => {
                     {parsed.transcript_snippet && (
                       <div className="mt-1 p-2 rounded-lg bg-muted/30 border border-border/50">
                         <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript Snippet</p>
-                        <p className="text-[11px] text-foreground italic">"{parsed.transcript_snippet}"</p>
+                        <pre className="text-[11px] text-foreground whitespace-pre-wrap font-mono">{parsed.transcript_snippet}</pre>
                       </div>
                     )}
                   </div>

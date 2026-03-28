@@ -38,7 +38,7 @@ const ExpertDashboardContent = () => {
   const [activeTab, setActiveTab] = useState<TabType>("home");
 
   // Call modal
-  const captureSnippetRef = useRef<(() => string) | null>(null);
+  const captureSnippetRef = useRef<(() => Promise<string>) | null>(null);
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; appointmentId?: string }>({ open: false, mode: "video" });
 
   // Session completion
@@ -214,11 +214,16 @@ const ExpertDashboardContent = () => {
   const submitEscalation = useMutation({
     mutationFn: async () => {
       if (!user || !escalationDialog.appointmentId) throw new Error("Missing data");
+      let snippet: string | null = null;
+      if (captureSnippetRef.current) {
+        toast.info("Capturing transcript (±10s)...");
+        snippet = await captureSnippetRef.current();
+      }
       const { data, error } = await supabase.functions.invoke("escalate-emergency", {
         body: {
           appointment_id: escalationDialog.appointmentId,
           justification: escalationReason,
-          transcript_snippet: captureSnippetRef.current ? captureSnippetRef.current() : null,
+          transcript_snippet: snippet || null,
         },
       });
       if (error) throw new Error(error.message || "Escalation failed");
@@ -871,7 +876,7 @@ const ExpertDashboardContent = () => {
         </DialogContent>
       </Dialog>
 
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} onCaptureSnippetReady={(fn) => { captureSnippetRef.current = fn; }} />
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} enableMonitoring={true} onCaptureSnippetReady={(fn) => { captureSnippetRef.current = fn; }} />
     </DashboardLayout>
   );
 };

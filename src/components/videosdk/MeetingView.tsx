@@ -26,7 +26,7 @@ interface MeetingViewProps {
   onSilenceAutoEnd?: () => void;
   onJoined?: () => void;
   onJoinError?: (error: string) => void;
-  onCaptureSnippetReady?: (captureFn: () => string) => void;
+  onCaptureSnippetReady?: (captureFn: () => Promise<string>) => void;
   onLeaveReady?: (leaveFn: () => void) => void;
   onEscalateFromSuggestion?: (snippet: string, riskLevel: number) => void;
   hideControls?: boolean;
@@ -206,12 +206,12 @@ const MeetingView = ({
     }, [onRiskDetected]),
   });
 
-  // Expose captureEscalationSnippet to parent (sync version for immediate use)
+  // Expose async ±10s captureEscalationSnippetAsync to parent
   useEffect(() => {
     if (joined === "JOINED" && onCaptureSnippetReady) {
-      onCaptureSnippetReady(audioMonitor.captureEscalationSnippet);
+      onCaptureSnippetReady(audioMonitor.captureEscalationSnippetAsync);
     }
-  }, [joined, onCaptureSnippetReady, audioMonitor.captureEscalationSnippet]);
+  }, [joined, onCaptureSnippetReady, audioMonitor.captureEscalationSnippetAsync]);
 
   // Expose leave function to parent
   useEffect(() => {
