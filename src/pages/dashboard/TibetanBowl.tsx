@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useEccEarn } from "@/hooks/useEccEarn";
 
 const TibetanBowl = () => {
-  const { dailyEarned, dailyCap, canEarn, remainingToday, earnFromActivity, isEarning } = useEccEarn();
+  const { weeklyEarned, weeklyCap, canEarn, remainingThisWeek, earnFromActivity, isEarning } = useEccEarn();
 
   const handleComplete = useCallback(() => {
     if (!canEarn) return;
@@ -34,8 +34,8 @@ const TibetanBowl = () => {
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/30 border border-border">
             <Coins className="w-4 h-4 text-primary" />
-            <span className="text-xs font-medium">{dailyEarned}/{dailyCap} ECC today</span>
-            <Progress value={(dailyEarned / dailyCap) * 100} className="h-1 w-12 bg-muted" />
+            <span className="text-xs font-medium">{weeklyEarned}/{weeklyCap} ECC this week</span>
+            <Progress value={(weeklyEarned / weeklyCap) * 100} className="h-1 w-12 bg-muted" />
           </div>
         </div>
 
@@ -56,7 +56,7 @@ const TibetanBowl = () => {
             className="gap-2"
           >
             {isEarning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Award className="w-4 h-4" />}
-            {canEarn ? `Claim 1 ECC (${remainingToday} left today)` : "Daily cap reached"}
+            {canEarn ? `Claim 1 ECC (${remainingThisWeek} left this week)` : "Weekly cap reached"}
           </Button>
         </div>
       </div>

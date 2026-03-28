@@ -113,7 +113,7 @@ const MobilePeerConnect = () => {
   }, [message, activeSessionId, sendMessage]);
 
   const handleStartSession = useCallback((internId: string) => {
-    if (creditBalance < 20) return;
+    if (creditBalance < 18) return;
     requestSession(internId);
     setMobileView("chat");
   }, [creditBalance, requestSession]);
@@ -170,10 +170,10 @@ const MobilePeerConnect = () => {
             <Input placeholder="Search interns..." className="pl-10 bg-card h-10 text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
 
-          {creditBalance < 20 && (
+          {creditBalance < 18 && (
             <div className="flex items-center gap-3 p-3 rounded-2xl bg-destructive/10 border border-destructive/20 mb-4">
               <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
-              <p className="text-xs text-destructive">Need at least 20 ECC to start a session.</p>
+              <p className="text-xs text-destructive">Need at least 18 ECC to start a session.</p>
             </div>
           )}
 
