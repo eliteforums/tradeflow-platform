@@ -167,7 +167,7 @@ const MobileBlackBox = () => {
         )}
 
         {/* Bottom controls */}
-        <div className="pt-4 flex items-center justify-center gap-4">
+        <div className="fixed bottom-20 left-0 right-0 z-20 py-4 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm">
           {isJoined ? (
             <>
               <Button variant="outline" size="icon" className="rounded-full w-12 h-12 bg-muted/30 border-border">
