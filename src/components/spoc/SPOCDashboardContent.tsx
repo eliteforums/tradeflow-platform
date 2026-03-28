@@ -869,61 +869,90 @@ const SPOCDashboardContent = () => {
                         {esc.justification_encrypted}
                       </p>
                       {esc.trigger_snippet && (() => {
-                        // Try to parse emergency contact JSON from trigger_snippet
                         let parsed: any = null;
                         try { parsed = JSON.parse(esc.trigger_snippet); } catch {}
-                        if (parsed?.type === "emergency_contact") {
-                          return (
-                            <div className="mt-2 p-3 rounded-lg bg-destructive/10 border-2 border-destructive/30 space-y-1.5">
-                              <div className="flex items-center gap-2">
-                                <Phone className="w-4 h-4 text-destructive shrink-0" />
-                                <p className="text-xs font-bold text-destructive">🚨 Emergency Contact</p>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                {parsed.student_eternia_id && (
-                                  <div>
-                                    <p className="text-[10px] text-muted-foreground">Eternia ID</p>
-                                    <p className="font-semibold font-mono">{parsed.student_eternia_id}</p>
-                                  </div>
-                                )}
-                                {parsed.student_username && (
-                                  <div>
-                                    <p className="text-[10px] text-muted-foreground">Username</p>
-                                    <p className="font-semibold">{parsed.student_username}</p>
-                                  </div>
-                                )}
-                                <div>
-                                  <p className="text-[10px] text-muted-foreground">Name</p>
-                                  <p className="font-semibold">{parsed.name || "Not provided"}</p>
-                                </div>
-                                <div>
-                                  <p className="text-[10px] text-muted-foreground">Phone</p>
-                                  <p className="font-semibold font-mono">{parsed.phone || "Not provided"}</p>
-                                </div>
-                                <div>
-                                  <p className="text-[10px] text-muted-foreground">Relation</p>
-                                  <p className="font-medium">{parsed.relation || "Not specified"}</p>
-                                </div>
-                                {parsed.is_self && (
-                                  <div>
-                                    <p className="text-[10px] text-muted-foreground">Note</p>
-                                    <p className="font-medium text-eternia-warning">Contact is student themselves</p>
-                                  </div>
-                                )}
-                              </div>
-                              {parsed.transcript_snippet && (
-                                <div className="mt-2 p-2 rounded-lg bg-muted/30 border border-border/50">
-                                  <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript Snippet</p>
-                                  <p className="text-[11px] text-foreground italic">"{parsed.transcript_snippet}"</p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }
+                        
+                        // Always show structured session details if available
+                        const hasSessionInfo = parsed && (parsed.student_eternia_id || parsed.student_username || parsed.session_id || parsed.session_type);
+                        
                         return (
-                          <div className="mt-2 p-2 rounded-lg bg-destructive/5 border border-destructive/10">
-                            <p className="text-[10px] font-medium text-destructive mb-0.5">Trigger Snippet</p>
-                            <p className="text-[11px] text-muted-foreground italic">"{esc.trigger_snippet}"</p>
+                          <div className="mt-2 space-y-2">
+                            {/* Structured session details */}
+                            {hasSessionInfo && (
+                              <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                                <p className="text-[10px] font-semibold text-primary mb-1.5">📋 Session Details</p>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  {parsed.student_eternia_id && (
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Student ID</p>
+                                      <p className="font-semibold font-mono">{parsed.student_eternia_id}</p>
+                                    </div>
+                                  )}
+                                  {parsed.student_username && (
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Username</p>
+                                      <p className="font-semibold">{parsed.student_username}</p>
+                                    </div>
+                                  )}
+                                  {parsed.session_type && (
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Session Type</p>
+                                      <p className="font-medium capitalize">{parsed.session_type}</p>
+                                    </div>
+                                  )}
+                                  {parsed.session_id && (
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Session ID</p>
+                                      <p className="font-mono text-[10px] truncate">{parsed.session_id}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Emergency contact block */}
+                            {parsed?.type === "emergency_contact" && (
+                              <div className="p-3 rounded-lg bg-destructive/10 border-2 border-destructive/30 space-y-1.5">
+                                <div className="flex items-center gap-2">
+                                  <Phone className="w-4 h-4 text-destructive shrink-0" />
+                                  <p className="text-xs font-bold text-destructive">🚨 Emergency Contact</p>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <div>
+                                    <p className="text-[10px] text-muted-foreground">Name</p>
+                                    <p className="font-semibold">{parsed.name || "Not provided"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] text-muted-foreground">Phone</p>
+                                    <p className="font-semibold font-mono">{parsed.phone || "Not provided"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-[10px] text-muted-foreground">Relation</p>
+                                    <p className="font-medium">{parsed.relation || "Not specified"}</p>
+                                  </div>
+                                  {parsed.is_self && (
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Note</p>
+                                      <p className="font-medium text-eternia-warning">Contact is student themselves</p>
+                                    </div>
+                                  )}
+                                </div>
+                                {parsed.transcript_snippet && (
+                                  <div className="mt-2 p-2 rounded-lg bg-muted/30 border border-border/50">
+                                    <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript Snippet</p>
+                                    <p className="text-[11px] text-foreground italic">"{parsed.transcript_snippet}"</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Fallback: raw trigger snippet for non-JSON or non-emergency */}
+                            {!parsed && (
+                              <div className="p-2 rounded-lg bg-destructive/5 border border-destructive/10">
+                                <p className="text-[10px] font-medium text-destructive mb-0.5">Trigger Snippet</p>
+                                <p className="text-[11px] text-muted-foreground italic">"{esc.trigger_snippet}"</p>
+                              </div>
+                            )}
                           </div>
                         );
                       })()}

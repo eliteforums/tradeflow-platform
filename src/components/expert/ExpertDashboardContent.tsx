@@ -383,6 +383,16 @@ const ExpertDashboardContent = () => {
                             </Button>
                           </div>
                         )}
+                        {apt.status === "completed" && (
+                          <div className="flex items-center gap-2 mt-3 flex-wrap">
+                            <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-3 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}>
+                              <AlertTriangle className="w-3 h-3" />Escalate
+                            </Button>
+                            <Button size="sm" variant="ghost" className="gap-1 h-7 text-[11px] px-3 text-muted-foreground" onClick={() => setActiveTab("notes")}>
+                              <FileText className="w-3 h-3" />View Notes
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -544,6 +554,11 @@ const ExpertDashboardContent = () => {
                               <RefreshCw className="w-3 h-3" />
                             </Button>
                           </>
+                        )}
+                        {apt.status === "completed" && (
+                          <Button size="sm" variant="outline" className="gap-1 h-7 text-[11px] px-2.5 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}>
+                            <AlertTriangle className="w-3 h-3" />Escalate
+                          </Button>
                         )}
                       </div>
                     </div>
