@@ -192,7 +192,7 @@ const EscalationManager = () => {
                   <div className="flex items-center gap-1">
                     <User className="w-3 h-3 text-muted-foreground" />
                     <span className="text-muted-foreground">Filed by:</span>
-                    <span className="font-medium">{esc.spoc?.username || "SPOC"}</span>
+                    <span className="font-medium">{esc.spoc_username || "SPOC"}</span>
                   </div>
                    {parsed?.student_username && (
                     <div className="flex items-center gap-1">
