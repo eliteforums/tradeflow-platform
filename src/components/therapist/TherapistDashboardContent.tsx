@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { Users, Headphones, History, User, Phone, Loader2, AlertTriangle, Clock, Flag, Send, Shield, LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { createVideoSDKRoom, getVideoSDKToken } from "@/lib/videosdk";
-import { MeetingProvider } from "@videosdk.live/react-sdk";
-import MeetingView from "@/components/videosdk/MeetingView";
+
+const MeetingProvider = lazy(() => import("@videosdk.live/react-sdk").then(m => ({ default: m.MeetingProvider })));
+const MeetingView = lazy(() => import("@/components/videosdk/MeetingView"));
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {

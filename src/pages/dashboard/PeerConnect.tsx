@@ -137,7 +137,7 @@ const PeerConnect = () => {
   }, [handleSendMessage]);
 
   const handleStartSession = useCallback((internId: string) => {
-    if (creditBalance < 20) return;
+    if (creditBalance < 18) return;
     requestSession(internId);
     setShowNewChat(false);
   }, [creditBalance, requestSession]);
