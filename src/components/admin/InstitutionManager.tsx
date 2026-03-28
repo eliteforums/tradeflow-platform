@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   Building2, Plus, Copy, Check, Loader2, Coins,
-  Users, Download, UserPlus, Calendar, Eye,
+  Users, Download, UserPlus, Calendar, Eye, Trash2,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -15,6 +15,11 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import AvatarUpload from "@/components/profile/AvatarUpload";
 
 function generateEterniaCode(name: string): string {
@@ -140,6 +145,24 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
       queryClient.invalidateQueries({ queryKey: ["admin-institutions"] });
       toast.success("Institution updated");
     },
+  });
+
+  const deleteInstitutionMutation = useMutation({
+    mutationFn: async (institutionId: string) => {
+      const { data, error } = await supabase.functions.invoke("admin-delete-institution", {
+        body: { institution_id: institutionId },
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Institution deleted. ${data.users_deleted} users removed${data.errors > 0 ? ` (${data.errors} errors)` : ""}.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-institutions"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-inst-student-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-members"] });
+    },
+    onError: (err: any) => toast.error(`Failed to delete institution: ${err.message}`),
   });
 
   const bulkMutation = useMutation({
@@ -363,6 +386,44 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
                           <Eye className="w-3.5 h-3.5" />Details
                         </Button>
                       )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-8 text-xs gap-1.5 px-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete "{inst.name}"?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete the institution and all associated data including:
+                              <br />• <strong>{studentCounts[inst.id] || 0} linked users</strong> (auth accounts, profiles, PII)
+                              <br />• All temp credentials, student IDs, and stability pool data
+                              <br /><br />
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => deleteInstitutionMutation.mutate(inst.id)}
+                              disabled={deleteInstitutionMutation.isPending}
+                            >
+                              {deleteInstitutionMutation.isPending ? (
+                                <><Loader2 className="w-4 h-4 animate-spin mr-1" />Deleting...</>
+                              ) : (
+                                "Delete Institution"
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
 
                     <div className="flex-1" />
