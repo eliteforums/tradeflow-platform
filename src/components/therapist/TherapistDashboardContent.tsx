@@ -583,6 +583,8 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                         setEscalationReason(snippet || "AI-detected risk during session");
                         setEscalationOpen(true);
                       }}
+                      onCaptureSnippetReady={(fn) => { captureSnippetRef.current = fn; }}
+                      onEscalate={() => setEscalationOpen(true)}
                     />
                   </MeetingProvider>
                 </div>
