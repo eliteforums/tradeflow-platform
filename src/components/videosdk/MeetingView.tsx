@@ -32,6 +32,7 @@ interface MeetingViewProps {
   hideControls?: boolean;
   onToggleMicReady?: (toggleFn: () => void) => void;
   onMicStatusChange?: (micOn: boolean) => void;
+  onEscalate?: () => void;
 }
 
 const riskColors: Record<number, string> = {
@@ -68,6 +69,7 @@ const MeetingView = ({
   hideControls = false,
   onToggleMicReady,
   onMicStatusChange,
+  onEscalate,
 }: MeetingViewProps) => {
   const [joined, setJoined] = useState<string | null>(null);
   const joinedRef = useRef<string | null>(null);
@@ -353,7 +355,7 @@ const MeetingView = ({
           );
         })()}
       </div>
-      {!hideControls && <MeetingControls audioOnly={audioOnly} />}
+      {!hideControls && <MeetingControls audioOnly={audioOnly} onEscalate={onEscalate} />}
       {isTherapistView && sessionId && (
         <TherapistSessionControls
           sessionId={sessionId}

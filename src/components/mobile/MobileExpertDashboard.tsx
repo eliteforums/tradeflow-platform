@@ -111,19 +111,20 @@ const MobileExpertDashboard = () => {
   const submitEscalation = useMutation({
     mutationFn: async () => {
       if (!user || !escalationDialog.appointmentId) throw new Error("Missing data");
-      const appointment = myAppointments.find(a => a.id === escalationDialog.appointmentId);
-      let spocId = user.id;
-      if ((appointment?.student as any)?.institution_id) {
-        const { data: spocs } = await supabase.from("profiles").select("id").eq("institution_id", (appointment!.student as any).institution_id).eq("role", "spoc").limit(1);
-        if (spocs && spocs.length > 0) spocId = spocs[0].id;
-      }
-      const { error } = await supabase.from("escalation_requests").insert({
-        spoc_id: spocId, justification_encrypted: escalationReason, session_id: null, entry_id: null,
-        trigger_timestamp: appointment?.slot_time || null,
+      const { data, error } = await supabase.functions.invoke("escalate-emergency", {
+        body: {
+          appointment_id: escalationDialog.appointmentId,
+          justification: escalationReason,
+          transcript_snippet: null,
+        },
       });
-      if (error) throw error;
+      if (error) throw new Error(error.message || "Escalation failed");
+      if (data?.error) throw new Error(data.error);
+      if (data?.contact) {
+        toast.info(`Emergency contact: ${data.contact.name} (${data.contact.phone})`);
+      }
     },
-    onSuccess: () => { toast.success("Escalation submitted"); setEscalationDialog({ open: false }); setEscalationReason(""); },
+    onSuccess: () => { toast.success("Escalation submitted with emergency contact"); setEscalationDialog({ open: false }); setEscalationReason(""); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -214,6 +215,11 @@ const MobileExpertDashboard = () => {
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => setRescheduleDialog({ open: true, appointmentId: apt.id, currentTime: apt.slot_time, studentId: apt.student_id })}><RefreshCw className="w-3 h-3" /></Button>
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}><AlertTriangle className="w-3 h-3" /></Button>
                         <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => setSelectedAppointment(apt.id)}>Complete</Button>
+                      </div>
+                    )}
+                    {apt.status === "completed" && (
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        <Button size="sm" variant="outline" className="h-7 text-[10px] px-2 text-eternia-warning" onClick={() => setEscalationDialog({ open: true, appointmentId: apt.id })}><AlertTriangle className="w-3 h-3" />Escalate</Button>
                       </div>
                     )}
                   </div>

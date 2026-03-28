@@ -1,12 +1,13 @@
 import { useMeeting } from "@videosdk.live/react-sdk";
-import { Mic, MicOff, Video, VideoOff, PhoneOff } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MeetingControlsProps {
   audioOnly?: boolean;
+  onEscalate?: () => void;
 }
 
-const MeetingControls = ({ audioOnly = false }: MeetingControlsProps) => {
+const MeetingControls = ({ audioOnly = false, onEscalate }: MeetingControlsProps) => {
   const { leave, toggleMic, toggleWebcam, localMicOn, localWebcamOn } = useMeeting();
 
   return (
@@ -28,6 +29,18 @@ const MeetingControls = ({ audioOnly = false }: MeetingControlsProps) => {
           onClick={() => toggleWebcam()}
         >
           {localWebcamOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+        </Button>
+      )}
+
+      {onEscalate && (
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-full w-12 h-12 border-destructive/50 text-destructive hover:bg-destructive/10"
+          onClick={onEscalate}
+          title="Escalate to SPOC"
+        >
+          <AlertTriangle className="w-5 h-5" />
         </Button>
       )}
 
