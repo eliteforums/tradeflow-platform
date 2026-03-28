@@ -36,23 +36,32 @@ serve(async (req) => {
     // Prevent self-deletion
     if (target_user_id === user.id) throw new Error("Cannot delete your own account from admin panel");
 
-    // 1. Audit log
+    // 1. Look up the user's role before deletion
+    const { data: targetProfile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", target_user_id)
+      .single();
+
+    const targetRole = targetProfile?.role || "student";
+
+    // 2. Audit log
     await adminClient.from("audit_logs").insert({
       actor_id: user.id,
       action_type: "admin_deleted_member",
       target_table: "profiles",
       target_id: target_user_id,
-      metadata: { deleted_by: user.id, deleted_at: new Date().toISOString() },
+      metadata: { deleted_by: user.id, deleted_at: new Date().toISOString(), role: targetRole },
     });
 
-    // 2. Delete PII
+    // 3. Delete PII
     await adminClient.from("user_private").delete().eq("user_id", target_user_id);
     await adminClient.from("recovery_credentials").delete().eq("user_id", target_user_id);
 
-    // 3. Delete BlackBox entries
+    // 4. Delete BlackBox entries
     await adminClient.from("blackbox_entries").delete().eq("user_id", target_user_id);
 
-    // 4. Soft-delete profile
+    // 5. Soft-delete profile
     await adminClient.from("profiles").update({
       is_active: false,
       username: `deleted_${target_user_id.slice(0, 8)}`,
@@ -61,19 +70,28 @@ serve(async (req) => {
       specialty: null,
     }).eq("id", target_user_id);
 
-    // 5. Remove role assignments
+    // 6. Remove role assignments
     await adminClient.from("user_roles").delete().eq("user_id", target_user_id);
 
-    // 6. Recycle temp credential (return ID to pool)
-    await adminClient
-      .from("temp_credentials")
-      .update({ status: "unused", auth_user_id: null, activated_at: null, assigned_at: null })
-      .eq("auth_user_id", target_user_id);
-
-    // 7. Delete auth user
+    // 7. Delete auth user FIRST (before touching credentials)
     const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(target_user_id);
     if (deleteAuthError) {
-      console.error("Failed to delete auth user:", deleteAuthError);
+      throw new Error(`Failed to delete auth user: ${deleteAuthError.message}`);
+    }
+
+    // 8. Handle temp credentials based on role
+    if (targetRole === "student") {
+      // Recycle student credentials back to pool
+      await adminClient
+        .from("temp_credentials")
+        .update({ status: "unused", auth_user_id: null, activated_at: null, assigned_at: null })
+        .eq("auth_user_id", target_user_id);
+    } else {
+      // Permanently delete staff credentials (spoc, expert, intern, therapist)
+      await adminClient
+        .from("temp_credentials")
+        .delete()
+        .eq("auth_user_id", target_user_id);
     }
 
     return new Response(JSON.stringify({ success: true }), {

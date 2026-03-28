@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   Building2, Plus, Copy, Check, Loader2, Coins,
-  Users, Download, UserPlus, Calendar, Eye,
+  Users, Download, UserPlus, Calendar, Eye, Trash2,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,

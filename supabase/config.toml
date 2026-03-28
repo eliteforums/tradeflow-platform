@@ -36,6 +36,9 @@ verify_jwt = false
 [functions.admin-delete-member]
 verify_jwt = false
 
+[functions.admin-delete-institution]
+verify_jwt = false
+
 [functions.get-emergency-contact]
 verify_jwt = false
 
