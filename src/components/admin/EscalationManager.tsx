@@ -23,10 +23,24 @@ const EscalationManager = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("escalation_requests")
-        .select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username)")
+        .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+
+      // Resolve SPOC usernames via separate lookup
+      const spocIds = [...new Set(data.map((e: any) => e.spoc_id).filter(Boolean))];
+      let spocMap: Record<string, string> = {};
+      if (spocIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", spocIds);
+        if (profiles) {
+          spocMap = Object.fromEntries(profiles.map((p: any) => [p.id, p.username]));
+        }
+      }
+
+      return data.map((e: any) => ({ ...e, spoc_username: spocMap[e.spoc_id] || null }));
     },
   });
 
