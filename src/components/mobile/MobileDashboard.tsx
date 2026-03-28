@@ -4,6 +4,7 @@ import {
   Calendar, MessageCircle, Box, Music, Sparkles, Coins,
   ArrowRight, Award, Heart, BarChart3,
 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCredits } from "@/hooks/useCredits";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -105,6 +106,14 @@ const MobileDashboard = () => {
           <Heart className="w-5 h-5 text-primary mb-2" />
           <p className="text-sm text-foreground/90 leading-relaxed">{quote}</p>
         </div>
+
+        {/* Low Balance Warning */}
+        {balance < 5 && (
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-eternia-warning/10 border border-eternia-warning/20">
+            <AlertCircle className="w-5 h-5 text-eternia-warning shrink-0" />
+            <p className="text-sm text-eternia-warning font-medium">Your care energy is low. Refill gently.</p>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
