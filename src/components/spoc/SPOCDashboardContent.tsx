@@ -865,9 +865,12 @@ const SPOCDashboardContent = () => {
                           {format(new Date(esc.created_at), "MMM d, h:mm a")}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg line-clamp-3">
-                        {esc.justification_encrypted}
-                      </p>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold text-destructive">⚠️ Reason for Escalation</p>
+                        <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg line-clamp-3">
+                          {esc.justification_encrypted}
+                        </p>
+                      </div>
                       {esc.trigger_snippet && (() => {
                         let parsed: any = null;
                         try { parsed = JSON.parse(esc.trigger_snippet); } catch {}
@@ -906,7 +909,21 @@ const SPOCDashboardContent = () => {
                                       <p className="font-mono text-[10px] truncate">{parsed.session_id}</p>
                                     </div>
                                   )}
+                                  {parsed.escalated_by_role && (
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground">Escalated By</p>
+                                      <p className="font-semibold capitalize">{parsed.escalated_by_role}</p>
+                                    </div>
+                                  )}
                                 </div>
+                              </div>
+                            )}
+
+                            {/* Transcript snippet (shown for all escalation types) */}
+                            {parsed?.transcript_snippet && (
+                              <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+                                <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript Snippet</p>
+                                <p className="text-[11px] text-foreground italic">"{parsed.transcript_snippet}"</p>
                               </div>
                             )}
                             
@@ -937,13 +954,7 @@ const SPOCDashboardContent = () => {
                                     </div>
                                   )}
                                 </div>
-                                {parsed.transcript_snippet && (
-                                  <div className="mt-2 p-2 rounded-lg bg-muted/30 border border-border/50">
-                                    <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript Snippet</p>
-                                    <p className="text-[11px] text-foreground italic">"{parsed.transcript_snippet}"</p>
-                                  </div>
-                                )}
-                              </div>
+                                </div>
                             )}
                             
                             {/* Fallback: raw trigger snippet for non-JSON or non-emergency */}
