@@ -342,10 +342,10 @@ const PeerConnect = () => {
                     })
                   )}
                 </ScrollArea>
-                {creditBalance < 20 && (
+                {creditBalance < 18 && (
                   <div className="px-4 py-2 border-t border-border">
                     <p className="text-xs text-destructive flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" /> Need 20 ECC to start a session
+                      <AlertCircle className="w-3 h-3" /> Need 18 ECC to start a session
                     </p>
                   </div>
                 )}

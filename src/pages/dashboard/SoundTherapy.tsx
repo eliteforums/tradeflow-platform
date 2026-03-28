@@ -26,6 +26,8 @@ const SoundTherapy = () => {
   const earnedForTrackRef = useRef<Set<string>>(new Set());
   const filteredTracks = activeCategory === "all" ? tracks : tracks.filter((t) => t.category === activeCategory);
   const currentTrackData = filteredTracks[currentTrack];
+  const currentTrackRef = useRef(currentTrackData);
+  currentTrackRef.current = currentTrackData;
 
   useEffect(() => {
     if (currentTrackData?.file_url && isPlaying) {
@@ -37,14 +39,15 @@ const SoundTherapy = () => {
       const updateProgress = () => { if (audio.duration) setProgress([(audio.currentTime / audio.duration) * 100]); };
       audio.addEventListener("timeupdate", updateProgress);
       audio.addEventListener("ended", () => {
+        const track = currentTrackRef.current;
         // Earn ECC on full track listen
-        if (currentTrackData && canEarn && !earnedForTrackRef.current.has(currentTrackData.id)) {
-          earnedForTrackRef.current.add(currentTrackData.id);
-          earnFromActivity({ amount: 1, activity: `Listened to: ${currentTrackData.title}` });
+        if (track && canEarn && !earnedForTrackRef.current.has(track.id)) {
+          earnedForTrackRef.current.add(track.id);
+          earnFromActivity({ amount: 1, activity: `Listened to: ${track.title}` });
         }
         // Atomic play count increment
-        if (currentTrackData) {
-          supabase.rpc("increment_play_count", { _track_id: currentTrackData.id }).then(() => {});
+        if (track) {
+          supabase.rpc("increment_play_count", { _track_id: track.id }).then(() => {});
         }
         handleNext();
       });
