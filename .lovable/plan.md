@@ -1,69 +1,61 @@
 
-Goal: make the escalation flow truly consistent across desktop/mobile and fix the L3 “claimed by another expert” blocker.
 
-1) Root-cause fixes to apply
-- In-call escalation is still missing from the actual call window (VideoCallModal/MeetingView controls), so escalation is only available outside the modal in some paths.
-- Mobile dashboards still use older escalation paths (direct table insert), which creates inconsistent payloads and “query-like” display in SPOC.
-- L3 claim happens before the expert is actually in-call and is done client-side, so false claims/race conditions can hide Join Call.
+## Fix: Call Transcription Capture & Storage on Escalation
 
-2) Implementation plan
+### Problem Summary
+The transcription snippet system has the plumbing in place (audio monitor buffer, `captureEscalationSnippet` function, backend `trigger_snippet` storage, admin/SPOC display) but it's **never actually captured** at escalation time in most flows. The `transcript_snippet` is hardcoded to `null` in 4 out of 5 escalation paths.
 
-A. Expert escalation button consistency (during + after call)
-- Add an escalation action directly inside call controls so it is always available while in-call.
-- Keep post-session escalation visible on completed cards in both desktop and mobile expert dashboards.
-- Ensure both Home and Sessions views expose Escalate consistently for completed sessions.
+### Issues Identified
 
-B. SPOC structured escalation view (replace query/raw style)
-- Standardize parsing of escalation payloads in `SPOCDashboardContent`.
-- If `trigger_snippet` is missing/invalid, derive display data from related session fields (`session_id`, `session_type`) so older records still show structured info.
-- Render the same structured block in both:
-  - Flags escalation cards
-  - M.Phil Override Records section
-- Structured block will always prioritize:
-  - Student ID
-  - Session type + session ID
-  - Emergency contact (when available)
-  - Escalation reason
+1. **Expert appointment escalation** (`ExpertDashboardContent.tsx` line 220): `transcript_snippet: null` — never captures from active call
+2. **Mobile expert escalation** (`MobileExpertDashboard.tsx` line 118): `transcript_snippet: null`
+3. **Intern escalation** (`InternDashboardContent.tsx` line 140): `transcript_snippet: null`
+4. **Mobile intern escalation** (`MobileInternDashboard.tsx` line 116): `transcript_snippet: null`
+5. **L3 panel** (`ExpertL3AlertPanel.tsx`): Works correctly — uses `captureSnippetRef` ✅
+6. **In-call escalation button** (`MeetingControls.tsx`): Fires `onEscalate` but does NOT capture transcript before triggering the dialog
+7. **`captureEscalationSnippet`** only captures 10s **before** — not 10s after. The requirement is ±10s (before + after).
+8. **Admin dashboard** already renders `transcript_snippet` from parsed JSON ✅ — but it's always null so nothing shows.
 
-C. Blackbox L3 claim logic (critical)
-- Move claim to happen after the expert actually joins the call (not at button click).
-- Implement an atomic backend claim step (single-winner) so only one expert can claim after join.
-- If claim fails (already claimed), immediately close/leave and show a clear message.
-- Update UI states:
-  - Before claim: show Join Call
-  - Claimed by current expert: Rejoin + escalation actions
-  - Claimed by another expert: show claimed state
-- Harden parsing to ignore malformed history entries that could falsely mark “claimed by another expert.”
+### Plan
 
-D. Align all escalation entry points
-- Update mobile expert and mobile intern flows to call the same backend escalation function used on desktop (`escalate-emergency`) so payload shape is uniform.
-- Remove/replace direct `escalation_requests` inserts from mobile paths.
+#### A. Capture ±10s transcript (before + after)
 
-3) Files to update
-- `src/components/videosdk/VideoCallModal.tsx`
-- `src/components/videosdk/MeetingView.tsx`
-- `src/components/videosdk/MeetingControls.tsx`
-- `src/components/expert/ExpertDashboardContent.tsx`
-- `src/components/mobile/MobileExpertDashboard.tsx`
-- `src/components/intern/InternDashboardContent.tsx` (validation pass for consistency)
-- `src/components/mobile/MobileInternDashboard.tsx`
-- `src/components/expert/ExpertL3AlertPanel.tsx`
-- `src/components/spoc/SPOCDashboardContent.tsx`
-- New backend claim handler for L3 (edge function, and DB helper only if needed for atomic lock)
+**`useAudioMonitor.ts`**: Add a new method `captureEscalationSnippetAsync(beforeMs, afterMs)` that:
+1. Immediately captures `beforeMs` worth of buffer (existing logic)
+2. Continues recording for `afterMs` (default 10s)
+3. Returns a Promise that resolves with the combined "before + after" text
 
-4) Technical details
-- L3 claim flow target:
-  1) Expert clicks Join Call
-  2) Call joins successfully
-  3) Backend atomic claim executes
-  4) Winner stays; non-winner is exited with “already claimed”
-- SPOC payload normalization:
-  - Parse JSON when available
-  - Fallback to relational lookup for legacy rows
-  - Render one unified structured component in all escalation list contexts
+This allows callers to await the full ±10s window.
 
-5) Verification checklist
-- Expert desktop + mobile: Escalate visible during active call and after completion.
-- Intern desktop + mobile escalations: SPOC receives structured session data.
-- L3 Blackbox: no premature “claimed by another expert”; Join Call visible pre-claim; exactly one expert can keep the claim post-join.
-- SPOC Flags + M.Phil sections: no raw/query-style output for new and legacy escalations.
+#### B. Wire transcript capture into all escalation flows
+
+**`ExpertDashboardContent.tsx`**:
+- Store a `captureSnippetRef` (like L3 panel does)
+- Pass `onCaptureSnippetReady` to `VideoCallModal`
+- In `submitEscalation`, call `captureSnippetRef.current?.()` and send the result as `transcript_snippet`
+- For post-session escalations (no active call), leave as null (no audio to capture)
+
+**`MobileExpertDashboard.tsx`**: Same pattern — wire `captureSnippetRef` through VideoCallModal
+
+**`InternDashboardContent.tsx`** and **`MobileInternDashboard.tsx`**:
+- Same pattern — add `captureSnippetRef`, pass through VideoCallModal for peer sessions
+- Wire into the escalation mutation
+
+**`VideoCallModal.tsx`**: Already supports `onCaptureSnippetReady` prop ✅ — just needs to be passed from more callers
+
+#### C. In-call escalation button captures before triggering dialog
+
+**`MeetingControls.tsx` / `MeetingView.tsx`**: The `onEscalate` callback should first capture the snippet, then open the escalation dialog with the snippet pre-attached. Update `onEscalate` signature to pass the captured snippet.
+
+#### D. No backend changes needed
+The `escalate-emergency` edge function already stores `transcript_snippet` in the `trigger_snippet` JSON. Admin and SPOC dashboards already parse and display it. Once the frontend actually sends non-null values, everything will display correctly.
+
+### Files to Edit
+1. `src/hooks/useAudioMonitor.ts` — add async ±10s capture method
+2. `src/components/expert/ExpertDashboardContent.tsx` — wire captureSnippetRef, use in escalation
+3. `src/components/mobile/MobileExpertDashboard.tsx` — same
+4. `src/components/intern/InternDashboardContent.tsx` — wire captureSnippetRef for peer sessions
+5. `src/components/mobile/MobileInternDashboard.tsx` — same
+6. `src/components/videosdk/MeetingView.tsx` — pass captured snippet via onEscalate callback
+7. `src/components/videosdk/MeetingControls.tsx` — no change needed (already wired)
+
