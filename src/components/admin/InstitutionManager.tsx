@@ -386,6 +386,44 @@ const InstitutionManager = ({ onSelectInstitution }: InstitutionManagerProps = {
                           <Eye className="w-3.5 h-3.5" />Details
                         </Button>
                       )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="h-8 text-xs gap-1.5 px-3"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete "{inst.name}"?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete the institution and all associated data including:
+                              <br />• <strong>{studentCounts[inst.id] || 0} linked users</strong> (auth accounts, profiles, PII)
+                              <br />• All temp credentials, student IDs, and stability pool data
+                              <br /><br />
+                              This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => deleteInstitutionMutation.mutate(inst.id)}
+                              disabled={deleteInstitutionMutation.isPending}
+                            >
+                              {deleteInstitutionMutation.isPending ? (
+                                <><Loader2 className="w-4 h-4 animate-spin mr-1" />Deleting...</>
+                              ) : (
+                                "Delete Institution"
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
 
                     <div className="flex-1" />
