@@ -1,32 +1,40 @@
 
 
-## Fix: Escalation Flow — 2 Remaining Issues
+## Fix: Call Transcription Storage — Verification & Admin Dashboard Display
 
-### 3.1 Expert Escalation Button Placement
+### Current State Analysis
 
-**Current state**: Already implemented correctly:
-- During call: In-session escalate button (line 588) + `onEscalate` passed to VideoCallModal (line 879)
-- After call: Completed appointment cards have Escalate button (line 565)
+After reviewing all relevant files, the transcription capture and storage flow is **already implemented end-to-end**:
 
-**No code change needed** — the escalation button is available both during and after calls.
+1. **Trigger**: All three roles (Expert, Intern, Therapist) route escalations through the `escalate-emergency` edge function, passing `transcript_snippet`.
+2. **Capture**: Expert and Therapist use `captureSnippetRef` (±10s audio buffer via `useAudioMonitor`). Intern falls back to last 10 peer chat messages when no audio is available.
+3. **Backend Storage**: The edge function stores structured JSON in `escalation_requests.trigger_snippet` containing: Student Eternia ID, username, escalated_by_role, session_id, session_type, emergency contact, and transcript_snippet.
+4. **Admin Dashboard**: `EscalationManager.tsx` parses the `trigger_snippet` JSON and displays Student ID, emergency contact, escalator role, transcript snippet, and reason.
 
-### 3.2 SPOC Dashboard — Structured Escalation View
+### Remaining Issue
 
-**Root cause**: The SPOC escalation display parses `trigger_snippet` JSON and shows Student ID, Username, Session Type, Session ID, and emergency contact — but is missing:
-1. **Escalator role** — the edge function stores `escalated_by_role` in the JSON but the SPOC display never renders it
-2. **Escalation reason** — shown as raw text dump, not labeled clearly as "Reason for Escalation"
+The Admin `EscalationManager` query (line 26) uses a foreign key join syntax:
+```
+.select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username)")
+```
+But the `escalation_requests` table has **no foreign keys** defined. This join will fail, causing the query to error or return no data — meaning the admin sees nothing.
 
-**File: `src/components/spoc/SPOCDashboardContent.tsx`** (lines 878-957)
+### Fix Plan
 
-Add to the structured session details grid (inside the `hasSessionInfo` block):
-- Display `parsed.escalated_by_role` as "Escalated By" (e.g., "therapist", "expert", "intern")
-- Display `parsed.transcript_snippet` in the session details section (currently only shown inside the emergency contact block, but it should be visible even without emergency contact data)
+**File: `src/components/admin/EscalationManager.tsx`**
 
-Move the escalation reason (`esc.justification_encrypted`) display to be clearly labeled as "Reason for Escalation" with a distinct heading.
+Replace the FK join with a two-step approach: fetch escalations first, then resolve SPOC usernames from profiles separately. Alternatively, use a simpler select without the FK join and look up the SPOC username from `trigger_snippet` JSON (which already contains `escalated_by_role` and student info).
+
+Specifically:
+1. Change the query from `select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username)")` to `select("*")` — no FK join
+2. Add a secondary query to fetch SPOC profile usernames for the `spoc_id` values in the results, or resolve inline from the parsed `trigger_snippet`
+3. Update the "Filed by" display (line 181) to use the resolved username
+
+This single fix ensures the Admin Dashboard correctly loads and displays all escalation entries with their full structured data (Student ID, session details, role, reason, emergency contact, transcript snippet).
 
 ### Files to Edit
 
 | File | Change |
 |------|--------|
-| `src/components/spoc/SPOCDashboardContent.tsx` | Add escalator role display, improve reason labeling, show transcript outside emergency block |
+| `src/components/admin/EscalationManager.tsx` | Remove FK join from query; resolve SPOC username via separate lookup |
 
