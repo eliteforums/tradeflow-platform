@@ -87,9 +87,20 @@ const ExpertL3AlertPanel = () => {
 
   // Helper to check claim status from escalation_history
   const getClaimStatus = (session: L3Session) => {
-    const history = Array.isArray(session.escalation_history) ? session.escalation_history : [];
-    const claimEntry = (history as any[]).find(
-      (entry: any) => entry && typeof entry === "object" && entry.type === "expert_claimed"
+    let history: any[] = [];
+    try {
+      const raw = session.escalation_history;
+      if (Array.isArray(raw)) {
+        history = raw;
+      } else if (typeof raw === "string") {
+        const parsed = JSON.parse(raw);
+        history = Array.isArray(parsed) ? parsed : [];
+      }
+    } catch {
+      history = [];
+    }
+    const claimEntry = history.find(
+      (entry: any) => entry && typeof entry === "object" && entry.type === "expert_claimed" && typeof entry.expert_id === "string"
     );
     if (!claimEntry) return { claimed: false, byMe: false, byOther: false };
     return {

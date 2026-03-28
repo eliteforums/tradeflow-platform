@@ -876,7 +876,7 @@ const ExpertDashboardContent = () => {
         </DialogContent>
       </Dialog>
 
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} enableMonitoring={true} onCaptureSnippetReady={(fn) => { captureSnippetRef.current = fn; }} />
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} enableMonitoring={true} onCaptureSnippetReady={(fn) => { captureSnippetRef.current = fn; }} onEscalate={() => { if (callModal.appointmentId) { setEscalationDialog({ open: true, appointmentId: callModal.appointmentId }); } }} />
     </DashboardLayout>
   );
 };

@@ -58,12 +58,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch session
+    // Fetch session — only allow claiming non-completed sessions
     const { data: session, error: sessErr } = await admin
       .from("blackbox_sessions")
       .select("id, escalation_history, flag_level, status, therapist_id")
       .eq("id", session_id)
       .gte("flag_level", 3)
+      .in("status", ["active", "accepted", "queued", "escalated"])
       .single();
 
     if (sessErr || !session) {
