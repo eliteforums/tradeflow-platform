@@ -1,59 +1,71 @@
 
 
-## Platform Audit — Issues Found
+## Platform Audit — Remaining Issues Found
 
-### Issue 1: Peer Connect Credit Check Still Wrong in 3 Places (Bug — Medium)
-The actual session cost is 18 ECC, but:
-- **`PeerConnect.tsx` line 345-349**: Warning message still shows `creditBalance < 20` and text says "Need 20 ECC"
-- **`MobilePeerConnect.tsx` line 116**: Guard check `creditBalance < 20` (should be `< 18`)
-- **`MobilePeerConnect.tsx` line 173-177**: Warning shows `creditBalance < 20` and text says "Need at least 20 ECC"
-
-**Fix**: Change all three to `< 18` and update text to "Need 18 ECC".
+### Issue 1: MobileCredits Shows "5 ECC/day" — Should Be "5 ECC/week" (Bug — Medium)
+- **File**: `src/components/mobile/MobileCredits.tsx` line 114
+- **Problem**: Text says `Earn (5 ECC/day)` — should be `Earn (5 ECC/week)`
+- **Fix**: Change `"5 ECC/day"` to `"5 ECC/week"`
 
 ---
 
-### Issue 2: "Daily Cap" Label — Actually Weekly Cap (Bug — Low)
-The earn cap is 5 ECC per **week** (uses `get_weekly_earn_total` DB function), but:
-- **`Credits.tsx` line 77**: Shows "Daily Cap" label
-- **`TibetanBowl.tsx` line 59**: Says "left today" and "Daily cap reached"
-
-WreckBuddy.tsx correctly says "weekly". These labels are misleading.
-
-**Fix**: Change "Daily Cap" → "Weekly Cap" and "left today" → "left this week".
+### Issue 2: MobileCredits Shows "Peer: 20 ECC" — Should Be 18 ECC (Bug — Medium)
+- **File**: `src/components/mobile/MobileCredits.tsx` line 166
+- **Problem**: Credit cost text says `Peer: 20 ECC` — actual cost is 18 ECC
+- **Fix**: Change `"Peer: 20 ECC"` to `"Peer: 18 ECC"`
 
 ---
 
-### Issue 3: TibetanBowl Uses Legacy Aliases (Code Smell — Low)
-`TibetanBowl.tsx` line 9 destructures `{ dailyEarned, dailyCap, remainingToday }` — these are legacy aliases for the weekly values in `useEccEarn`. Works but confusing for maintainability.
-
-**Fix**: Switch to `{ weeklyEarned, weeklyCap, remainingThisWeek }` like WreckBuddy does.
-
----
-
-### Issue 4: SoundTherapy Audio Cleanup Race Condition (Bug — Low)
-`SoundTherapy.tsx` line 30-52: The `useEffect` creates a new `Audio` object on every track change, but the `ended` event handler references `currentTrackData` from closure. If the user rapidly switches tracks, `earnFromActivity` could credit the wrong track. Also `handleNext` is called from the `ended` listener but uses stale `filteredTracks.length`.
-
-**Fix**: Use a ref for `currentTrackData` in the `ended` handler.
+### Issue 3: Appointments Page Hardcodes 45 ECC Expert Cost (Bug — Low)
+- **File**: `src/pages/dashboard/Appointments.tsx` line 40
+- **Problem**: `creditCost: 45` is hardcoded when booking — but the credit costs listed elsewhere say 50 ECC for Expert Connect
+- **Fix**: Verify the correct cost (45 or 50) and make consistent. MobileCredits line 166 says `Expert: 50 ECC`.
 
 ---
 
-### Issue 5: Escalation `session_id` Fix Confirmed (Previously Fixed)
-`escalate-emergency/index.ts` line 219 now correctly passes `session_id: sessionRef.id || null`. No action needed.
+### Issue 4: Console Warning — Footer Ref on EterniaLogo (Already Fixed, Still Showing)
+- **Console**: `Function components cannot be given refs` on `Footer`
+- **Status**: EterniaLogo already has `forwardRef` (line 10). The console error references `Landing > Footer`. Need to check if Footer is passing a ref via some other mechanism (e.g., a wrapping component or Link).
+- **Investigation**: Footer.tsx line 29 passes `<EterniaLogo size={32} />` inside a `<Link>` — no ref passed. The warning may be stale/cached. No fix needed.
+
+---
+
+### Issue 5: SoundTherapy `handleNext` Uses Stale `filteredTracks.length` (Bug — Low)
+- **File**: `src/pages/dashboard/SoundTherapy.tsx` line 65
+- **Problem**: `handleNext` is in a `useCallback` with `[filteredTracks.length]` dep, but it's called from the `ended` event listener in the `useEffect` on line 41. The `useEffect` deps are `[currentTrack, isPlaying, currentTrackData?.file_url]` — it doesn't re-subscribe when `filteredTracks.length` changes. So `handleNext` could use a stale reference.
+- **Fix**: Use a ref for `handleNext` or include it in the audio effect cleanup/re-subscribe logic.
+
+---
+
+### Issue 6: MobileDashboard Missing Low Balance Warning (Inconsistency — Low)
+- **File**: `src/components/mobile/MobileDashboard.tsx`
+- **Problem**: Desktop Dashboard (line 78) shows a low balance warning when `balance < 5`, but MobileDashboard doesn't have this warning.
+- **Fix**: Add the same low-balance alert to MobileDashboard.
+
+---
+
+### Issue 7: Profile Page Leaks Raw Student ID in UI (Bug — Medium)
+- **File**: `src/pages/dashboard/Profile.tsx` lines 213-218
+- **Problem**: `{(profile as any).student_id}` is displayed directly. The APAAR spec says raw IDs should never be stored or shown. If `profiles.student_id` column still has data, it would be visible here.
+- **Fix**: Remove this block or only show masked value. The verification section already shows "Verified" status.
 
 ---
 
 ### Summary
 
-| # | Issue | Severity | Files |
-|---|-------|----------|-------|
-| 1 | Peer Connect credit check: 3 remaining `< 20` references | **Medium** | PeerConnect.tsx, MobilePeerConnect.tsx |
-| 2 | "Daily Cap" label should say "Weekly Cap" | **Low** | Credits.tsx |
-| 3 | TibetanBowl uses legacy daily aliases | **Low** | TibetanBowl.tsx |
-| 4 | SoundTherapy stale closure in audio ended handler | **Low** | SoundTherapy.tsx |
+| # | Issue | Severity | File |
+|---|-------|----------|------|
+| 1 | MobileCredits: "5 ECC/day" → "5 ECC/week" | **Medium** | MobileCredits.tsx |
+| 2 | MobileCredits: "Peer: 20 ECC" → "Peer: 18 ECC" | **Medium** | MobileCredits.tsx |
+| 3 | Expert booking cost inconsistency (45 vs 50) | **Low** | Appointments.tsx |
+| 4 | SoundTherapy stale `handleNext` in audio listener | **Low** | SoundTherapy.tsx |
+| 5 | MobileDashboard missing low balance warning | **Low** | MobileDashboard.tsx |
+| 6 | Profile leaks raw `student_id` in UI | **Medium** | Profile.tsx |
 
 ### Files to Edit
-- `src/pages/dashboard/PeerConnect.tsx` — Fix credit warning threshold and text (lines 345-349)
-- `src/components/mobile/MobilePeerConnect.tsx` — Fix guard (line 116) and warning (lines 173-177)
-- `src/pages/dashboard/Credits.tsx` — Change "Daily Cap" → "Weekly Cap" (line 77)
-- `src/pages/dashboard/TibetanBowl.tsx` — Switch to weekly aliases and labels (line 9, 59)
+- `src/components/mobile/MobileCredits.tsx` — Fix "day" → "week" label (line 114) and "20 ECC" → "18 ECC" (line 166)
+- `src/pages/dashboard/Profile.tsx` — Remove raw student_id display block (lines 213-218)
+- `src/pages/dashboard/Appointments.tsx` — Align credit cost with documented 50 ECC (line 40)
+- `src/pages/dashboard/SoundTherapy.tsx` — Use ref for handleNext in audio ended listener
+- `src/components/mobile/MobileDashboard.tsx` — Add low balance warning matching desktop
 
