@@ -55,7 +55,9 @@ const MobileProfile = () => {
         setEmergencyName(data.emergency_name_encrypted || "");
         setEmergencyPhone(data.emergency_phone_encrypted || "");
         setEmergencyRelation(data.emergency_relation || "");
-        if (data.student_id_encrypted) { setStudentId("••••••••"); setIdVerified(true); }
+        const verified = !!(data.apaar_verified || data.erp_verified);
+        setIdVerified(verified);
+        if (verified) setStudentId("••••••••");
       }
     };
     loadPrivate();
@@ -76,15 +78,38 @@ const MobileProfile = () => {
 
   const handleVerifyStudentId = async () => {
     if (!user || !studentId.trim() || studentId === "••••••••") return;
-    if (studentId.trim().length < 4) { toast.error("Enter a valid ID (min 4 chars)"); return; }
     setIsVerifyingId(true);
     try {
-      const { error } = await supabase.from("user_private").upsert({
-        user_id: user.id, student_id_encrypted: studentId.trim(), updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
+      const institutionId = profile?.institution_id;
+      if (!institutionId) { toast.error("No institution linked"); setIsVerifyingId(false); return; }
+
+      const { data: inst } = await supabase
+        .from("institutions").select("institution_type").eq("id", institutionId).single();
+      const idType = inst?.institution_type === "school" ? "erp" : "apaar";
+
+      const { data, error } = await supabase.functions.invoke("verify-student-id", {
+        body: { institution_id: institutionId, id_type: idType, student_id: studentId.trim(), claim_for_user_id: user.id }
+      });
       if (error) throw error;
-      setIdVerified(true); setStudentId("••••••••");
-      toast.success("Student ID stored securely");
+
+      if (data.verified) {
+        await supabase.from("user_private").upsert({
+          user_id: user.id,
+          [idType === "apaar" ? "apaar_verified" : "erp_verified"]: true,
+          student_id_encrypted: null, apaar_id_encrypted: null, erp_id_encrypted: null,
+        }, { onConflict: "user_id" });
+        await supabase.from("profiles").update({ is_verified: true }).eq("id", user.id);
+        await refreshProfile();
+        setIdVerified(true); setStudentId("••••••••");
+        toast.success("ID verified successfully");
+      } else if (data.reason === "no_records") {
+        await supabase.from("profiles").update({ is_verified: true }).eq("id", user.id);
+        await refreshProfile();
+        setIdVerified(true); setStudentId("••••••••");
+        toast.info(data.message || "Verified (no records to check)");
+      } else {
+        toast.error(data.message || "Verification failed");
+      }
     } catch (e: any) { toast.error(e.message); }
     finally { setIsVerifyingId(false); }
   };
