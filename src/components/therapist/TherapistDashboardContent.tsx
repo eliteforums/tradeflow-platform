@@ -508,6 +508,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
 
               {/* Audio session */}
               {token && activeSession.room_id ? (
+                <Suspense fallback={<div className="text-center py-8 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" /><p className="text-sm">Loading call...</p></div>}>
                 <div className="rounded-xl bg-card border border-border overflow-hidden"
                   key={`${activeSession.id}-${activeSession.room_id}`}
                 >
@@ -553,6 +554,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                     />
                   </MeetingProvider>
                 </div>
+                </Suspense>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
