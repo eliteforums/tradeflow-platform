@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { Users, Headphones, History, User, Phone, Loader2, AlertTriangle, Clock, Flag, Send, Shield, LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,8 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { createVideoSDKRoom, getVideoSDKToken } from "@/lib/videosdk";
-import { MeetingProvider } from "@videosdk.live/react-sdk";
-import MeetingView from "@/components/videosdk/MeetingView";
+
+const MeetingProvider = lazy(() => import("@videosdk.live/react-sdk").then(m => ({ default: m.MeetingProvider })));
+const MeetingView = lazy(() => import("@/components/videosdk/MeetingView"));
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
@@ -507,6 +508,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
 
               {/* Audio session */}
               {token && activeSession.room_id ? (
+                <Suspense fallback={<div className="text-center py-8 text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" /><p className="text-sm">Loading call...</p></div>}>
                 <div className="rounded-xl bg-card border border-border overflow-hidden"
                   key={`${activeSession.id}-${activeSession.room_id}`}
                 >
@@ -552,6 +554,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                     />
                   </MeetingProvider>
                 </div>
+                </Suspense>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />

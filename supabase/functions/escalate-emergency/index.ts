@@ -216,6 +216,7 @@ Deno.serve(async (req) => {
         status: escalationStatus,
         trigger_snippet: triggerSnippet,
         trigger_timestamp: new Date().toISOString(),
+        session_id: sessionRef.id || null,
       })
       .select("id")
       .single();

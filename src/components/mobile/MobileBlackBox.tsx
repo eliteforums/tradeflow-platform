@@ -1,11 +1,12 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, lazy, Suspense } from "react";
 import { Phone, X, Mic, MicOff, Video, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { MeetingProvider } from "@videosdk.live/react-sdk";
-import MeetingView from "@/components/videosdk/MeetingView";
 import { useBlackBoxSession } from "@/hooks/useBlackBoxSession";
+
+const MeetingProvider = lazy(() => import("@videosdk.live/react-sdk").then(m => ({ default: m.MeetingProvider })));
+const MeetingView = lazy(() => import("@/components/videosdk/MeetingView"));
 import { useAuth } from "@/contexts/AuthContext";
 import NovaOrb from "@/components/blackbox/NovaOrb";
 
@@ -130,6 +131,7 @@ const MobileBlackBox = () => {
 
         {/* Meeting provider — keyed so it remounts on session/room change */}
         {!!token && !!activeSession?.room_id && callState !== "idle" && (
+          <Suspense fallback={null}>
           <div
             key={`${activeSession.id}-${activeSession.room_id}`}
             style={{
@@ -164,6 +166,7 @@ const MobileBlackBox = () => {
               />
             </MeetingProvider>
           </div>
+          </Suspense>
         )}
 
         {/* Bottom controls */}
