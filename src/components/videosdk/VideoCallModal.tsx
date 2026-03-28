@@ -22,6 +22,8 @@ interface VideoCallModalProps {
   onCaptureSnippetReady?: (captureFn: () => string) => void;
   onLeaveReady?: (leaveFn: () => void) => void;
   autoStart?: boolean;
+  onCallJoined?: () => void;
+  onEscalate?: () => void;
 }
 
 const VideoCallModal = ({
@@ -39,6 +41,8 @@ const VideoCallModal = ({
   onCaptureSnippetReady,
   onLeaveReady,
   autoStart = false,
+  onCallJoined,
+  onEscalate,
 }: VideoCallModalProps) => {
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -217,6 +221,8 @@ const VideoCallModal = ({
                 onCaptureSnippetReady={onCaptureSnippetReady}
                 onLeaveReady={onLeaveReady}
                 autoJoin={true}
+                onJoined={onCallJoined}
+                onEscalate={onEscalate}
               />
             </MeetingProvider>
           )}

@@ -85,11 +85,24 @@ const ExpertL3AlertPanel = () => {
     };
   }, [user]);
 
-  const handleAcceptAndJoin = async (session: L3Session) => {
+  // Helper to check claim status from escalation_history
+  const getClaimStatus = (session: L3Session) => {
+    const history = Array.isArray(session.escalation_history) ? session.escalation_history : [];
+    const claimEntry = (history as any[]).find(
+      (entry: any) => entry && typeof entry === "object" && entry.type === "expert_claimed"
+    );
+    if (!claimEntry) return { claimed: false, byMe: false, byOther: false };
+    return {
+      claimed: true,
+      byMe: claimEntry.expert_id === user?.id,
+      byOther: claimEntry.expert_id !== user?.id,
+    };
+  };
+
+  const handleJoinCall = async (session: L3Session) => {
     if (!user) return;
     setJoining(session.id);
     try {
-      // Join existing room — do NOT create a new one or overwrite therapist_id
       const roomId = session.room_id;
       if (!roomId) {
         toast.error("No room available for this session");
@@ -97,51 +110,49 @@ const ExpertL3AlertPanel = () => {
         return;
       }
 
-      // Record expert join in escalation_history (not therapist_id)
-      const currentHistory = (session as any).escalation_history || [];
-      const expertJoinEntry = {
-        type: "expert_joined",
-        expert_id: user.id,
-        timestamp: new Date().toISOString(),
-      };
-
-      const { data: claimed, error } = await supabase
-        .from("blackbox_sessions")
-        .update({
-          status: "active",
-          escalation_history: [...currentHistory, expertJoinEntry],
-        })
-        .eq("id", session.id)
-        .gte("flag_level", 3)
-        .select("id, student_id, therapist_id, flag_level, escalation_reason, escalation_history, room_id, status, created_at")
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!claimed) {
-        toast.error("Session was already claimed by another expert");
-        setJoining(null);
-        return;
-      }
-
-      // Notify the therapist that expert has joined
-      if (session.therapist_id) {
-        await supabase.from("notifications").insert({
-          user_id: session.therapist_id,
-          type: "expert_joined",
-          title: "Expert has joined your session",
-          message: "An expert has joined the escalated session. You may stay or leave.",
-          metadata: { session_id: session.id, expert_id: user.id },
-        });
-      }
-
-      setActiveSession(claimed as L3Session);
+      // Open call modal first, claim happens after join succeeds
+      setActiveSession(session);
       setCallModal({ open: true });
-      toast.success("Joining session alongside therapist");
     } catch (err: any) {
       toast.error(err.message || "Failed to join session");
     }
     setJoining(null);
   };
+
+  // Called after the expert's call successfully joins
+  const handleCallJoined = useCallback(async () => {
+    if (!user || !activeSession) return;
+    try {
+      // Atomic claim via backend
+      const { data, error } = await supabase.functions.invoke("claim-l3-session", {
+        body: { session_id: activeSession.id },
+      });
+
+      if (error) {
+        const msg = error.message || "Claim failed";
+        if (msg.includes("already claimed")) {
+          toast.error("Session already claimed by another expert. Leaving...");
+          setCallModal({ open: false });
+          return;
+        }
+        throw new Error(msg);
+      }
+
+      if (data?.error) {
+        if (data.error.includes("already claimed")) {
+          toast.error("Session already claimed by another expert. Leaving...");
+          setCallModal({ open: false });
+          return;
+        }
+        throw new Error(data.error);
+      }
+
+      toast.success("Session claimed — you are now the lead expert");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to claim session");
+      setCallModal({ open: false });
+    }
+  }, [user, activeSession]);
 
   const handleEmergencyEscalation = async () => {
     if (!user || !activeSession) return;
@@ -175,14 +186,8 @@ const ExpertL3AlertPanel = () => {
       {/* Emergency Alert Banner */}
       <div className="space-y-3">
         {l3Sessions.map((session) => {
-          const isClaimedByMe = activeSession?.id === session.id;
-          // Check escalation_history for expert_joined entries instead of therapist_id
-          const history = Array.isArray(session.escalation_history) ? session.escalation_history : [];
-          const expertJoinEntry = (history as any[]).find(
-            (entry: any) => entry?.type === "expert_joined"
-          );
-          const isClaimedByOther = expertJoinEntry && expertJoinEntry.expert_id !== user?.id;
-          const isClaimedByCurrentUser = expertJoinEntry && expertJoinEntry.expert_id === user?.id;
+          const claim = getClaimStatus(session);
+          const isActiveByMe = activeSession?.id === session.id || claim.byMe;
           
           return (
             <div
@@ -207,12 +212,15 @@ const ExpertL3AlertPanel = () => {
                     {format(new Date(session.created_at), "MMM d · h:mm a")} · Room: {session.room_id || "—"}
                   </p>
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
-                    {isClaimedByMe || isClaimedByCurrentUser ? (
+                    {isActiveByMe ? (
                       <>
                         <Button
                           size="sm"
                           className="gap-1.5 h-8 text-xs"
-                          onClick={() => setCallModal({ open: true })}
+                          onClick={() => {
+                            setActiveSession(session);
+                            setCallModal({ open: true });
+                          }}
                         >
                           <Video className="w-3.5 h-3.5" />
                           Rejoin Call
@@ -221,20 +229,23 @@ const ExpertL3AlertPanel = () => {
                           size="sm"
                           variant="destructive"
                           className="gap-1.5 h-8 text-xs"
-                          onClick={() => setShowEscalateConfirm(true)}
+                          onClick={() => {
+                            setActiveSession(session);
+                            setShowEscalateConfirm(true);
+                          }}
                         >
                           <PhoneCall className="w-3.5 h-3.5" />
                           Escalate — Share Emergency Contact
                         </Button>
                       </>
-                    ) : isClaimedByOther ? (
+                    ) : claim.byOther ? (
                       <span className="text-xs text-muted-foreground italic">Claimed by another expert</span>
                     ) : (
                       <Button
                         size="sm"
                         variant="destructive"
                         className="gap-1.5 h-8 text-xs"
-                        onClick={() => handleAcceptAndJoin(session)}
+                        onClick={() => handleJoinCall(session)}
                         disabled={joining === session.id}
                       >
                         {joining === session.id ? (
@@ -242,7 +253,7 @@ const ExpertL3AlertPanel = () => {
                         ) : (
                           <Shield className="w-3.5 h-3.5" />
                         )}
-                        Claim & Join Call
+                        Join Call
                       </Button>
                     )}
                   </div>
@@ -301,6 +312,7 @@ const ExpertL3AlertPanel = () => {
         onRiskDetected={handleRiskDetected}
         onCaptureSnippetReady={handleCaptureSnippetReady}
         autoStart={true}
+        onCallJoined={handleCallJoined}
       />
     </>
   );
