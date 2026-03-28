@@ -1,40 +1,45 @@
 
 
-## Fix: Call Transcription Storage — Verification & Admin Dashboard Display
+## Fix: BlackBox Call Controls Visibility & Layout
 
-### Current State Analysis
+### Problem
 
-After reviewing all relevant files, the transcription capture and storage flow is **already implemented end-to-end**:
+During an active BlackBox call (student side), the call control buttons (Mute, Video, Hangup) can be misaligned, overlapping, or partially hidden because:
 
-1. **Trigger**: All three roles (Expert, Intern, Therapist) route escalations through the `escalate-emergency` edge function, passing `transcript_snippet`.
-2. **Capture**: Expert and Therapist use `captureSnippetRef` (±10s audio buffer via `useAudioMonitor`). Intern falls back to last 10 peer chat messages when no audio is available.
-3. **Backend Storage**: The edge function stores structured JSON in `escalation_requests.trigger_snippet` containing: Student Eternia ID, username, escalated_by_role, session_id, session_type, emergency contact, and transcript_snippet.
-4. **Admin Dashboard**: `EscalationManager.tsx` parses the `trigger_snippet` JSON and displays Student ID, emergency contact, escalator role, transcript snippet, and reason.
+1. **Desktop (`BlackBox.tsx`)**: The outer container uses `min-h-[calc(100vh-6rem)]` with `-mt-6`, and the controls section at the bottom (`pb-8 pt-6`) competes with the flex-1 content area. The MeetingProvider wrapper uses `position: absolute` which can cause the controls to sit behind other elements depending on stacking context.
 
-### Remaining Issue
+2. **Mobile (`MobileBlackBox.tsx`)**: Controls are inside `pb-24` padding zone meant to avoid the bottom nav, but the flex layout (`justify-between`) can cause the controls to be pushed off-screen or overlap with the NovaOrb when the viewport is short.
 
-The Admin `EscalationManager` query (line 26) uses a foreign key join syntax:
-```
-.select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username)")
-```
-But the `escalation_requests` table has **no foreign keys** defined. This join will fail, causing the query to error or return no data — meaning the admin sees nothing.
+3. **Both**: The controls div is not pinned — it flows with content, so on smaller viewports or during state transitions, it can shift unpredictably.
 
-### Fix Plan
+### Fix
 
-**File: `src/components/admin/EscalationManager.tsx`**
+**Pin the bottom controls bar** in both desktop and mobile so it stays fixed at the bottom of the viewport, always visible and properly spaced above any bottom navigation.
 
-Replace the FK join with a two-step approach: fetch escalations first, then resolve SPOC usernames from profiles separately. Alternatively, use a simpler select without the FK join and look up the SPOC username from `trigger_snippet` JSON (which already contains `escalated_by_role` and student info).
+#### File: `src/pages/dashboard/BlackBox.tsx`
+- Change the bottom controls container from a flowing `div` to a **sticky/fixed bottom bar** with proper z-index
+- Add a background blur/card treatment so controls don't overlap content
+- Ensure the MeetingProvider hidden wrapper doesn't interfere with stacking (add `z-index: -1`)
 
-Specifically:
-1. Change the query from `select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username)")` to `select("*")` — no FK join
-2. Add a secondary query to fetch SPOC profile usernames for the `spoc_id` values in the results, or resolve inline from the parsed `trigger_snippet`
-3. Update the "Filed by" display (line 181) to use the resolved username
+#### File: `src/components/mobile/MobileBlackBox.tsx`
+- Same fix: pin controls to bottom with `fixed` or `sticky` positioning
+- Account for mobile bottom nav height (~5rem) with proper `bottom` offset
+- Add backdrop blur background for visual clarity
 
-This single fix ensures the Admin Dashboard correctly loads and displays all escalation entries with their full structured data (Student ID, session details, role, reason, emergency contact, transcript snippet).
+### Specific Changes
+
+**Desktop (`BlackBox.tsx`, lines 178-217)**:
+- Replace `<div className="pb-8 pt-6 flex items-center justify-center gap-4">` with a sticky bottom bar: `<div className="sticky bottom-0 z-10 py-6 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm">`
+- On the hidden MeetingProvider wrapper (line 140-145), add `zIndex: -1` to prevent stacking interference
+
+**Mobile (`MobileBlackBox.tsx`, lines 169-203)**:
+- Replace `<div className="pt-4 flex items-center justify-center gap-4">` with a fixed bottom bar: `<div className="fixed bottom-20 left-0 right-0 z-20 py-4 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm">`
+- This positions controls above the mobile bottom nav (bottom-20 = 5rem)
 
 ### Files to Edit
 
 | File | Change |
 |------|--------|
-| `src/components/admin/EscalationManager.tsx` | Remove FK join from query; resolve SPOC username via separate lookup |
+| `src/pages/dashboard/BlackBox.tsx` | Sticky bottom controls bar, z-index fix on hidden wrapper |
+| `src/components/mobile/MobileBlackBox.tsx` | Fixed bottom controls bar above mobile nav |
 
