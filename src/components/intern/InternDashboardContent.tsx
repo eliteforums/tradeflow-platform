@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Home, MessageCircle, FileText, User, Clock, CheckCircle,
@@ -66,6 +66,7 @@ const InternDashboardContent = () => {
     setLastSynced(JSON.stringify(profileProgress));
   }
 
+  const captureSnippetRef = useRef<(() => string) | null>(null);
   const [escalationDialog, setEscalationDialog] = useState<{ open: boolean; sessionId?: string }>({ open: false });
   const [escalationReason, setEscalationReason] = useState("");
   const [notesSearch, setNotesSearch] = useState("");
@@ -137,7 +138,7 @@ const InternDashboardContent = () => {
         body: {
           peer_session_id: escalationDialog.sessionId,
           justification: escalationReason,
-          transcript_snippet: null, // Will be populated when audio monitoring is active
+          transcript_snippet: captureSnippetRef.current ? captureSnippetRef.current() : null,
         },
       });
       if (error) throw new Error(error.message || "Escalation failed");
