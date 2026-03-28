@@ -1,61 +1,63 @@
 
 
-## Fix: Call Transcription Capture & Storage on Escalation
+## Fix: Call Transcription Capture — Root Cause & Solution
 
-### Problem Summary
-The transcription snippet system has the plumbing in place (audio monitor buffer, `captureEscalationSnippet` function, backend `trigger_snippet` storage, admin/SPOC display) but it's **never actually captured** at escalation time in most flows. The `transcript_snippet` is hardcoded to `null` in 4 out of 5 escalation paths.
+### Root Causes (3 blocking issues)
 
-### Issues Identified
+1. **Audio monitor never starts for Expert/Intern calls** — `VideoCallModal` only passes `enableMonitoring={true}` from the BlackBox therapist flow. Expert appointment calls and intern peer calls don't enable monitoring, so the speech recognition buffer is always empty and `captureSnippetRef.current()` returns `""`.
 
-1. **Expert appointment escalation** (`ExpertDashboardContent.tsx` line 220): `transcript_snippet: null` — never captures from active call
-2. **Mobile expert escalation** (`MobileExpertDashboard.tsx` line 118): `transcript_snippet: null`
-3. **Intern escalation** (`InternDashboardContent.tsx` line 140): `transcript_snippet: null`
-4. **Mobile intern escalation** (`MobileInternDashboard.tsx` line 116): `transcript_snippet: null`
-5. **L3 panel** (`ExpertL3AlertPanel.tsx`): Works correctly — uses `captureSnippetRef` ✅
-6. **In-call escalation button** (`MeetingControls.tsx`): Fires `onEscalate` but does NOT capture transcript before triggering the dialog
-7. **`captureEscalationSnippet`** only captures 10s **before** — not 10s after. The requirement is ±10s (before + after).
-8. **Admin dashboard** already renders `transcript_snippet` from parsed JSON ✅ — but it's always null so nothing shows.
+2. **Only sync capture is wired** — `MeetingView` exposes `captureEscalationSnippet` (sync, 10s before only) via `onCaptureSnippetReady`. The async ±10s method (`captureEscalationSnippetAsync`) exists in the hook but is never exposed to parent components.
 
-### Plan
+3. **Escalation submit is synchronous** — `submitEscalation.mutate()` calls `captureSnippetRef.current()` immediately, sends whatever is there (usually `""` or `null`), and fires the backend call. There's no await for the 10s-after window.
 
-#### A. Capture ±10s transcript (before + after)
+4. **Missing escalator role tag** — The `escalate-emergency` edge function stores the `escalated_by` user ID but doesn't tag the role of who escalated.
 
-**`useAudioMonitor.ts`**: Add a new method `captureEscalationSnippetAsync(beforeMs, afterMs)` that:
-1. Immediately captures `beforeMs` worth of buffer (existing logic)
-2. Continues recording for `afterMs` (default 10s)
-3. Returns a Promise that resolves with the combined "before + after" text
+### Fix Plan
 
-This allows callers to await the full ±10s window.
+#### A. Enable audio monitoring for all staff calls
 
-#### B. Wire transcript capture into all escalation flows
+**`VideoCallModal.tsx`**: Always pass `enableMonitoring={true}` when the call is opened by staff (expert/intern/therapist). The component already accepts the prop — it just needs to be set to `true` from all callers.
 
-**`ExpertDashboardContent.tsx`**:
-- Store a `captureSnippetRef` (like L3 panel does)
-- Pass `onCaptureSnippetReady` to `VideoCallModal`
-- In `submitEscalation`, call `captureSnippetRef.current?.()` and send the result as `transcript_snippet`
-- For post-session escalations (no active call), leave as null (no audio to capture)
+**`ExpertDashboardContent.tsx`** (line 874): Add `enableMonitoring={true}` to the `VideoCallModal`.
 
-**`MobileExpertDashboard.tsx`**: Same pattern — wire `captureSnippetRef` through VideoCallModal
+**`InternDashboardContent.tsx`**: Same — add `enableMonitoring={true}` to the `VideoCallModal` for peer sessions.
 
-**`InternDashboardContent.tsx`** and **`MobileInternDashboard.tsx`**:
-- Same pattern — add `captureSnippetRef`, pass through VideoCallModal for peer sessions
-- Wire into the escalation mutation
+**`MobileExpertDashboard.tsx`** and **`MobileInternDashboard.tsx`**: Same change.
 
-**`VideoCallModal.tsx`**: Already supports `onCaptureSnippetReady` prop ✅ — just needs to be passed from more callers
+#### B. Expose async capture and use it
 
-#### C. In-call escalation button captures before triggering dialog
+**`MeetingView.tsx`**: Change `onCaptureSnippetReady` to expose the async capture function instead of the sync one:
+- Change type from `(captureFn: () => string)` to `(captureFn: () => Promise<string>)`
+- Pass `audioMonitor.captureEscalationSnippetAsync` instead of `audioMonitor.captureEscalationSnippet`
 
-**`MeetingControls.tsx` / `MeetingView.tsx`**: The `onEscalate` callback should first capture the snippet, then open the escalation dialog with the snippet pre-attached. Update `onEscalate` signature to pass the captured snippet.
+**All callers** (`ExpertDashboardContent`, `InternDashboardContent`, mobile variants): Update `captureSnippetRef` type from `(() => string) | null` to `(() => Promise<string>) | null`.
 
-#### D. No backend changes needed
-The `escalate-emergency` edge function already stores `transcript_snippet` in the `trigger_snippet` JSON. Admin and SPOC dashboards already parse and display it. Once the frontend actually sends non-null values, everything will display correctly.
+#### C. Make escalation submit async-aware
+
+**`ExpertDashboardContent.tsx`**: In `submitEscalation.mutationFn`, await the capture:
+```typescript
+const snippet = captureSnippetRef.current 
+  ? await captureSnippetRef.current() 
+  : null;
+```
+Show a toast like "Capturing transcript (10s)..." so the user knows to wait.
+
+Same pattern for `InternDashboardContent`, `MobileExpertDashboard`, `MobileInternDashboard`.
+
+#### D. Tag escalator role in backend
+
+**`escalate-emergency/index.ts`**: Look up the caller's role from `user_roles` table and include it in `trigger_snippet` JSON as `escalated_by_role`.
+
+#### E. Admin dashboard — add role display
+
+**`EscalationManager.tsx`**: When rendering `parsed.escalated_by_role`, show the role who escalated. Already displays most fields correctly — just add the role badge.
 
 ### Files to Edit
-1. `src/hooks/useAudioMonitor.ts` — add async ±10s capture method
-2. `src/components/expert/ExpertDashboardContent.tsx` — wire captureSnippetRef, use in escalation
-3. `src/components/mobile/MobileExpertDashboard.tsx` — same
-4. `src/components/intern/InternDashboardContent.tsx` — wire captureSnippetRef for peer sessions
+1. `src/components/videosdk/MeetingView.tsx` — expose async capture
+2. `src/components/expert/ExpertDashboardContent.tsx` — enable monitoring, async snippet capture
+3. `src/components/intern/InternDashboardContent.tsx` — same
+4. `src/components/mobile/MobileExpertDashboard.tsx` — same
 5. `src/components/mobile/MobileInternDashboard.tsx` — same
-6. `src/components/videosdk/MeetingView.tsx` — pass captured snippet via onEscalate callback
-7. `src/components/videosdk/MeetingControls.tsx` — no change needed (already wired)
+6. `supabase/functions/escalate-emergency/index.ts` — add escalator role tag
+7. `src/components/admin/EscalationManager.tsx` — display escalator role
 
