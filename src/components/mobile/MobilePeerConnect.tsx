@@ -300,7 +300,7 @@ const MobilePeerConnect = () => {
                     <span className="text-sm">Expires in </span>
                     <CountdownTimer createdAt={activeSession.created_at} />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-3">20 ECC refunded if expired</p>
+                   <p className="text-xs text-muted-foreground mt-3">18 ECC refunded if expired</p>
                 </div>
               )}
 

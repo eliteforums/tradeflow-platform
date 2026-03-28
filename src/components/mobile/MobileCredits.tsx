@@ -111,7 +111,7 @@ const MobileCredits = () => {
         <div className="p-4 rounded-2xl bg-muted/30 border border-border space-y-3">
           <h3 className="font-semibold text-sm">How to Earn</h3>
           <div>
-            <h4 className="text-xs font-medium flex items-center gap-1.5 mb-1"><Award className="w-3.5 h-3.5 text-primary" /><h4 className="text-xs font-medium flex items-center gap-1.5 mb-1"><Award className="w-3.5 h-3.5 text-primary" />Earn (5 ECC/week)</h4></h4>
+             <h4 className="text-xs font-medium flex items-center gap-1.5 mb-1"><Award className="w-3.5 h-3.5 text-primary" />Earn (5 ECC/week)</h4>
             <p className="text-xs text-muted-foreground">Quest Cards, Wreck Buddy, Tibetan Bowl, Sound Therapy</p>
           </div>
           <div>
@@ -163,7 +163,7 @@ const MobileCredits = () => {
         <div className="p-4 rounded-2xl bg-muted/30 border border-border">
           <h4 className="font-medium text-sm mb-1">Credit Costs</h4>
           <ul className="space-y-1 text-xs text-muted-foreground">
-            <li><li>• Expert: 50 ECC • Peer: 18 ECC • Sounds/Self-Help: Free</li></li>
+             <li>• Expert: 50 ECC • Peer: 18 ECC • Sounds/Self-Help: Free</li>
           </ul>
         </div>
       </div>
