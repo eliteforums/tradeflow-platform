@@ -66,7 +66,7 @@ const InternDashboardContent = () => {
     setLastSynced(JSON.stringify(profileProgress));
   }
 
-  const captureSnippetRef = useRef<(() => string) | null>(null);
+  const captureSnippetRef = useRef<(() => Promise<string>) | null>(null);
   const [escalationDialog, setEscalationDialog] = useState<{ open: boolean; sessionId?: string }>({ open: false });
   const [escalationReason, setEscalationReason] = useState("");
   const [notesSearch, setNotesSearch] = useState("");
@@ -134,11 +134,16 @@ const InternDashboardContent = () => {
   const submitEscalation = useMutation({
     mutationFn: async () => {
       if (!user || !escalationDialog.sessionId) throw new Error("Missing data");
+      let snippet: string | null = null;
+      if (captureSnippetRef.current) {
+        toast.info("Capturing transcript (±10s)...");
+        snippet = await captureSnippetRef.current();
+      }
       const { data, error } = await supabase.functions.invoke("escalate-emergency", {
         body: {
           peer_session_id: escalationDialog.sessionId,
           justification: escalationReason,
-          transcript_snippet: captureSnippetRef.current ? captureSnippetRef.current() : null,
+          transcript_snippet: snippet || null,
         },
       });
       if (error) throw new Error(error.message || "Escalation failed");
