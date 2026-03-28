@@ -67,13 +67,14 @@ serve(async (req) => {
         await adminClient.from("recovery_credentials").delete().eq("user_id", profile.id);
         await adminClient.from("blackbox_entries").delete().eq("user_id", profile.id);
 
-        // Soft-delete profile
+        // Soft-delete profile and null out institution_id
         await adminClient.from("profiles").update({
           is_active: false,
           username: `deleted_${profile.id.slice(0, 8)}`,
           bio: null,
           avatar_url: null,
           specialty: null,
+          institution_id: null,
         }).eq("id", profile.id);
 
         // Remove roles
