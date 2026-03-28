@@ -38,6 +38,7 @@ const ExpertDashboardContent = () => {
   const [activeTab, setActiveTab] = useState<TabType>("home");
 
   // Call modal
+  const captureSnippetRef = useRef<(() => string) | null>(null);
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; appointmentId?: string }>({ open: false, mode: "video" });
 
   // Session completion
@@ -217,7 +218,7 @@ const ExpertDashboardContent = () => {
         body: {
           appointment_id: escalationDialog.appointmentId,
           justification: escalationReason,
-          transcript_snippet: null, // Will be populated when audio monitoring is active
+          transcript_snippet: captureSnippetRef.current ? captureSnippetRef.current() : null,
         },
       });
       if (error) throw new Error(error.message || "Escalation failed");
@@ -870,7 +871,7 @@ const ExpertDashboardContent = () => {
         </DialogContent>
       </Dialog>
 
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} />
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} onCaptureSnippetReady={(fn) => { captureSnippetRef.current = fn; }} />
     </DashboardLayout>
   );
 };

@@ -58,6 +58,7 @@ const MobileInternDashboard = () => {
     setLastSynced(JSON.stringify(profileProgress));
   }
 
+  const captureSnippetRef = useRef<(() => string) | null>(null);
   const [escalationDialog, setEscalationDialog] = useState<{ open: boolean; sessionId?: string }>({ open: false });
   const [escalationReason, setEscalationReason] = useState("");
   const [notesSearch, setNotesSearch] = useState("");
@@ -113,7 +114,7 @@ const MobileInternDashboard = () => {
         body: {
           peer_session_id: escalationDialog.sessionId || null,
           justification: escalationReason,
-          transcript_snippet: null,
+          transcript_snippet: captureSnippetRef.current ? captureSnippetRef.current() : null,
         },
       });
       if (error) throw new Error(error.message || "Escalation failed");

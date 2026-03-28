@@ -28,6 +28,7 @@ const MobileExpertDashboard = () => {
   const { user, profile, signOut } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>("home");
+  const captureSnippetRef = useRef<(() => string) | null>(null);
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; appointmentId?: string }>({ open: false, mode: "video" });
   const [sessionNotes, setSessionNotes] = useState("");
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
@@ -115,7 +116,7 @@ const MobileExpertDashboard = () => {
         body: {
           appointment_id: escalationDialog.appointmentId,
           justification: escalationReason,
-          transcript_snippet: null,
+          transcript_snippet: captureSnippetRef.current ? captureSnippetRef.current() : null,
         },
       });
       if (error) throw new Error(error.message || "Escalation failed");
@@ -412,7 +413,7 @@ const MobileExpertDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} />
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Expert"} mode={callModal.mode} appointmentId={callModal.appointmentId} onCaptureSnippetReady={(fn) => { captureSnippetRef.current = fn; }} />
     </DashboardLayout>
   );
 };
