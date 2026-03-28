@@ -23,7 +23,7 @@ const EscalationManager = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("escalation_requests")
-        .select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username), session:peer_sessions!escalation_requests_session_id_fkey(student_id, intern_id, student:profiles!peer_sessions_student_id_fkey(username), intern:profiles!peer_sessions_intern_id_fkey(username))")
+        .select("*, spoc:profiles!escalation_requests_spoc_id_fkey(username)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -180,18 +180,18 @@ const EscalationManager = () => {
                     <span className="text-muted-foreground">Filed by:</span>
                     <span className="font-medium">{esc.spoc?.username || "SPOC"}</span>
                   </div>
-                  {esc.session?.student?.username && (
+                   {parsed?.student_username && (
                     <div className="flex items-center gap-1">
                       <User className="w-3 h-3 text-muted-foreground" />
                       <span className="text-muted-foreground">Student:</span>
-                      <span className="font-medium">{esc.session.student.username}</span>
+                      <span className="font-medium">{parsed.student_username}</span>
                     </div>
                   )}
-                  {esc.session?.intern?.username && (
+                  {parsed?.escalated_by_role && (
                     <div className="flex items-center gap-1">
                       <User className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-muted-foreground">Intern:</span>
-                      <span className="font-medium">{esc.session.intern.username}</span>
+                      <span className="text-muted-foreground">Escalated by:</span>
+                      <span className="font-medium capitalize">{parsed.escalated_by_role}</span>
                     </div>
                   )}
                 </div>

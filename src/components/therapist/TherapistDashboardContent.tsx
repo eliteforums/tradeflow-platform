@@ -279,40 +279,25 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
       })
       .eq("id", activeSession.id);
 
-    // Level 2+: create escalation_request for SPOC
-    if (level >= 2) {
-      // Get institution from student profile
-      const { data: studentProfile } = await supabase
-        .from("profiles")
-        .select("institution_id")
-        .eq("id", activeSession.student_id)
-        .single();
+    // Route ALL escalation levels through edge function for structured data
+    let snippet: string | null = null;
+    if (captureSnippetRef?.current) {
+      toast.info("Capturing transcript (±10s)...");
+      snippet = await captureSnippetRef.current();
+    }
 
-      if (studentProfile?.institution_id) {
-        // Find SPOC for this institution
-        const { data: spocs } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("institution_id", studentProfile.institution_id)
-          .eq("role", "spoc")
-          .limit(1);
+    const { data: escData, error: escError } = await supabase.functions.invoke("escalate-emergency", {
+      body: {
+        session_id: activeSession.id,
+        justification: escalationReason,
+        transcript_snippet: snippet || null,
+      },
+    });
 
-        if (spocs && spocs.length > 0) {
-          // Store only trigger snippet (±context), not full conversation — CR v1.8 §4.1
-          const triggerSnippet = escalationReason.length > 500
-            ? escalationReason.substring(0, 500)
-            : escalationReason;
-
-          await supabase.from("escalation_requests").insert({
-            spoc_id: spocs[0].id,
-            justification_encrypted: escalationReason,
-            trigger_snippet: triggerSnippet,
-            trigger_timestamp: new Date().toISOString(),
-            escalation_level: level,
-            status: level >= 3 ? "critical" : "pending",
-          });
-        }
-      }
+    if (escError) {
+      toast.error(escError.message || "Escalation failed");
+    } else if (escData?.error) {
+      toast.error(escData.error);
     }
 
     // §14.2: Audit log for escalation
@@ -327,27 +312,6 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
     }
 
     if (level >= 3) {
-      // L3: Use edge function for structured escalation with emergency contact + role tagging
-      let snippet: string | null = null;
-      if (captureSnippetRef?.current) {
-        toast.info("Capturing transcript (±10s)...");
-        snippet = await captureSnippetRef.current();
-      }
-
-      const { data: escData, error: escError } = await supabase.functions.invoke("escalate-emergency", {
-        body: {
-          session_id: activeSession.id,
-          justification: escalationReason,
-          transcript_snippet: snippet || null,
-        },
-      });
-
-      if (escError) {
-        toast.error(escError.message || "Escalation failed");
-      } else if (escData?.error) {
-        toast.error(escData.error);
-      }
-
       // Therapist stays in session — do NOT leave
       setActiveSession({ ...activeSession, flag_level: level, escalation_history: updatedHistory, status: "escalated" });
       toast.warning("Experts have been notified — they will join your session");

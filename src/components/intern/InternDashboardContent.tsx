@@ -139,6 +139,21 @@ const InternDashboardContent = () => {
         toast.info("Capturing transcript (±10s)...");
         snippet = await captureSnippetRef.current();
       }
+      // Fallback: for chat-based peer sessions, pull recent messages as transcript
+      if (!snippet) {
+        const { data: messages } = await supabase
+          .from("peer_messages")
+          .select("content_encrypted, sender_id, created_at")
+          .eq("session_id", escalationDialog.sessionId)
+          .order("created_at", { ascending: false })
+          .limit(10);
+        if (messages && messages.length > 0) {
+          snippet = messages
+            .reverse()
+            .map((m: any) => `[${format(new Date(m.created_at), "HH:mm:ss")}] ${m.sender_id === user.id ? "Intern" : "Student"}: ${m.content_encrypted}`)
+            .join("\n");
+        }
+      }
       const { data, error } = await supabase.functions.invoke("escalate-emergency", {
         body: {
           peer_session_id: escalationDialog.sessionId,
