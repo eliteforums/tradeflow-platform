@@ -326,40 +326,25 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
     }
 
     if (level >= 3) {
-      // L3: Set status to 'escalated', keep therapist connected, notify ALL experts
-      await supabase
-        .from("blackbox_sessions")
-        .update({
-          flag_level: level,
-          escalation_reason: escalationReason,
-          escalation_history: updatedHistory,
-          status: "escalated",
-        })
-        .eq("id", activeSession.id);
+      // L3: Use edge function for structured escalation with emergency contact + role tagging
+      let snippet: string | null = null;
+      if (captureSnippetRef?.current) {
+        toast.info("Capturing transcript (±10s)...");
+        snippet = await captureSnippetRef.current();
+      }
 
-      // Notify all active experts
-      const { data: allExperts } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("role", "expert")
-        .eq("is_active", true)
-        .neq("id", user?.id || "");
+      const { data: escData, error: escError } = await supabase.functions.invoke("escalate-emergency", {
+        body: {
+          session_id: activeSession.id,
+          justification: escalationReason,
+          transcript_snippet: snippet || null,
+        },
+      });
 
-      if (allExperts && allExperts.length > 0) {
-        await supabase.from("notifications").insert(
-          allExperts.map((e: any) => ({
-            user_id: e.id,
-            type: "l3_handoff",
-            title: "🚨 L3 Critical Session — Join Required",
-            message: `A BlackBox session has been escalated to L3. Reason: ${escalationReason.substring(0, 200)}`,
-            metadata: {
-              session_id: activeSession.id,
-              room_id: activeSession.room_id,
-              student_id: activeSession.student_id,
-              escalation_level: level,
-            },
-          }))
-        );
+      if (escError) {
+        toast.error(escError.message || "Escalation failed");
+      } else if (escData?.error) {
+        toast.error(escData.error);
       }
 
       // Therapist stays in session — do NOT leave
