@@ -73,6 +73,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
 
   // Ref to hold the VideoSDK leave function for programmatic disconnect
   const leaveCallRef = useRef<(() => void) | null>(null);
+  const captureSnippetRef = useRef<(() => Promise<string>) | null>(null);
 
   // Stay/Leave dialog when expert joins an escalated session
   const [expertJoinedDialog, setExpertJoinedDialog] = useState(false);
