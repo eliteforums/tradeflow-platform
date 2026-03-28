@@ -141,7 +141,7 @@ const BlackBox = () => {
             key={`${activeSession.id}-${activeSession.room_id}`}
             style={{
               position: "absolute", width: 1, height: 1, overflow: "hidden",
-              clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0,
+              clip: "rect(0, 0, 0, 0)", whiteSpace: "nowrap", border: 0, zIndex: -1,
             }}
             aria-hidden="true"
           >
@@ -176,7 +176,7 @@ const BlackBox = () => {
         )}
 
         {/* Bottom controls */}
-        <div className="pb-8 pt-6 flex items-center justify-center gap-4">
+        <div className="sticky bottom-0 z-10 py-6 flex items-center justify-center gap-4 bg-background/80 backdrop-blur-sm">
           {isJoined ? (
             <>
               <Button variant="outline" size="icon" className="rounded-full w-14 h-14 bg-muted/30 border-border hover:bg-muted/50">
