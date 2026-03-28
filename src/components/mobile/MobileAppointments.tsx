@@ -147,7 +147,7 @@ const MobileAppointments = () => {
                       </div>
                     )}
                     <div className="flex items-center justify-between pt-3 border-t border-border">
-                      <p className="font-semibold text-sm flex items-center gap-1.5"><Coins className="w-4 h-4 text-primary" /><p className="font-semibold text-sm flex items-center gap-1.5"><Coins className="w-4 h-4 text-primary" />50 ECC</p></p>
+                       <p className="font-semibold text-sm flex items-center gap-1.5"><Coins className="w-4 h-4 text-primary" />50 ECC</p>
                       {expertSlots.length > 0 && (
                         <Button size="sm" className="h-10 text-sm px-4" onClick={() => handleBookSlot(expert, expertSlots[0])}>Book Now</Button>
                       )}

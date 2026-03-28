@@ -522,7 +522,7 @@ const PeerConnect = () => {
                       <span className="text-sm">Expires in </span>
                       <CountdownTimer createdAt={activeSession.created_at} />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-4">20 ECC will be refunded if the request expires</p>
+                     <p className="text-xs text-muted-foreground mt-4">18 ECC will be refunded if the request expires</p>
                   </div>
                 )}
 
@@ -743,7 +743,7 @@ const PeerConnect = () => {
                 )}
                 <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
                   <Shield className="w-3.5 h-3.5" />
-                  <span>End-to-end anonymous · 20 ECC per session</span>
+                   <span>End-to-end anonymous · 18 ECC per session</span>
                 </div>
               </div>
             )}
