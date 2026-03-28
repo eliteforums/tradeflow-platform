@@ -1,49 +1,43 @@
 
 
-## Fix: Call Transcription Capture — Remaining Issues
+## Fix: Admin ID Deletion — User Can Still Log In After Deletion
 
-### Problems Found
+### Root Cause
 
-1. **Therapist L2 escalation bypasses edge function** (lines 282-315): When the therapist escalates at Level 2, a direct `escalation_requests` insert stores plain-text `escalationReason` as `trigger_snippet` — no structured JSON, no emergency contact, no student ID, no transcript capture. Only L3 calls the `escalate-emergency` edge function.
+The `admin-delete-member` edge function deletes the auth user at **step 7** (line 77), but performs profile soft-delete and role removal in steps 5-6 first. Two problems:
 
-2. **Therapist L1 escalation stores no escalation request at all**: Level 1 escalations only update `blackbox_sessions` and write an audit log — no `escalation_requests` row is created, so nothing shows on SPOC/Admin dashboards.
+1. **Order of operations**: If auth deletion fails, the profile is already mangled (username changed, roles removed) but the user can still authenticate. Conversely, if it succeeds, prior steps may have partially failed leaving orphaned data.
 
-3. **Intern peer sessions don't use VideoCallModal**: The intern dashboard renders peer sessions as text-based chat with a "Join" button that navigates to `/dashboard/peer-connect`. There's no `VideoCallModal` rendered, so `captureSnippetRef` is never populated — meaning the transcript capture code in `submitEscalation` always gets `null`.
+2. **No session revocation**: `deleteUser()` removes the auth record but does **not** immediately invalidate existing JWT tokens. The user's cached session remains valid until the access token expires (default: 1 hour). There is no explicit sign-out/session termination call.
 
-4. **Admin dashboard query uses FK join to `peer_sessions`**: The `EscalationManager` query (line 26) tries to join `escalation_requests` with `peer_sessions` via `session_id`, but the edge function doesn't set `session_id` on the escalation record — meaning session details are missing from the admin view. The structured data is inside `trigger_snippet` JSON, which IS parsed and displayed, but the FK join returns null.
+3. **Temp credential recycling timing**: For students, temp credentials are recycled to "unused" (step 8) AFTER auth deletion — if auth deletion fails, the function throws and temp credentials are never touched, which is correct. But if auth deletion succeeds, the recycled temp credentials could theoretically be re-scanned and used to create a new account with the same temp username.
 
-### Plan
+### Fix Plan
 
-#### A. Therapist: Route ALL escalation levels through the edge function
+**File: `supabase/functions/admin-delete-member/index.ts`**
 
-**`TherapistDashboardContent.tsx`**: Replace the entire L2 direct insert block (lines 282-315) with a call to `escalate-emergency` for levels 1-2 as well (same pattern as L3 on lines 330-348). This ensures:
-- Structured `trigger_snippet` JSON for all levels
-- Emergency contact included
-- Escalator role tagged
-- Transcript snippet captured (±10s)
+Reorder and harden the deletion flow:
 
-Specifically:
-- Remove the L2-only direct insert block (lines 282-315)
-- Move the edge function call (currently only for L3, lines 329-348) to run for ALL levels (1, 2, and 3)
-- Keep the L3-specific expert notification and "therapist stays" logic
+1. **Step 1**: Look up profile role (unchanged)
+2. **Step 2**: Audit log (unchanged — always record the attempt)
+3. **Step 3 (NEW)**: Delete the auth user FIRST — this is the critical step that prevents login. If this fails, throw immediately before touching any other data.
+4. **Step 4**: After auth is gone, delete PII, BlackBox entries, recovery credentials
+5. **Step 5**: Soft-delete profile (set `is_active: false`, clear PII fields)
+6. **Step 6**: Remove role assignments from `user_roles`
+7. **Step 7**: Handle temp credentials — students get recycled to pool, staff get permanently deleted
+8. **Step 8**: Sign out all sessions explicitly via `adminClient.auth.admin.signOut(target_user_id, 'global')` — belt-and-suspenders to ensure no cached JWT works even briefly
 
-#### B. Intern: Pass `captureSnippetRef` from PeerConnect video flow
+Additionally, reset the temp credential's `temp_password_plain` and `temp_password_hash` when recycling student credentials, and regenerate them fresh so the old password can't be reused.
 
-The intern escalation already correctly awaits `captureSnippetRef.current()` (line 138-140), but the ref is never set because there's no `VideoCallModal` with `onCaptureSnippetReady`. Two options:
+### Summary
 
-Since peer sessions use chat (not video calls), transcript capture doesn't apply — the intern should instead pass the recent chat messages as the `transcript_snippet`. Update the intern escalation to pull the last ~10 messages from `peer_messages` and use those as the snippet when `captureSnippetRef.current` is null.
-
-**`InternDashboardContent.tsx`**: In `submitEscalation`, when `captureSnippetRef.current` is null, query recent `peer_messages` for the session and format them as the snippet.
-
-#### C. Admin dashboard: Remove broken FK join, rely on structured trigger_snippet
-
-**`EscalationManager.tsx`**: The current query joins `peer_sessions` via FK, but most escalations don't have `session_id` set (the edge function uses `admin` client to insert without setting this FK). Simplify the query to not rely on the FK join — the structured data is already in `trigger_snippet` JSON which is parsed and displayed. Remove the `session:peer_sessions!...` join from the query to prevent errors on non-peer escalations.
+| Change | Purpose |
+|--------|---------|
+| Move `deleteUser()` to step 3 (before data cleanup) | Prevent login immediately; fail fast if auth deletion fails |
+| Add `auth.admin.signOut(id, 'global')` before deleteUser | Revoke all active sessions instantly |
+| Reset password fields on student temp credential recycling | Prevent reuse of old password |
+| Keep audit log before auth deletion | Always record the attempt regardless of outcome |
 
 ### Files to Edit
-
-| File | Change |
-|------|--------|
-| `src/components/therapist/TherapistDashboardContent.tsx` | Route L1/L2 escalations through `escalate-emergency` edge function with transcript capture |
-| `src/components/intern/InternDashboardContent.tsx` | Fallback: pull recent chat messages as transcript when no audio capture available |
-| `src/components/admin/EscalationManager.tsx` | Remove FK join to `peer_sessions`; rely on parsed `trigger_snippet` for all session data |
+1. `supabase/functions/admin-delete-member/index.ts` — reorder steps, add session revocation, harden temp credential recycling
 
