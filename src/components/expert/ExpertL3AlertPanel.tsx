@@ -15,7 +15,7 @@ interface L3Session {
   therapist_id: string | null;
   flag_level: number;
   escalation_reason: string | null;
-  escalation_history: any[] | null;
+  escalation_history: any | null;
   room_id: string | null;
   status: string;
   created_at: string;
