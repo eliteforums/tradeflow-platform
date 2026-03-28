@@ -243,10 +243,34 @@ export function useAudioMonitor({
       .join(" ")
       .trim();
 
-    // Don't clear the entire buffer — only the captured window
-    // This preserves ongoing monitoring capability
     return snippet;
   }, []);
+
+  /**
+   * Captures ±10s around escalation: 10s before (from buffer) + waits 10s after,
+   * then returns combined transcript with [ESCALATION TRIGGERED] marker.
+   */
+  const captureEscalationSnippetAsync = useCallback(
+    (beforeMs: number = 10000, afterMs: number = 10000): Promise<string> => {
+      const snippetBefore = captureEscalationSnippet(beforeMs);
+
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const snippetAfter = captureEscalationSnippet(afterMs);
+          const combined = [
+            snippetBefore,
+            "\n[ESCALATION TRIGGERED]\n",
+            snippetAfter,
+          ]
+            .filter(Boolean)
+            .join("")
+            .trim();
+          resolve(combined || "(no audio captured)");
+        }, afterMs);
+      });
+    },
+    [captureEscalationSnippet]
+  );
 
   return {
     ...state,
@@ -256,5 +280,6 @@ export function useAudioMonitor({
     resetRisk,
     dismissSuggestion,
     captureEscalationSnippet,
+    captureEscalationSnippetAsync,
   };
 }

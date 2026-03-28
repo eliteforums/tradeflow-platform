@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Home, Calendar, MessageCircle, FileText, User, Clock, CheckCircle,
   AlertTriangle, Video, Phone, Loader2, Plus, Trash2, Search,
