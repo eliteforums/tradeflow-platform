@@ -97,6 +97,10 @@ const PeerConnect = () => {
     });
   }, [sessions, lastMessages]);
 
+  const fallbackIncomingSessionId = useMemo(() => {
+    return sessions.find((s) => s.status === "active" && !!s.room_id)?.id || null;
+  }, [sessions]);
+
   const filteredSessions = useMemo(() => {
     if (!debouncedSearch) return sortedSessions;
     const q = debouncedSearch.toLowerCase();
@@ -115,6 +119,12 @@ const PeerConnect = () => {
       setActiveSessionId(incomingCallSessionId);
     }
   }, [incomingCallSessionId, activeSessionId, setActiveSessionId]);
+
+  useEffect(() => {
+    if (!callMode && !incomingCallSessionId && fallbackIncomingSessionId && fallbackIncomingSessionId !== activeSessionId) {
+      setActiveSessionId(fallbackIncomingSessionId);
+    }
+  }, [callMode, incomingCallSessionId, fallbackIncomingSessionId, activeSessionId, setActiveSessionId]);
 
   const handleSendMessage = useCallback(() => {
     if (!message.trim() || !activeSessionId) return;
