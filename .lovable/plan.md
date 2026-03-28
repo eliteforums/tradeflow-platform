@@ -1,71 +1,59 @@
 
+
 ## Platform Audit — Issues Found
 
-After reviewing all modules across the platform, here are the issues discovered:
+### Issue 1: Peer Connect Credit Check Still Wrong in 3 Places (Bug — Medium)
+The actual session cost is 18 ECC, but:
+- **`PeerConnect.tsx` line 345-349**: Warning message still shows `creditBalance < 20` and text says "Need 20 ECC"
+- **`MobilePeerConnect.tsx` line 116**: Guard check `creditBalance < 20` (should be `< 18`)
+- **`MobilePeerConnect.tsx` line 173-177**: Warning shows `creditBalance < 20` and text says "Need at least 20 ECC"
 
-### Issues Found
+**Fix**: Change all three to `< 18` and update text to "Need 18 ECC".
 
-**1. Peer Connect: Credit Check Mismatch (Bug)**
-- `PeerConnect.tsx` line 140 checks `creditBalance < 20` to enable session start
-- But `usePeerConnect.ts` line 350 checks for `18 ECC` and deducts 18 on accept
-- This means students with 18-19 credits are blocked from starting sessions when they should be able to
-- **Fix**: Change the check in `PeerConnect.tsx` from `< 20` to `< 18`
+---
 
-**2. MobileBlackBox: Non-Lazy Import of VideoSDK (Build Issue)**
-- `MobileBlackBox.tsx` line 6-7 imports `MeetingProvider` and `MeetingView` eagerly (not lazy)
-- `BlackBox.tsx` (desktop) correctly uses `lazy(() => import(...))` for both
-- This means the full VideoSDK bundle is loaded on every mobile page visit even before a call is needed
-- **Fix**: Use `lazy()` + `Suspense` for `MeetingProvider` and `MeetingView` in MobileBlackBox, matching the desktop pattern
+### Issue 2: "Daily Cap" Label — Actually Weekly Cap (Bug — Low)
+The earn cap is 5 ECC per **week** (uses `get_weekly_earn_total` DB function), but:
+- **`Credits.tsx` line 77**: Shows "Daily Cap" label
+- **`TibetanBowl.tsx` line 59**: Says "left today" and "Daily cap reached"
 
-**3. Dashboard: Conditional Navigate Before Hooks (React Rules Violation)**
-- `Dashboard.tsx` lines 33-37: `Navigate` components are returned before the `useIsMobile()` hook on line 39 is guaranteed to run
-- React rules require hooks to run in the same order every render — early returns before hooks violate this
-- Currently works because `useIsMobile()` is called before the returns, but the structure is fragile
-- **Fix**: Move the mobile check above the role redirects, or restructure to ensure consistent hook execution
+WreckBuddy.tsx correctly says "weekly". These labels are misleading.
 
-**4. SPOC Dashboard: Missing `session_id` in Escalation Insert (Functional Gap)**
-- `escalate-emergency` edge function line 210-221: when creating the escalation request, it doesn't populate `session_id` field
-- The insert uses `trigger_snippet` JSON which contains the session_id, but the dedicated `session_id` column on `escalation_requests` is left null
-- This means queries filtering by `session_id` won't find these escalations
-- **Fix**: Add `session_id: sessionRef.id` to the escalation insert
+**Fix**: Change "Daily Cap" → "Weekly Cap" and "left today" → "left this week".
 
-**5. Profile: `user_private` Upsert Missing `onConflict` in Emergency Save (Desktop)**
-- `Profile.tsx` line 156-163: `upsert` for emergency contact uses `{ onConflict: "user_id" }` — correct
-- But the student ID verification upsert on line 114-120 also correctly uses `onConflict: "user_id"`
-- Both are fine. No issue here upon closer inspection.
+---
 
-**6. Therapist Dashboard: `MeetingProvider` and `MeetingView` Eagerly Imported (Performance)**
-- `TherapistDashboardContent.tsx` lines 9-10 eagerly import `MeetingProvider` and `MeetingView`
-- These heavy VideoSDK components should be lazy-loaded since they're only needed during active calls
-- **Fix**: Use `lazy()` imports like the desktop BlackBox component
+### Issue 3: TibetanBowl Uses Legacy Aliases (Code Smell — Low)
+`TibetanBowl.tsx` line 9 destructures `{ dailyEarned, dailyCap, remainingToday }` — these are legacy aliases for the weekly values in `useEccEarn`. Works but confusing for maintainability.
 
-**7. Auth Context: Race Condition in `onAuthStateChange` vs `getSession` (Edge Case)**
-- `AuthContext.tsx` lines 85-113: Both `onAuthStateChange` and `getSession` can fire, potentially loading user data twice
-- The `fetchingRef` guard partially prevents this, but `setIsLoading(false)` could fire from `getSession` before `onAuthStateChange` finishes loading data
-- This could cause a brief flash where `isLoading=false` but `profile=null`
-- **Impact**: Low — the `setTimeout(100)` in `onAuthStateChange` usually resolves this, but it's a timing fragility
+**Fix**: Switch to `{ weeklyEarned, weeklyCap, remainingThisWeek }` like WreckBuddy does.
 
-**8. AI Moderate: In-Memory Rate Limiter Resets on Cold Start (Known Limitation)**
-- `ai-moderate/index.ts` lines 9-16: Rate limiter uses an in-memory `Map`
-- Edge functions cold-start frequently, resetting the rate limiter each time
-- **Impact**: Low — the DB-level `check_rate_limit` function exists but isn't used here
+---
+
+### Issue 4: SoundTherapy Audio Cleanup Race Condition (Bug — Low)
+`SoundTherapy.tsx` line 30-52: The `useEffect` creates a new `Audio` object on every track change, but the `ended` event handler references `currentTrackData` from closure. If the user rapidly switches tracks, `earnFromActivity` could credit the wrong track. Also `handleNext` is called from the `ended` listener but uses stale `filteredTracks.length`.
+
+**Fix**: Use a ref for `currentTrackData` in the `ended` handler.
+
+---
+
+### Issue 5: Escalation `session_id` Fix Confirmed (Previously Fixed)
+`escalate-emergency/index.ts` line 219 now correctly passes `session_id: sessionRef.id || null`. No action needed.
+
+---
 
 ### Summary
 
-| # | Issue | Severity | Module |
-|---|-------|----------|--------|
-| 1 | Credit check mismatch (20 vs 18) | **Medium** | Peer Connect |
-| 2 | Non-lazy VideoSDK import | **Low** | Mobile BlackBox |
-| 3 | Conditional Navigate before hooks | **Low** | Dashboard |
-| 4 | Missing `session_id` in escalation insert | **Medium** | Escalation |
-| 5 | Eager VideoSDK import | **Low** | Therapist Dashboard |
-| 6 | Auth race condition | **Low** | Auth Context |
-| 7 | In-memory rate limiter | **Low** | AI Moderate |
+| # | Issue | Severity | Files |
+|---|-------|----------|-------|
+| 1 | Peer Connect credit check: 3 remaining `< 20` references | **Medium** | PeerConnect.tsx, MobilePeerConnect.tsx |
+| 2 | "Daily Cap" label should say "Weekly Cap" | **Low** | Credits.tsx |
+| 3 | TibetanBowl uses legacy daily aliases | **Low** | TibetanBowl.tsx |
+| 4 | SoundTherapy stale closure in audio ended handler | **Low** | SoundTherapy.tsx |
 
-### Recommended Fix Priority
-1. Fix credit check mismatch (20 → 18) — immediate
-2. Add `session_id` to escalation insert — immediate  
-3. Lazy-load VideoSDK in MobileBlackBox and TherapistDashboard — next iteration
-4. Other low-severity items — backlog
+### Files to Edit
+- `src/pages/dashboard/PeerConnect.tsx` — Fix credit warning threshold and text (lines 345-349)
+- `src/components/mobile/MobilePeerConnect.tsx` — Fix guard (line 116) and warning (lines 173-177)
+- `src/pages/dashboard/Credits.tsx` — Change "Daily Cap" → "Weekly Cap" (line 77)
+- `src/pages/dashboard/TibetanBowl.tsx` — Switch to weekly aliases and labels (line 9, 59)
 
-All Phase 6 features (ID deletion, escalation flow, SPOC display, transcription storage, call UI, peer connect indication, AI transcribe, APAAR verification) are correctly implemented. The issues above are pre-existing or minor gaps.
