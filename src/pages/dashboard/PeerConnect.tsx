@@ -54,6 +54,7 @@ const PeerConnect = () => {
   const [message, setMessage] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [callMode, setCallMode] = useState<"audio" | "video" | null>(null);
+  const [dismissedCallRoomId, setDismissedCallRoomId] = useState<string | null>(null);
 
   const [showNewChat, setShowNewChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -548,6 +549,25 @@ const PeerConnect = () => {
                         <Plus className="w-4 h-4 mr-2" /> Try Another Intern
                       </Button>
                     )}
+                  </div>
+                )}
+
+                {/* Incoming call banner */}
+                {activeSession.status === "active" && activeSession.room_id && !callMode && activeSession.room_id !== dismissedCallRoomId && (
+                  <div className="mx-4 mt-3 flex items-center gap-3 p-3 rounded-xl bg-primary/10 border border-primary/20 animate-pulse">
+                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <Phone className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">Incoming Call</p>
+                      <p className="text-xs text-muted-foreground">Voice call in progress — tap Join to connect</p>
+                    </div>
+                    <Button size="sm" className="shrink-0" onClick={() => setCallMode("audio")}>
+                      Join
+                    </Button>
+                    <Button size="sm" variant="ghost" className="shrink-0 h-8 w-8 p-0" onClick={() => setDismissedCallRoomId(activeSession.room_id)}>
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
                 )}
 
