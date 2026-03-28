@@ -36,7 +36,7 @@ serve(async (req) => {
     // Prevent self-deletion
     if (target_user_id === user.id) throw new Error("Cannot delete your own account from admin panel");
 
-    // 1. Look up the user's role before deletion
+    // Step 1: Look up the user's role before deletion
     const { data: targetProfile } = await adminClient
       .from("profiles")
       .select("role")
@@ -45,7 +45,7 @@ serve(async (req) => {
 
     const targetRole = targetProfile?.role || "student";
 
-    // 2. Audit log
+    // Step 2: Audit log (always record the attempt)
     await adminClient.from("audit_logs").insert({
       actor_id: user.id,
       action_type: "admin_deleted_member",
@@ -54,14 +54,25 @@ serve(async (req) => {
       metadata: { deleted_by: user.id, deleted_at: new Date().toISOString(), role: targetRole },
     });
 
-    // 3. Delete PII
+    // Step 3: Revoke all active sessions, then delete auth user FIRST
+    // This immediately prevents login — fail fast if auth deletion fails
+    try {
+      await adminClient.auth.admin.signOut(target_user_id, "global");
+    } catch (_e) {
+      // signOut may fail if user has no active sessions — safe to ignore
+    }
+
+    const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(target_user_id);
+    if (deleteAuthError) {
+      throw new Error(`Failed to delete auth user: ${deleteAuthError.message}`);
+    }
+
+    // Step 4: Delete PII (auth is already gone, so this is cleanup)
     await adminClient.from("user_private").delete().eq("user_id", target_user_id);
     await adminClient.from("recovery_credentials").delete().eq("user_id", target_user_id);
-
-    // 4. Delete BlackBox entries
     await adminClient.from("blackbox_entries").delete().eq("user_id", target_user_id);
 
-    // 5. Soft-delete profile
+    // Step 5: Soft-delete profile
     await adminClient.from("profiles").update({
       is_active: false,
       username: `deleted_${target_user_id.slice(0, 8)}`,
@@ -70,21 +81,29 @@ serve(async (req) => {
       specialty: null,
     }).eq("id", target_user_id);
 
-    // 6. Remove role assignments
+    // Step 6: Remove role assignments
     await adminClient.from("user_roles").delete().eq("user_id", target_user_id);
 
-    // 7. Delete auth user FIRST (before touching credentials)
-    const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(target_user_id);
-    if (deleteAuthError) {
-      throw new Error(`Failed to delete auth user: ${deleteAuthError.message}`);
-    }
-
-    // 8. Handle temp credentials based on role
+    // Step 7: Handle temp credentials based on role
     if (targetRole === "student") {
-      // Recycle student credentials back to pool
+      // Recycle student credentials back to pool with fresh password
+      const freshPassword = crypto.randomUUID().slice(0, 12);
+      const encoder = new TextEncoder();
+      const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(freshPassword));
+      const freshHash = Array.from(new Uint8Array(hashBuffer))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
       await adminClient
         .from("temp_credentials")
-        .update({ status: "unused", auth_user_id: null, activated_at: null, assigned_at: null })
+        .update({
+          status: "unused",
+          auth_user_id: null,
+          activated_at: null,
+          assigned_at: null,
+          temp_password_plain: freshPassword,
+          temp_password_hash: freshHash,
+        })
         .eq("auth_user_id", target_user_id);
     } else {
       // Permanently delete staff credentials (spoc, expert, intern, therapist)
