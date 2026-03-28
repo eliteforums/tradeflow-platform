@@ -1,41 +1,69 @@
 
+Goal: make the escalation flow truly consistent across desktop/mobile and fix the L3 “claimed by another expert” blocker.
 
-## Fix: Delete Institution — Two FK Constraint Failures
+1) Root-cause fixes to apply
+- In-call escalation is still missing from the actual call window (VideoCallModal/MeetingView controls), so escalation is only available outside the modal in some paths.
+- Mobile dashboards still use older escalation paths (direct table insert), which creates inconsistent payloads and “query-like” display in SPOC.
+- L3 claim happens before the expert is actually in-call and is done client-side, so false claims/race conditions can hide Join Call.
 
-### Root Cause (from edge function logs)
+2) Implementation plan
 
-Two foreign key violations are blocking deletion:
+A. Expert escalation button consistency (during + after call)
+- Add an escalation action directly inside call controls so it is always available while in-call.
+- Keep post-session escalation visible on completed cards in both desktop and mobile expert dashboards.
+- Ensure both Home and Sessions views expose Escalate consistently for completed sessions.
 
-1. **`audit_logs.actor_id` → `profiles`**: Deleting the auth user cascades to delete the profile, but `audit_logs` references `actor_id` — fails with FK constraint error.
-2. **`profiles.institution_id` → `institutions`**: The soft-delete updates the profile but does NOT null out `institution_id`, so when the institution row is deleted, the FK constraint on remaining profiles blocks it.
+B. SPOC structured escalation view (replace query/raw style)
+- Standardize parsing of escalation payloads in `SPOCDashboardContent`.
+- If `trigger_snippet` is missing/invalid, derive display data from related session fields (`session_id`, `session_type`) so older records still show structured info.
+- Render the same structured block in both:
+  - Flags escalation cards
+  - M.Phil Override Records section
+- Structured block will always prioritize:
+  - Student ID
+  - Session type + session ID
+  - Emergency contact (when available)
+  - Escalation reason
 
-### Fix 1: Database Migration
+C. Blackbox L3 claim logic (critical)
+- Move claim to happen after the expert actually joins the call (not at button click).
+- Implement an atomic backend claim step (single-winner) so only one expert can claim after join.
+- If claim fails (already claimed), immediately close/leave and show a clear message.
+- Update UI states:
+  - Before claim: show Join Call
+  - Claimed by current expert: Rejoin + escalation actions
+  - Claimed by another expert: show claimed state
+- Harden parsing to ignore malformed history entries that could falsely mark “claimed by another expert.”
 
-Add `ON DELETE SET NULL` to `audit_logs.actor_id` FK so deleting a profile doesn't fail due to audit log references. This preserves audit history (actor_id becomes null for deleted users).
+D. Align all escalation entry points
+- Update mobile expert and mobile intern flows to call the same backend escalation function used on desktop (`escalate-emergency`) so payload shape is uniform.
+- Remove/replace direct `escalation_requests` inserts from mobile paths.
 
-Also add `ON DELETE SET NULL` to `profiles.institution_id` FK for the same reason — or handle it in code.
+3) Files to update
+- `src/components/videosdk/VideoCallModal.tsx`
+- `src/components/videosdk/MeetingView.tsx`
+- `src/components/videosdk/MeetingControls.tsx`
+- `src/components/expert/ExpertDashboardContent.tsx`
+- `src/components/mobile/MobileExpertDashboard.tsx`
+- `src/components/intern/InternDashboardContent.tsx` (validation pass for consistency)
+- `src/components/mobile/MobileInternDashboard.tsx`
+- `src/components/expert/ExpertL3AlertPanel.tsx`
+- `src/components/spoc/SPOCDashboardContent.tsx`
+- New backend claim handler for L3 (edge function, and DB helper only if needed for atomic lock)
 
-```sql
--- Drop and recreate audit_logs.actor_id FK with SET NULL
-ALTER TABLE public.audit_logs
-  DROP CONSTRAINT IF EXISTS audit_logs_actor_id_fkey;
+4) Technical details
+- L3 claim flow target:
+  1) Expert clicks Join Call
+  2) Call joins successfully
+  3) Backend atomic claim executes
+  4) Winner stays; non-winner is exited with “already claimed”
+- SPOC payload normalization:
+  - Parse JSON when available
+  - Fallback to relational lookup for legacy rows
+  - Render one unified structured component in all escalation list contexts
 
-ALTER TABLE public.audit_logs
-  ADD CONSTRAINT audit_logs_actor_id_fkey
-  FOREIGN KEY (actor_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
-
--- Make actor_id nullable
-ALTER TABLE public.audit_logs ALTER COLUMN actor_id DROP NOT NULL;
-```
-
-### Fix 2: Edge Function Update (`admin-delete-institution/index.ts`)
-
-Two changes in the per-user loop:
-
-1. **Null out `institution_id`** on the profile during soft-delete (add `institution_id: null` to the update)
-2. **Don't throw on auth user deletion failure** — the FK issue with audit_logs causes `deleteUser` to fail. After the migration, this should work, but keep it as a soft error for resilience.
-
-### Files
-- **Database migration**: Drop/recreate `audit_logs_actor_id_fkey` with `ON DELETE SET NULL`, make `actor_id` nullable
-- **`supabase/functions/admin-delete-institution/index.ts`**: Add `institution_id: null` to the profile soft-delete update
-
+5) Verification checklist
+- Expert desktop + mobile: Escalate visible during active call and after completion.
+- Intern desktop + mobile escalations: SPOC receives structured session data.
+- L3 Blackbox: no premature “claimed by another expert”; Join Call visible pre-claim; exactly one expert can keep the claim post-join.
+- SPOC Flags + M.Phil sections: no raw/query-style output for new and legacy escalations.
