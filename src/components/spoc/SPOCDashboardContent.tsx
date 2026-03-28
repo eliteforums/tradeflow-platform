@@ -954,13 +954,7 @@ const SPOCDashboardContent = () => {
                                     </div>
                                   )}
                                 </div>
-                                {parsed.transcript_snippet && (
-                                  <div className="mt-2 p-2 rounded-lg bg-muted/30 border border-border/50">
-                                    <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript Snippet</p>
-                                    <p className="text-[11px] text-foreground italic">"{parsed.transcript_snippet}"</p>
-                                  </div>
-                                )}
-                              </div>
+                                </div>
                             )}
                             
                             {/* Fallback: raw trigger snippet for non-JSON or non-emergency */}
