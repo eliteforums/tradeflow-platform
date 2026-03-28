@@ -206,12 +206,12 @@ const MeetingView = ({
     }, [onRiskDetected]),
   });
 
-  // Expose captureEscalationSnippet to parent
+  // Expose captureEscalationSnippet to parent (sync version for immediate use)
   useEffect(() => {
-    if (joined === "JOINED" && enableMonitoring && onCaptureSnippetReady) {
+    if (joined === "JOINED" && onCaptureSnippetReady) {
       onCaptureSnippetReady(audioMonitor.captureEscalationSnippet);
     }
-  }, [joined, enableMonitoring, onCaptureSnippetReady, audioMonitor.captureEscalationSnippet]);
+  }, [joined, onCaptureSnippetReady, audioMonitor.captureEscalationSnippet]);
 
   // Expose leave function to parent
   useEffect(() => {
