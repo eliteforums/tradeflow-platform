@@ -1,25 +1,31 @@
 
 
-## Fix: Video Call Modal Buttons Cut Off
+## Fix: Audit Log Shows Raw UUIDs Instead of Names
 
 ### Problem
-The `VideoCallModal` uses `h-[80vh]` with `overflow-hidden` on the container. Inside, `MeetingView` has a `flex flex-col h-full` layout where the participant grid (`flex-1`) takes all available space, but the `MeetingControls` bar at the bottom gets clipped because the parent container's overflow is hidden and there's no room guarantee for the controls.
+The audit log displays raw database values — `actor_id` and `target_id` are shown as UUIDs instead of human-readable usernames. The current query tries to join via `profiles!audit_logs_actor_id_fkey`, but there's no foreign key on the `audit_logs` table, so this join likely fails silently.
 
 ### Fix
 
-**File: `src/components/videosdk/VideoCallModal.tsx`**
-- Change the content area (line 167) from `<div className="flex-1">` to `<div className="flex-1 flex flex-col overflow-hidden">` so MeetingView can properly flex within it without clipping.
+**File: `src/components/admin/AuditLogViewer.tsx`**
 
-**File: `src/components/videosdk/MeetingView.tsx`**
-- On the main joined container (line 323), ensure the controls bar is never clipped by adding `min-h-0` to the flex column and making the participant grid area scrollable while controls stay fixed:
-  - Line 323: Change `flex flex-col h-full relative` to `flex flex-col h-full min-h-0 relative`
-  - Line 342: Ensure `flex-1 min-h-0 overflow-y-auto` on the participant grid area so it shrinks to fit
+1. **Fetch a profiles lookup map**: Run a separate query to fetch all profiles (`id`, `username`) and build a `Map<uuid, username>`. This avoids relying on a non-existent FK join.
 
-**File: `src/components/videosdk/MeetingControls.tsx`**
-- Add `shrink-0` to the controls bar (line 14) so it never gets compressed: `flex items-center justify-center gap-3 p-4 bg-card border-t border-border shrink-0`
+2. **Resolve actor_id and target_id to names**: Use the lookup map to display usernames wherever `actor_id` or `target_id` appears — in the collapsed row summary, the expanded detail section, and the search filter.
+
+3. **Handle metadata usernames**: For metadata fields that contain UUIDs (like `student_id`, `user_id` in metadata JSON), also resolve those to names when possible.
+
+### Changes
+
+- Remove the broken FK join (`profiles!audit_logs_actor_id_fkey`) from the query — just select `*` from `audit_logs`
+- Add a second query to fetch `profiles` (id, username) for all users, build a `Map`
+- Create a helper `resolveName(id)` that returns username or truncated UUID fallback
+- Replace all raw UUID displays:
+  - Line 215: `log.actor?.username` → `resolveName(log.actor_id)`
+  - Line 218: `log.target_id.slice(0, 8)…` → `resolveName(log.target_id)`
+  - Line 238 (expanded Target ID): show resolved name next to the UUID
+  - Line 251 (expanded Actor ID): show resolved name next to the UUID
 
 ### Files to Edit
-- `src/components/videosdk/VideoCallModal.tsx` — flex layout fix on content wrapper
-- `src/components/videosdk/MeetingView.tsx` — add `min-h-0` to flex container
-- `src/components/videosdk/MeetingControls.tsx` — add `shrink-0` to prevent clipping
+- `src/components/admin/AuditLogViewer.tsx` — fix data fetching and name resolution
 
