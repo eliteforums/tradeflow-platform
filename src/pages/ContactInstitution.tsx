@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Building2, MapPin, User, FileText, Send, Search, Loader2, CheckCircle2, Clock, XCircle, HelpCircle } from "lucide-react";
+import { ArrowLeft, Building2, MapPin, User, FileText, Send, Search, Loader2, CheckCircle2, Clock, XCircle, HelpCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
