@@ -290,7 +290,7 @@ const AuditLogViewer = () => {
                     {/* Metadata */}
                     <div className="space-y-1">
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Metadata</span>
-                      <MetadataDisplay metadata={log.metadata} />
+                      <MetadataDisplay metadata={log.metadata} resolveName={resolveName} />
                     </div>
                   </div>
                 </CollapsibleContent>
