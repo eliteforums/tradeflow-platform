@@ -13,10 +13,10 @@ const AnnouncementBanner = () => (
     }}
   >
     <Link
-      to="/institution-code"
+      to="/contact-institution"
       className="inline-flex items-center gap-1.5 text-[12px] sm:text-[13px] font-medium text-white hover:underline"
     >
-      <span>🎓 Eternia is now live — Get your campus code</span>
+      <span>🎓 Bring Eternia to your campus — Apply now</span>
       <ArrowRight className="w-3.5 h-3.5 shrink-0" />
     </Link>
   </motion.div>

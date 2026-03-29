@@ -45,8 +45,9 @@ import EmergencyAlertOverlay from "@/components/notifications/EmergencyAlertOver
 import OverviewDashboard from "@/components/admin/OverviewDashboard";
 import PasswordResetManager from "@/components/admin/PasswordResetManager";
 import SessionsLogViewer from "@/components/admin/SessionsLogViewer";
+import InquiryTicketManager from "@/components/admin/InquiryTicketManager";
 
-type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics" | "tools" | "password-resets";
+type TabId = "overview" | "members" | "sessions" | "spoc" | "roles" | "sounds" | "audit" | "escalations" | "training" | "institution-detail" | "analytics" | "tools" | "password-resets" | "inquiries";
 type RoleFilter = "all" | "spoc" | "expert" | "intern" | "therapist";
 type SessionFilter = "all" | "appointment" | "peer" | "blackbox";
 
@@ -76,7 +77,10 @@ const SIDEBAR_GROUPS: SidebarGroup[] = [
   },
   {
     label: "Institutions",
-    items: [{ id: "spoc", label: "SPOC / Institutions", icon: Building2 }],
+    items: [
+      { id: "spoc", label: "SPOC / Institutions", icon: Building2 },
+      { id: "inquiries", label: "Inquiries", icon: Phone },
+    ],
   },
   {
     label: "Content",
@@ -452,6 +456,9 @@ const AdminDashboard = () => {
 
               {/* ─── PASSWORD RESETS ─── */}
               {activeTab === "password-resets" && <div className="max-w-3xl"><PasswordResetManager /></div>}
+
+              {/* ─── INQUIRIES ─── */}
+              {activeTab === "inquiries" && <div className="max-w-4xl"><InquiryTicketManager /></div>}
             </>
           )}
         </div>
