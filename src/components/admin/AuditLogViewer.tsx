@@ -140,9 +140,9 @@ const AuditLogViewer = () => {
       const q = search.toLowerCase();
       result = result.filter((l: any) =>
         l.action_type.toLowerCase().includes(q) ||
-        (l.actor?.username || "").toLowerCase().includes(q) ||
+        resolveName(l.actor_id).toLowerCase().includes(q) ||
         (l.target_table || "").toLowerCase().includes(q) ||
-        (l.target_id || "").toLowerCase().includes(q)
+        resolveName(l.target_id).toLowerCase().includes(q)
       );
     }
 
@@ -230,10 +230,10 @@ const AuditLogViewer = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="font-medium">{log.actor?.username || "System"}</span>
+                    <span className="font-medium">{resolveName(log.actor_id)}</span>
                     {log.target_id && (
                       <span className="text-muted-foreground font-mono text-[10px] truncate max-w-[180px]">
-                        → {log.target_id.slice(0, 8)}…
+                        → {resolveName(log.target_id)}
                       </span>
                     )}
                     {log.ip_hash && (
@@ -250,7 +250,8 @@ const AuditLogViewer = () => {
                     {log.target_id && (
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Target ID</span>
-                        <code className="text-[10px] font-mono text-foreground bg-muted/50 px-1.5 py-0.5 rounded">{log.target_id}</code>
+                        <span className="text-xs font-medium text-foreground">{resolveName(log.target_id)}</span>
+                        <code className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{log.target_id}</code>
                         <CopyButton text={log.target_id} />
                       </div>
                     )}
@@ -266,8 +267,9 @@ const AuditLogViewer = () => {
 
                     {/* Actor ID */}
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Actor ID</span>
-                      <code className="text-[10px] font-mono text-foreground bg-muted/50 px-1.5 py-0.5 rounded">{log.actor_id}</code>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Actor</span>
+                      <span className="text-xs font-medium text-foreground">{resolveName(log.actor_id)}</span>
+                      <code className="text-[10px] font-mono text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{log.actor_id}</code>
                       <CopyButton text={log.actor_id} />
                     </div>
 
