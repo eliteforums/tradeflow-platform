@@ -1,70 +1,51 @@
 
 
-## Platform Audit — Remaining Issues Found
+## Fix: Escalation Transcript Not Showing on Admin Dashboard
 
-### Issue 1: Welcome Bonus is 80 ECC, Not 100 ECC (Bug — Medium)
-- **File**: `supabase/functions` DB function `handle_new_user()` line: `VALUES (NEW.id, 80, 'grant', 'Welcome bonus');`
-- **Problem**: The signup bonus is 80 ECC, but the FAQ and docs say 100 ECC
-- **Also**: FAQSection.tsx line 12 says "100 ECC on signup"
-- **Fix**: Update the DB trigger to grant 100 ECC (migration), OR update FAQ to say 80 ECC. Recommend aligning to 100 ECC as documented.
+### Root Cause
 
----
+There are two separate escalation paths that create records in `escalation_requests`, but they store `trigger_snippet` in incompatible formats:
 
-### Issue 2: Console Ref Warnings on Every Page Load (Bug — Medium)
-- **Console**: ~10+ "Function components cannot be given refs" errors on boot
-- **Root Cause**: The `App` component is an arrow function (`const App = () => ...`). React's StrictMode tries to pass refs through the component tree. The `Toaster`, `Sonner`, `PWAUpdatePrompt`, `CookieConsent`, and `Analytics` components are all siblings inside `TooltipProvider`, which triggers the warning cascade.
-- **Fix**: This is a known React 18 dev-mode false positive with provider trees. The warnings are harmless in production and don't affect functionality. No code fix needed — but wrapping `App` with `React.forwardRef` would suppress them.
+1. **`ai-transcribe` edge function** (auto L3): Stores `trigger_snippet` as a **plain text string** (raw transcript excerpt). No structured metadata (student name, emergency contact, session type) is included.
 
----
+2. **`escalate-emergency` edge function** (manual): Stores `trigger_snippet` as **structured JSON** with `type: "emergency_contact"`, student details, emergency contact, and `transcript_snippet`.
 
-### Issue 3: Sonner Toaster Uses `next-themes` Import (Bug — Low)
-- **File**: `src/components/ui/sonner.tsx` line 1
-- **Problem**: `import { useTheme } from "next-themes"` — this project doesn't use Next.js. The import works because `next-themes` is likely installed as a dependency, but it's conceptually incorrect and may cause issues if the package is removed.
-- **Fix**: Replace with a static theme value (`"dark"`) since the platform uses a fixed dark theme.
+The Admin Dashboard's `EscalationManager.tsx` tries `JSON.parse(esc.trigger_snippet)` — for ai-transcribe records, this fails silently, so `parsed` is `null`. The fallback renderer (line 292) does show the raw text, but it lacks any structured data (student name, session details, transcript label). This makes it appear as if the transcript data is "missing" when viewed from the admin panel.
 
----
+Additionally, the ai-transcribe L3 escalation doesn't include student details, emergency contacts, or the escalating role — so even if the snippet renders, the admin has no context about who the student is.
 
-### Issue 4: `profiles.student_id` Column Still Auto-Generated (Code Smell — Low)
-- **Problem**: The `generate_student_id()` trigger auto-generates `ETN-XXXX-00001` format IDs and stores them in `profiles.student_id`. This contradicts the APAAR spec (never store raw IDs). The Profile page correctly masks this, but the column shouldn't be populated at all.
-- **Fix**: Consider dropping the trigger or making it store only a hash/null. Low priority since the Profile UI already masks the value.
+### Fix Plan
 
----
+#### 1. Update `ai-transcribe` edge function — Store structured JSON in `trigger_snippet`
+**File**: `supabase/functions/ai-transcribe/index.ts` (lines ~280-312)
 
-### Issue 5: Emergency Contact Data Stored in Plaintext (Security — High)
-- **File**: `user_private` table columns `emergency_name_encrypted`, `emergency_phone_encrypted`
-- **Problem**: Despite the column names containing "encrypted", the data is stored as plaintext strings. The Register form, Profile page, and edge functions all read/write these as raw text. No actual encryption is applied anywhere.
-- **Fix**: This is a naming issue — either rename columns to drop "encrypted" suffix, or implement actual AES-256 encryption. For MVP, document this as a known gap and plan encryption for a future iteration.
+When creating the L3 escalation record, build a structured JSON trigger_snippet that includes:
+- `type: "ai_l3_detection"` (new type for AI-detected escalations)
+- `transcript_snippet`: the raw transcript excerpt
+- `student_id`, `student_username`, `student_eternia_id`: from the student's profile
+- `session_type`: "blackbox" or "peer"
+- `keywords`, `risk_indicators`, `emotional_signals`: from the AI analysis
+- `reasoning`: AI's reasoning text
 
----
+This requires fetching the student profile (username, student_id) before inserting. The student_id is already available from `existingSession.student_id`.
 
-### Issue 6: `useEccEarn` Legacy Aliases Still Exported (Code Smell — Low)
-- **File**: `src/hooks/useEccEarn.ts` lines 68-70
-- **Problem**: `dailyEarned`, `dailyCap`, `remainingToday` are still exported as legacy aliases. No consumers use them anymore (TibetanBowl was the last and was fixed).
-- **Fix**: Remove the legacy alias exports to prevent future confusion.
+#### 2. Update `EscalationManager.tsx` — Render AI-detected escalation type
+**File**: `src/components/admin/EscalationManager.tsx`
 
----
+Add a new render block for `parsed?.type === "ai_l3_detection"` that displays:
+- Student username and Eternia ID
+- AI-detected keywords and risk indicators as badges
+- Emotional signals
+- AI reasoning text
+- The transcript snippet in a monospace block
 
-### Issue 7: BlackBox Daily Limit Says "3/day" — No Weekly Cap Consistency (UX — Low)
-- **File**: `src/hooks/useBlackBoxSession.ts` line 234-237
-- **Problem**: BlackBox uses a daily limit (3 sessions/day via `get_blackbox_daily_count`), while the earn system uses weekly caps. This isn't necessarily wrong, but the toast message "Daily BlackBox limit reached (3 sessions/day)" could confuse users who see "weekly" labels everywhere else.
-- **Fix**: No code change needed — this is intentionally different (daily session limit vs weekly earn cap). Just noting for completeness.
+#### 3. Update `SPOCDashboardContent.tsx` — Same rendering for SPOC view
+**File**: `src/components/spoc/SPOCDashboardContent.tsx`
 
----
-
-### Summary
-
-| # | Issue | Severity | Fix |
-|---|-------|----------|-----|
-| 1 | Welcome bonus 80 ECC vs 100 ECC documented | **Medium** | DB migration to update trigger |
-| 2 | Console ref warnings on boot | **Low** | Harmless dev-mode warnings, optional fix |
-| 3 | Sonner imports `next-themes` | **Low** | Replace with static "dark" theme |
-| 4 | `profiles.student_id` auto-generated | **Low** | Optional trigger removal |
-| 5 | Emergency data stored as plaintext | **High** | Document as known gap, plan encryption |
-| 6 | Legacy daily aliases in useEccEarn | **Low** | Remove 3 unused exports |
-| 7 | BlackBox daily vs weekly cap messaging | **Info** | No change needed |
+Add the same `ai_l3_detection` render block so SPOCs also see the structured AI escalation data.
 
 ### Files to Edit
-- **DB Migration**: Update `handle_new_user()` to grant 100 ECC instead of 80
-- `src/components/ui/sonner.tsx` — Remove `next-themes` import, use static dark theme
-- `src/hooks/useEccEarn.ts` — Remove legacy `dailyEarned`/`dailyCap`/`remainingToday` aliases
+- `supabase/functions/ai-transcribe/index.ts` — Build structured JSON for trigger_snippet on L3 escalation
+- `src/components/admin/EscalationManager.tsx` — Add `ai_l3_detection` type renderer
+- `src/components/spoc/SPOCDashboardContent.tsx` — Add matching renderer for SPOC view
 
