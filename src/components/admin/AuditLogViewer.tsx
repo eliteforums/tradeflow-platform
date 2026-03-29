@@ -93,13 +93,31 @@ const AuditLogViewer = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("audit_logs")
-        .select("*, actor:profiles!audit_logs_actor_id_fkey(username)")
+        .select("*")
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
       return data;
     },
   });
+
+  const { data: profilesMap = new Map() } = useQuery({
+    queryKey: ["audit-profiles-map"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username");
+      if (error) throw error;
+      const map = new Map<string, string>();
+      (data || []).forEach((p: any) => map.set(p.id, p.username));
+      return map;
+    },
+  });
+
+  const resolveName = (id: string | null): string => {
+    if (!id) return "System";
+    return profilesMap.get(id) || id.slice(0, 8) + "…";
+  };
 
   const filteredLogs = useMemo(() => {
     let result = logs;
