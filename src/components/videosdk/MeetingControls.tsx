@@ -11,7 +11,7 @@ const MeetingControls = ({ audioOnly = false, onEscalate }: MeetingControlsProps
   const { leave, toggleMic, toggleWebcam, localMicOn, localWebcamOn } = useMeeting();
 
   return (
-    <div className="flex items-center justify-center gap-3 p-4 bg-card border-t border-border">
+    <div className="flex items-center justify-center gap-3 p-4 bg-card border-t border-border shrink-0">
       <Button
         variant={localMicOn ? "outline" : "destructive"}
         size="icon"

@@ -320,7 +320,7 @@ const MeetingView = ({
   }
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full min-h-0 relative">
       {enableMonitoring && (
         <div className="px-4 py-2 border-b border-border flex items-center justify-between bg-card/50">
           <div className="flex items-center gap-2">
@@ -339,7 +339,7 @@ const MeetingView = ({
         </div>
       )}
 
-      <div className="flex-1 p-4 overflow-y-auto">
+      <div className="flex-1 min-h-0 p-4 overflow-y-auto">
         {(() => {
           const participantIds = [...participants.keys()].filter(
             (id) => !(audioOnly && localParticipant && id === localParticipant.id)
