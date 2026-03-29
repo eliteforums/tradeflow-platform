@@ -51,7 +51,7 @@ const ContactInstitution = () => {
   const [submittedData, setSubmittedData] = useState<InquiryFormData | null>(null);
   const [trackQuery, setTrackQuery] = useState("");
   const [tracking, setTracking] = useState(false);
-  const [trackResult, setTrackResult] = useState<{ ticket_number: string; status: string; institution_name: string; created_at: string } | null>(null);
+  const [trackResult, setTrackResult] = useState<any>(null);
   const [trackError, setTrackError] = useState("");
 
   const form = useForm<InquiryFormData>({
