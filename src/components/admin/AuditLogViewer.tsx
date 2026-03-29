@@ -51,19 +51,25 @@ const DATE_FILTERS = [
   { label: "Last 30 days", value: "30d" },
 ];
 
-const MetadataDisplay = ({ metadata }: { metadata: Record<string, any> | null }) => {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const MetadataDisplay = ({ metadata, resolveName }: { metadata: Record<string, any> | null; resolveName: (id: string | null) => string }) => {
   if (!metadata || Object.keys(metadata).length === 0) return <span className="text-xs text-muted-foreground italic">No metadata</span>;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-      {Object.entries(metadata).map(([key, value]) => (
-        <div key={key} className="flex flex-col gap-0.5 p-1.5 rounded bg-muted/30">
-          <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">{key.replace(/_/g, " ")}</span>
-          <span className="text-xs font-medium text-foreground break-all">
-            {typeof value === "object" ? JSON.stringify(value) : String(value)}
-          </span>
-        </div>
-      ))}
+      {Object.entries(metadata).map(([key, value]) => {
+        const strVal = typeof value === "object" ? JSON.stringify(value) : String(value);
+        const resolved = typeof value === "string" && UUID_RE.test(value) ? resolveName(value) : null;
+        return (
+          <div key={key} className="flex flex-col gap-0.5 p-1.5 rounded bg-muted/30">
+            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">{key.replace(/_/g, " ")}</span>
+            <span className="text-xs font-medium text-foreground break-all">
+              {resolved ? <>{resolved} <span className="text-muted-foreground font-mono text-[10px]">({strVal.slice(0, 8)}…)</span></> : strVal}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 };
