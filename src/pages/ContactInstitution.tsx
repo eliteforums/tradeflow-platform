@@ -174,6 +174,7 @@ ${sections.map(s => `<div class="section"><div class="section-title">${s.title}<
 
       if (error) throw error;
       setTicketNumber((result as any).ticket_number);
+      setSubmittedData(data);
       toast({ title: "Application submitted!", description: "Your inquiry has been received." });
     } catch (err: any) {
       toast({ title: "Submission failed", description: err.message, variant: "destructive" });
