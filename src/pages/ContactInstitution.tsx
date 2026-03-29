@@ -222,8 +222,13 @@ ${sections.map(s => `<div class="section"><div class="section-title">${s.title}<
               <p className="text-2xl font-mono font-bold text-primary">{ticketNumber}</p>
             </div>
             <p className="text-xs text-muted-foreground">Our team will review your application and get back to you within 3-5 business days.</p>
-            <div className="flex gap-2 justify-center pt-2">
-              <Button variant="outline" size="sm" onClick={() => { setTicketNumber(null); form.reset(); }}>
+            <div className="flex gap-2 justify-center pt-2 flex-wrap">
+              {submittedData && (
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => generatePDF(submittedData, ticketNumber!)}>
+                  <Download className="w-3.5 h-3.5" /> Download Form
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => { setTicketNumber(null); setSubmittedData(null); form.reset(); }}>
                 Submit Another
               </Button>
               <Link to="/">
