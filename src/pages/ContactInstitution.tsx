@@ -240,8 +240,12 @@ ${sections.map(s => `<div class="section"><div class="section-title">${s.title}<
             <p className="text-xs text-muted-foreground">Our team will review your application and get back to you within 3-5 business days.</p>
             <div className="flex gap-2 justify-center pt-2 flex-wrap">
               {submittedData && (
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => generatePDF(submittedData, ticketNumber!)}>
-                  <Download className="w-3.5 h-3.5" /> Download Form
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => {
+                  const fields = formDataToFields(submittedData);
+                  const now = new Date().toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" });
+                  downloadInquiryHTML(buildInquiryHTML(fields, ticketNumber!, now), ticketNumber!);
+                }}>
+                  <Download className="w-3.5 h-3.5" /> Download Again
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={() => { setTicketNumber(null); setSubmittedData(null); form.reset(); }}>
