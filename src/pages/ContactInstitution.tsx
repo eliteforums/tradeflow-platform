@@ -351,6 +351,8 @@ ${sections.map(s => `<div class="section"><div class="section-title">${s.title}<
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
 
         {/* Form */}
         <Form {...form}>
