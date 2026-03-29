@@ -164,7 +164,7 @@ const VideoCallModal = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1">
+        <div className="flex-1 flex flex-col overflow-hidden">
           {!token || !meetingId ? (
             <div className="flex flex-col items-center justify-center h-full gap-6">
               <div className="w-24 h-24 rounded-full bg-gradient-eternia flex items-center justify-center">
