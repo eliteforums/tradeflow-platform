@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Building2, MapPin, User, FileText, Send, Search, Loader2, CheckCircle2, Clock, XCircle, HelpCircle } from "lucide-react";
+import { ArrowLeft, Building2, MapPin, User, FileText, Send, Search, Loader2, CheckCircle2, Clock, XCircle, HelpCircle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,6 +48,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }>
 const ContactInstitution = () => {
   const [submitting, setSubmitting] = useState(false);
   const [ticketNumber, setTicketNumber] = useState<string | null>(null);
+  const [submittedData, setSubmittedData] = useState<InquiryFormData | null>(null);
   const [trackQuery, setTrackQuery] = useState("");
   const [tracking, setTracking] = useState(false);
   const [trackResult, setTrackResult] = useState<{ ticket_number: string; status: string; institution_name: string; created_at: string } | null>(null);
@@ -62,6 +63,85 @@ const ContactInstitution = () => {
       designation: "", pan_number: "", tan_number: "",
     },
   });
+
+  const generatePDF = (data: InquiryFormData, ticket: string) => {
+    const typeLabels: Record<string, string> = {
+      university: "University", college: "College", school: "School", coaching: "Coaching Institute", other: "Other",
+    };
+    const now = new Date().toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" });
+
+    const sections = [
+      { title: "INSTITUTION DETAILS", rows: [
+        ["Institution Name", data.institution_name],
+        ["Type", typeLabels[data.institution_type] || data.institution_type],
+        ...(data.student_count ? [["Approx. Students", String(data.student_count)]] : []),
+        ...(data.website_url ? [["Website", data.website_url]] : []),
+      ]},
+      { title: "ADDRESS", rows: [
+        ["Street Address", data.address_line],
+        ["City", data.city],
+        ["State", data.state],
+        ["Pincode", data.pincode],
+        ...(data.google_maps_url ? [["Google Maps", data.google_maps_url]] : []),
+      ]},
+      { title: "CONTACT PERSON", rows: [
+        ["Name", data.contact_person_name],
+        ["Designation", data.designation],
+        ["Email", data.contact_person_email],
+        ["Phone", data.contact_person_phone],
+      ]},
+      { title: "LEGAL & TAX", rows: [
+        ["PAN", data.pan_number],
+        ["TAN", data.tan_number],
+        ...(data.gst_number ? [["GST", data.gst_number]] : []),
+      ]},
+      ...(data.message ? [{ title: "MESSAGE", rows: [["", data.message]] }] : []),
+    ];
+
+    // Build SVG-based printable HTML
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Eternia Inquiry - ${ticket}</title>
+<style>
+  @media print { body { margin: 0; } @page { margin: 20mm; } }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; background: #fff; max-width: 700px; margin: 0 auto; padding: 40px 32px; }
+  .header { text-align: center; margin-bottom: 32px; border-bottom: 2px solid #6c5ce7; padding-bottom: 20px; }
+  .header h1 { font-size: 22px; margin: 0 0 4px; color: #6c5ce7; letter-spacing: 1px; }
+  .header p { margin: 4px 0; color: #666; font-size: 13px; }
+  .ticket-box { background: #f0edff; border-radius: 8px; padding: 12px 20px; display: inline-block; margin: 12px 0 0; }
+  .ticket-box span { font-size: 20px; font-family: 'Courier New', monospace; font-weight: 700; color: #6c5ce7; }
+  .section { margin: 24px 0; }
+  .section-title { font-size: 11px; font-weight: 700; color: #6c5ce7; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid #e8e4ff; padding-bottom: 6px; }
+  .row { display: flex; padding: 6px 0; font-size: 13px; }
+  .row .label { width: 160px; color: #888; flex-shrink: 0; }
+  .row .value { color: #1a1a2e; font-weight: 500; word-break: break-word; }
+  .footer { text-align: center; margin-top: 40px; padding-top: 16px; border-top: 1px solid #eee; font-size: 11px; color: #aaa; }
+</style></head><body>
+<div class="header">
+  <h1>ETERNIA</h1>
+  <p>Institution Onboarding Inquiry</p>
+  <div class="ticket-box"><span>${ticket}</span></div>
+  <p style="margin-top:8px;font-size:11px;">Submitted on ${now}</p>
+</div>
+${sections.map(s => `<div class="section"><div class="section-title">${s.title}</div>${s.rows.map(([l, v]) => l ? `<div class="row"><div class="label">${l}</div><div class="value">${v}</div></div>` : `<div style="font-size:13px;color:#1a1a2e;line-height:1.6;">${v}</div>`).join("")}</div>`).join("")}
+<div class="footer">This is an auto-generated document from Eternia. For queries, email support@eternia.life</div>
+</body></html>`;
+
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, "_blank");
+    if (printWindow) {
+      printWindow.onload = () => {
+        printWindow.print();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      };
+    } else {
+      // Fallback: direct download as HTML
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${ticket}-inquiry.html`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    }
+  };
 
   const onSubmit = async (data: InquiryFormData) => {
     setSubmitting(true);
@@ -94,6 +174,7 @@ const ContactInstitution = () => {
 
       if (error) throw error;
       setTicketNumber((result as any).ticket_number);
+      setSubmittedData(data);
       toast({ title: "Application submitted!", description: "Your inquiry has been received." });
     } catch (err: any) {
       toast({ title: "Submission failed", description: err.message, variant: "destructive" });
@@ -141,8 +222,13 @@ const ContactInstitution = () => {
               <p className="text-2xl font-mono font-bold text-primary">{ticketNumber}</p>
             </div>
             <p className="text-xs text-muted-foreground">Our team will review your application and get back to you within 3-5 business days.</p>
-            <div className="flex gap-2 justify-center pt-2">
-              <Button variant="outline" size="sm" onClick={() => { setTicketNumber(null); form.reset(); }}>
+            <div className="flex gap-2 justify-center pt-2 flex-wrap">
+              {submittedData && (
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => generatePDF(submittedData, ticketNumber!)}>
+                  <Download className="w-3.5 h-3.5" /> Download Form
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => { setTicketNumber(null); setSubmittedData(null); form.reset(); }}>
                 Submit Another
               </Button>
               <Link to="/">
