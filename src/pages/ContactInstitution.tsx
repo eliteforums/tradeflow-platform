@@ -183,9 +183,15 @@ ${sections.map(s => `<div class="section"><div class="section-title">${s.title}<
         .single();
 
       if (error) throw error;
-      setTicketNumber((result as any).ticket_number);
+      const ticketNum = (result as any).ticket_number;
+      setTicketNumber(ticketNum);
       setSubmittedData(data);
-      toast({ title: "Application submitted!", description: "Your inquiry has been received." });
+      // Auto-download
+      const fields = formDataToFields(data);
+      const now = new Date().toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" });
+      const html = buildInquiryHTML(fields, ticketNum, now);
+      downloadInquiryHTML(html, ticketNum);
+      toast({ title: "Application submitted!", description: "Your inquiry has been received and downloaded." });
     } catch (err: any) {
       toast({ title: "Submission failed", description: err.message, variant: "destructive" });
     } finally {
