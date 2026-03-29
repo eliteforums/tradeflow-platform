@@ -300,6 +300,28 @@ Your recommendation should be a single actionable sentence the therapist/expert/
           if (spocProfile) spocId = spocProfile.id;
         }
 
+        // Fetch student profile for structured metadata
+        const { data: studentData } = await adminClient
+          .from("profiles")
+          .select("username, student_id")
+          .eq("id", studentId)
+          .single();
+
+        // Build structured JSON trigger_snippet so Admin/SPOC dashboards can render it
+        const structuredSnippet = JSON.stringify({
+          type: "ai_l3_detection",
+          transcript_snippet: trigger_snippet.substring(0, 500),
+          student_username: studentData?.username || null,
+          student_eternia_id: studentData?.student_id || null,
+          session_id,
+          session_type: sType,
+          keywords: detectedKeywords,
+          risk_indicators,
+          emotional_signals,
+          reasoning,
+          escalated_by_role: "ai_system",
+        });
+
         // Create escalation_request record with trigger metadata (PRD §19.1)
         await adminClient.from("escalation_requests").insert({
           spoc_id: spocId,
@@ -307,7 +329,7 @@ Your recommendation should be a single actionable sentence the therapist/expert/
           justification_encrypted: `AI L3 critical risk: ${reasoning}. Keywords: ${detectedKeywords.join(", ")}`,
           status: "pending",
           escalation_level: 3,
-          trigger_snippet: trigger_snippet.substring(0, 500),
+          trigger_snippet: structuredSnippet,
           trigger_timestamp: nowISO,
         });
 

@@ -957,6 +957,39 @@ const SPOCDashboardContent = () => {
                                 </div>
                             )}
                             
+                            {/* AI L3 Detection structured block */}
+                            {parsed?.type === "ai_l3_detection" && (
+                              <div className="p-3 rounded-lg bg-destructive/10 border-2 border-destructive/30 space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                                  <p className="text-xs font-bold text-destructive">🤖 AI L3 Detection</p>
+                                </div>
+                                {parsed.keywords?.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {parsed.keywords.map((kw: string, i: number) => (
+                                      <span key={i} className="px-1.5 py-0.5 rounded text-[10px] bg-destructive/20 text-destructive font-medium">{kw}</span>
+                                    ))}
+                                  </div>
+                                )}
+                                {parsed.risk_indicators?.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    {parsed.risk_indicators.map((ri: string, i: number) => (
+                                      <span key={i} className="px-1.5 py-0.5 rounded text-[10px] bg-yellow-500/20 text-yellow-400 font-medium">{ri}</span>
+                                    ))}
+                                  </div>
+                                )}
+                                {parsed.reasoning && (
+                                  <p className="text-[11px] text-foreground italic">"{parsed.reasoning}"</p>
+                                )}
+                                {parsed.transcript_snippet && (
+                                  <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+                                    <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript</p>
+                                    <pre className="text-[11px] text-foreground whitespace-pre-wrap font-mono">{parsed.transcript_snippet}</pre>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             {/* Fallback: raw trigger snippet for non-JSON or non-emergency */}
                             {!parsed && (
                               <div className="p-2 rounded-lg bg-destructive/5 border border-destructive/10">

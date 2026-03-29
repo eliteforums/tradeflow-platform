@@ -288,6 +288,68 @@ const EscalationManager = () => {
                   </div>
                 )}
 
+                {/* AI L3 Detection structured block */}
+                {parsed?.type === "ai_l3_detection" && (
+                  <div className="mt-2 p-3 rounded-lg bg-destructive/10 border-2 border-destructive/30 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                      <p className="text-xs font-bold text-destructive">🤖 AI L3 Detection</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {parsed.student_eternia_id && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Eternia ID</p>
+                          <p className="font-semibold font-mono">{parsed.student_eternia_id}</p>
+                        </div>
+                      )}
+                      {parsed.student_username && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Username</p>
+                          <p className="font-semibold">{parsed.student_username}</p>
+                        </div>
+                      )}
+                      {parsed.session_type && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Session Type</p>
+                          <p className="font-medium capitalize">{parsed.session_type}</p>
+                        </div>
+                      )}
+                    </div>
+                    {parsed.keywords?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] text-muted-foreground mb-1">Keywords</p>
+                        <div className="flex flex-wrap gap-1">
+                          {parsed.keywords.map((kw: string, i: number) => (
+                            <span key={i} className="px-1.5 py-0.5 rounded text-[10px] bg-destructive/20 text-destructive font-medium">{kw}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {parsed.risk_indicators?.length > 0 && (
+                      <div>
+                        <p className="text-[10px] text-muted-foreground mb-1">Risk Indicators</p>
+                        <div className="flex flex-wrap gap-1">
+                          {parsed.risk_indicators.map((ri: string, i: number) => (
+                            <span key={i} className="px-1.5 py-0.5 rounded text-[10px] bg-yellow-500/20 text-yellow-400 font-medium">{ri}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {parsed.reasoning && (
+                      <div>
+                        <p className="text-[10px] text-muted-foreground mb-0.5">AI Reasoning</p>
+                        <p className="text-[11px] text-foreground italic">"{parsed.reasoning}"</p>
+                      </div>
+                    )}
+                    {parsed.transcript_snippet && (
+                      <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+                        <p className="text-[10px] font-medium text-muted-foreground mb-0.5">±10s Transcript Snippet</p>
+                        <pre className="text-[11px] text-foreground whitespace-pre-wrap font-mono">{parsed.transcript_snippet}</pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Non-JSON trigger snippet fallback */}
                 {esc.trigger_snippet && !parsed?.type && (
                   <div className="mt-2 p-2 rounded-lg bg-destructive/5 border border-destructive/10">
