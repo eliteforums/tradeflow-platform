@@ -313,10 +313,44 @@ ${sections.map(s => `<div class="section"><div class="section-title">${s.title}<
                   })()}
                 </div>
                 <p className="text-xs text-muted-foreground">{trackResult.institution_name} · Submitted {new Date(trackResult.created_at).toLocaleDateString()}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-7 text-xs mt-1"
+                  onClick={() => {
+                    const typeLabels: Record<string, string> = { university: "University", college: "College", school: "School", coaching: "Coaching Institute", other: "Other" };
+                    const r = trackResult;
+                    const fields: { label: string; value: string }[] = [
+                      { label: "Institution Name", value: r.institution_name },
+                      { label: "Type", value: typeLabels[r.institution_type] || r.institution_type },
+                    ];
+                    if (r.student_count) fields.push({ label: "Approx. Students", value: String(r.student_count) });
+                    if (r.website_url) fields.push({ label: "Website", value: r.website_url });
+                    fields.push(
+                      { label: "Street Address", value: r.address_line },
+                      { label: "City", value: r.city },
+                      { label: "State", value: r.state },
+                      { label: "Pincode", value: r.pincode },
+                    );
+                    if (r.google_maps_url) fields.push({ label: "Google Maps", value: r.google_maps_url });
+                    fields.push(
+                      { label: "Contact Name", value: r.contact_person_name },
+                      { label: "Designation", value: r.designation },
+                      { label: "Email", value: r.contact_person_email },
+                      { label: "Phone", value: r.contact_person_phone },
+                      { label: "PAN", value: r.pan_number },
+                      { label: "TAN", value: r.tan_number },
+                    );
+                    if (r.gst_number) fields.push({ label: "GST", value: r.gst_number });
+                    if (r.message) fields.push({ label: "Message", value: r.message });
+                    const dateStr = new Date(r.created_at).toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" });
+                    downloadInquiryHTML(buildInquiryHTML(fields, r.ticket_number, dateStr), r.ticket_number);
+                  }}
+                >
+                  <Download className="w-3 h-3" /> Download Application
+                </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
 
         {/* Form */}
         <Form {...form}>
