@@ -64,47 +64,34 @@ const ContactInstitution = () => {
     },
   });
 
-  const generatePDF = (data: InquiryFormData, ticket: string) => {
-    const typeLabels: Record<string, string> = {
-      university: "University", college: "College", school: "School", coaching: "Coaching Institute", other: "Other",
+  const buildInquiryHTML = (fields: { label: string; value: string }[], ticket: string, dateStr: string) => {
+    const logoUrl = `${window.location.origin}/eternia_logo_main.svg`;
+    const sections: { title: string; rows: [string, string][] }[] = [];
+    
+    // Group fields into sections
+    const instFields = ["Institution Name", "Type", "Approx. Students", "Website"];
+    const addrFields = ["Street Address", "City", "State", "Pincode", "Google Maps"];
+    const contactFields = ["Contact Name", "Designation", "Email", "Phone"];
+    const legalFields = ["PAN", "TAN", "GST"];
+
+    const group = (title: string, keys: string[]) => {
+      const rows = fields.filter(f => keys.includes(f.label)).map(f => [f.label, f.value] as [string, string]);
+      if (rows.length) sections.push({ title, rows });
     };
-    const now = new Date().toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" });
+    group("INSTITUTION DETAILS", instFields);
+    group("ADDRESS", addrFields);
+    group("CONTACT PERSON", contactFields);
+    group("LEGAL & TAX", legalFields);
+    const msg = fields.find(f => f.label === "Message");
+    if (msg) sections.push({ title: "MESSAGE", rows: [["", msg.value]] });
 
-    const sections = [
-      { title: "INSTITUTION DETAILS", rows: [
-        ["Institution Name", data.institution_name],
-        ["Type", typeLabels[data.institution_type] || data.institution_type],
-        ...(data.student_count ? [["Approx. Students", String(data.student_count)]] : []),
-        ...(data.website_url ? [["Website", data.website_url]] : []),
-      ]},
-      { title: "ADDRESS", rows: [
-        ["Street Address", data.address_line],
-        ["City", data.city],
-        ["State", data.state],
-        ["Pincode", data.pincode],
-        ...(data.google_maps_url ? [["Google Maps", data.google_maps_url]] : []),
-      ]},
-      { title: "CONTACT PERSON", rows: [
-        ["Name", data.contact_person_name],
-        ["Designation", data.designation],
-        ["Email", data.contact_person_email],
-        ["Phone", data.contact_person_phone],
-      ]},
-      { title: "LEGAL & TAX", rows: [
-        ["PAN", data.pan_number],
-        ["TAN", data.tan_number],
-        ...(data.gst_number ? [["GST", data.gst_number]] : []),
-      ]},
-      ...(data.message ? [{ title: "MESSAGE", rows: [["", data.message]] }] : []),
-    ];
-
-    // Build SVG-based printable HTML
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Eternia Inquiry - ${ticket}</title>
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Eternia Inquiry - ${ticket}</title>
 <style>
   @media print { body { margin: 0; } @page { margin: 20mm; } }
   body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; background: #fff; max-width: 700px; margin: 0 auto; padding: 40px 32px; }
   .header { text-align: center; margin-bottom: 32px; border-bottom: 2px solid #6c5ce7; padding-bottom: 20px; }
-  .header h1 { font-size: 22px; margin: 0 0 4px; color: #6c5ce7; letter-spacing: 1px; }
+  .header img { height: 48px; margin-bottom: 8px; }
+  .header h1 { font-size: 13px; margin: 0 0 4px; color: #6c5ce7; letter-spacing: 2px; text-transform: uppercase; }
   .header p { margin: 4px 0; color: #666; font-size: 13px; }
   .ticket-box { background: #f0edff; border-radius: 8px; padding: 12px 20px; display: inline-block; margin: 12px 0 0; }
   .ticket-box span { font-size: 20px; font-family: 'Courier New', monospace; font-weight: 700; color: #6c5ce7; }
@@ -116,31 +103,54 @@ const ContactInstitution = () => {
   .footer { text-align: center; margin-top: 40px; padding-top: 16px; border-top: 1px solid #eee; font-size: 11px; color: #aaa; }
 </style></head><body>
 <div class="header">
-  <h1>ETERNIA</h1>
-  <p>Institution Onboarding Inquiry</p>
+  <img src="${logoUrl}" alt="Eternia" />
+  <h1>Institution Onboarding Inquiry</h1>
   <div class="ticket-box"><span>${ticket}</span></div>
-  <p style="margin-top:8px;font-size:11px;">Submitted on ${now}</p>
+  <p style="margin-top:8px;font-size:11px;">Submitted on ${dateStr}</p>
 </div>
 ${sections.map(s => `<div class="section"><div class="section-title">${s.title}</div>${s.rows.map(([l, v]) => l ? `<div class="row"><div class="label">${l}</div><div class="value">${v}</div></div>` : `<div style="font-size:13px;color:#1a1a2e;line-height:1.6;">${v}</div>`).join("")}</div>`).join("")}
 <div class="footer">This is an auto-generated document from Eternia. For queries, email support@eternia.life</div>
 </body></html>`;
+  };
 
+  const formDataToFields = (data: InquiryFormData): { label: string; value: string }[] => {
+    const typeLabels: Record<string, string> = { university: "University", college: "College", school: "School", coaching: "Coaching Institute", other: "Other" };
+    const fields: { label: string; value: string }[] = [
+      { label: "Institution Name", value: data.institution_name },
+      { label: "Type", value: typeLabels[data.institution_type] || data.institution_type },
+    ];
+    if (data.student_count) fields.push({ label: "Approx. Students", value: String(data.student_count) });
+    if (data.website_url) fields.push({ label: "Website", value: data.website_url });
+    fields.push(
+      { label: "Street Address", value: data.address_line },
+      { label: "City", value: data.city },
+      { label: "State", value: data.state },
+      { label: "Pincode", value: data.pincode },
+    );
+    if (data.google_maps_url) fields.push({ label: "Google Maps", value: data.google_maps_url });
+    fields.push(
+      { label: "Contact Name", value: data.contact_person_name },
+      { label: "Designation", value: data.designation },
+      { label: "Email", value: data.contact_person_email },
+      { label: "Phone", value: data.contact_person_phone },
+      { label: "PAN", value: data.pan_number },
+      { label: "TAN", value: data.tan_number },
+    );
+    if (data.gst_number) fields.push({ label: "GST", value: data.gst_number });
+    if (data.message) fields.push({ label: "Message", value: data.message });
+    return fields;
+  };
+
+  const downloadInquiryHTML = (html: string, ticket: string) => {
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    const printWindow = window.open(url, "_blank");
-    if (printWindow) {
-      printWindow.onload = () => {
-        printWindow.print();
-        setTimeout(() => URL.revokeObjectURL(url), 60000);
-      };
-    } else {
-      // Fallback: direct download as HTML
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${ticket}-inquiry.html`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-    }
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${ticket}-inquiry.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
   const onSubmit = async (data: InquiryFormData) => {
