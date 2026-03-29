@@ -18,6 +18,7 @@ import Login from "./pages/auth/Login";
 
 // Lazy load everything else
 const InstitutionCode = lazy(() => import("./pages/auth/InstitutionCode"));
+const ContactInstitution = lazy(() => import("./pages/ContactInstitution"));
 const QRScan = lazy(() => import("./pages/auth/QRScan"));
 const Register = lazy(() => import("./pages/auth/Register"));
 const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword"));
@@ -88,6 +89,7 @@ const App = () => (
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
               <Route path="/institution-code" element={<InstitutionCode />} />
+              <Route path="/contact-institution" element={<ContactInstitution />} />
               <Route path="/qr-scan" element={<QRScan />} />
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
