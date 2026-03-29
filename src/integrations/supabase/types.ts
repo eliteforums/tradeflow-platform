@@ -552,6 +552,84 @@ export type Database = {
         }
         Relationships: []
       }
+      institution_inquiries: {
+        Row: {
+          address_line: string
+          admin_notes: string | null
+          city: string
+          contact_person_email: string
+          contact_person_name: string
+          contact_person_phone: string
+          created_at: string
+          designation: string
+          google_maps_url: string | null
+          gst_number: string | null
+          id: string
+          institution_name: string
+          institution_type: string
+          message: string | null
+          pan_number: string
+          pincode: string
+          state: string
+          status: string
+          student_count: number | null
+          tan_number: string
+          ticket_number: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          address_line?: string
+          admin_notes?: string | null
+          city?: string
+          contact_person_email: string
+          contact_person_name: string
+          contact_person_phone: string
+          created_at?: string
+          designation?: string
+          google_maps_url?: string | null
+          gst_number?: string | null
+          id?: string
+          institution_name: string
+          institution_type?: string
+          message?: string | null
+          pan_number?: string
+          pincode?: string
+          state?: string
+          status?: string
+          student_count?: number | null
+          tan_number?: string
+          ticket_number?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          address_line?: string
+          admin_notes?: string | null
+          city?: string
+          contact_person_email?: string
+          contact_person_name?: string
+          contact_person_phone?: string
+          created_at?: string
+          designation?: string
+          google_maps_url?: string | null
+          gst_number?: string | null
+          id?: string
+          institution_name?: string
+          institution_type?: string
+          message?: string | null
+          pan_number?: string
+          pincode?: string
+          state?: string
+          status?: string
+          student_count?: number | null
+          tan_number?: string
+          ticket_number?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       institution_student_ids: {
         Row: {
           claimed_by: string | null
