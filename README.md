@@ -79,7 +79,7 @@ To make professional mental health support accessible to every college student i
 | **Backend** | Lovable Cloud — Postgres + Edge Functions |
 | **Authentication** | Username/password (email-less, anonymous via `@eternia.local`) + Temp ID activation |
 | **Video/Audio** | VideoSDK.live (WebRTC) with SDK error handling & auto-retry |
-| **AI Moderation** | Groq API (GPT OSS 20B 128k) for content risk classification |
+| **AI Moderation** | Lovable AI Gateway (Gemini 2.5 Flash) for content risk classification |
 | **Real-time Audio Monitoring** | AI-powered audio classification during live sessions (15s intervals) |
 | **Payments** | Razorpay (ECC credit bundles in INR) |
 | **PWA** | vite-plugin-pwa with offline support + Workbox runtime caching |
@@ -180,9 +180,9 @@ Full platform control via grouped sidebar navigation:
 | **Analytics** | Overview with role counts, session stats, flagged entries, visitor analytics |
 | **People** | Members browser with role/search filters (grouped by institution), Role & Credit management |
 | **Activity** | Unified session feed (appointments, peer sessions, blackbox entries) |
-| **Institutions** | SPOC tools, institution detail views, credit pool management |
+| **Institutions** | SPOC tools, institution detail views, credit pool management, institution inquiry ticketing system |
 | **Content** | Database-driven training modules (CRUD + quiz editor), sound management |
-| **Safety** | Escalation manager, audit logs, account deletion tools, password reset request manager |
+| **Safety** | Escalation manager (with structured AI L3 transcript rendering), audit logs (with UUID-to-username resolution), account deletion tools, password reset request manager |
 
 ---
 
@@ -276,7 +276,8 @@ src/
 ├── components/
 │   ├── admin/          # Admin tools (RoleManager, MemberManager, TrainingModuleManager,
 │   │                   #   SoundManager, AnalyticsDashboard, AuditLogViewer,
-│   │                   #   EscalationManager, ExpertManager, InstitutionManager, etc.)
+│   │                   #   EscalationManager, ExpertManager, InstitutionManager,
+│   │                   #   InquiryTicketManager, etc.)
 │   ├── blackbox/       # BlackBox UI components (NovaOrb animated visual)
 │   ├── expert/         # Expert dashboard content & session management
 │   ├── intern/         # Intern dashboard with training gate (fetches modules from DB)
@@ -332,6 +333,7 @@ src/
 │   │                   # TherapistDashboard, WreckBuddy
 │   ├── admin/          # Admin dashboard (sidebar-driven layout)
 │   ├── legal/          # Terms, Privacy Policy, DPDP Compliance Statement
+│   ├── ContactInstitution.tsx  # Public institution onboarding inquiry form + ticket tracker
 │   ├── Landing.tsx     # Public landing page
 │   └── NotFound.tsx    # 404 page
 └── integrations/
@@ -342,22 +344,30 @@ supabase/
 │   ├── _shared/        # Shared security utilities (rate limiter, input sanitization)
 │   ├── activate-account/       # Temp ID activation into permanent account
 │   ├── add-member/             # Admin: single user creation
+│   ├── admin-delete-institution/  # Admin: cascading institution deletion
+│   ├── admin-delete-member/    # Admin: member deletion with auth cleanup
 │   ├── ai-moderate/            # AI content risk classification
-│   ├── ai-transcribe/          # Audio transcription for accessibility
+│   ├── ai-transcribe/          # Live audio transcription + risk analysis (Lovable AI Gateway)
+│   ├── approve-password-reset/ # Admin: approve/reject password reset requests
 │   ├── bulk-add-members/       # Batch user creation (CSV import)
-│   ├── cleanup-deleted-accounts/ # Scheduled account purge
+│   ├── claim-l3-session/       # Expert claims L3 crisis session
 │   ├── create-bulk-temp-ids/   # Bulk temporary credential generation
-│   ├── delete-account/         # DPDP-compliant account erasure
+│   ├── escalate-emergency/     # Emergency escalation flow
 │   ├── generate-spoc-qr/       # SPOC QR code generation
 │   ├── get-emergency-contact/  # Encrypted emergency contact retrieval
+│   ├── get-recovery-hints/     # Recovery hint retrieval for password recovery
 │   ├── grant-credits/          # Admin credit grants
+│   ├── indexnow-submit/        # IndexNow SEO submission
 │   ├── purchase-credits/       # Razorpay payment processing
-│   ├── reset-device/           # Device binding reset
+│   ├── recover-password/       # Self-service password recovery
+│   ├── refund-blackbox-session/ # BlackBox session refund processing
+│   ├── request-account-deletion/ # DPDP-compliant deletion request
 │   ├── seed-admin/             # Initial superadmin creation
 │   ├── spend-credits/          # Credit deduction with balance validation
 │   ├── stability-pool-auto-contribute/  # Monthly auto-contribution
 │   ├── stability-pool-contribute/       # Manual pool contribution
 │   ├── validate-spoc-qr/       # QR verification during onboarding
+│   ├── verify-student-id/      # Student ID verification against institution records
 │   ├── verify-temp-credentials/ # Temp ID credential verification
 │   └── videosdk-token/         # VideoSDK JWT token generation
 ├── migrations/         # Database schema migrations
@@ -394,6 +404,7 @@ supabase/
 | `analytics_events` | Page view tracking (event type, path, session hash, user agent) | ✅ |
 | `rate_limits` | Database-level rate limiting with auto-cleanup | ✅ |
 | `password_reset_requests` | Admin-mediated password reset queue (username, reason, status, temp password) | ✅ |
+| `institution_inquiries` | Public institution onboarding inquiry form submissions with auto-generated ticket numbers (ETN-INQ-XXXXX), status tracking, and admin notes | ✅ |
 | `gratitude_entries` | Daily three-item gratitude journal entries | ✅ |
 | `journal_entries` | Free-form journal entries with mood tagging | ✅ |
 | `mood_entries` | Daily mood score logging with optional notes | ✅ |
@@ -411,6 +422,7 @@ supabase/
 | `check_rate_limit(_key, _max, _window)` | Database-level rate limiting with sliding window |
 | `handle_new_user()` | Trigger: auto-creates profile, assigns student role, grants 100 ECC welcome bonus |
 | `generate_student_id()` | Trigger: generates unique ETN-XXXX-XXXXX student IDs |
+| `generate_inquiry_ticket_number()` | Trigger: auto-generates ETN-INQ-XXXXX ticket numbers for institution inquiries |
 | `refresh_credit_balance()` | Trigger: refreshes materialized credit balance view |
 
 ### Key Views
@@ -429,25 +441,32 @@ All edge functions are deployed as serverless Deno functions on Lovable Cloud.
 |----------|-------------|:------------:|
 | `activate-account` | Activate a temporary credential into a permanent user account | ❌ |
 | `add-member` | Admin-only: Create new platform user with role and institution assignment | ✅ |
-| `ai-moderate` | Classify BlackBox entry risk level (0–3) using Groq GPT OSS 20B 128k | ❌ |
-| `ai-transcribe` | Transcribe audio content for accessibility | ❌ |
+| `admin-delete-institution` | Admin: Cascading institution deletion with FK nullification | ✅ |
+| `admin-delete-member` | Admin: Member deletion with global session revocation and auth cleanup | ✅ |
+| `ai-moderate` | Classify BlackBox entry risk level (0–3) using Lovable AI Gateway | ❌ |
+| `ai-transcribe` | Live audio transcription + risk analysis with structured escalation data | ❌ |
+| `approve-password-reset` | Admin: Approve/reject password reset requests with temp password generation | ✅ |
 | `bulk-add-members` | Batch user creation for institutions (CSV import) | ✅ |
-| `cleanup-deleted-accounts` | Scheduled: Purge soft-deleted accounts past retention period | ✅ |
+| `claim-l3-session` | Expert claims an L3 crisis session for intervention | ✅ |
 | `create-bulk-temp-ids` | Generate temporary credentials in bulk for institutional onboarding | ✅ |
-| `delete-account` | DPDP-compliant account erasure (hard-delete PII, soft-delete profile) | ✅ |
+| `escalate-emergency` | Trigger emergency escalation with SPOC/admin notification | ✅ |
 | `generate-spoc-qr` | Generate institution-specific QR codes for SPOC onboarding | ❌ |
 | `get-emergency-contact` | Retrieve encrypted emergency contact for L3 escalation (authorized only) | ✅ |
+| `get-recovery-hints` | Retrieve recovery hint questions for self-service password recovery | ❌ |
 | `grant-credits` | Admin: Grant ECC credits to users with audit logging | ✅ |
+| `indexnow-submit` | Submit URLs to IndexNow for SEO indexing | ❌ |
 | `purchase-credits` | Razorpay order creation + payment verification for ECC top-up | ❌ |
-| `reset-device` | Admin: Reset device binding for locked-out users | ❌ |
+| `recover-password` | Self-service password recovery via fragment pairs + emoji pattern | ❌ |
+| `refund-blackbox-session` | Process BlackBox session refunds with duplicate prevention | ✅ |
+| `request-account-deletion` | DPDP-compliant account deletion request | ✅ |
 | `seed-admin` | One-time: Create initial superadmin account | ✅ |
 | `spend-credits` | Deduct ECC credits for service usage with balance validation | ❌ |
 | `stability-pool-auto-contribute` | Scheduled: Auto-deduct 1 ECC/month per student to stability pool | ✅ |
 | `stability-pool-contribute` | Manual contribution to institution's stability pool | ❌ |
 | `validate-spoc-qr` | Verify SPOC QR code during student onboarding | ❌ |
+| `verify-student-id` | Verify student ID (APAAR/ERP) against hashed institutional records | ✅ |
 | `verify-temp-credentials` | Verify temporary credentials during Temp ID login | ❌ |
 | `videosdk-token` | Generate JWT tokens for VideoSDK.live WebRTC sessions | ❌ |
-| `approve-password-reset` | Admin: Approve/reject password reset requests with temp password generation | ✅ |
 
 ---
 
@@ -644,6 +663,29 @@ The app will work offline for cached pages and API responses.
 ## Recent Updates
 
 ### March 2026
+
+#### Institution Contact Form & Admin Ticketing System
+- Public institution onboarding inquiry form at `/contact-institution` with multi-section validation (institution details, address via Google Maps, contact person, PAN/TAN/GST, message)
+- Auto-generated ticket numbers (`ETN-INQ-XXXXX`) via Postgres sequence + trigger
+- Ticket tracking: anyone can check application status by entering their ticket number
+- Admin ticketing dashboard (`Inquiries` tab) with status management (`new` → `under_review` → `approved`/`rejected`/`info_requested`), search/filter, and internal admin notes
+- Landing page banner updated: "Bring Eternia to your campus — Apply now" → links to contact form
+- `institution_inquiries` table with RLS (anon insert, admin select/update)
+
+#### Audit Log UUID Resolution
+- Audit log viewer now resolves raw UUIDs to human-readable usernames via a secondary profiles lookup map
+- `resolveName()` helper displays usernames for actor_id, target_id, and UUID values in metadata JSON
+- Removed broken FK join (`profiles!audit_logs_actor_id_fkey`); uses client-side map instead
+- Search filter matches against resolved usernames
+
+#### Escalation Transcript Rendering
+- `ai-transcribe` edge function now stores structured JSON in `trigger_snippet` (risk level, indicators, transcript excerpt, emotional signals, reasoning)
+- Admin/SPOC escalation manager renders `ai_l3_detection` type with formatted risk indicators, emotional signals, transcript preview, and AI reasoning
+- Backward-compatible with plain-text `trigger_snippet` from manual escalations
+
+#### Video Call Modal Layout Fix
+- Fixed `VideoCallModal` buttons being cut off by replacing `h-[80vh] overflow-hidden` with `max-h-[80vh] flex flex-col`
+- Added `min-h-0` to `MeetingView` flex container and `shrink-0` to `MeetingControls` bar
 
 #### VideoSDK Error Handling & Recovery
 - Added `onError` and `onMeetingStateChanged` callbacks to capture SDK failures (WebSocket disconnects, room join failures) with user-facing error messages
