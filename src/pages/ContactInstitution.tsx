@@ -207,14 +207,14 @@ ${sections.map(s => `<div class="section"><div class="section-title">${s.title}<
     try {
       const { data, error } = await supabase
         .from("institution_inquiries" as any)
-        .select("ticket_number, status, institution_name, created_at")
+        .select("*")
         .eq("ticket_number", trackQuery.trim().toUpperCase())
         .single();
 
       if (error || !data) {
         setTrackError("No application found with this ticket number.");
       } else {
-        setTrackResult(data as any);
+        setTrackResult(data);
       }
     } catch {
       setTrackError("Something went wrong. Please try again.");
