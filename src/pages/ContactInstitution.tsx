@@ -69,7 +69,7 @@ const ContactInstitution = () => {
       const payload = {
         institution_name: data.institution_name,
         institution_type: data.institution_type,
-        student_count: data.student_count && data.student_count !== "" ? Number(data.student_count) : null,
+        student_count: data.student_count ? Number(data.student_count) : null,
         website_url: data.website_url || null,
         address_line: data.address_line,
         city: data.city,
