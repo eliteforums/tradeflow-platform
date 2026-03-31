@@ -21,7 +21,7 @@ const HeroSection = () => {
             key={i}
             className="absolute w-1 h-1 rounded-full"
             style={{
-              background: i % 2 === 0 ? "hsl(174 62% 47%)" : "hsl(262 52% 60%)",
+              background: i % 2 === 0 ? "hsl(243 100% 69%)" : "hsl(12 94% 68%)",
               left: `${10 + Math.random() * 80}%`,
               top: `${10 + Math.random() * 80}%`,
             }}
