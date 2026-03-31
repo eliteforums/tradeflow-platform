@@ -253,12 +253,12 @@ const AnalyticsDashboard = () => {
                   <AreaChart data={data.dailyTrend}>
                     <defs>
                       <linearGradient id="gradAuth" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(174, 62%, 47%)" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="hsl(174, 62%, 47%)" stopOpacity={0} />
+                        <stop offset="5%" stopColor="hsl(243, 100%, 69%)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(243, 100%, 69%)" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="gradAnon" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(262, 52%, 60%)" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="hsl(262, 52%, 60%)" stopOpacity={0} />
+                        <stop offset="5%" stopColor="hsl(12, 94%, 68%)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(12, 94%, 68%)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
