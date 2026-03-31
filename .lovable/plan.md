@@ -1,86 +1,78 @@
 
 
-## Institution Contact Form + Admin Ticketing System
+## Apply Exact Color Palette Across Entire UI
 
-### Overview
-Replace the announcement banner link (currently pointing to `/institution-code`) with a new `/contact-institution` public page containing a detailed institution onboarding inquiry form. Submissions are stored in a new `institution_inquiries` table and displayed in the Admin Dashboard as a ticketing system with status tracking.
-
-### Database
-
-**New table: `institution_inquiries`**
-| Column | Type | Notes |
+### Palette (from image)
+| Hex | HSL | Role |
 |---|---|---|
-| id | uuid PK | default gen_random_uuid() |
-| ticket_number | text | Auto-generated (ETN-INQ-00001) |
-| status | text | 'new', 'under_review', 'approved', 'rejected', 'info_requested' |
-| institution_name | text | Required |
-| institution_type | text | university / college / school / coaching / other |
-| address_line | text | Street address |
-| city | text | |
-| state | text | |
-| pincode | text | |
-| google_maps_url | text | Optional |
-| contact_person_name | text | Required |
-| contact_person_email | text | Required |
-| contact_person_phone | text | Required |
-| designation | text | Principal / Director / Admin / Other |
-| pan_number | text | Institution PAN |
-| tan_number | text | Institution TAN |
-| gst_number | text | Optional |
-| student_count | integer | Approx student strength |
-| website_url | text | Optional |
-| message | text | Additional notes |
-| admin_notes | text | Internal admin notes |
-| created_at | timestamptz | default now() |
-| updated_at | timestamptz | default now() |
+| `#E9E8F2` | `245 20% 93%` | Light background / muted / cards |
+| `#6C63FF` | `243 100% 69%` | Primary (purple) |
+| `#1B1F3B` | `229 38% 17%` | Dark / foreground / navy |
+| `#FFC857` | `41 100% 67%` | Accent / warning (golden) |
+| `#FA7E61` | `12 94% 68%` | Secondary / coral |
 
-**RLS policies:**
-- Anon INSERT allowed (public form)
-- Admin SELECT/UPDATE allowed
-- No DELETE, no public SELECT
+### Changes
 
-**Sequence** for ticket numbers: `institution_inquiry_seq`
-**Trigger**: Auto-generate `ticket_number` on insert as `'ETN-INQ-' || LPAD(nextval('institution_inquiry_seq')::text, 5, '0')`
+#### 1. `src/index.css` — Remap all CSS variables
 
-### Frontend Changes
+All `:root` variables updated to new palette:
 
-#### 1. New page: `src/pages/ContactInstitution.tsx`
-- Public route at `/contact-institution`
-- Multi-section form with validation (react-hook-form + zod):
-  - **Institution Details**: name, type (dropdown), student count, website
-  - **Address**: address line, city, state, pincode, Google Maps link
-  - **Contact Person**: name, email, phone, designation
-  - **Legal/Tax**: PAN, TAN, GST (optional)
-  - **Message**: free text
-- On submit: insert into `institution_inquiries` via Supabase anon client
-- Success state shows the generated ticket number for tracking
-- Add a "Track your application" section: enter ticket number to see current status
+- `--primary` → `243 100% 69%` (purple)
+- `--primary-foreground` → `0 0% 100%`
+- `--secondary` / `--accent` → `12 94% 68%` (coral)
+- `--foreground` / `--card-foreground` / `--popover-foreground` → `229 38% 17%` (navy)
+- `--background` → `0 0% 100%` (keep white)
+- `--card` → `245 20% 97%` (slightly lighter than E9E8F2)
+- `--muted` → `245 20% 93%` (E9E8F2)
+- `--muted-foreground` → `229 20% 42%`
+- `--border` → `245 15% 86%`
+- `--input` → `245 15% 90%`
+- `--ring` → `243 100% 69%`
+- `--eternia-teal` / `--eternia-teal-glow` → purple (`243 100% 69%` / `243 100% 79%`)
+- `--eternia-lavender` / `--eternia-lavender-glow` → coral (`12 94% 68%` / `12 94% 78%`)
+- `--eternia-violet` / `--eternia-violet-glow` → golden (`41 100% 67%` / `41 100% 77%`)
+- `--eternia-dark` → `229 38% 17%`
+- `--eternia-dark-card` → `245 20% 97%`
+- `--eternia-dark-elevated` → `245 20% 93%`
+- `--eternia-warning` → `41 100% 67%`
+- `--eternia-gradient-start` → `243 100% 69%`
+- `--eternia-gradient-end` → `12 94% 68%`
+- Sidebar variables: background `245 20% 97%`, foreground `229 38% 17%`, primary `243 100% 69%`, accent `245 15% 90%`, border `245 15% 86%`, ring `243 100% 69%`
 
-#### 2. Update `AnnouncementBanner.tsx`
-- Change link from `/institution-code` to `/contact-institution`
-- Update text: "🎓 Bring Eternia to your campus — Apply now"
+Also update the `.card-table` class background from green felt tones to navy-purple tones using the new dark color.
 
-#### 3. Update `App.tsx`
-- Add public route `/contact-institution` pointing to new page
+#### 2. `src/components/landing/HeroSection.tsx` — Hardcoded particle colors
+- `hsl(174 62% 47%)` → `hsl(243 100% 69%)` (purple)
+- `hsl(262 52% 60%)` → `hsl(12 94% 68%)` (coral)
+- Radial gradient ellipses updated similarly
 
-#### 4. New admin component: `src/components/admin/InquiryTicketManager.tsx`
-- Table view of all institution inquiries sorted by newest
-- Each row shows: ticket number, institution name, contact person, status badge, date
-- Expandable row detail with all submitted fields
-- Status dropdown to update: new → under_review → approved/rejected/info_requested
-- Admin notes textarea (saved on update)
-- Filter by status, search by institution name or ticket number
+#### 3. `src/components/landing/AnnouncementBanner.tsx` — Banner gradient
+- Update linear-gradient to use new purple → coral
 
-#### 5. Update `AdminDashboard.tsx`
-- Add new tab `"inquiries"` to TabId union
-- Add to SIDEBAR_GROUPS under "Institutions": `{ id: "inquiries", label: "Inquiries", icon: Phone }`
-- Render `InquiryTicketManager` when tab is active
+#### 4. `src/pages/Landing.tsx` — Snake gradient SVG
+- Update stop colors from teal/lavender to purple/coral
 
-### Files to Create/Edit
-- **DB Migration**: Create `institution_inquiries` table, sequence, trigger, RLS
-- `src/pages/ContactInstitution.tsx` — New public contact form + ticket tracker
-- `src/components/admin/InquiryTicketManager.tsx` — New admin ticketing UI
-- `src/components/landing/AnnouncementBanner.tsx` — Update link + text
-- `src/pages/admin/AdminDashboard.tsx` — Add inquiries tab
-- `src/App.tsx` — Add `/contact-institution` route
+#### 5. `src/components/landing/CTASection.tsx` — Radial gradient
+- Update `hsl(166 72% 46%)` to purple
+
+#### 6. `src/components/admin/AnalyticsDashboard.tsx` — Chart colors
+- `CHART_COLORS` array: replace teal with purple, lavender with coral
+- All hardcoded `hsl(174...)` → purple, `hsl(262...)` → coral
+- Heatmap cell hue `174` → `243`
+
+#### 7. `src/components/admin/SPOCTools.tsx` — QR code color
+- `fgColor` from teal to purple
+
+#### 8. `src/components/spoc/SPOCDashboardContent.tsx` — QR code color
+- Same QR `fgColor` update
+
+### Files to Edit
+- `src/index.css`
+- `src/components/landing/HeroSection.tsx`
+- `src/components/landing/AnnouncementBanner.tsx`
+- `src/components/landing/CTASection.tsx`
+- `src/pages/Landing.tsx`
+- `src/components/admin/AnalyticsDashboard.tsx`
+- `src/components/admin/SPOCTools.tsx`
+- `src/components/spoc/SPOCDashboardContent.tsx`
 
