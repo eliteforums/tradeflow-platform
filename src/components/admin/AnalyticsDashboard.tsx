@@ -273,8 +273,8 @@ const AnalyticsDashboard = () => {
                       axisLine={false} tickLine={false} width={30}
                     />
                     <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={(v) => format(new Date(v), "MMM d, yyyy")} />
-                    <Area type="monotone" dataKey="authenticated" stackId="1" stroke="hsl(174, 62%, 47%)" fill="url(#gradAuth)" strokeWidth={2} name="Authenticated" />
-                    <Area type="monotone" dataKey="anonymous" stackId="1" stroke="hsl(262, 52%, 60%)" fill="url(#gradAnon)" strokeWidth={2} name="Anonymous" />
+                    <Area type="monotone" dataKey="authenticated" stackId="1" stroke="hsl(243, 100%, 69%)" fill="url(#gradAuth)" strokeWidth={2} name="Authenticated" />
+                    <Area type="monotone" dataKey="anonymous" stackId="1" stroke="hsl(12, 94%, 68%)" fill="url(#gradAnon)" strokeWidth={2} name="Anonymous" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
