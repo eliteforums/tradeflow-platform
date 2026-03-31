@@ -20,10 +20,10 @@ const Landing = () => {
         <svg className="absolute top-0 left-0 w-full h-full opacity-[0.12]" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <linearGradient id="snakeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="hsl(166 72% 46%)" />
-              <stop offset="30%" stopColor="hsl(262 52% 60%)" />
-              <stop offset="60%" stopColor="hsl(166 72% 46%)" />
-              <stop offset="100%" stopColor="hsl(262 52% 60%)" />
+              <stop offset="0%" stopColor="hsl(243 100% 69%)" />
+              <stop offset="30%" stopColor="hsl(12 94% 68%)" />
+              <stop offset="60%" stopColor="hsl(243 100% 69%)" />
+              <stop offset="100%" stopColor="hsl(12 94% 68%)" />
             </linearGradient>
           </defs>
           <path

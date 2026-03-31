@@ -9,7 +9,7 @@ const AnnouncementBanner = () => (
     transition={{ duration: 0.4 }}
     className="relative z-50 w-full py-2 px-4 text-center"
     style={{
-      background: "linear-gradient(90deg, hsl(262 52% 60%), hsl(275 70% 58%), hsl(166 72% 46%))",
+      background: "linear-gradient(90deg, hsl(243 100% 69%), hsl(12 94% 68%), hsl(41 100% 67%))",
     }}
   >
     <Link

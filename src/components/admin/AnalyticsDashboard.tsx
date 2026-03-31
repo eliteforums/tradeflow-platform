@@ -335,7 +335,7 @@ const AnalyticsDashboard = () => {
                       {data.hourlyData.map((entry, i) => {
                         const intensity = entry.count / hourlyMax;
                         const lightness = 47 - intensity * 15;
-                        return <Cell key={i} fill={`hsl(174, 62%, ${lightness}%)`} opacity={0.3 + intensity * 0.7} />;
+                        return <Cell key={i} fill={`hsl(243, 100%, ${69 - intensity * 15}%)`} opacity={0.3 + intensity * 0.7} />;
                       })}
                     </Bar>
                   </BarChart>

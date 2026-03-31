@@ -208,7 +208,7 @@ const SPOCTools = () => {
                 value={qrPayload}
                 size={200}
                 bgColor="transparent"
-                fgColor="hsl(174, 62%, 47%)"
+                fgColor="hsl(243, 100%, 69%)"
                 level="H"
                 includeMargin={false}
               />
