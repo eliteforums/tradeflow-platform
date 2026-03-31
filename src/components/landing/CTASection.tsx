@@ -7,7 +7,7 @@ const CTASection = () => (
   <section className="py-14 sm:py-24 px-4 sm:px-6 relative overflow-hidden">
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <div className="w-[350px] sm:w-[500px] h-[220px] sm:h-[300px] rounded-full opacity-[0.06]"
-        style={{ background: "radial-gradient(ellipse, hsl(166 72% 46% / 0.08), transparent 70%)" }} />
+        style={{ background: "radial-gradient(ellipse, hsl(243 100% 69% / 0.08), transparent 70%)" }} />
     </div>
 
     <div className="container mx-auto relative z-10">

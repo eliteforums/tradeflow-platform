@@ -20,10 +20,10 @@ const DATE_RANGES: { value: DateRange; label: string }[] = [
 ];
 
 const CHART_COLORS = [
-  "hsl(174, 62%, 47%)",  // teal/primary
-  "hsl(262, 52%, 60%)",  // lavender/accent
+  "hsl(243, 100%, 69%)", // purple/primary
+  "hsl(12, 94%, 68%)",   // coral/secondary
   "hsl(142, 71%, 45%)",  // green
-  "hsl(38, 92%, 50%)",   // amber
+  "hsl(41, 100%, 67%)",  // golden
   "hsl(0, 84%, 60%)",    // red
   "hsl(200, 80%, 55%)",  // blue
   "hsl(320, 60%, 55%)",  // pink
@@ -200,7 +200,7 @@ const AnalyticsDashboard = () => {
               className="h-full transition-all duration-500"
               style={{
                 width: `${(data.uniqueUsers / (data.uniqueVisitors || 1)) * 100}%`,
-                background: "hsl(174, 62%, 47%)",
+                background: "hsl(243, 100%, 69%)",
               }}
             />
           )}
@@ -209,7 +209,7 @@ const AnalyticsDashboard = () => {
               className="h-full transition-all duration-500"
               style={{
                 width: `${(data.uniqueAnonymous / (data.uniqueVisitors || 1)) * 100}%`,
-                background: "hsl(262, 52%, 60%)",
+                background: "hsl(12, 94%, 68%)",
               }}
             />
           )}
@@ -244,8 +244,8 @@ const AnalyticsDashboard = () => {
                   <TrendingUp className="w-4 h-4 text-primary" /> Daily Traffic
                 </h3>
                 <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(174, 62%, 47%)" }} /> Authenticated</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(262, 52%, 60%)" }} /> Anonymous</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(243, 100%, 69%)" }} /> Authenticated</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(12, 94%, 68%)" }} /> Anonymous</span>
                 </div>
               </div>
               <div className="h-56">
@@ -253,12 +253,12 @@ const AnalyticsDashboard = () => {
                   <AreaChart data={data.dailyTrend}>
                     <defs>
                       <linearGradient id="gradAuth" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(174, 62%, 47%)" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="hsl(174, 62%, 47%)" stopOpacity={0} />
+                        <stop offset="5%" stopColor="hsl(243, 100%, 69%)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(243, 100%, 69%)" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="gradAnon" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(262, 52%, 60%)" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="hsl(262, 52%, 60%)" stopOpacity={0} />
+                        <stop offset="5%" stopColor="hsl(12, 94%, 68%)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(12, 94%, 68%)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.2} />
@@ -273,8 +273,8 @@ const AnalyticsDashboard = () => {
                       axisLine={false} tickLine={false} width={30}
                     />
                     <Tooltip contentStyle={TOOLTIP_STYLE} labelFormatter={(v) => format(new Date(v), "MMM d, yyyy")} />
-                    <Area type="monotone" dataKey="authenticated" stackId="1" stroke="hsl(174, 62%, 47%)" fill="url(#gradAuth)" strokeWidth={2} name="Authenticated" />
-                    <Area type="monotone" dataKey="anonymous" stackId="1" stroke="hsl(262, 52%, 60%)" fill="url(#gradAnon)" strokeWidth={2} name="Anonymous" />
+                    <Area type="monotone" dataKey="authenticated" stackId="1" stroke="hsl(243, 100%, 69%)" fill="url(#gradAuth)" strokeWidth={2} name="Authenticated" />
+                    <Area type="monotone" dataKey="anonymous" stackId="1" stroke="hsl(12, 94%, 68%)" fill="url(#gradAnon)" strokeWidth={2} name="Anonymous" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -335,7 +335,7 @@ const AnalyticsDashboard = () => {
                       {data.hourlyData.map((entry, i) => {
                         const intensity = entry.count / hourlyMax;
                         const lightness = 47 - intensity * 15;
-                        return <Cell key={i} fill={`hsl(174, 62%, ${lightness}%)`} opacity={0.3 + intensity * 0.7} />;
+                        return <Cell key={i} fill={`hsl(243, 100%, ${69 - intensity * 15}%)`} opacity={0.3 + intensity * 0.7} />;
                       })}
                     </Bar>
                   </BarChart>
