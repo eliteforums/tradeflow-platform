@@ -209,7 +209,7 @@ const AnalyticsDashboard = () => {
               className="h-full transition-all duration-500"
               style={{
                 width: `${(data.uniqueAnonymous / (data.uniqueVisitors || 1)) * 100}%`,
-                background: "hsl(262, 52%, 60%)",
+                background: "hsl(12, 94%, 68%)",
               }}
             />
           )}
