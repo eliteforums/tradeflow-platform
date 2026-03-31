@@ -20,10 +20,10 @@ const DATE_RANGES: { value: DateRange; label: string }[] = [
 ];
 
 const CHART_COLORS = [
-  "hsl(174, 62%, 47%)",  // teal/primary
-  "hsl(262, 52%, 60%)",  // lavender/accent
+  "hsl(243, 100%, 69%)", // purple/primary
+  "hsl(12, 94%, 68%)",   // coral/secondary
   "hsl(142, 71%, 45%)",  // green
-  "hsl(38, 92%, 50%)",   // amber
+  "hsl(41, 100%, 67%)",  // golden
   "hsl(0, 84%, 60%)",    // red
   "hsl(200, 80%, 55%)",  // blue
   "hsl(320, 60%, 55%)",  // pink
