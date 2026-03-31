@@ -244,8 +244,8 @@ const AnalyticsDashboard = () => {
                   <TrendingUp className="w-4 h-4 text-primary" /> Daily Traffic
                 </h3>
                 <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(174, 62%, 47%)" }} /> Authenticated</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(262, 52%, 60%)" }} /> Anonymous</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(243, 100%, 69%)" }} /> Authenticated</span>
+                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: "hsl(12, 94%, 68%)" }} /> Anonymous</span>
                 </div>
               </div>
               <div className="h-56">
