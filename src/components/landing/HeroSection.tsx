@@ -45,7 +45,7 @@ const HeroSection = () => {
           animate={{ scale: [1, 1.2, 1], opacity: [0.06, 0.15, 0.06] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] sm:w-[800px] h-[400px] sm:h-[600px] rounded-full"
-          style={{ background: "radial-gradient(ellipse, hsl(262 52% 60% / 0.12), transparent 70%)" }}
+          style={{ background: "radial-gradient(ellipse, hsl(243 100% 69% / 0.12), transparent 70%)" }}
         />
         <motion.div
           animate={{ scale: [1, 1.1, 1], opacity: [0.04, 0.1, 0.04] }}
