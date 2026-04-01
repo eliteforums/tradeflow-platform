@@ -170,7 +170,7 @@ const Login = () => {
           <div className="mb-6">
             <h1 className="text-2xl sm:text-3xl font-bold font-display mb-1.5">Sign in</h1>
             <p className="text-muted-foreground text-sm">
-              Enter your credentials to access your dashboard
+              Use your username or email to access your dashboard
             </p>
           </div>
 

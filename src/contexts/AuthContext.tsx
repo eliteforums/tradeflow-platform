@@ -152,18 +152,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (username: string, password: string) => {
-    try {
-      const email = username.includes("@") ? username.toLowerCase() : `${username.toLowerCase()}@eternia.local`;
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const input = username.toLowerCase().trim();
+    const eterniaDomains = ["eternia.local", "eternia.com", "eternia.in"];
 
-      if (error) throw error;
-      return { error: null };
-    } catch (error) {
-      return { error: error as Error };
+    let candidates: string[];
+    if (!input.includes("@")) {
+      // Username only → try all eternia domains
+      candidates = eterniaDomains.map(d => `${input}@${d}`);
+    } else if (input.match(/@eternia\.\w+$/)) {
+      // Eternia email → try typed first, then siblings
+      candidates = [input, ...eterniaDomains.map(d => input.replace(/@eternia\.\w+$/, `@${d}`)).filter(e => e !== input)];
+    } else {
+      // Non-eternia email → use as-is
+      candidates = [input];
     }
+
+    let lastError: Error | null = null;
+    for (const email of candidates) {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (!error) return { error: null };
+      lastError = error as Error;
+    }
+    return { error: lastError };
   }, []);
 
   const signOut = useCallback(async () => {
