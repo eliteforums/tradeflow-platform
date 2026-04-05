@@ -1,12 +1,23 @@
-import { motion } from "framer-motion";
+import { motion, useSpring, useTransform } from "framer-motion";
+import { useEffect, useRef } from "react";
 
 interface NovaOrbProps {
   isActive?: boolean;
   isPulsing?: boolean;
   size?: number;
+  audioLevel?: number;
 }
 
-const NovaOrb = ({ isActive = false, isPulsing = false, size = 220 }: NovaOrbProps) => {
+const NovaOrb = ({ isActive = false, isPulsing = false, size = 220, audioLevel = 0 }: NovaOrbProps) => {
+  const springLevel = useSpring(0, { stiffness: 300, damping: 30 });
+  const orbScale = useTransform(springLevel, [0, 1], [1, 1.15]);
+  const glowOpacity = useTransform(springLevel, [0, 1], [0.3, 0.9]);
+  const glowScale = useTransform(springLevel, [0, 1], [1, 1.25]);
+
+  useEffect(() => {
+    springLevel.set(audioLevel);
+  }, [audioLevel, springLevel]);
+
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       {/* Outer glow */}
@@ -14,8 +25,10 @@ const NovaOrb = ({ isActive = false, isPulsing = false, size = 220 }: NovaOrbPro
         className="absolute inset-0 rounded-full"
         style={{
           background: "radial-gradient(circle, hsl(var(--primary) / 0.3) 0%, transparent 70%)",
+          opacity: isActive ? glowOpacity : undefined,
+          scale: isActive ? glowScale : undefined,
         }}
-        animate={isPulsing || isActive ? { scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] } : {}}
+        animate={!isActive && (isPulsing) ? { scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] } : !isActive ? {} : undefined}
         transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
       />
 
@@ -32,16 +45,17 @@ const NovaOrb = ({ isActive = false, isPulsing = false, size = 220 }: NovaOrbPro
             inset 0 -${size * 0.1}px ${size * 0.2}px hsl(210 60% 20% / 0.5),
             inset 0 ${size * 0.05}px ${size * 0.15}px hsl(195 90% 85% / 0.3)
           `,
+          scale: isActive ? orbScale : undefined,
         }}
         animate={
-          isActive
-            ? { scale: [1, 1.04, 1, 1.02, 1], rotate: [0, 1, -1, 0] }
-            : isPulsing
+          !isActive && isPulsing
             ? { scale: [1, 1.06, 1] }
-            : {}
+            : !isActive
+            ? {}
+            : undefined
         }
         transition={{
-          duration: isActive ? 3 : 2.5,
+          duration: 2.5,
           repeat: Infinity,
           ease: "easeInOut",
         }}
