@@ -1,3 +1,5 @@
+
+
 ## BlackBox Portal Redesign
 
 Three changes to the BlackBox experience:
@@ -19,7 +21,7 @@ Three changes to the BlackBox experience:
 - Messages cycle through contextual phrases:
   - Initial: "Hi, This is your anonymous space."
   - After 5s: "Take your time. I'm here."
-  - After voice activity detected: "I'm listening..."
+  - After voice activity: "I'm listening..."
   - On session end: "You did something brave today."
 - Each transition uses a fade-out/fade-in animation
 - Keep the interface minimal — only the orb, the single text line, and bottom controls visible
@@ -27,15 +29,11 @@ Three changes to the BlackBox experience:
 ### 3. Voice-Reactive Orb
 **Files:** `src/components/blackbox/NovaOrb.tsx`
 
-- Add a new `audioLevel` prop (0–1 float) representing current mic input volume
-- Map `audioLevel` to orb `scale` (e.g., `1 + audioLevel * 0.15`) and outer glow `opacity`/`scale`
-- When `audioLevel > 0.1`, add a subtle rapid pulse animation overlaid on the base animation
-- Use `framer-motion` `useSpring` for smooth interpolation of audio level → scale changes
-- In `BlackBox.tsx` and `MobileBlackBox.tsx`:
-  - Use `navigator.mediaDevices.getUserMedia({ audio: true })` + `AnalyserNode` to capture real-time mic volume
-  - Create a new `useVoiceLevel` hook that returns a 0–1 float updated via `requestAnimationFrame`
-  - Pass the level as `audioLevel` prop to `NovaOrb`
-  - Only activate when session is joined (cleanup on unmount/leave)
+- Add a new `audioLevel` prop (0-1 float) representing current mic input volume
+- Map `audioLevel` to orb `scale` and outer glow intensity for real-time reactivity
+- Use `framer-motion` `useSpring` for smooth interpolation
+- Create a new `useVoiceLevel` hook that captures real-time mic volume via `AnalyserNode` + `requestAnimationFrame`
+- Pass the level to `NovaOrb` — only active when session is joined
 
 ### Files to Create
 - `src/hooks/useVoiceLevel.ts` — mic volume analyzer hook
@@ -44,3 +42,4 @@ Three changes to the BlackBox experience:
 - `src/components/blackbox/NovaOrb.tsx` — add `audioLevel` prop, voice-reactive animations
 - `src/pages/dashboard/BlackBox.tsx` — blank entry, dynamic messages, voice level integration
 - `src/components/mobile/MobileBlackBox.tsx` — same changes for mobile
+
