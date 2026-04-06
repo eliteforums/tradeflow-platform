@@ -75,18 +75,19 @@ const AnalyticsTracker = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <PWAUpdatePrompt />
-        <CookieConsent />
-        <Analytics />
-        <BrowserRouter>
-          <AnalyticsTracker />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <PWAUpdatePrompt />
+          <CookieConsent />
+          <Analytics />
+          <BrowserRouter>
+            <AnalyticsTracker />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
               <Route path="/institution-code" element={<InstitutionCode />} />
