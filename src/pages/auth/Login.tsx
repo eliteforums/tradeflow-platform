@@ -61,13 +61,10 @@ const Login = () => {
       setLoginAttempts(0);
       setLockoutUntil(null);
       
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "");
-      const isAdmin = roles?.some(r => r.role === "admin" || r.role === "spoc");
       toast.success("Welcome back!");
-      navigate(isAdmin ? "/admin" : "/dashboard");
+      // Navigation will happen automatically via the redirect guard above
+      // once AuthContext hydrates the profile
+      navigate("/dashboard");
     } catch {
       const newAttempts = loginAttempts + 1;
       setLoginAttempts(newAttempts);
