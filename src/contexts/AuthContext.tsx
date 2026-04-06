@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [creditBalance, setCreditBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
   const fetchingRef = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
