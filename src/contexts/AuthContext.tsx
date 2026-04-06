@@ -206,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         creditBalance,
         isLoading,
+        profileError,
         signUp,
         signIn,
         signOut,
