@@ -25,6 +25,7 @@ interface AuthContextType {
   profile: Profile | null;
   creditBalance: number;
   isLoading: boolean;
+  profileError: boolean;
   signUp: (username: string, password: string, metadata?: Record<string, unknown>) => Promise<{ error: Error | null }>;
   signIn: (username: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
