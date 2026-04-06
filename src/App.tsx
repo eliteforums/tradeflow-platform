@@ -11,6 +11,7 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { CookieConsent } from "@/components/CookieConsent";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { Analytics } from "@vercel/analytics/react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Eagerly load landing + auth (first paint)
 import Landing from "./pages/Landing";
