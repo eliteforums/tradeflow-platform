@@ -1,4 +1,5 @@
 import { Component, ReactNode } from "react";
+import { isChunkLoadError, recoverFromChunkLoadFailure } from "@/lib/chunkRecovery";
 
 interface Props {
   children: ReactNode;
@@ -20,21 +21,12 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error) {
-    // If it's a chunk/preload error, try a one-time reload
-    const msg = error.message || "";
-    if (
-      msg.includes("Failed to fetch dynamically imported module") ||
-      msg.includes("Loading chunk") ||
-      msg.includes("Loading CSS chunk") ||
-      msg.includes("Unable to preload CSS")
-    ) {
-      const key = "chunk_reload_attempted";
-      if (!sessionStorage.getItem(key)) {
-        sessionStorage.setItem(key, "1");
-        window.location.reload();
-        return;
-      }
+    if (isChunkLoadError(error)) {
+      void recoverFromChunkLoadFailure("chunk_reload_attempted");
+      return;
     }
+
+    console.error("Unhandled app error", error);
   }
 
   render() {
