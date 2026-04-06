@@ -25,6 +25,7 @@ interface AuthContextType {
   profile: Profile | null;
   creditBalance: number;
   isLoading: boolean;
+  profileError: boolean;
   signUp: (username: string, password: string, metadata?: Record<string, unknown>) => Promise<{ error: Error | null }>;
   signIn: (username: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [creditBalance, setCreditBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileError, setProfileError] = useState(false);
   const fetchingRef = useRef(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
@@ -52,8 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
       setProfile(data as Profile);
+      setProfileError(false);
     } catch (error) {
       console.error("Error fetching profile:", error);
+      setProfileError(true);
     }
   }, []);
 
@@ -202,6 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         creditBalance,
         isLoading,
+        profileError,
         signUp,
         signIn,
         signOut,

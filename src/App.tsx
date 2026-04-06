@@ -11,6 +11,7 @@ import { PWAUpdatePrompt } from "@/components/PWAUpdatePrompt";
 import { CookieConsent } from "@/components/CookieConsent";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { Analytics } from "@vercel/analytics/react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Eagerly load landing + auth (first paint)
 import Landing from "./pages/Landing";
@@ -74,18 +75,19 @@ const AnalyticsTracker = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <PWAUpdatePrompt />
-        <CookieConsent />
-        <Analytics />
-        <BrowserRouter>
-          <AnalyticsTracker />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <PWAUpdatePrompt />
+          <CookieConsent />
+          <Analytics />
+          <BrowserRouter>
+            <AnalyticsTracker />
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Landing />} />
               <Route path="/institution-code" element={<InstitutionCode />} />
@@ -126,12 +128,13 @@ const App = () => (
               
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

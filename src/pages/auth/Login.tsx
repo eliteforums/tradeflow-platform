@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Navigate } from "react-router-dom";
 import { ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft, Shield, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import EterniaLogo from "@/components/EterniaLogo";
 import { motion } from "framer-motion";
 
@@ -14,12 +13,19 @@ const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, user, profile } = useAuth();
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+
+  // If already logged in with profile, redirect immediately
+  if (user && profile) {
+    const role = profile.role;
+    if (role === "admin" || role === "spoc") return <Navigate to="/admin" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -54,13 +60,10 @@ const Login = () => {
       setLoginAttempts(0);
       setLockoutUntil(null);
       
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "");
-      const isAdmin = roles?.some(r => r.role === "admin" || r.role === "spoc");
       toast.success("Welcome back!");
-      navigate(isAdmin ? "/admin" : "/dashboard");
+      // Navigation will happen automatically via the redirect guard above
+      // once AuthContext hydrates the profile
+      navigate("/dashboard");
     } catch {
       const newAttempts = loginAttempts + 1;
       setLoginAttempts(newAttempts);
