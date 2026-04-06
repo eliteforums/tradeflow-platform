@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import EterniaLogo from "@/components/EterniaLogo";
-import EterniaLogo from "@/components/EterniaLogo";
 import { motion } from "framer-motion";
 
 const MAX_LOGIN_ATTEMPTS = 5;
