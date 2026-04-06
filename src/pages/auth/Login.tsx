@@ -14,7 +14,7 @@ const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 const Login = () => {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, user, profile } = useAuth();
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
