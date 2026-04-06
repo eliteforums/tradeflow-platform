@@ -1,45 +1,57 @@
 
+Do I know what the issue is? Yes — this looks like a post-login app-load failure, not just a bad username/password.
 
-## BlackBox Portal Redesign
+What I found
+- The auth logs show at least one successful admin login, so login itself can succeed.
+- The blank white screen is most likely happening after the redirect into lazy-loaded pages like `/admin` or `/dashboard`.
+- Right now there is no route error boundary, so if a lazy chunk fails to load, the app can collapse into a white screen.
+- `AuthContext` also swallows profile-loading errors, which means the app can end up with a signed-in user but unstable/missing role/profile state.
+- The app uses PWA caching, but there is no recovery handler for stale chunk/preload failures after updates.
 
-Three changes to the BlackBox experience:
+Implementation plan
 
-### 1. Blank Entry Screen After Login
-**Files:** `src/pages/dashboard/BlackBox.tsx`, `src/components/mobile/MobileBlackBox.tsx`
+1. Add a visible recovery fallback for route/load failures
+- Wrap routed content with an error boundary so lazy-load/runtime failures show a recovery screen instead of a blank page.
+- File: `src/App.tsx` (or a small imported error boundary)
 
-- Remove `DashboardLayout` wrapper from both desktop and mobile BlackBox components
-- When `callState === "idle"` (no active session), render a completely blank white screen — no header, nav, buttons, or text
-- After a short delay (~2s), fade in the text: *"Hi, This is your anonymous space."*
-- Then fade-transition to the "Request Voice Call" button after another ~2s
-- Use `framer-motion` `AnimatePresence` for smooth text transitions
-- Background: pure white (`bg-white`), full viewport height, centered content
+2. Add chunk/preload failure recovery
+- Handle stale bundle failures with a one-time reload strategy for Vite preload/chunk errors.
+- If needed, tighten the PWA update behavior to reduce stale-cache navigation failures.
+- Files: `src/main.tsx`, optionally `vite.config.ts`
 
-### 2. Dynamic Single-Line Message Display During Session
-**Files:** `src/pages/dashboard/BlackBox.tsx`, `src/components/mobile/MobileBlackBox.tsx`
+3. Make auth/profile hydration explicit
+- Stop silently swallowing profile fetch failures in `AuthContext`
+- Track initial profile load success/failure
+- Keep loading active until authenticated user data is either ready or fails in a controlled way
+- File: `src/contexts/AuthContext.tsx`
 
-- When `isJoined`, instead of static "Hello! I am Nova..." text, show a single dynamic text line that replaces itself (no scrolling feed)
-- Messages cycle through contextual phrases:
-  - Initial: "Hi, This is your anonymous space."
-  - After 5s: "Take your time. I'm here."
-  - After voice activity: "I'm listening..."
-  - On session end: "You did something brave today."
-- Each transition uses a fade-out/fade-in animation
-- Keep the interface minimal — only the orb, the single text line, and bottom controls visible
+4. Harden protected routes
+- If user exists but profile is still loading, keep showing a loader
+- If profile loading fails, show retry/sign-out recovery UI instead of rendering protected pages blindly
+- File: `src/components/ProtectedRoute.tsx`
 
-### 3. Voice-Reactive Orb
-**Files:** `src/components/blackbox/NovaOrb.tsx`
+5. Fix post-login navigation flow
+- Remove the immediate extra role lookup in the login form as the main redirect source
+- Redirect only after auth/profile state is fully ready
+- Use the hydrated profile role for navigation
+- File: `src/pages/auth/Login.tsx`
 
-- Add a new `audioLevel` prop (0-1 float) representing current mic input volume
-- Map `audioLevel` to orb `scale` and outer glow intensity for real-time reactivity
-- Use `framer-motion` `useSpring` for smooth interpolation
-- Create a new `useVoiceLevel` hook that captures real-time mic volume via `AnalyserNode` + `requestAnimationFrame`
-- Pass the level to `NovaOrb` — only active when session is joined
+6. Add entry-screen guards on first redirected pages
+- Make admin/dashboard entry pages show controlled loading while required auth state is stabilizing
+- Files: `src/pages/admin/AdminDashboard.tsx`, `src/components/mobile/MobileAdminDashboard.tsx`, `src/pages/dashboard/Dashboard.tsx`
 
-### Files to Create
-- `src/hooks/useVoiceLevel.ts` — mic volume analyzer hook
+7. Re-check the recent BlackBox fullscreen changes
+- Ensure the white fullscreen BlackBox experience is strictly limited to `/dashboard/blackbox`
+- Prevent it from affecting normal login/dashboard flows
+- Files: `src/pages/dashboard/BlackBox.tsx`, `src/components/mobile/MobileBlackBox.tsx`
 
-### Files to Edit
-- `src/components/blackbox/NovaOrb.tsx` — add `audioLevel` prop, voice-reactive animations
-- `src/pages/dashboard/BlackBox.tsx` — blank entry, dynamic messages, voice level integration
-- `src/components/mobile/MobileBlackBox.tsx` — same changes for mobile
+Validation
+- Test login with `admin`, `admin@eternia.com`, and a student account
+- Verify `/admin`, `/dashboard`, and `/dashboard/blackbox` all render normally
+- Hard refresh on protected routes to confirm there is no white screen
+- Confirm stale-chunk/update cases recover with a visible reload/retry path instead of failing silently
 
+Technical details
+- No database migration required
+- No backend schema changes required
+- This is mainly a frontend resiliency fix across auth, routing, and cache/update handling
