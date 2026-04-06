@@ -21,6 +21,13 @@ const Login = () => {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
 
+  // If already logged in with profile, redirect immediately
+  if (user && profile) {
+    const role = profile.role;
+    if (role === "admin" || role === "spoc") return <Navigate to="/admin" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
