@@ -23,7 +23,11 @@ const Login = () => {
   // If already logged in with profile, redirect immediately
   if (user && profile) {
     const role = profile.role;
-    if (role === "admin" || role === "spoc") return <Navigate to="/admin" replace />;
+    if (role === "admin") return <Navigate to="/admin" replace />;
+    if (role === "spoc") return <Navigate to="/dashboard/spoc" replace />;
+    if (role === "expert") return <Navigate to="/dashboard/expert" replace />;
+    if (role === "therapist") return <Navigate to="/dashboard/therapist" replace />;
+    if (role === "intern") return <Navigate to="/dashboard/intern" replace />;
     return <Navigate to="/dashboard" replace />;
   }
 
