@@ -451,7 +451,7 @@ export default function MemberManager() {
                                 className="h-6 text-[10px] px-2 gap-0.5 bg-eternia-success hover:bg-eternia-success/90"
                                 onClick={async (e) => {
                                   e.stopPropagation();
-                                  const updateData: Record<string, any> = { is_verified: true };
+                                  const updateData: { is_verified: boolean; training_status?: string } = { is_verified: true };
                                   if (m.role === "intern" && m.training_status === "interview_pending") {
                                     updateData.training_status = "active";
                                   }

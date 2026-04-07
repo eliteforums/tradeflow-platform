@@ -77,7 +77,7 @@ const Profile = () => {
     if (!user) return;
     setIsSaving(true);
     try {
-      const updates: Record<string, any> = { bio, updated_at: new Date().toISOString() };
+      const updates: { bio: string; updated_at: string; specialty?: string } = { bio, updated_at: new Date().toISOString() };
       if (isExpert || isTherapist) updates.specialty = specialty;
       const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
       if (error) throw error;
@@ -111,13 +111,13 @@ const Profile = () => {
 
       if (data.verified) {
         // Update verification flags only — never store raw ID
-        await supabase.from("user_private").upsert({
+        await supabase.from("user_private").upsert([{
           user_id: user.id,
           [idType === "apaar" ? "apaar_verified" : "erp_verified"]: true,
           student_id_encrypted: null,
           apaar_id_encrypted: null,
           erp_id_encrypted: null,
-        }, { onConflict: "user_id" });
+        }], { onConflict: "user_id" });
 
         await supabase.from("profiles").update({ is_verified: true }).eq("id", user.id);
         await refreshProfile();
