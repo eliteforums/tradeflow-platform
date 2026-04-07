@@ -157,27 +157,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (username: string, password: string) => {
     const input = username.toLowerCase().trim();
-    const eterniaDomains = ["eternia.local", "eternia.com", "eternia.in"];
 
-    let candidates: string[];
+    let email: string;
     if (!input.includes("@")) {
-      // Username only → try all eternia domains
-      candidates = eterniaDomains.map(d => `${input}@${d}`);
-    } else if (input.match(/@eternia\.\w+$/)) {
-      // Eternia email → try typed first, then siblings
-      candidates = [input, ...eterniaDomains.map(d => input.replace(/@eternia\.\w+$/, `@${d}`)).filter(e => e !== input)];
+      // Username only → default to eternia.local (where all users are registered)
+      email = `${input}@eternia.local`;
     } else {
-      // Non-eternia email → use as-is
-      candidates = [input];
+      email = input;
     }
 
-    let lastError: Error | null = null;
-    for (const email of candidates) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (!error) return { error: null };
-      lastError = error as Error;
+    // Single attempt — no multi-domain retry to avoid backend overload
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error) return { error: null };
+
+    // If username-only login failed, try eternia.com as fallback (admin accounts)
+    if (!input.includes("@")) {
+      const { error: err2 } = await supabase.auth.signInWithPassword({
+        email: `${input}@eternia.com`,
+        password,
+      });
+      if (!err2) return { error: null };
     }
-    return { error: lastError };
+
+    return { error: error as Error };
   }, []);
 
   const signOut = useCallback(async () => {
