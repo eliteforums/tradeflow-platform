@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { ArrowRight, User, Lock, Eye, EyeOff, ArrowLeft, Shield, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,13 +12,13 @@ const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 const Login = () => {
-  const navigate = useNavigate();
-  const { signIn, user, profile } = useAuth();
+  const { signIn, user, profile, isLoading: isAuthLoading, profileError } = useAuth();
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const isSubmitting = isLoading || isAuthLoading;
 
   // If already logged in with profile, redirect immediately
   if (user && profile) {
@@ -29,6 +29,23 @@ const Login = () => {
     if (role === "therapist") return <Navigate to="/dashboard/therapist" replace />;
     if (role === "intern") return <Navigate to="/dashboard/intern" replace />;
     return <Navigate to="/dashboard" replace />;
+  }
+
+  if (user && !profile) {
+    if (profileError) {
+      return <Navigate to="/dashboard" replace />;
+    }
+
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-eternia flex items-center justify-center animate-pulse">
+            <Sparkles className="w-6 h-6 text-background" />
+          </div>
+          <p className="text-sm text-muted-foreground">Signing you in...</p>
+        </div>
+      </div>
+    );
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,9 +82,6 @@ const Login = () => {
       setLockoutUntil(null);
       
       toast.success("Welcome back!");
-      // Navigation will happen automatically via the redirect guard above
-      // once AuthContext hydrates the profile
-      navigate("/dashboard");
     } catch {
       const newAttempts = loginAttempts + 1;
       setLoginAttempts(newAttempts);
@@ -195,7 +209,7 @@ const Login = () => {
                   value={formData.username}
                   onChange={handleChange}
                   className="pl-11 h-12 rounded-xl bg-card/50 border-border/40 focus:border-primary/50 focus:ring-primary/20 transition-all text-sm"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 />
               </div>
             </div>
@@ -218,7 +232,7 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   className="pl-11 pr-11 h-12 rounded-xl bg-card/50 border-border/40 focus:border-primary/50 focus:ring-primary/20 transition-all text-sm"
-                  disabled={isLoading}
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
@@ -233,9 +247,9 @@ const Login = () => {
             <Button
               type="submit"
               className="w-full h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-semibold gap-2 shadow-lg shadow-primary/15 transition-all active:scale-[0.98]"
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                   Signing in...

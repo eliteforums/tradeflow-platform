@@ -158,28 +158,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (username: string, password: string) => {
     const input = username.toLowerCase().trim();
 
-    let email: string;
-    if (!input.includes("@")) {
-      // Username only → default to eternia.local (where all users are registered)
-      email = `${input}@eternia.local`;
-    } else {
-      email = input;
+    const emailsToTry = input.includes("@")
+      ? [input]
+      : [`${input}@eternia.local`, `${input}@eternia.com`];
+
+    setIsLoading(true);
+    setProfile(null);
+    setProfileError(false);
+    setCreditBalance(0);
+
+    let lastError: Error | null = null;
+
+    for (const email of emailsToTry) {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (!error) return { error: null };
+      lastError = error as Error;
     }
 
-    // Single attempt — no multi-domain retry to avoid backend overload
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error) return { error: null };
-
-    // If username-only login failed, try eternia.com as fallback (admin accounts)
-    if (!input.includes("@")) {
-      const { error: err2 } = await supabase.auth.signInWithPassword({
-        email: `${input}@eternia.com`,
-        password,
-      });
-      if (!err2) return { error: null };
-    }
-
-    return { error: error as Error };
+    setIsLoading(false);
+    return { error: lastError };
   }, []);
 
   const signOut = useCallback(async () => {
