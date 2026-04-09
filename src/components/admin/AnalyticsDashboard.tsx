@@ -138,7 +138,7 @@ const AnalyticsDashboard = () => {
   const handleDownloadReport = useCallback(async () => {
     setIsGeneratingReport(true);
     try {
-      toast({ title: "Generating report…", description: "AI is analyzing your analytics data. This may take a moment." });
+      toast({ title: "Generating PDF report…", description: "AI is analyzing your analytics data. This may take a moment." });
 
       const { data: funcData, error } = await supabase.functions.invoke("generate-analytics-report", {
         body: { dateRange },
@@ -147,18 +147,205 @@ const AnalyticsDashboard = () => {
       if (error) throw error;
       if (funcData?.error) throw new Error(funcData.error);
 
-      const report = funcData.report;
-      const blob = new Blob([report], { type: "text/markdown;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `eternia-analytics-report-${dateRange}-${format(new Date(), "yyyy-MM-dd")}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const d = funcData;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 14;
+      let y = 16;
 
-      toast({ title: "Report downloaded", description: "Your AI-powered analytics report has been saved." });
+      // Title
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(75, 60, 180);
+      doc.text("Eternia Analytics Report", margin, y);
+      y += 8;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Period: ${d.period.from} to ${d.period.to} (${d.dateRange})  |  Generated: ${format(new Date(d.generatedAt), "PPpp")}`, margin, y);
+      y += 8;
+      doc.setDrawColor(200, 200, 200);
+      doc.line(margin, y, pageW - margin, y);
+      y += 6;
+
+      // AI Insights
+      if (d.aiInsights) {
+        doc.setFontSize(13);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(40, 40, 40);
+        doc.text("AI Executive Summary", margin, y);
+        y += 6;
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(60, 60, 60);
+        // Strip markdown formatting for PDF
+        const cleanInsights = d.aiInsights
+          .replace(/#{1,6}\s*/g, "")
+          .replace(/\*\*(.*?)\*\*/g, "$1")
+          .replace(/\*(.*?)\*/g, "$1")
+          .replace(/`(.*?)`/g, "$1");
+        const lines = doc.splitTextToSize(cleanInsights, pageW - margin * 2);
+        for (const line of lines) {
+          if (y > 275) { doc.addPage(); y = 16; }
+          doc.text(line, margin, y);
+          y += 4;
+        }
+        y += 4;
+      }
+
+      // Key Metrics Table
+      if (y > 240) { doc.addPage(); y = 16; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(40, 40, 40);
+      doc.text("Key Metrics", margin, y);
+      y += 2;
+      autoTable(doc, {
+        startY: y,
+        head: [["Metric", "Value"]],
+        body: [
+          ["Total Page Views", d.metrics.totalViews.toLocaleString()],
+          ["Views Today", d.metrics.viewsToday.toLocaleString()],
+          ["Views This Week", d.metrics.viewsWeek.toLocaleString()],
+          ["Unique Visitors", d.metrics.uniqueVisitors.toLocaleString()],
+          ["Authenticated Users", d.metrics.authUsers.toLocaleString()],
+          ["Anonymous Visitors", d.metrics.anonSessions.toLocaleString()],
+          ["Total Sessions", d.metrics.totalSessions.toLocaleString()],
+          ["Bounce Rate", `${d.metrics.bounceRate}%`],
+          ["Pages/Session", d.metrics.pagesPerSession],
+          ["Registered Users", d.metrics.totalUsers.toLocaleString()],
+        ],
+        theme: "grid",
+        headStyles: { fillColor: [75, 60, 180], fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        margin: { left: margin, right: margin },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+
+      // Device Breakdown
+      if (y > 240) { doc.addPage(); y = 16; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(40, 40, 40);
+      doc.text("Device Breakdown", margin, y);
+      y += 2;
+      const devTotal = d.devices.desktop + d.devices.mobile + d.devices.tablet;
+      autoTable(doc, {
+        startY: y,
+        head: [["Device", "Views", "%"]],
+        body: [
+          ["Desktop", d.devices.desktop.toLocaleString(), devTotal > 0 ? `${Math.round((d.devices.desktop / devTotal) * 100)}%` : "0%"],
+          ["Mobile", d.devices.mobile.toLocaleString(), devTotal > 0 ? `${Math.round((d.devices.mobile / devTotal) * 100)}%` : "0%"],
+          ["Tablet", d.devices.tablet.toLocaleString(), devTotal > 0 ? `${Math.round((d.devices.tablet / devTotal) * 100)}%` : "0%"],
+        ],
+        theme: "grid",
+        headStyles: { fillColor: [75, 60, 180], fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        margin: { left: margin, right: margin },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+
+      // Browser Usage
+      if (y > 240) { doc.addPage(); y = 16; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("Browser Usage", margin, y);
+      y += 2;
+      const browserEntries = Object.entries(d.browserCounts).sort(([, a]: any, [, b]: any) => b - a);
+      autoTable(doc, {
+        startY: y,
+        head: [["Browser", "Views", "%"]],
+        body: browserEntries.map(([b, c]: any) => [b, c.toLocaleString(), `${Math.round((c / d.metrics.totalViews) * 100)}%`]),
+        theme: "grid",
+        headStyles: { fillColor: [75, 60, 180], fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        margin: { left: margin, right: margin },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+
+      // Top Pages
+      if (y > 240) { doc.addPage(); y = 16; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("Top Pages", margin, y);
+      y += 2;
+      autoTable(doc, {
+        startY: y,
+        head: [["#", "Page", "Views"]],
+        body: d.topPages.map((p: any, i: number) => [i + 1, p.path, p.count.toLocaleString()]),
+        theme: "grid",
+        headStyles: { fillColor: [75, 60, 180], fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        margin: { left: margin, right: margin },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+
+      // Traffic Sources
+      if (y > 240) { doc.addPage(); y = 16; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("Traffic Sources", margin, y);
+      y += 2;
+      autoTable(doc, {
+        startY: y,
+        head: [["#", "Source", "Visits"]],
+        body: d.topReferrers.map((r: any, i: number) => [i + 1, r.source, r.count.toLocaleString()]),
+        theme: "grid",
+        headStyles: { fillColor: [75, 60, 180], fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        margin: { left: margin, right: margin },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+
+      // Daily Trend
+      if (y > 200) { doc.addPage(); y = 16; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("Daily Traffic Trend", margin, y);
+      y += 2;
+      autoTable(doc, {
+        startY: y,
+        head: [["Date", "Views"]],
+        body: d.dailyTrend.map(([date, count]: [string, number]) => [date, count.toLocaleString()]),
+        theme: "grid",
+        headStyles: { fillColor: [75, 60, 180], fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        margin: { left: margin, right: margin },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+
+      // Cookie Consent
+      if (y > 250) { doc.addPage(); y = 16; }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("Cookie Consent Status", margin, y);
+      y += 2;
+      autoTable(doc, {
+        startY: y,
+        head: [["Status", "Count"]],
+        body: [
+          ["Accepted", d.consentStats.accepted.toString()],
+          ["Rejected", d.consentStats.rejected.toString()],
+          ["Pending", d.consentStats.pending.toString()],
+        ],
+        theme: "grid",
+        headStyles: { fillColor: [75, 60, 180], fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        margin: { left: margin, right: margin },
+      });
+
+      // Footer on every page
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7);
+        doc.setTextColor(150, 150, 150);
+        doc.text("Report generated by Eternia Analytics Engine", margin, 290);
+        doc.text(`Page ${i} of ${totalPages}`, pageW - margin - 20, 290);
+      }
+
+      doc.save(`eternia-analytics-report-${dateRange}-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+      toast({ title: "Report downloaded", description: "Your AI-powered PDF analytics report has been saved." });
     } catch (e: any) {
       console.error("Report generation error:", e);
       toast({ title: "Report generation failed", description: e.message || "Could not generate the report", variant: "destructive" });
