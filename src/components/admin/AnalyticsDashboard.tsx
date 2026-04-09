@@ -154,12 +154,17 @@ const AnalyticsDashboard = () => {
       const margin = 14;
       let y = 16;
 
-      // Title
+      // Logo + Title
+      try {
+        doc.addImage(ETERNIA_LOGO_PNG, "PNG", margin, y - 6, 28, 16);
+      } catch (e) {
+        console.warn("Could not add logo to PDF", e);
+      }
       doc.setFontSize(20);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(75, 60, 180);
-      doc.text("Eternia Analytics Report", margin, y);
-      y += 8;
+      doc.text("Eternia Analytics Report", margin + 32, y + 4);
+      y += 14;
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 100, 100);
