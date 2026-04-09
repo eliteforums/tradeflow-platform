@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { ETERNIA_LOGO_PNG } from "@/lib/eterniaLogoPng";
 
 const DATE_RANGES: { value: DateRange; label: string }[] = [
   { value: "today", label: "Today" },
