@@ -238,6 +238,16 @@ const AnalyticsDashboard = () => {
               </SelectContent>
             </Select>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={handleDownloadReport}
+            disabled={isGeneratingReport || !hasData}
+          >
+            {isGeneratingReport ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            {isGeneratingReport ? "Generating…" : "Download Report"}
+          </Button>
         </div>
       </div>
 
