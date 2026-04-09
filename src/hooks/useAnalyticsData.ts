@@ -36,13 +36,22 @@ export function useAnalyticsData(dateRange: DateRange = "30d") {
   const { data: pageViews = [], isLoading: isLoadingViews } = useQuery({
     queryKey: ["analytics-page-views", dateRange],
     queryFn: async () => {
-      const { data, error } = await (supabase.from("analytics_events" as any) as any)
-        .select("id, user_id, session_hash, page_path, screen_size, created_at, referrer, user_agent")
-        .gte("created_at", rangeDate.toISOString())
-        .order("created_at", { ascending: false })
-        .limit(5000);
-      if (error) throw error;
-      return data || [];
+      const PAGE_SIZE = 1000;
+      let allData: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await (supabase.from("analytics_events" as any) as any)
+          .select("id, user_id, session_hash, page_path, screen_size, created_at, referrer, user_agent")
+          .gte("created_at", rangeDate.toISOString())
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return allData;
     },
     enabled: isAdmin,
   });
