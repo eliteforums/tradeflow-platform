@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAnalyticsData, DateRange } from "@/hooks/useAnalyticsData";
 import {
   Eye, Users, UserCheck, UserX, Monitor, Smartphone, Tablet, Cookie,
   TrendingUp, TrendingDown, BarChart3, Loader2, Activity, Clock, Globe, Zap,
   ArrowUpRight, ArrowDownRight, LogIn, LogOut, Layers, RefreshCw, Chrome,
-  FileText, Hash,
+  FileText, Hash, Download,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid,
   PieChart, Pie, Cell, LineChart, Line,
 } from "recharts";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const DATE_RANGES: { value: DateRange; label: string }[] = [
   { value: "today", label: "Today" },
@@ -125,8 +128,42 @@ function SectionCard({ title, icon: Icon, children, className = "" }: any) {
 const AnalyticsDashboard = () => {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [pageFilter, setPageFilter] = useState<string>("all");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const { toast } = useToast();
 
   const data = useAnalyticsData(dateRange);
+
+  const handleDownloadReport = useCallback(async () => {
+    setIsGeneratingReport(true);
+    try {
+      toast({ title: "Generating report…", description: "AI is analyzing your analytics data. This may take a moment." });
+
+      const { data: funcData, error } = await supabase.functions.invoke("generate-analytics-report", {
+        body: { dateRange },
+      });
+
+      if (error) throw error;
+      if (funcData?.error) throw new Error(funcData.error);
+
+      const report = funcData.report;
+      const blob = new Blob([report], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `eternia-analytics-report-${dateRange}-${format(new Date(), "yyyy-MM-dd")}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({ title: "Report downloaded", description: "Your AI-powered analytics report has been saved." });
+    } catch (e: any) {
+      console.error("Report generation error:", e);
+      toast({ title: "Report generation failed", description: e.message || "Could not generate the report", variant: "destructive" });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  }, [dateRange, toast]);
 
   if (data.isLoading) {
     return (
@@ -201,6 +238,16 @@ const AnalyticsDashboard = () => {
               </SelectContent>
             </Select>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5"
+            onClick={handleDownloadReport}
+            disabled={isGeneratingReport || !hasData}
+          >
+            {isGeneratingReport ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            {isGeneratingReport ? "Generating…" : "Download Report"}
+          </Button>
         </div>
       </div>
 
