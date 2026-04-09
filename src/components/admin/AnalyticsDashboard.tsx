@@ -1,18 +1,21 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAnalyticsData, DateRange } from "@/hooks/useAnalyticsData";
 import {
   Eye, Users, UserCheck, UserX, Monitor, Smartphone, Tablet, Cookie,
   TrendingUp, TrendingDown, BarChart3, Loader2, Activity, Clock, Globe, Zap,
   ArrowUpRight, ArrowDownRight, LogIn, LogOut, Layers, RefreshCw, Chrome,
-  FileText, Hash,
+  FileText, Hash, Download,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid,
   PieChart, Pie, Cell, LineChart, Line,
 } from "recharts";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const DATE_RANGES: { value: DateRange; label: string }[] = [
   { value: "today", label: "Today" },
