@@ -48,7 +48,7 @@ const Navbar = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 0.15, duration: 0.4 }}
-      className="sticky top-0 z-40 w-full border-b border-border/20 bg-background/70 backdrop-blur-2xl"
+      className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-2xl"
     >
       <div className="container mx-auto px-4 sm:px-5 py-2.5 flex items-center justify-between">
         {/* Logo - left */}
