@@ -6,37 +6,38 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 229 38% 17%;
+    /* Eternia Soft — MindEase-inspired warm cream palette */
+    --background: 36 50% 96%;          /* #FBF5EC cream */
+    --foreground: 229 38% 17%;         /* deep ink */
 
-    --card: 245 20% 97%;
+    --card: 0 0% 100%;
     --card-foreground: 229 38% 17%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 229 38% 17%;
 
-    --primary: 243 100% 69%;
+    --primary: 243 100% 69%;           /* Eternia Purple */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 12 94% 68%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 36 60% 92%;           /* warm cream surface */
+    --secondary-foreground: 229 38% 17%;
 
-    --muted: 245 20% 93%;
-    --muted-foreground: 229 20% 42%;
+    --muted: 36 30% 90%;
+    --muted-foreground: 229 15% 42%;
 
-    --accent: 12 94% 68%;
+    --accent: 12 94% 68%;              /* Coral */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 68% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 245 15% 86%;
-    --input: 245 15% 90%;
+    --border: 36 25% 86%;
+    --input: 36 25% 90%;
     --ring: 243 100% 69%;
 
-    --radius: 0.875rem;
+    --radius: 1.5rem;                  /* softer 24px corners */
 
-    /* Eternia brand tokens */
+    /* Eternia brand tokens (kept) */
     --eternia-teal: 243 100% 69%;
     --eternia-teal-glow: 243 100% 79%;
     --eternia-lavender: 12 94% 68%;
@@ -44,25 +45,59 @@
     --eternia-violet: 41 100% 67%;
     --eternia-violet-glow: 41 100% 77%;
     --eternia-dark: 229 38% 17%;
-    --eternia-dark-card: 245 20% 97%;
-    --eternia-dark-elevated: 245 20% 93%;
+    --eternia-dark-card: 0 0% 100%;
+    --eternia-dark-elevated: 36 60% 94%;
     --eternia-success: 158 64% 46%;
     --eternia-warning: 41 100% 67%;
     --eternia-gradient-start: 243 100% 69%;
     --eternia-gradient-end: 12 94% 68%;
 
-    --sidebar-background: 245 20% 97%;
+    /* MindEase-style pastel surface tints */
+    --surface-cream: 36 50% 96%;
+    --surface-pink: 354 100% 92%;      /* #FFD9DC */
+    --surface-butter: 44 93% 82%;      /* #FCE6A8 */
+    --surface-mint: 140 38% 86%;       /* #CFE8D8 */
+    --surface-sky: 213 67% 88%;        /* #CFE0F4 */
+    --surface-lavender: 246 53% 90%;   /* #D9D6F5 */
+    --surface-peach: 28 92% 86%;       /* #FCD9B8 */
+
+    --sidebar-background: 36 50% 96%;
     --sidebar-foreground: 229 38% 17%;
     --sidebar-primary: 243 100% 69%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 245 15% 90%;
+    --sidebar-accent: 36 30% 90%;
     --sidebar-accent-foreground: 229 38% 17%;
-    --sidebar-border: 245 15% 86%;
+    --sidebar-border: 36 25% 86%;
     --sidebar-ring: 243 100% 69%;
   }
 
   .dark {
-    /* Same as root — dark-first design */
+    --background: 229 38% 12%;
+    --foreground: 36 30% 94%;
+    --card: 229 30% 17%;
+    --card-foreground: 36 30% 94%;
+    --popover: 229 30% 17%;
+    --popover-foreground: 36 30% 94%;
+    --secondary: 229 25% 22%;
+    --secondary-foreground: 36 30% 94%;
+    --muted: 229 25% 22%;
+    --muted-foreground: 229 15% 65%;
+    --border: 229 25% 25%;
+    --input: 229 25% 22%;
+
+    --surface-cream: 229 30% 17%;
+    --surface-pink: 354 35% 30%;
+    --surface-butter: 44 35% 28%;
+    --surface-mint: 140 25% 25%;
+    --surface-sky: 213 30% 28%;
+    --surface-lavender: 246 30% 30%;
+    --surface-peach: 28 35% 28%;
+
+    --sidebar-background: 229 30% 14%;
+    --sidebar-foreground: 36 30% 94%;
+    --sidebar-accent: 229 25% 22%;
+    --sidebar-accent-foreground: 36 30% 94%;
+    --sidebar-border: 229 25% 25%;
   }
 }
 
@@ -84,11 +119,16 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', system-ui, sans-serif;
+    font-family: 'Fraunces', 'Outfit', system-ui, serif;
+    letter-spacing: -0.01em;
   }
 }
 
 @layer utilities {
+  .font-display {
+    font-family: 'Fraunces', 'Outfit', system-ui, serif !important;
+  }
+
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-eternia-teal to-eternia-lavender;
   }
@@ -131,33 +171,73 @@
   .glass-strong {
     @apply bg-card/85 backdrop-blur-2xl border border-border/40;
   }
+
+  /* MindEase-style pastel surfaces */
+  .surface-pink     { background-color: hsl(var(--surface-pink)); }
+  .surface-butter   { background-color: hsl(var(--surface-butter)); }
+  .surface-mint     { background-color: hsl(var(--surface-mint)); }
+  .surface-sky      { background-color: hsl(var(--surface-sky)); }
+  .surface-lavender { background-color: hsl(var(--surface-lavender)); }
+  .surface-peach    { background-color: hsl(var(--surface-peach)); }
+  .surface-cream    { background-color: hsl(var(--surface-cream)); }
+
+  .shadow-soft {
+    box-shadow: 0 8px 30px rgb(0 0 0 / 0.04);
+  }
+  .shadow-soft-lg {
+    box-shadow: 0 18px 50px -10px rgb(0 0 0 / 0.08), 0 4px 12px rgb(0 0 0 / 0.04);
+  }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-gradient-eternia text-primary-foreground font-semibold px-6 py-3 rounded-xl
+    @apply bg-gradient-eternia text-primary-foreground font-semibold px-6 py-3 rounded-full
            hover:opacity-90 transition-all duration-200 shadow-lg shadow-primary/15;
   }
 
   .btn-secondary {
-    @apply border border-border bg-muted/50 text-foreground font-medium px-6 py-3 rounded-xl
+    @apply border border-border bg-card text-foreground font-medium px-6 py-3 rounded-full
            hover:bg-muted transition-all duration-200;
   }
 
   .input-eternia {
-    @apply bg-muted/50 border border-border rounded-xl px-4 py-3 w-full
+    @apply bg-card border border-border rounded-2xl px-4 py-3 w-full
            focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary
            placeholder:text-muted-foreground transition-all duration-200;
   }
 
   .portal-card {
-    @apply relative overflow-hidden rounded-2xl p-5 sm:p-6 transition-all duration-300
-           hover:shadow-xl hover:-translate-y-1 cursor-pointer active:scale-[0.98];
+    @apply relative overflow-hidden rounded-3xl p-5 sm:p-6 transition-all duration-300
+           hover:shadow-soft-lg hover:-translate-y-1 cursor-pointer active:scale-[0.98];
   }
 
+  /* Soft pastel card — the new Eternia base surface */
+  .card-soft {
+    @apply rounded-3xl bg-card border border-border/40 shadow-soft;
+  }
+
+  /* Pill — used for tags, chips, date badges */
+  .pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
+           bg-card border border-border/50 text-foreground/80;
+  }
+
+  /* Mood emoji chip */
+  .mood-chip {
+    @apply w-12 h-12 rounded-full flex items-center justify-center text-2xl
+           bg-card border border-border/40 transition-all active:scale-90;
+  }
+
+  /* Pastel tile presets — used for activity tiles */
+  .tile-pastel-pink     { @apply rounded-3xl p-5 surface-pink     text-foreground/90 shadow-soft transition-all hover:-translate-y-0.5; }
+  .tile-pastel-butter   { @apply rounded-3xl p-5 surface-butter   text-foreground/90 shadow-soft transition-all hover:-translate-y-0.5; }
+  .tile-pastel-mint     { @apply rounded-3xl p-5 surface-mint     text-foreground/90 shadow-soft transition-all hover:-translate-y-0.5; }
+  .tile-pastel-sky      { @apply rounded-3xl p-5 surface-sky      text-foreground/90 shadow-soft transition-all hover:-translate-y-0.5; }
+  .tile-pastel-lavender { @apply rounded-3xl p-5 surface-lavender text-foreground/90 shadow-soft transition-all hover:-translate-y-0.5; }
+  .tile-pastel-peach    { @apply rounded-3xl p-5 surface-peach    text-foreground/90 shadow-soft transition-all hover:-translate-y-0.5; }
+
   .section-title {
-    @apply text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight;
-    font-family: 'Outfit', sans-serif;
+    @apply text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight font-display;
   }
 
   .section-subtitle {
@@ -182,7 +262,8 @@
 }
 
 /* Hide scrollbar utility */
-.scrollbar-none::-webkit-scrollbar {
+.scrollbar-none::-webkit-scrollbar,
+.scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
@@ -227,6 +308,11 @@
   100% { transform: translateX(-50%); }
 }
 
+@keyframes wave-bar {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
   will-change: transform;
@@ -259,7 +345,7 @@
   .animate-gradient {
     animation: none !important;
   }
-  
+
   * {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
