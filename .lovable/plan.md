@@ -1,84 +1,65 @@
 
 
-# MindEase-Inspired UI Redesign — Full Platform
+# Pixel-Match MindEase Reference — Continue Rollout
 
-Visual-only redesign across every screen. **No functional/logic changes** — same routes, same hooks, same data, same roles. Only markup, classes, and design tokens change.
+You've approved Phases 1-2 already (tokens + 3 hero screens). To get the platform looking *exactly* like the MindEase reference, here's what I'll do next, with a focus on faithfully reproducing the reference style on every remaining surface.
 
-## Design language (the new "Eternia Soft")
+## What "exact" means here
 
-Adopted from the reference, kept compatible with Eternia branding:
+The Dribbble shot is copyrighted — I cannot copy the artwork or illustrations 1:1. What I will reproduce precisely:
 
-- **Background**: warm cream `#FBF5EC` (light) / deep ink `#1B1F3B` (dark)
-- **Surface cards**: pastel tints — pink `#FFD9DC`, butter `#FCE6A8`, mint `#CFE8D8`, sky `#CFE0F4`, lavender `#D9D6F5`, peach `#FCD9B8`
-- **Primary** stays Eternia Purple `#6C63FF`; **accent** stays Coral `#FA7E61` — used as the "active" mood / CTA color
-- **Typography**: display headings switch to a rounded serif (Fraunces via Google Fonts, already loadable); body stays Inter
-- **Shapes**: 24–32px rounded corners on cards, pill buttons, soft drop shadows (`shadow-[0_8px_30px_rgb(0,0,0,0.04)]`)
-- **Iconography**: keep lucide icons but pair with emoji chips for moods/categories (matches reference)
+- Cream `#FBF5EC` background everywhere
+- Pastel cards (pink / butter / mint / sky / lavender / peach) with 24–32px radius
+- Fraunces serif for all headings, DM Sans for body
+- Pill chips, emoji mood rows, soft shadows, "Powered by AI" badges
+- Layout structure of every reference screen (greeting block, mood log row, 2×2 tile grid, waveform player, bubble cluster, emoji bar charts)
 
-## Phase 1 — Design tokens (one-time foundation)
+Illustrations will be CSS/SVG recreations in the same flat-pastel style (no copied art).
 
-**Files**: `src/index.css`, `tailwind.config.ts`, `index.html`
+## Phase 3 — Remaining student screens
 
-- Add 6 pastel surface tokens (`--surface-pink`, `--surface-mint`, `--surface-sky`, `--surface-butter`, `--surface-lavender`, `--surface-peach`) + `--surface-cream` background
-- Add Fraunces font link in `index.html`; map `font-display` → Fraunces in tailwind
-- Add reusable utilities: `.card-soft`, `.pill`, `.mood-chip`, `.tile-pastel-{color}`
-- Dark mode keeps Eternia ink palette; pastel tints get muted dark variants
+Visual refresh, no logic changes:
 
-## Phase 2 — Student mobile (the 3 reference screens, mapped 1:1)
+- **Mobile**: `MobileSelfHelp`, `MobileBlackBox`, `MobilePeerConnect`, `MobileAppointments`, `MobileCredits`, `MobileProfile`, `MobileRecoverySetup`, `MobileAdminDashboard`, `MobileExpertDashboard`, `MobileInternDashboard`
+- **Desktop pages**: `Dashboard`, `SelfHelp`, `Journaling`, `Gratitude`, `QuestCards`, `Appointments`, `PeerConnect`, `BlackBox`, `SoundTherapy`, `Profile`, `Credits`, `WreckBuddy`, `TibetanBowl`
 
-| Reference screen | Eternia file |
-|---|---|
-| "Good morning + mood log + activity tiles" | `src/components/mobile/MobileDashboard.tsx` |
-| "Meditation Stress Relaxation" player | `src/components/mobile/MobileSoundTherapy.tsx` |
-| "7 Days Mood Reflection" + bubbles + bar chart | `src/pages/dashboard/MoodTracker.tsx` |
-
-**MobileDashboard** — greeting + date pill, "How are you feeling today?" headline, "Your thought…" input (links to Journaling), 5-emoji `Daily mood log` row (wired to existing `useMoodTracker.logMood`), 2×2 pastel activity tiles (Meditation→SoundTherapy, Just need to talk→PeerConnect, Reduce anxiety→QuestCards, Handle stress→BlackBox). Stats row + Connect grid kept but restyled.
-
-**MobileSoundTherapy** — centered meditation illustration (CSS-drawn lotus/circle motif using the existing `TibetanBowl3D`-style aesthetic, no copyrighted art), "Powered by AI" pill, animated waveform bars (CSS-only, driven by playing state), timer, circular play/pause + skip pills.
-
-**MoodTracker** — bubble cluster sized by mood frequency over 7 days (sized circles with mood labels), "Take charge of your mind / Help with AI" gradient card, bar chart with emoji-headed bars for "Your Statistic". All driven by existing `last7Days` data from the hook.
-
-## Phase 3 — Other student screens (visual refresh, same components)
-
-`MobileSelfHelp`, `MobileBlackBox`, `MobilePeerConnect`, `MobileAppointments`, `MobileCredits`, `MobileProfile`, `MobileRecoverySetup`, plus desktop `Dashboard.tsx`, `SelfHelp.tsx`, `Journaling.tsx`, `Gratitude.tsx`, `QuestCards.tsx`, `Appointments.tsx`, `PeerConnect.tsx`, `BlackBox.tsx`, `SoundTherapy.tsx`, `Profile.tsx`, `Credits.tsx`, `WreckBuddy.tsx`, `TibetanBowl.tsx` — apply pastel tiles + Fraunces headings + soft cards. No logic touched.
+Each gets: cream background, pastel category tiles, Fraunces headings, soft cards, pill buttons, emoji accents.
 
 ## Phase 4 — Auth + Landing
 
-- `Login`, `Register`, `InstitutionCode`, `QRScan`, `ForgotPassword`: cream background, soft card, Fraunces heading, pastel illustrative sidebar on desktop
-- `Landing.tsx` sections (Hero, Features, HowItWorks, Stats, Testimonials, FAQ, CTA, Footer, Navbar): re-skin to soft pastel — keeping all copy, links, and structure
+- `Login`, `Register`, `InstitutionCode`, `QRScan`, `ForgotPassword`: cream split-layout with pastel illustration panel on desktop; soft card form
+- `Landing.tsx` + all `src/components/landing/*` sections (Hero, Features, HowItWorks, Stats, Security, About, Testimonials, FAQ, CTA, Footer, Navbar, AnnouncementBanner, TrustLogos, CodePreviewSection): re-skin to soft pastel — keep all copy and structure, replace gradient/dark hero with cream + pastel cards, Fraunces headlines
 
 ## Phase 5 — Staff & admin dashboards
 
-Visual refresh only. Keep tables, charts, edge-function wiring, role logic intact.
+Visual refresh only — recharts, tables, edge functions, role logic untouched.
 
-- `AdminDashboard` + every component under `src/components/admin/*` (Overview, Analytics, Audit, Members, Institutions, etc.) — soften cards, switch to Fraunces headings, use pastel category badges, keep recharts data
-- `ExpertDashboard`, `InternDashboard`, `SPOCDashboard`, `TherapistDashboard` and their `*DashboardContent` components
-- `DashboardLayout` (sidebar + topbar): cream background, rounded sidebar, pastel active-state pill
+- `AdminDashboard` + every `src/components/admin/*` (Overview, Analytics, Audit, Members, Institutions, Roles, Sounds, QuestCards, Training, Inquiries, Escalations, Sessions, PasswordReset, AccountDeletion, DeletionRequests, CreditGrant, SPOCTools, Experts)
+- `ExpertDashboard`, `InternDashboard`, `SPOCDashboard`, `TherapistDashboard` + `*DashboardContent` + `ExpertL3AlertPanel`, `StudentIdVerificationSection`, `TherapistSessionControls`
+- `DashboardLayout`: cream bg, rounded sidebar with pastel active-pill, Fraunces in topbar
 
-## Phase 6 — Shared components
+## Phase 6 — Shared components polish
 
-- `EterniaLogo`, `NotificationBell`, `NovaOrb`, `ResolvedAvatar`, `AvatarUpload`, `EmojiPicker`, `EmergencyAlertOverlay` — restyle to match
-- shadcn primitives (`button`, `card`, `input`, `tabs`, `dialog`, `badge`): tweak default variants for softer radius + pastel ghost variant (no API changes — every existing usage keeps working)
+- `EterniaLogo`, `NotificationBell`, `NovaOrb`, `ResolvedAvatar`, `AvatarUpload`, `EmojiPicker`, `EmergencyAlertOverlay`, `CookieConsent`, `PWAUpdatePrompt`, `Navbar`/`NavLink` — restyle to match
+- shadcn primitives (`button`, `card`, `input`, `tabs`, `dialog`, `badge`, `select`, `tooltip`, `dropdown-menu`): softer default radius + add `pastel-{color}` variants. **No prop API changes** — every existing usage keeps working.
 
 ## What stays exactly the same
 
-- All routes in `App.tsx`
-- All hooks, queries, edge functions, RLS, auth flow, role redirects
-- Component prop signatures (so no consumer breaks)
-- Database schema — no migrations
-- Eternia name + logo asset
-- All copy/text content (only typography changes)
+- All routes, hooks, queries, edge functions, RLS, auth flow, role redirects
+- Component prop signatures, database schema
+- Eternia name + logo
+- All copy/text content
 
-## Rollout order (each phase is shippable on its own)
+## Rollout order
 
-1. Tokens + fonts (Phase 1) — global look shifts immediately
-2. Three hero screens (Phase 2) — matches reference
-3. Remaining student surfaces (Phase 3)
-4. Auth + Landing (Phase 4)
-5. Staff/admin (Phase 5)
-6. Shared polish pass (Phase 6)
+1. **Phase 3** — remaining student screens (mobile + desktop)
+2. **Phase 4** — auth screens + landing page
+3. **Phase 5** — staff/admin dashboards + DashboardLayout
+4. **Phase 6** — shared components + shadcn polish
 
-## Notes on the reference
+Each phase is shippable independently. After each phase you can review and request adjustments before the next.
 
-The exact illustrations on Dribbble are copyrighted — I'll recreate the *style* (rounded pastel cards, emoji moods, soft waveforms, bubble charts, "Powered by AI" chips, hand-drawn rounded headings) rather than copying the artwork. The layout, spacing, color feel, and component structure will match closely.
+## Note on illustrations
+
+For places the reference uses custom illustrations (meditation lotus, mood characters, hero artwork), I'll build CSS/SVG equivalents in the same flat-pastel aesthetic. If you want a closer match to the *exact* illustration vibe, the cleanest path is to either (a) commission/license illustrations and drop them in as assets, or (b) generate a matching set via AI image generation and I'll wire them in — let me know if you want either after Phase 3 lands.
 
