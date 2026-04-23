@@ -100,10 +100,10 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col lg:flex-row">
       {/* Left panel — branding (hidden on mobile, shown on lg+) */}
-      <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden bg-card/30 border-r border-border/20 flex-col items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden surface-lavender flex-col items-center justify-center p-12">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-eternia-teal/15 rounded-full blur-[100px]" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-eternia-lavender/15 rounded-full blur-[100px]" />
+          <div className="absolute top-1/4 left-1/3 w-96 h-96 surface-pink rounded-full blur-3xl opacity-60" />
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 surface-butter rounded-full blur-3xl opacity-60" />
         </div>
         <div className="relative z-10 max-w-sm text-center">
           <motion.div

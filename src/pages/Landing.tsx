@@ -15,25 +15,12 @@ import Footer from "@/components/landing/Footer";
 const Landing = () => {
   return (
     <div className="min-h-screen bg-background overflow-hidden relative">
-      {/* Snake gradient line running down the page */}
-      <div className="absolute left-0 top-0 w-full h-full pointer-events-none overflow-hidden z-0">
-        <svg className="absolute top-0 left-0 w-full h-full opacity-[0.12]" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="snakeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="hsl(243 100% 69%)" />
-              <stop offset="30%" stopColor="hsl(12 94% 68%)" />
-              <stop offset="60%" stopColor="hsl(243 100% 69%)" />
-              <stop offset="100%" stopColor="hsl(12 94% 68%)" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M 50 0 Q 200 200, 50 400 Q -100 600, 200 800 Q 350 1000, 100 1200 Q -50 1400, 150 1600 Q 300 1800, 80 2000 Q -80 2200, 180 2400 Q 350 2600, 50 2800 Q -100 3000, 200 3200"
-            fill="none"
-            stroke="url(#snakeGrad)"
-            strokeWidth="2"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
+      {/* Soft pastel ambient blobs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+        <div className="absolute top-[10%] -left-20 w-96 h-96 rounded-full surface-pink opacity-40 blur-3xl" />
+        <div className="absolute top-[40%] -right-24 w-[28rem] h-[28rem] rounded-full surface-lavender opacity-40 blur-3xl" />
+        <div className="absolute top-[75%] left-1/4 w-80 h-80 rounded-full surface-mint opacity-30 blur-3xl" />
+        <div className="absolute top-[110%] right-1/3 w-96 h-96 rounded-full surface-butter opacity-30 blur-3xl" />
       </div>
 
       <div className="relative z-10">
