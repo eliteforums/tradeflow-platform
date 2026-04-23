@@ -10,10 +10,10 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return { text: "Good Morning", icon: Sunrise, emoji: "🌅" };
-  if (hour < 17) return { text: "Good Afternoon", icon: Sun, emoji: "☀️" };
-  if (hour < 21) return { text: "Good Evening", icon: Moon, emoji: "🌙" };
-  return { text: "Good Night", icon: Moon, emoji: "🌙" };
+  if (hour < 12) return { text: "Good Morning", emoji: "🌅" };
+  if (hour < 17) return { text: "Good Afternoon", emoji: "☀️" };
+  if (hour < 21) return { text: "Good Evening", emoji: "🌙" };
+  return { text: "Good Night", emoji: "🌙" };
 };
 
 const motivationalQuotes = [
@@ -28,7 +28,6 @@ const Dashboard = () => {
   const isMobile = useIsMobile();
   const { profile, creditBalance: balance } = useAuth();
 
-  // Role-based redirect (must be before mobile check to avoid hook order issues)
   const role = profile?.role as string | undefined;
   if (role === "admin") return <Navigate to="/admin" replace />;
   if (role === "spoc") return <Navigate to="/dashboard/spoc" replace />;
@@ -42,72 +41,69 @@ const Dashboard = () => {
   const quote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
 
   const connectPortals = [
-    { icon: Calendar, title: "Expert Connect", description: "Book expert sessions", path: "/dashboard/appointments", gradient: "from-emerald-500 to-teal-500" },
-    { icon: MessageCircle, title: "Peer Connect", description: "Talk to trained interns", path: "/dashboard/peer-connect", gradient: "from-pink-500 to-rose-500" },
-    { icon: Box, title: "BlackBox", description: "Express anonymously", path: "/dashboard/blackbox", gradient: "from-violet-500 to-purple-500" },
+    { icon: Calendar, title: "Expert Connect", description: "Book expert sessions", path: "/dashboard/appointments", surface: "surface-mint" },
+    { icon: MessageCircle, title: "Peer Connect", description: "Talk to trained interns", path: "/dashboard/peer-connect", surface: "surface-pink" },
+    { icon: Box, title: "BlackBox", description: "Express anonymously", path: "/dashboard/blackbox", surface: "surface-lavender" },
   ];
 
   const selfHelpTools = [
-    { icon: Music, title: "Sound Therapy", description: "Meditate & relax", path: "/dashboard/sound-therapy", gradient: "from-cyan-500 to-blue-500" },
-    { icon: Award, title: "Quest Cards", description: "Daily wellbeing quests", path: "/dashboard/quest-cards", gradient: "from-amber-400 to-orange-500" },
-    { icon: Sparkles, title: "Journaling", description: "Reflective writing", path: "/dashboard/journaling", gradient: "from-emerald-400 to-teal-500" },
+    { icon: Music, title: "Sound Therapy", description: "Meditate & relax", path: "/dashboard/sound-therapy", surface: "surface-sky" },
+    { icon: Award, title: "Quest Cards", description: "Daily wellbeing quests", path: "/dashboard/quest-cards", surface: "surface-butter" },
+    { icon: Sparkles, title: "Journaling", description: "Reflective writing", path: "/dashboard/journaling", surface: "surface-peach" },
   ];
 
   const quickTools = [
-    { name: "Quest Cards", icon: Award, path: "/dashboard/quest-cards", color: "text-amber-400" },
-    { name: "Journaling", icon: Sparkles, path: "/dashboard/journaling", color: "text-emerald-400" },
-    { name: "Mood", icon: BarChart3, path: "/dashboard/mood-tracker", color: "text-cyan-400" },
-    { name: "Gratitude", icon: Heart, path: "/dashboard/gratitude", color: "text-pink-400" },
-    { name: "Wallet", icon: Coins, path: "/dashboard/credits", color: "text-emerald-400" },
+    { name: "Quest Cards", emoji: "🏆", path: "/dashboard/quest-cards", surface: "surface-butter" },
+    { name: "Journaling", emoji: "📝", path: "/dashboard/journaling", surface: "surface-mint" },
+    { name: "Mood", emoji: "🎭", path: "/dashboard/mood-tracker", surface: "surface-sky" },
+    { name: "Gratitude", emoji: "🙏", path: "/dashboard/gratitude", surface: "surface-pink" },
+    { name: "Wallet", emoji: "💎", path: "/dashboard/credits", surface: "surface-lavender" },
   ];
 
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto space-y-5">
+      <div className="max-w-3xl mx-auto space-y-6">
         <div className="pt-1">
-          <p className="text-muted-foreground text-sm mb-0.5">{greeting.emoji} {greeting.text}</p>
-          <h1 className="text-xl sm:text-2xl font-bold font-display">{profile?.username || "friend"}</h1>
+          <p className="text-muted-foreground text-sm mb-1">{greeting.emoji} {greeting.text}</p>
+          <h1 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight">{profile?.username || "friend"}</h1>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl p-4 sm:p-5" style={{ background: "linear-gradient(135deg, hsl(var(--eternia-teal) / 0.12), hsl(var(--eternia-lavender) / 0.12))" }}>
-          <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20" style={{ background: "radial-gradient(circle, hsl(var(--eternia-teal)), transparent 70%)" }} />
-          <Heart className="w-5 h-5 text-primary mb-2" />
-          <p className="text-sm text-foreground/90 leading-relaxed relative z-10">{quote}</p>
+        <div className="card-soft p-5 sm:p-6 surface-lavender border-0">
+          <Heart className="w-5 h-5 text-foreground/70 mb-2" />
+          <p className="text-base font-display text-foreground/90 leading-relaxed">{quote}</p>
         </div>
 
         {balance < 5 && (
-          <Link to="/dashboard/credits" className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 hover:border-amber-400/40 transition-all">
-            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+          <Link to="/dashboard/credits" className="flex items-center gap-3 p-4 rounded-3xl surface-peach border-0 transition-all hover:-translate-y-0.5">
+            <AlertCircle className="w-5 h-5 text-foreground/70 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground">Your care energy is low.</p>
-              <p className="text-xs text-muted-foreground">Refill gently — earn credits through self-help activities.</p>
+              <p className="text-xs text-foreground/60">Refill gently — earn credits through self-help activities.</p>
             </div>
-            <ArrowRight className="w-4 h-4 text-amber-500 shrink-0" />
+            <ArrowRight className="w-4 h-4 text-foreground/70 shrink-0" />
           </Link>
         )}
 
-        <div className="grid grid-cols-3 gap-2.5">
-          <div className="rounded-xl bg-card p-3 text-center border border-border/50">
-            <p className="text-lg sm:text-xl font-bold">{profile?.streak_days || 0}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Day Streak 🔥</p>
-          </div>
-          <div className="rounded-xl bg-card p-3 text-center border border-border/50">
-            <p className="text-lg sm:text-xl font-bold">{balance}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Wallet 💎</p>
-          </div>
-          <div className="rounded-xl bg-card p-3 text-center border border-border/50">
-            <p className="text-lg sm:text-xl font-bold">{profile?.total_sessions || 0}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Sessions 📊</p>
-          </div>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { val: profile?.streak_days || 0, label: "Day Streak 🔥", surface: "surface-pink" },
+            { val: balance, label: "Wallet 💎", surface: "surface-mint" },
+            { val: profile?.total_sessions || 0, label: "Sessions 📊", surface: "surface-butter" },
+          ].map((s) => (
+            <div key={s.label} className={`rounded-3xl ${s.surface} p-4 text-center shadow-soft`}>
+              <p className="text-2xl font-display font-semibold">{s.val}</p>
+              <p className="text-[11px] text-foreground/70 mt-0.5">{s.label}</p>
+            </div>
+          ))}
         </div>
 
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 px-0.5">Quick Tools</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-0.5">Quick Tools</p>
           <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
             {quickTools.map((tool) => (
               <Link key={tool.name} to={tool.path} className="flex flex-col items-center gap-1.5 shrink-0">
-                <div className="w-16 h-16 rounded-2xl bg-card border border-border/50 flex items-center justify-center hover:border-primary/30 transition-all">
-                  <tool.icon className={`w-6 h-6 ${tool.color}`} />
+                <div className={`w-16 h-16 rounded-3xl ${tool.surface} flex items-center justify-center text-2xl shadow-soft transition-all hover:-translate-y-0.5`}>
+                  {tool.emoji}
                 </div>
                 <span className="text-[11px] text-muted-foreground text-center leading-tight w-16 truncate">{tool.name}</span>
               </Link>
@@ -116,36 +112,36 @@ const Dashboard = () => {
         </div>
 
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 px-0.5">Connect</p>
-          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-0.5">Connect</p>
+          <div className="grid grid-cols-3 gap-3">
             {connectPortals.map((portal) => (
-              <Link key={portal.path} to={portal.path} className="group rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all">
-                <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${portal.gradient} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
-                  <portal.icon className="w-5 h-5 text-white" />
+              <Link key={portal.path} to={portal.path} className={`group rounded-3xl ${portal.surface} p-5 shadow-soft transition-all hover:-translate-y-1`}>
+                <div className="w-11 h-11 rounded-2xl bg-card/70 flex items-center justify-center mb-3">
+                  <portal.icon className="w-5 h-5 text-foreground/80" />
                 </div>
-                <h3 className="text-sm sm:text-[15px] font-semibold font-display mb-0.5">{portal.title}</h3>
-                <p className="text-[11px] sm:text-xs text-muted-foreground leading-snug">{portal.description}</p>
+                <h3 className="text-[15px] font-display font-semibold mb-0.5">{portal.title}</h3>
+                <p className="text-xs text-foreground/65 leading-snug">{portal.description}</p>
               </Link>
             ))}
           </div>
         </div>
 
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5 px-0.5">Self-Help Tools</p>
-          <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-0.5">Self-Help Tools</p>
+          <div className="grid grid-cols-3 gap-3">
             {selfHelpTools.map((portal) => (
-              <Link key={portal.title} to={portal.path} className="group rounded-2xl bg-card border border-border/40 p-4 sm:p-5 hover:border-primary/30 transition-all">
-                <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br ${portal.gradient} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
-                  <portal.icon className="w-5 h-5 text-white" />
+              <Link key={portal.title} to={portal.path} className={`group rounded-3xl ${portal.surface} p-5 shadow-soft transition-all hover:-translate-y-1`}>
+                <div className="w-11 h-11 rounded-2xl bg-card/70 flex items-center justify-center mb-3">
+                  <portal.icon className="w-5 h-5 text-foreground/80" />
                 </div>
-                <h3 className="text-sm sm:text-[15px] font-semibold font-display mb-0.5">{portal.title}</h3>
-                <p className="text-[11px] sm:text-xs text-muted-foreground leading-snug">{portal.description}</p>
+                <h3 className="text-[15px] font-display font-semibold mb-0.5">{portal.title}</h3>
+                <p className="text-xs text-foreground/65 leading-snug">{portal.description}</p>
               </Link>
             ))}
           </div>
         </div>
 
-        <div className="rounded-xl bg-muted/30 p-3.5 sm:p-4">
+        <div className="card-soft p-4">
           <p className="text-xs text-muted-foreground leading-relaxed">
             <span className="font-medium text-foreground/80">💡 Tip:</span> Complete daily quests to earn XP and build your wellness streak. Every action counts!
           </p>

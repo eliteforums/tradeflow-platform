@@ -65,21 +65,21 @@ const MobileCredits = () => {
           </div>
         )}
 
-        {/* Balance Card */}
-        <div className="p-5 rounded-2xl bg-gradient-eternia text-background">
-          <div className="flex items-start justify-between mb-4">
+        {/* Balance Card — soft pastel hero */}
+        <div className="p-6 rounded-3xl surface-lavender shadow-soft">
+          <div className="flex items-start justify-between mb-5">
             <div>
-              <p className="text-background/70 text-xs mb-1">Available Balance</p>
-              <h2 className="text-3xl font-bold font-display flex items-center gap-2"><Coins className="w-7 h-7" />{balance} <span className="text-base">ECC</span></h2>
+              <p className="text-foreground/60 text-xs mb-1">Available Balance</p>
+              <h2 className="text-4xl font-display font-semibold flex items-center gap-2"><Coins className="w-8 h-8 text-foreground/70" />{balance} <span className="text-lg text-foreground/70">ECC</span></h2>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3 pt-3 border-t border-background/20">
-            <div><p className="text-background/70 text-xs">Earned</p><p className="font-semibold text-sm flex items-center gap-1"><TrendingUp className="w-3 h-3" />+{earned}</p></div>
-            <div><p className="text-background/70 text-xs">Spent</p><p className="font-semibold text-sm">-{spent}</p></div>
+          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-foreground/10">
+            <div><p className="text-foreground/60 text-xs">Earned</p><p className="font-semibold text-sm flex items-center gap-1"><TrendingUp className="w-3 h-3" />+{earned}</p></div>
+            <div><p className="text-foreground/60 text-xs">Spent</p><p className="font-semibold text-sm">-{spent}</p></div>
             <div>
-              <p className="text-background/70 text-xs">Cap</p>
+              <p className="text-foreground/60 text-xs">Cap</p>
               <p className="font-semibold text-sm">{weeklyEarned}/5</p>
-              <Progress value={(weeklyEarned / 5) * 100} className="h-1 mt-1 bg-background/20" />
+              <Progress value={(weeklyEarned / 5) * 100} className="h-1 mt-1 bg-foreground/10" />
             </div>
           </div>
         </div>

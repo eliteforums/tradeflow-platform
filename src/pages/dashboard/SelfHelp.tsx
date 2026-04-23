@@ -1,41 +1,39 @@
 import { Link } from "react-router-dom";
-import { Award, PenLine, BarChart3, Heart } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 const activeTools = [
-  { name: "Quest Cards", emoji: "🏆", icon: Award, description: "Daily micro-challenges for wellbeing", gradient: "from-amber-500 to-orange-500", path: "/dashboard/quest-cards" },
-  { name: "Journaling", emoji: "📝", icon: PenLine, description: "Guided reflective writing prompts", gradient: "from-emerald-500 to-teal-500", path: "/dashboard/journaling" },
-  { name: "Mood Tracker", emoji: "🎭", icon: BarChart3, description: "Track your emotional patterns", gradient: "from-cyan-500 to-blue-500", path: "/dashboard/mood-tracker" },
-  { name: "Gratitude", emoji: "🙏", icon: Heart, description: "Daily gratitude practice", gradient: "from-pink-500 to-rose-500", path: "/dashboard/gratitude" },
-  { name: "Wreck the Buddy", emoji: "🥊", icon: Heart, description: "Release stress through ragdoll bashing", gradient: "from-red-500 to-pink-500", path: "/dashboard/wreck-buddy" },
-  { name: "Tibetan Bowl", emoji: "🔔", icon: Heart, description: "Interactive sound meditation", gradient: "from-violet-500 to-purple-500", path: "/dashboard/tibetan-bowl" },
+  { name: "Quest Cards", emoji: "🏆", description: "Daily micro-challenges for wellbeing", surface: "surface-butter", path: "/dashboard/quest-cards" },
+  { name: "Journaling", emoji: "📝", description: "Guided reflective writing prompts", surface: "surface-mint", path: "/dashboard/journaling" },
+  { name: "Mood Tracker", emoji: "🎭", description: "Track your emotional patterns", surface: "surface-sky", path: "/dashboard/mood-tracker" },
+  { name: "Gratitude", emoji: "🙏", description: "Daily gratitude practice", surface: "surface-pink", path: "/dashboard/gratitude" },
+  { name: "Wreck the Buddy", emoji: "🥊", description: "Release stress through ragdoll bashing", surface: "surface-peach", path: "/dashboard/wreck-buddy" },
+  { name: "Tibetan Bowl", emoji: "🔔", description: "Interactive sound meditation", surface: "surface-lavender", path: "/dashboard/tibetan-bowl" },
 ];
 
 const SelfHelp = () => {
   return (
     <DashboardLayout>
-      <div className="max-w-3xl mx-auto space-y-5 pb-24">
+      <div className="max-w-3xl mx-auto space-y-6 pb-24">
         <div>
-          <h1 className="text-2xl font-bold font-display">Self-Help Tools</h1>
-          <p className="text-sm text-muted-foreground">Daily micro-wellbeing activities</p>
+          <p className="text-muted-foreground text-sm mb-1">✨ Daily wellbeing</p>
+          <h1 className="text-3xl sm:text-4xl font-display font-semibold tracking-tight">Self-Help Tools</h1>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {activeTools.map((tool) => (
             <Link
               key={tool.name}
               to={tool.path}
-              className="relative overflow-hidden rounded-2xl bg-card border border-border/40 p-4 hover:border-primary/30 active:scale-[0.97] transition-all group"
+              className={`relative overflow-hidden rounded-3xl ${tool.surface} p-5 shadow-soft active:scale-[0.97] transition-all hover:-translate-y-1`}
             >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.gradient} flex items-center justify-center text-2xl mb-3 group-hover:scale-105 transition-transform`}>
+              <div className="w-14 h-14 rounded-2xl bg-card/70 flex items-center justify-center text-3xl mb-3">
                 {tool.emoji}
               </div>
-              <h3 className="text-sm font-semibold font-display mb-0.5">{tool.name}</h3>
-              <p className="text-xs text-muted-foreground leading-snug">{tool.description}</p>
+              <h3 className="text-base font-display font-semibold mb-0.5">{tool.name}</h3>
+              <p className="text-xs text-foreground/65 leading-snug">{tool.description}</p>
             </Link>
           ))}
         </div>
-
       </div>
     </DashboardLayout>
   );
