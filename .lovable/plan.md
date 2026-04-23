@@ -1,57 +1,84 @@
 
-Do I know what the issue is? Yes — this looks like a post-login app-load failure, not just a bad username/password.
 
-What I found
-- The auth logs show at least one successful admin login, so login itself can succeed.
-- The blank white screen is most likely happening after the redirect into lazy-loaded pages like `/admin` or `/dashboard`.
-- Right now there is no route error boundary, so if a lazy chunk fails to load, the app can collapse into a white screen.
-- `AuthContext` also swallows profile-loading errors, which means the app can end up with a signed-in user but unstable/missing role/profile state.
-- The app uses PWA caching, but there is no recovery handler for stale chunk/preload failures after updates.
+# MindEase-Inspired UI Redesign — Full Platform
 
-Implementation plan
+Visual-only redesign across every screen. **No functional/logic changes** — same routes, same hooks, same data, same roles. Only markup, classes, and design tokens change.
 
-1. Add a visible recovery fallback for route/load failures
-- Wrap routed content with an error boundary so lazy-load/runtime failures show a recovery screen instead of a blank page.
-- File: `src/App.tsx` (or a small imported error boundary)
+## Design language (the new "Eternia Soft")
 
-2. Add chunk/preload failure recovery
-- Handle stale bundle failures with a one-time reload strategy for Vite preload/chunk errors.
-- If needed, tighten the PWA update behavior to reduce stale-cache navigation failures.
-- Files: `src/main.tsx`, optionally `vite.config.ts`
+Adopted from the reference, kept compatible with Eternia branding:
 
-3. Make auth/profile hydration explicit
-- Stop silently swallowing profile fetch failures in `AuthContext`
-- Track initial profile load success/failure
-- Keep loading active until authenticated user data is either ready or fails in a controlled way
-- File: `src/contexts/AuthContext.tsx`
+- **Background**: warm cream `#FBF5EC` (light) / deep ink `#1B1F3B` (dark)
+- **Surface cards**: pastel tints — pink `#FFD9DC`, butter `#FCE6A8`, mint `#CFE8D8`, sky `#CFE0F4`, lavender `#D9D6F5`, peach `#FCD9B8`
+- **Primary** stays Eternia Purple `#6C63FF`; **accent** stays Coral `#FA7E61` — used as the "active" mood / CTA color
+- **Typography**: display headings switch to a rounded serif (Fraunces via Google Fonts, already loadable); body stays Inter
+- **Shapes**: 24–32px rounded corners on cards, pill buttons, soft drop shadows (`shadow-[0_8px_30px_rgb(0,0,0,0.04)]`)
+- **Iconography**: keep lucide icons but pair with emoji chips for moods/categories (matches reference)
 
-4. Harden protected routes
-- If user exists but profile is still loading, keep showing a loader
-- If profile loading fails, show retry/sign-out recovery UI instead of rendering protected pages blindly
-- File: `src/components/ProtectedRoute.tsx`
+## Phase 1 — Design tokens (one-time foundation)
 
-5. Fix post-login navigation flow
-- Remove the immediate extra role lookup in the login form as the main redirect source
-- Redirect only after auth/profile state is fully ready
-- Use the hydrated profile role for navigation
-- File: `src/pages/auth/Login.tsx`
+**Files**: `src/index.css`, `tailwind.config.ts`, `index.html`
 
-6. Add entry-screen guards on first redirected pages
-- Make admin/dashboard entry pages show controlled loading while required auth state is stabilizing
-- Files: `src/pages/admin/AdminDashboard.tsx`, `src/components/mobile/MobileAdminDashboard.tsx`, `src/pages/dashboard/Dashboard.tsx`
+- Add 6 pastel surface tokens (`--surface-pink`, `--surface-mint`, `--surface-sky`, `--surface-butter`, `--surface-lavender`, `--surface-peach`) + `--surface-cream` background
+- Add Fraunces font link in `index.html`; map `font-display` → Fraunces in tailwind
+- Add reusable utilities: `.card-soft`, `.pill`, `.mood-chip`, `.tile-pastel-{color}`
+- Dark mode keeps Eternia ink palette; pastel tints get muted dark variants
 
-7. Re-check the recent BlackBox fullscreen changes
-- Ensure the white fullscreen BlackBox experience is strictly limited to `/dashboard/blackbox`
-- Prevent it from affecting normal login/dashboard flows
-- Files: `src/pages/dashboard/BlackBox.tsx`, `src/components/mobile/MobileBlackBox.tsx`
+## Phase 2 — Student mobile (the 3 reference screens, mapped 1:1)
 
-Validation
-- Test login with `admin`, `admin@eternia.com`, and a student account
-- Verify `/admin`, `/dashboard`, and `/dashboard/blackbox` all render normally
-- Hard refresh on protected routes to confirm there is no white screen
-- Confirm stale-chunk/update cases recover with a visible reload/retry path instead of failing silently
+| Reference screen | Eternia file |
+|---|---|
+| "Good morning + mood log + activity tiles" | `src/components/mobile/MobileDashboard.tsx` |
+| "Meditation Stress Relaxation" player | `src/components/mobile/MobileSoundTherapy.tsx` |
+| "7 Days Mood Reflection" + bubbles + bar chart | `src/pages/dashboard/MoodTracker.tsx` |
 
-Technical details
-- No database migration required
-- No backend schema changes required
-- This is mainly a frontend resiliency fix across auth, routing, and cache/update handling
+**MobileDashboard** — greeting + date pill, "How are you feeling today?" headline, "Your thought…" input (links to Journaling), 5-emoji `Daily mood log` row (wired to existing `useMoodTracker.logMood`), 2×2 pastel activity tiles (Meditation→SoundTherapy, Just need to talk→PeerConnect, Reduce anxiety→QuestCards, Handle stress→BlackBox). Stats row + Connect grid kept but restyled.
+
+**MobileSoundTherapy** — centered meditation illustration (CSS-drawn lotus/circle motif using the existing `TibetanBowl3D`-style aesthetic, no copyrighted art), "Powered by AI" pill, animated waveform bars (CSS-only, driven by playing state), timer, circular play/pause + skip pills.
+
+**MoodTracker** — bubble cluster sized by mood frequency over 7 days (sized circles with mood labels), "Take charge of your mind / Help with AI" gradient card, bar chart with emoji-headed bars for "Your Statistic". All driven by existing `last7Days` data from the hook.
+
+## Phase 3 — Other student screens (visual refresh, same components)
+
+`MobileSelfHelp`, `MobileBlackBox`, `MobilePeerConnect`, `MobileAppointments`, `MobileCredits`, `MobileProfile`, `MobileRecoverySetup`, plus desktop `Dashboard.tsx`, `SelfHelp.tsx`, `Journaling.tsx`, `Gratitude.tsx`, `QuestCards.tsx`, `Appointments.tsx`, `PeerConnect.tsx`, `BlackBox.tsx`, `SoundTherapy.tsx`, `Profile.tsx`, `Credits.tsx`, `WreckBuddy.tsx`, `TibetanBowl.tsx` — apply pastel tiles + Fraunces headings + soft cards. No logic touched.
+
+## Phase 4 — Auth + Landing
+
+- `Login`, `Register`, `InstitutionCode`, `QRScan`, `ForgotPassword`: cream background, soft card, Fraunces heading, pastel illustrative sidebar on desktop
+- `Landing.tsx` sections (Hero, Features, HowItWorks, Stats, Testimonials, FAQ, CTA, Footer, Navbar): re-skin to soft pastel — keeping all copy, links, and structure
+
+## Phase 5 — Staff & admin dashboards
+
+Visual refresh only. Keep tables, charts, edge-function wiring, role logic intact.
+
+- `AdminDashboard` + every component under `src/components/admin/*` (Overview, Analytics, Audit, Members, Institutions, etc.) — soften cards, switch to Fraunces headings, use pastel category badges, keep recharts data
+- `ExpertDashboard`, `InternDashboard`, `SPOCDashboard`, `TherapistDashboard` and their `*DashboardContent` components
+- `DashboardLayout` (sidebar + topbar): cream background, rounded sidebar, pastel active-state pill
+
+## Phase 6 — Shared components
+
+- `EterniaLogo`, `NotificationBell`, `NovaOrb`, `ResolvedAvatar`, `AvatarUpload`, `EmojiPicker`, `EmergencyAlertOverlay` — restyle to match
+- shadcn primitives (`button`, `card`, `input`, `tabs`, `dialog`, `badge`): tweak default variants for softer radius + pastel ghost variant (no API changes — every existing usage keeps working)
+
+## What stays exactly the same
+
+- All routes in `App.tsx`
+- All hooks, queries, edge functions, RLS, auth flow, role redirects
+- Component prop signatures (so no consumer breaks)
+- Database schema — no migrations
+- Eternia name + logo asset
+- All copy/text content (only typography changes)
+
+## Rollout order (each phase is shippable on its own)
+
+1. Tokens + fonts (Phase 1) — global look shifts immediately
+2. Three hero screens (Phase 2) — matches reference
+3. Remaining student surfaces (Phase 3)
+4. Auth + Landing (Phase 4)
+5. Staff/admin (Phase 5)
+6. Shared polish pass (Phase 6)
+
+## Notes on the reference
+
+The exact illustrations on Dribbble are copyrighted — I'll recreate the *style* (rounded pastel cards, emoji moods, soft waveforms, bubble charts, "Powered by AI" chips, hand-drawn rounded headings) rather than copying the artwork. The layout, spacing, color feel, and component structure will match closely.
+
