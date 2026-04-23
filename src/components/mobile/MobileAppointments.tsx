@@ -64,8 +64,8 @@ const MobileAppointments = () => {
             ) : (activeTab === "upcoming" ? upcomingAppointments : pastAppointments).map((apt) => (
               <div key={apt.id} className="p-4 rounded-xl bg-muted/30 border border-border">
                 <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shrink-0">
-                    <User className="w-5 h-5 text-white" />
+                  <div className="w-11 h-11 rounded-2xl surface-mint flex items-center justify-center shrink-0">
+                    <User className="w-5 h-5 text-foreground/70" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
@@ -123,8 +123,8 @@ const MobileAppointments = () => {
                 return (
                   <div key={expert.id} className="p-4 rounded-2xl bg-card border border-border">
                     <div className="flex items-start gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shrink-0">
-                        <User className="w-6 h-6 text-white" />
+                      <div className="w-12 h-12 rounded-2xl surface-mint flex items-center justify-center shrink-0">
+                        <User className="w-6 h-6 text-foreground/70" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-sm">{expert.username}</h3>
