@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
 
   try {
     const ip = getClientIP(req);
-    const { username, fragment_pairs, emoji_pattern, new_password } = await req.json();
+    const { username, fragment_pairs, new_password } = await req.json();
 
     const cleanUsername = sanitizeString(username, 100).toLowerCase();
     if (!cleanUsername) return errorResponse("Username is required");
@@ -27,9 +27,6 @@ Deno.serve(async (req) => {
 
     if (!Array.isArray(fragment_pairs) || fragment_pairs.length !== 3) {
       return errorResponse("Invalid recovery answers");
-    }
-    if (!Array.isArray(emoji_pattern) || emoji_pattern.length !== 4) {
-      return errorResponse("Invalid emoji pattern");
     }
     const cleanPassword = sanitizeString(new_password, 128);
     if (cleanPassword.length < 8) {
@@ -52,7 +49,7 @@ Deno.serve(async (req) => {
     // Fetch stored recovery credentials
     const { data: creds, error: credErr } = await supabase
       .from("recovery_credentials")
-      .select("fragment_pairs_encrypted, emoji_pattern_encrypted")
+      .select("fragment_pairs_encrypted")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -61,10 +58,8 @@ Deno.serve(async (req) => {
 
     // Compare fragment pairs (case-insensitive answers)
     let storedPairs: { hint: string; answer: string }[];
-    let storedEmojis: string[];
     try {
       storedPairs = JSON.parse(creds.fragment_pairs_encrypted);
-      storedEmojis = JSON.parse(creds.emoji_pattern_encrypted);
     } catch {
       return errorResponse("Recovery data corrupted", 500);
     }
@@ -77,11 +72,7 @@ Deno.serve(async (req) => {
       );
     });
 
-    const emojisMatch =
-      storedEmojis.length === emoji_pattern.length &&
-      storedEmojis.every((e, i) => e === emoji_pattern[i]);
-
-    if (!pairsMatch || !emojisMatch) {
+    if (!pairsMatch) {
       return errorResponse("Recovery credentials do not match", 403);
     }
 
