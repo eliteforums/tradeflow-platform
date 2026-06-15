@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, User, Key, Smile, Lock, Eye, EyeOff, Loader2, CheckCircle, Shield, Send, Search, Clock, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, User, Key, Lock, Eye, EyeOff, Loader2, CheckCircle, Shield, Send, Search, Clock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,8 +8,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import EterniaLogo from "@/components/EterniaLogo";
 import { motion } from "framer-motion";
-
-const EMOJI_GRID = ["🌊","🔥","🌸","⚡","🌙","☀️","🍃","❄️","🦋","🌈","🎵","💎","🕊️","🌻","🍂","🌺","🐚","🌿","✨","🎯","🧿","🪷","🫧","🪻"];
 
 type FlowMode = "self" | "admin";
 
@@ -19,7 +17,6 @@ const SelfRecovery = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }
   const [username, setUsername] = useState("");
   const [hints, setHints] = useState<string[]>([]);
   const [answers, setAnswers] = useState(["", "", ""]);
-  const [selectedEmojis, setSelectedEmojis] = useState<string[]>([]);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -44,15 +41,8 @@ const SelfRecovery = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }
     }
   };
 
-  const handleEmojiToggle = (emoji: string) => {
-    setSelectedEmojis((prev) =>
-      prev.includes(emoji) ? prev.filter((e) => e !== emoji) : prev.length >= 4 ? prev : [...prev, emoji]
-    );
-  };
-
   const handleVerifyAndProceed = () => {
-    if (answers.some((a) => !a.trim())) { toast.error("Please answer all hint questions"); return; }
-    if (selectedEmojis.length !== 4) { toast.error("Please select exactly 4 emojis"); return; }
+    if (answers.some((a) => !a.trim())) { toast.error("Please answer all security questions"); return; }
     setStep(3);
   };
 
@@ -63,7 +53,7 @@ const SelfRecovery = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }
     try {
       const fragmentPairs = hints.map((hint, i) => ({ hint, answer: answers[i] }));
       const { data, error } = await supabase.functions.invoke("recover-password", {
-        body: { username: username.trim(), fragment_pairs: fragmentPairs, emoji_pattern: selectedEmojis, new_password: newPassword },
+        body: { username: username.trim(), fragment_pairs: fragmentPairs, new_password: newPassword },
       });
       if (error) throw new Error(data?.error || "Failed to reset password");
       if (data?.error) throw new Error(data.error);
@@ -112,13 +102,13 @@ const SelfRecovery = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }
         </div>
       )}
 
-      {/* Step 2: Recovery Credentials */}
+      {/* Step 2: Security Questions */}
       {step === 2 && (
         <div className="space-y-5">
           <div className="space-y-3">
             <div className="flex items-center gap-2 mb-1">
               <Key className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold">Answer Your Hint Questions</span>
+              <span className="text-sm font-semibold">Answer Your Security Questions</span>
             </div>
             {hints.map((hint, i) => (
               <div key={i} className="space-y-1">
@@ -130,30 +120,9 @@ const SelfRecovery = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }
               </div>
             ))}
           </div>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <Smile className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold">Select Your 4-Emoji Pattern</span>
-            </div>
-            <div className="flex items-center justify-center gap-3 py-2">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
-                  selectedEmojis[i] ? "bg-primary/10 border-2 border-primary" : "bg-muted/50 border-2 border-dashed border-border"
-                }`}>{selectedEmojis[i] || "?"}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-8 gap-1.5">
-              {EMOJI_GRID.map((emoji) => (
-                <button key={emoji} onClick={() => handleEmojiToggle(emoji)} className={`aspect-square rounded-lg text-xl flex items-center justify-center transition-all ${
-                  selectedEmojis.includes(emoji) ? "bg-primary/20 border-2 border-primary scale-95" : "bg-muted/30 border border-border hover:bg-muted/50"
-                }`}>{emoji}</button>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground text-center">{selectedEmojis.length}/4 selected</p>
-          </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setStep(1)} className="flex-1 h-12 rounded-xl text-sm">Back</Button>
-            <Button onClick={handleVerifyAndProceed} disabled={answers.some((a) => !a.trim()) || selectedEmojis.length !== 4} className="flex-1 h-12 rounded-xl text-sm font-semibold gap-2">
+            <Button onClick={handleVerifyAndProceed} disabled={answers.some((a) => !a.trim())} className="flex-1 h-12 rounded-xl text-sm font-semibold gap-2">
               Verify <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
