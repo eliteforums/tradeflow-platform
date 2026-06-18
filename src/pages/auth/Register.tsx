@@ -501,7 +501,9 @@ const Register = () => {
                 )}
 
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">{idLabel}</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">
+                    {idLabel} <span className="text-muted-foreground/70">(optional)</span>
+                  </label>
                   <div className="flex gap-2">
                     <Input
                       type="text"
@@ -509,13 +511,14 @@ const Register = () => {
                       placeholder={idPlaceholder}
                       value={formData.studentId}
                       onChange={handleChange}
+                      disabled={studentIdSkipped}
                       className="h-11 rounded-xl bg-card/50 border-border/40 text-sm flex-1"
                     />
                     <Button
                       type="button"
                       variant={studentIdVerified ? "outline" : "default"}
                       onClick={handleVerifyStudentId}
-                      disabled={isVerifyingId || studentIdVerified}
+                      disabled={isVerifyingId || studentIdVerified || studentIdSkipped}
                       className="h-11 rounded-xl text-sm px-4 flex-shrink-0"
                     >
                       {isVerifyingId ? (
@@ -526,6 +529,24 @@ const Register = () => {
                         "Verify"
                       )}
                     </Button>
+                    <Button
+                      type="button"
+                      variant={studentIdSkipped ? "outline" : "ghost"}
+                      onClick={() => {
+                        setStudentIdSkipped((prev) => {
+                          const next = !prev;
+                          if (next) {
+                            setFormData((p) => ({ ...p, studentId: "" }));
+                            setStudentIdVerified(false);
+                          }
+                          return next;
+                        });
+                      }}
+                      disabled={isVerifyingId || studentIdVerified}
+                      className="h-11 rounded-xl text-sm px-3 flex-shrink-0"
+                    >
+                      {studentIdSkipped ? "Skipped" : "Skip"}
+                    </Button>
                   </div>
                   {studentIdVerified && (
                     <p className="text-[11px] text-eternia-success mt-1 flex items-center gap-1">
@@ -533,14 +554,20 @@ const Register = () => {
                       {isSchool ? "ERP ID verified" : "APAAR / ABC ID verified"}
                     </p>
                   )}
-                  {!studentIdVerified && !isVerifyingId && (
+                  {studentIdSkipped && (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      You can verify your {idLabel} later from your Profile.
+                    </p>
+                  )}
+                  {!studentIdVerified && !studentIdSkipped && !isVerifyingId && (
                     <p className="text-[11px] text-muted-foreground mt-1">
                       {isSchool
-                        ? "Enter your school ERP ID or Admission Number"
-                        : "Enter your 12-digit APAAR / ABC ID issued by the institution"}
+                        ? "Enter your school ERP ID or Admission Number (optional)"
+                        : "Enter your 12-digit APAAR / ABC ID, or skip for now"}
                     </p>
                   )}
                 </div>
+
 
                 {/* Consent */}
                 <div className="p-3 rounded-xl bg-muted/30 border border-border">
