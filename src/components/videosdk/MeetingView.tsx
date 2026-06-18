@@ -107,8 +107,8 @@ const MeetingView = ({
       console.log("[MeetingView] onMeetingLeft fired");
       joinInFlightRef.current = false;
       joinedRef.current = null;
-      setJoined(null);
       if (unmountedRef.current) return;
+      setJoined(null);
       onMeetingLeave();
     },
     onError: (error: any) => {
@@ -131,11 +131,16 @@ const MeetingView = ({
     },
   });
 
+  const leaveRef = useRef(leave);
+  useEffect(() => {
+    leaveRef.current = leave;
+  }, [leave]);
+
   useEffect(() => {
     const leaveActiveMeeting = () => {
       if (!joinedRef.current) return;
       try {
-        leave();
+        leaveRef.current();
       } catch (error) {
         console.warn("[MeetingView] Leave during cleanup failed:", error);
       }
@@ -146,7 +151,7 @@ const MeetingView = ({
       window.removeEventListener("pagehide", leaveActiveMeeting);
       leaveActiveMeeting();
     };
-  }, [leave]);
+  }, []);
 
   // Expose toggleMic to parent only after joined
   useEffect(() => {
