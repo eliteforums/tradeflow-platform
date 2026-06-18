@@ -195,13 +195,15 @@ const Register = () => {
       toast.error("Please specify the relationship to the contact person");
       return;
     }
-    if (!studentId || studentId.length < 3 || studentId.length > 50) {
-      toast.error(`${idLabel} must be 3-50 characters`);
-      return;
-    }
-    if (!studentIdVerified) {
-      toast.error(`Please verify your ${idLabel} before continuing`);
-      return;
+    if (!studentIdSkipped) {
+      if (!studentId || studentId.length < 3 || studentId.length > 50) {
+        toast.error(`${idLabel} must be 3-50 characters, or click Skip to verify later`);
+        return;
+      }
+      if (!studentIdVerified) {
+        toast.error(`Please verify your ${idLabel} or click Skip to verify later`);
+        return;
+      }
     }
     if (!acceptedConsent) {
       toast.error("Please accept the emergency escalation consent");
