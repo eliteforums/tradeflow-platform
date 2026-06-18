@@ -12,18 +12,26 @@ const ParticipantView = ({ participantId, audioOnly = false }: ParticipantViewPr
   const { micStream, webcamOn, micOn, isLocal, displayName } =
     useParticipant(participantId);
 
+  const attachedTrackIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (micRef.current) {
-      if (micOn && micStream) {
-        const mediaStream = new MediaStream();
-        mediaStream.addTrack(micStream.track);
-        micRef.current.srcObject = mediaStream;
-        micRef.current
-          .play()
-          .catch((error) => console.error("Audio play failed", error));
-      } else {
-        micRef.current.srcObject = null;
-      }
+    const el = micRef.current;
+    if (!el) return;
+
+    if (micOn && micStream?.track) {
+      const trackId = micStream.track.id;
+      // Avoid tearing down and re-attaching the same track on every render —
+      // that causes audio glitches / crackling during long calls.
+      if (attachedTrackIdRef.current === trackId && el.srcObject) return;
+
+      const mediaStream = new MediaStream();
+      mediaStream.addTrack(micStream.track);
+      el.srcObject = mediaStream;
+      attachedTrackIdRef.current = trackId;
+      el.play().catch((error) => console.error("Audio play failed", error));
+    } else {
+      el.srcObject = null;
+      attachedTrackIdRef.current = null;
     }
   }, [micStream, micOn]);
 
