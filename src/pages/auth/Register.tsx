@@ -51,6 +51,7 @@ const Register = () => {
     }));
     if (e.target.name === "studentId") {
       setStudentIdVerified(false);
+      setStudentIdSkipped(false);
     }
   };
 
