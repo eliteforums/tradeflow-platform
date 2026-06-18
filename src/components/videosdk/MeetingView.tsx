@@ -106,6 +106,9 @@ const MeetingView = ({
     onMeetingLeft: () => {
       console.log("[MeetingView] onMeetingLeft fired");
       joinInFlightRef.current = false;
+      joinedRef.current = null;
+      if (unmountedRef.current) return;
+      setJoined(null);
       onMeetingLeave();
     },
     onError: (error: any) => {
@@ -127,6 +130,28 @@ const MeetingView = ({
       console.log("[MeetingView] Meeting state changed:", data?.state || data);
     },
   });
+
+  const leaveRef = useRef(leave);
+  useEffect(() => {
+    leaveRef.current = leave;
+  }, [leave]);
+
+  useEffect(() => {
+    const leaveActiveMeeting = () => {
+      if (!joinedRef.current) return;
+      try {
+        leaveRef.current();
+      } catch (error) {
+        console.warn("[MeetingView] Leave during cleanup failed:", error);
+      }
+    };
+
+    window.addEventListener("pagehide", leaveActiveMeeting);
+    return () => {
+      window.removeEventListener("pagehide", leaveActiveMeeting);
+      leaveActiveMeeting();
+    };
+  }, []);
 
   // Expose toggleMic to parent only after joined
   useEffect(() => {
@@ -162,7 +187,8 @@ const MeetingView = ({
     // Request microphone permission before joining
     if (navigator.mediaDevices?.getUserMedia) {
       navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(() => {
+        .then((stream) => {
+          stream.getTracks().forEach((track) => track.stop());
           if (!unmountedRef.current) {
             setTimeout(doJoin, 300);
           }

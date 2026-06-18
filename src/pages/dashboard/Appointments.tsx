@@ -21,7 +21,7 @@ import { format } from "date-fns";
 
 const Appointments = () => {
   const isMobile = useIsMobile();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [callModal, setCallModal] = useState<{ open: boolean; mode: "video" | "audio"; appointmentId?: string }>({ open: false, mode: "video" });
   const [bookingDialog, setBookingDialog] = useState<{ open: boolean; expert?: any; slot?: any }>({ open: false });
@@ -179,7 +179,7 @@ const Appointments = () => {
         </DialogContent>
       </Dialog>
 
-      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Student"} mode={callModal.mode} appointmentId={callModal.appointmentId} />
+      <VideoCallModal isOpen={callModal.open} onClose={() => setCallModal({ open: false, mode: "video" })} participantName={profile?.username || "Student"} participantId={profile?.id || user?.id} mode={callModal.mode} appointmentId={callModal.appointmentId} />
     </DashboardLayout>
   );
 };

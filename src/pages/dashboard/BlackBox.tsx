@@ -26,7 +26,7 @@ const BlackBox = () => {
     requestSession, cancelSession, endSession, retryConnection,
     fetchToken, onCallJoined, onCallError,
   } = useBlackBoxSession();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
 
   const [toggleMicFn, setToggleMicFn] = useState<(() => void) | null>(null);
   const [micOn, setMicOn] = useState(true);
@@ -182,7 +182,7 @@ const BlackBox = () => {
         >
           <Suspense fallback={null}>
             <LazyMeetingProvider
-              config={{ meetingId: activeSession.room_id, micEnabled: true, webcamEnabled: false, name: profile?.username || "Anonymous", debugMode: false }}
+              config={{ meetingId: activeSession.room_id, micEnabled: true, webcamEnabled: false, name: profile?.username || "Anonymous", participantId: profile?.id || user?.id, debugMode: false }}
               token={token}
               joinWithoutUserInteraction={false}
             >

@@ -11,6 +11,7 @@ interface VideoCallModalProps {
   isOpen: boolean;
   onClose: () => void;
   participantName: string;
+  participantId?: string;
   mode?: "video" | "audio";
   appointmentId?: string;
   existingRoomId?: string;
@@ -30,6 +31,7 @@ const VideoCallModal = ({
   isOpen,
   onClose,
   participantName,
+  participantId,
   mode = "video",
   appointmentId,
   existingRoomId,
@@ -204,6 +206,7 @@ const VideoCallModal = ({
                 micEnabled: true,
                 webcamEnabled: !isAudioOnly,
                 name: participantName,
+                participantId,
                 debugMode: false,
               }}
               token={token}
