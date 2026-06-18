@@ -222,7 +222,7 @@ const Register = () => {
             emergency_phone: formData.emergencyContact,
             emergency_relation: formData.contactIsSelf ? "Self" : formData.emergencyRelation,
             contact_is_self: formData.contactIsSelf,
-            student_id: formData.studentId,
+            student_id: studentIdSkipped ? "" : formData.studentId,
             device_fingerprint: null,
           },
         });
