@@ -182,7 +182,7 @@ const BlackBox = () => {
         >
           <Suspense fallback={null}>
             <LazyMeetingProvider
-              config={{ meetingId: activeSession.room_id, micEnabled: true, webcamEnabled: false, name: profile?.username || "Anonymous", debugMode: false }}
+              config={{ meetingId: activeSession.room_id, micEnabled: true, webcamEnabled: false, name: profile?.username || "Anonymous", participantId: profile?.id, debugMode: false }}
               token={token}
               joinWithoutUserInteraction={false}
             >
