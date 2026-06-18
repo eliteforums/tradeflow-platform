@@ -518,6 +518,7 @@ const TherapistDashboardContent = ({ isMobile }: { isMobile?: boolean }) => {
                       micEnabled: true,
                       webcamEnabled: false,
                       name: profile?.username || "Therapist",
+                      participantId: profile?.id,
                       debugMode: false,
                     }}
                     token={token}
