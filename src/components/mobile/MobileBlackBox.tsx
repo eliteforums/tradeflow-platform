@@ -135,7 +135,7 @@ const MobileBlackBox = () => {
             style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap", border: 0 }}
             aria-hidden="true">
             <MeetingProvider
-              config={{ meetingId: activeSession.room_id, micEnabled: true, webcamEnabled: false, name: profile?.username || "Anonymous", debugMode: false }}
+              config={{ meetingId: activeSession.room_id, micEnabled: true, webcamEnabled: false, name: profile?.username || "Anonymous", participantId: profile?.id, debugMode: false }}
               token={token} joinWithoutUserInteraction={false}>
               <MeetingView meetingId={activeSession.room_id} onMeetingLeave={endSession} audioOnly sessionId={activeSession.id}
                 enableMonitoring={false} autoJoin onJoined={onCallJoined} onJoinError={onCallError}
