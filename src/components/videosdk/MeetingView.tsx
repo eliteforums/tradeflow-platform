@@ -341,9 +341,21 @@ const MeetingView = ({
 
       <div className="flex-1 min-h-0 p-4 overflow-y-auto">
         {(() => {
-          const participantIds = [...participants.keys()].filter(
+          // Build list, filtering out self (in audio-only) and de-duplicating
+          // by displayName so duplicate logins of the same account
+          // (e.g. an Expert signed in on two devices) collapse into one tile.
+          const allIds = [...participants.keys()].filter(
             (id) => !(audioOnly && localParticipant && id === localParticipant.id)
           );
+          const seenNames = new Set<string>();
+          const participantIds: string[] = [];
+          for (const id of allIds) {
+            const p: any = participants.get(id);
+            const key = (p?.displayName || p?.id || id).toString().trim().toLowerCase();
+            if (seenNames.has(key)) continue;
+            seenNames.add(key);
+            participantIds.push(id);
+          }
           return (
             <div className={`grid gap-4 h-full ${
               participantIds.length <= 1 ? "grid-cols-1" : participantIds.length <= 4 ? "grid-cols-2" : "grid-cols-3"
