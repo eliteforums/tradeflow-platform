@@ -130,7 +130,10 @@
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-eternia-teal to-eternia-lavender;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(to right, hsl(var(--eternia-teal)), hsl(var(--eternia-lavender)));
   }
 
   .text-gradient-violet {
@@ -139,7 +142,7 @@
   }
 
   .bg-gradient-eternia {
-    @apply bg-gradient-to-r from-eternia-teal to-eternia-lavender;
+    background-image: linear-gradient(to right, hsl(var(--eternia-teal)), hsl(var(--eternia-lavender)));
   }
 
   .bg-gradient-eternia-subtle {
